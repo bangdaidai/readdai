@@ -20,8 +20,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ steps.set-ver.outputs.version }}
     steps:
       - id: set-ver
         run: |
@@ -37,33 +35,20 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Configure Signing
-        run: |
-          if [ -n "${{ secrets.RELEASE_KEY_STORE }}" ]; then
-            echo -e "\n" >> gradle.properties
-            echo RELEASE_KEY_ALIAS='${{ secrets.RELEASE_KEY_ALIAS }}' >> gradle.properties
-            echo RELEASE_KEY_PASSWORD='${{ secrets.RELEASE_KEY_PASSWORD }}' >> gradle.properties
-            echo RELEASE_STORE_PASSWORD='${{ secrets.RELEASE_STORE_PASSWORD }}' >> gradle.properties
-            echo RELEASE_STORE_FILE='./key.jks' >> gradle.properties
-            echo ${{ secrets.RELEASE_KEY_STORE }} | base64 --decode > $GITHUB_WORKSPACE/app/key.jks
-          else
-            echo "⚠️ No signing key provided, will use debug signing"
-          fi
-
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Build with Gradle
+      - name: Build Release APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleAppRelease --build-cache --parallel --daemon
+          ./gradlew assembleRelease --build-cache --parallel --daemon
 
       - name: Organize Build Outputs
         run: |
           mkdir -p ${{ github.workspace }}/apk/
-          cp -rf ${{ github.workspace }}/app/build/outputs/apk/*/*/*.apk ${{ github.workspace }}/apk/
+          cp -rf ${{ github.workspace }}/app/build/outputs/apk/release/*.apk ${{ github.workspace }}/apk/
           mkdir -p ${{ github.workspace }}/mapping/
-          cp -rf ${{ github.workspace }}/app/build/outputs/mapping/*/mapping.txt ${{ github.workspace }}/mapping/ 2>/dev/null || true
+          cp -rf ${{ github.workspace }}/app/build/outputs/mapping/release/mapping.txt ${{ github.workspace }}/mapping/ 2>/dev/null || true
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v6
