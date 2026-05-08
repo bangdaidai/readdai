@@ -393,23 +393,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             .create()
 
         val btnClose = sidebarView.findViewById<ImageButton>(R.id.btn_close)
-        val btnNewChat = sidebarView.findViewById<LinearLayout>(R.id.btn_new_chat)
         val recyclerHistory = sidebarView.findViewById<RecyclerView>(R.id.recycler_history)
 
         btnClose.setOnClickListener {
             dialog.dismiss()
         }
 
-        btnNewChat.setOnClickListener {
-            // 新建对话
-            createNewSession()
-            messages.clear()
-            streamingPosition = -1
-            updateAdapter()
-            updateEmptyState()
-            dialog.dismiss()
-        }
-        
         // 保存对话框引用
         historyDialog = dialog
         
@@ -816,7 +805,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 content = msg.content,
                 reasoningContent = "",
                 toolSteps = emptyList(),
-                isExpanded = false,
+                isExpanded = true,  // 历史对话也默认展开
                 isReasoningExpanded = false
             ))
         }
@@ -1024,8 +1013,18 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     is ChatResult.Chunk -> {
                         val lastMsg = this@AiChatActivity.messages.lastOrNull()
                         if (lastMsg?.role == "ai") {
+                            val newContent = if (lastMsg.content.isEmpty()) {
+                                result.content
+                            } else {
+                                lastMsg.content + result.content
+                            }
                             this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
-                                ChatMessageItem("ai", result.content)
+                                ChatMessageItem(
+                                    "ai", 
+                                    newContent,
+                                    reasoningContent = lastMsg.reasoningContent,
+                                    toolSteps = lastMsg.toolSteps
+                                )
                         } else {
                             this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content))
                         }
@@ -1111,8 +1110,14 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     }
                     is ChatResult.Success -> {
                         if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
+                            val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
                             this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
-                                ChatMessageItem("ai", result.content)
+                                ChatMessageItem(
+                                    "ai", 
+                                    result.content,
+                                    reasoningContent = existingMsg.reasoningContent,
+                                    toolSteps = existingMsg.toolSteps
+                                )
                         } else {
                             this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content))
                         }
@@ -1146,8 +1151,14 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     }
                     is ChatResult.Error -> {
                         if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
+                            val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
                             this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
-                                ChatMessageItem("ai", "错误：${result.message}")
+                                ChatMessageItem(
+                                    "ai", 
+                                    "错误：${result.message}",
+                                    reasoningContent = existingMsg.reasoningContent,
+                                    toolSteps = existingMsg.toolSteps
+                                )
                         } else {
                             this@AiChatActivity.messages.add(ChatMessageItem("ai", "错误：${result.message}"))
                         }
@@ -1268,11 +1279,18 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                         is ChatResult.Chunk -> {
                             // 检查 streamingPosition 是否有效
                             if (streamingPosition >= 0 && streamingPosition < messages.size) {
-                                if (messages[streamingPosition].content.isEmpty()) {
-                                    messages[streamingPosition] = ChatMessageItem("ai", result.content)
+                                val existingMsg = messages[streamingPosition]
+                                val newContent = if (existingMsg.content.isEmpty()) {
+                                    result.content
                                 } else {
-                                    messages[streamingPosition] = ChatMessageItem("ai", messages[streamingPosition].content + result.content)
+                                    existingMsg.content + result.content
                                 }
+                                messages[streamingPosition] = ChatMessageItem(
+                                    "ai", 
+                                    newContent,
+                                    reasoningContent = existingMsg.reasoningContent,
+                                    toolSteps = existingMsg.toolSteps
+                                )
                                 adapter.notifyItemChanged(streamingPosition)
                                 
                                 // 滚动到底部
@@ -1335,48 +1353,66 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             }
                         }
                         is ChatResult.Success -> {
-                            // AI回复完成，更新最后一条消息
-                            if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
-                                this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
-                                    ChatMessageItem("ai", result.content)
-                            } else {
-                                this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content))
-                            }
-                            adapter.notifyDataSetChanged()
-                            
-                            // 滚动到底部
-                            binding.recyclerView.post {
-                                binding.recyclerView.smoothScrollToPosition(this@AiChatActivity.messages.size - 1)
-                            }
-                            
-                            // 关键：成功后重置请求状态和流式位置，按钮变回纸飞机
-                            streamingPosition = -1
-                            setRequestState(false)
-                            
-                            // 保存到历史
-                            currentSession?.let { session ->
-                                val updatedMessages = session.messages.toMutableList()
-                                updatedMessages.add(ChatMessage("human", content))
-                                updatedMessages.add(ChatMessage("ai", result.content))
-                                val updatedSession = session.copy(
-                                    messages = updatedMessages,
-                                    model = currentModel,
-                                    updatedAt = System.currentTimeMillis(),
-                                    completed = true
-                                )
-                                lifecycleScope.launch {
-                                    AiHistoryStore.upsertSession(updatedSession)
-                                }
-                                currentSession = updatedSession
-                            }
-                        }
+                // 关键：先重置流式位置，再更新UI
+                streamingPosition = -1
+                
+                // AI回复完成，更新最后一条消息
+                if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
+                    val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
+                    this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
+                        ChatMessageItem(
+                            "ai", 
+                            result.content,
+                            reasoningContent = existingMsg.reasoningContent,
+                            toolSteps = existingMsg.toolSteps,
+                            isExpanded = true  // 确保默认展开
+                        )
+                } else {
+                    this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content, isExpanded = true))
+                }
+                adapter.notifyDataSetChanged()
+                
+                // 滚动到底部
+                binding.recyclerView.post {
+                    binding.recyclerView.smoothScrollToPosition(this@AiChatActivity.messages.size - 1)
+                }
+                
+                // 重置请求状态，按钮变回纸飞机
+                setRequestState(false)
+                
+                // 保存到历史（用户消息已经在saveDraftSession中添加过了）
+                currentSession?.let { session ->
+                    val updatedMessages = session.messages.toMutableList()
+                    // 移除可能重复添加的AI消息（如果有的话）
+                    if (updatedMessages.isNotEmpty() && updatedMessages.last().type == "ai") {
+                        updatedMessages.removeAt(updatedMessages.size - 1)
+                    }
+                    updatedMessages.add(ChatMessage("ai", result.content))
+                    val updatedSession = session.copy(
+                        messages = updatedMessages,
+                        model = currentModel,
+                        updatedAt = System.currentTimeMillis(),
+                        completed = true
+                    )
+                    lifecycleScope.launch {
+                        AiHistoryStore.upsertSession(updatedSession)
+                    }
+                    currentSession = updatedSession
+                }
+            }
                         is ChatResult.Error -> {
                             io.legado.app.help.ai.AiLogManager.log(
                                 io.legado.app.help.ai.AiLogManager.LogLevel.ERROR,
                                 "AiChat",
                                 "LangChain4j错误: ${result.message}"
                             )
-                            messages[streamingPosition] = ChatMessageItem("ai", "抱歉，处理请求时出错: ${result.message}")
+                            val existingMsg = messages[streamingPosition]
+                            messages[streamingPosition] = ChatMessageItem(
+                                "ai", 
+                                "抱歉，处理请求时出错: ${result.message}",
+                                reasoningContent = existingMsg.reasoningContent,
+                                toolSteps = existingMsg.toolSteps
+                            )
                             adapter.notifyItemChanged(streamingPosition)
                             
                             // 清除流式位置
@@ -1626,38 +1662,38 @@ class ChatAdapter(
         
         // AI 消息使用 Markdown 渲染，用户消息使用纯文本
         if (message.role == "ai") {
-            // AI 消息：先设置约束参数，再渲染 Markdown（防止 Markdown 修改布局）
-            holder.itemView.setBackgroundResource(0)  // 清除背景（防止复用）
-            holder.contentText.background = null  // 清除 contentText 的背景（关键！）
+            // AI 消息：先重置所有视图状态，防止复用问题
+            holder.itemView.setBackgroundResource(0)
+            holder.contentText.background = null
             holder.contentText.setTextColor(textColorPrimary)
+            holder.contentText.maxLines = Int.MAX_VALUE
+            holder.viewGradientMask.visibility = View.GONE
+            holder.btnExpandCollapse.visibility = View.GONE
+            holder.tvCursor.visibility = View.GONE
+            holder.layoutReasoning.visibility = View.GONE
+            holder.layoutToolSteps.visibility = View.GONE
+            holder.layoutAiActions.visibility = View.GONE
+            holder.btnRegenerate.visibility = View.GONE
             
-            // AI 消息：靠左对齐，占满整行
+            // AI 消息：设置固定的约束参数
             val contentParams = holder.contentText.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
             contentParams.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
             contentParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            contentParams.topToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
+            contentParams.topToBottom = R.id.layout_tool_steps
             contentParams.marginStart = 16.dpToPx()
             contentParams.marginEnd = 16.dpToPx()
-            contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT  // 始终占满可用空间
-            contentParams.matchConstraintMinWidth = 0  // 最小宽度为0，允许收缩
+            contentParams.marginTop = 0
+            contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+            contentParams.matchConstraintMinWidth = 0
             holder.contentText.layoutParams = contentParams
             
             // 渲染 Markdown
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
             
-            // 关键：Markdown 渲染后再次设置约束（防止被覆盖）
-            val finalParams = holder.contentText.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            finalParams.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
-            finalParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
-            finalParams.marginStart = 16.dpToPx()
-            finalParams.marginEnd = 16.dpToPx()
-            finalParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
-            holder.contentText.layoutParams = finalParams
-            
-            // 强制请求布局
-            holder.contentText.requestLayout()
-            
             // 流式输出时显示光标动画
-            if (position == isStreamingPosition && message.content.isEmpty()) {
+            val isStreaming = position == isStreamingPosition
+            if (isStreaming && message.content.isEmpty()) {
                 holder.tvCursor.visibility = View.VISIBLE
                 holder.tvCursor.startAnimation(
                     android.view.animation.AnimationUtils.loadAnimation(
@@ -1683,13 +1719,10 @@ class ChatAdapter(
                     holder.ivExpandIndicator.rotation = 0f
                 }
                 
-                // 点击切换推理过程展开/折叠
                 holder.btnToggleReasoning.setOnClickListener {
                     message.isReasoningExpanded = !message.isReasoningExpanded
                     notifyItemChanged(position)
                 }
-            } else {
-                holder.layoutReasoning.visibility = View.GONE
             }
             
             // 显示工具步骤（如果有）
@@ -1714,10 +1747,8 @@ class ChatAdapter(
                     val layoutError = stepView.findViewById<LinearLayout>(R.id.layout_tool_error)
                     val tvError = stepView.findViewById<TextView>(R.id.tv_tool_error)
                     
-                    // 设置工具名称
                     tvName.text = step.name
                     
-                    // 设置图标
                     when (step.status) {
                         ToolStepStatus.PENDING -> {
                             ivIcon.setImageResource(R.drawable.ic_circle_outline)
@@ -1733,10 +1764,8 @@ class ChatAdapter(
                         }
                     }
                     
-                    // 展开/收起状态
                     var isExpanded = step.output != null || step.input != null || step.error != null
                     
-                    // 显示输入参数
                     if (!step.input.isNullOrBlank()) {
                         layoutInput.visibility = View.VISIBLE
                         tvInput.text = step.input
@@ -1744,7 +1773,6 @@ class ChatAdapter(
                         layoutInput.visibility = View.GONE
                     }
                     
-                    // 显示输出结果
                     if (!step.output.isNullOrBlank()) {
                         layoutOutput.visibility = View.VISIBLE
                         tvOutput.text = step.output
@@ -1752,7 +1780,6 @@ class ChatAdapter(
                         layoutOutput.visibility = View.GONE
                     }
                     
-                    // 显示错误信息
                     if (!step.error.isNullOrBlank()) {
                         layoutError.visibility = View.VISIBLE
                         tvError.text = step.error
@@ -1760,7 +1787,6 @@ class ChatAdapter(
                         layoutError.visibility = View.GONE
                     }
                     
-                    // 如果有内容，默认展开
                     if (step.output != null || step.input != null || step.error != null) {
                         layoutContent.visibility = View.VISIBLE
                         ivExpand.rotation = 180f
@@ -1768,7 +1794,6 @@ class ChatAdapter(
                         layoutContent.visibility = View.GONE
                     }
                     
-                    // 点击展开/收起
                     layoutHeader.setOnClickListener {
                         isExpanded = !isExpanded
                         if (isExpanded) {
@@ -1782,74 +1807,68 @@ class ChatAdapter(
                     
                     holder.toolStepsContainer.addView(stepView)
                 }
-            } else {
-                holder.layoutToolSteps.visibility = View.GONE
             }
-            
-            // 隐藏用户消息相关视图
-            holder.btnExpandCollapse.visibility = View.GONE
             
             // 长文本折叠功能（超过 300 字符）
             if (message.content.length > 300) {
                 holder.btnExpandCollapse.visibility = View.VISIBLE
 
                 if (message.isExpanded) {
-                    // 已展开：显示完整内容
                     holder.contentText.maxLines = Int.MAX_VALUE
                     holder.viewGradientMask.visibility = View.GONE
                     holder.btnExpandCollapse.rotation = 180f
                 } else {
-                    // 未展开：只显示前 300 字符 + 遮罩
-                    holder.contentText.maxLines = 10 // 约 300 字符
+                    holder.contentText.maxLines = 10
                     holder.viewGradientMask.visibility = View.VISIBLE
                     holder.btnExpandCollapse.rotation = 0f
                 }
                 
-                // 点击展开/折叠按钮 - 直接更新 UI，不重新绑定
                 holder.btnExpandCollapse.setOnClickListener {
                     message.isExpanded = !message.isExpanded
-                    // 直接切换状态，不调用 notifyItemChanged（避免重新布局导致边距异常）
-                    if (message.isExpanded) {
-                        holder.contentText.maxLines = Int.MAX_VALUE
-                        holder.viewGradientMask.visibility = View.GONE
-                        holder.btnExpandCollapse.rotation = 180f
-                    } else {
-                        holder.contentText.maxLines = 10
-                        holder.viewGradientMask.visibility = View.VISIBLE
-                        holder.btnExpandCollapse.rotation = 0f
-                    }
+                    // 关键：调用 notifyItemChanged 强制重新绑定数据，防止 RecyclerView 复用导致的布局污染
+                    notifyItemChanged(position)
                 }
-            } else {
-                // 短文本：不需要折叠
-                holder.contentText.maxLines = Int.MAX_VALUE
-                holder.viewGradientMask.visibility = View.GONE
-                holder.btnExpandCollapse.visibility = View.GONE
             }
             
-            val isStreaming = position == isStreamingPosition
+            // 显示操作按钮（流式输出时隐藏）
             holder.layoutAiActions.visibility = if (isStreaming) View.GONE else View.VISIBLE
+            
+            // 复制按钮：所有AI消息都显示
+            holder.btnCopy.visibility = if (isStreaming) View.GONE else View.VISIBLE
+            
+            // 展开/折叠按钮：只在长文本时显示
+            if (message.content.length <= 300) {
+                holder.btnExpandCollapse.visibility = View.GONE
+            }
             
             // 只有最后一条 AI 消息显示“重新生成”按钮
             val isLastAiMessage = position == messages.lastIndex &&
                                   messages.indexOfLast { it.role == "ai" } == position
             holder.btnRegenerate.visibility = if (isLastAiMessage && !isStreaming) View.VISIBLE else View.GONE
             
-            // 复制按钮点击事件
             holder.btnCopy.setOnClickListener {
                 onCopyClick?.invoke(message.content)
             }
             
-            // 重新生成按钮点击事件
             holder.btnRegenerate.setOnClickListener {
                 onRegenerateClick?.invoke()
             }
             
         } else {
-            // 用户消息：右对齐，带气泡背景
-            holder.contentText.text = message.content
+            // 用户消息：先重置所有视图状态，防止复用问题
+            holder.itemView.setBackgroundResource(0)
+            holder.contentText.maxLines = Int.MAX_VALUE
+            holder.viewGradientMask.visibility = View.GONE
+            holder.btnExpandCollapse.visibility = View.GONE
             holder.tvCursor.visibility = View.GONE
             holder.layoutReasoning.visibility = View.GONE
             holder.layoutToolSteps.visibility = View.GONE
+            holder.layoutAiActions.visibility = View.GONE
+            holder.btnRegenerate.visibility = View.GONE
+            holder.btnCopy.visibility = View.GONE
+            
+            // 用户消息：设置内容和样式
+            holder.contentText.text = message.content
             
             // 使用主题强调色作为气泡背景（半透明）
             val accentColor = ThemeStore.accentColor(context)
@@ -1868,7 +1887,6 @@ class ChatAdapter(
             gradientDrawable.cornerRadius = 16f.dpToPx().toFloat()
             gradientDrawable.setColor(semiTransparentAccent)
             holder.contentText.background = gradientDrawable  // 关键：背景设置在 contentText 上
-            holder.itemView.setBackgroundResource(0)  // 清除 itemView 的背景
             
             // 文字颜色为白色（在强调色背景上）
             holder.contentText.setTextColor(android.graphics.Color.WHITE)
@@ -1876,11 +1894,15 @@ class ChatAdapter(
             // 设置内边距 - 文字距离气泡边缘的距离
             holder.contentText.setPadding(12.dpToPx(), 8.dpToPx(), 12.dpToPx(), 8.dpToPx())
             
-            // 用户消息：靠右对齐
+            // 用户消息：靠右对齐，重置所有约束参数
             val contentParams = holder.contentText.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            contentParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
             contentParams.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
+            contentParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            contentParams.topToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
+            contentParams.topToBottom = R.id.layout_tool_steps
+            contentParams.marginStart = 0
             contentParams.marginEnd = 16.dpToPx()
+            contentParams.marginTop = 0
             
             // 限制最大宽度为 85% - 参考 ReadAny: max-w-[85%]
             val displayMetrics = context.resources.displayMetrics
@@ -1889,11 +1911,6 @@ class ChatAdapter(
             contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
             
             holder.contentText.layoutParams = contentParams
-            
-            // 隐藏 AI 相关视图
-            holder.btnExpandCollapse.visibility = View.GONE
-            holder.layoutAiActions.visibility = View.GONE
-            holder.viewGradientMask.visibility = View.GONE
         }
 
         holder.itemView.setOnLongClickListener {
@@ -1913,6 +1930,6 @@ data class ChatMessageItem(
     val content: String,
     val reasoningContent: String = "",  // 推理过程内容
     val toolSteps: List<ToolStep> = emptyList(),  // 工具步骤列表
-    var isExpanded: Boolean = false,  // 长文本是否展开
+    var isExpanded: Boolean = true,  // 长文本是否展开（默认展开）
     var isReasoningExpanded: Boolean = false  // 推理过程是否展开
 )

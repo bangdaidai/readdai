@@ -1,0 +1,79 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '**/ISSUE_TEMPLATE/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '**/ISSUE_TEMPLATE/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ steps.set-ver.outputs.version }}
+    steps:
+      - id: set-ver
+        run: |
+          echo "version=$(date -d "8 hour" -u +3.%y.%m%d%H)" >> $GITHUB_OUTPUT
+
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Configure Signing
+        run: |
+          if [ -n "${{ secrets.RELEASE_KEY_STORE }}" ]; then
+            echo -e "\n" >> gradle.properties
+            echo RELEASE_KEY_ALIAS='${{ secrets.RELEASE_KEY_ALIAS }}' >> gradle.properties
+            echo RELEASE_KEY_PASSWORD='${{ secrets.RELEASE_KEY_PASSWORD }}' >> gradle.properties
+            echo RELEASE_STORE_PASSWORD='${{ secrets.RELEASE_STORE_PASSWORD }}' >> gradle.properties
+            echo RELEASE_STORE_FILE='./key.jks' >> gradle.properties
+            echo ${{ secrets.RELEASE_KEY_STORE }} | base64 --decode > $GITHUB_WORKSPACE/app/key.jks
+          else
+            echo "⚠️ No signing key provided, will use debug signing"
+          fi
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Build with Gradle
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleAppRelease --build-cache --parallel --daemon
+
+      - name: Organize Build Outputs
+        run: |
+          mkdir -p ${{ github.workspace }}/apk/
+          cp -rf ${{ github.workspace }}/app/build/outputs/apk/*/*/*.apk ${{ github.workspace }}/apk/
+          mkdir -p ${{ github.workspace }}/mapping/
+          cp -rf ${{ github.workspace }}/app/build/outputs/mapping/*/mapping.txt ${{ github.workspace }}/mapping/ 2>/dev/null || true
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: legado_apk
+          path: ${{ github.workspace }}/apk/*.apk
+
+      - name: Upload Mapping File
+        uses: actions/upload-artifact@v6
+        with:
+          name: legado_mapping
+          if-no-files-found: ignore
+          path: ${{ github.workspace }}/mapping/mapping.txt
