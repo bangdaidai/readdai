@@ -1,33 +1,12 @@
 name: Build APK
-
 on:
-  push:
-    branches:
-      - main
-    paths-ignore:
-      - '**.md'
-      - '**/ISSUE_TEMPLATE/**'
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**/ISSUE_TEMPLATE/**'
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - id: set-ver
-        run: |
-          echo "version=$(date -d "8 hour" -u +3.%y.%m%d%H)" >> $GITHUB_OUTPUT
-
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -35,30 +14,13 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
-
-      - name: Build Release APK
+      - name: Build Release
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease --build-cache --parallel --daemon
+          ./gradlew assembleRelease
 
-      - name: Organize Build Outputs
-        run: |
-          mkdir -p ${{ github.workspace }}/apk/
-          cp -rf ${{ github.workspace }}/app/build/outputs/apk/release/*.apk ${{ github.workspace }}/apk/
-          mkdir -p ${{ github.workspace }}/mapping/
-          cp -rf ${{ github.workspace }}/app/build/outputs/mapping/release/mapping.txt ${{ github.workspace }}/mapping/ 2>/dev/null || true
-
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v6
         with:
           name: legado_apk
-          path: ${{ github.workspace }}/apk/*.apk
-
-      - name: Upload Mapping File
-        uses: actions/upload-artifact@v6
-        with:
-          name: legado_mapping
-          if-no-files-found: ignore
-          path: ${{ github.workspace }}/mapping/mapping.txt
+          path: app/build/outputs/apk/release/
