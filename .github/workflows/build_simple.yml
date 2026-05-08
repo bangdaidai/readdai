@@ -1,0 +1,40 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: 8.14.4
+
+      - name: Grant execute permission
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle
+        run: |
+          ./gradlew assembleAppDebug --no-daemon --warning-mode all 2>&1 | tail -50
+
+      - name: Check APK output
+        run: |
+          echo "=== APK Files ==="
+          find app/build/outputs -name "*.apk" -type f 2>/dev/null || echo "No APK found"
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v6
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/app/debug/*.apk
+          retention-days: 1
