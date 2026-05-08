@@ -34,13 +34,9 @@ env:
 
 jobs:
   build-debug:
-    name: Debug Build (${{ matrix.product }})
+    name: Debug Build
     runs-on: ubuntu-latest
     if: github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'debug'
-    strategy:
-      matrix:
-        product: [app, google]
-      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -64,36 +60,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      - name: Cache build outputs
-        uses: actions/cache@v4
-        with:
-          path: |
-            app/build
-            .gradle
-          key: ${{ runner.os }}-build-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-
       - name: Build Debug APK
         run: |
           chmod +x gradlew
-          ./gradlew assemble${{ matrix.product }}Debug --build-cache --parallel --daemon
+          ./gradlew assembleAppDebug --build-cache --parallel --daemon
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v6
         with:
-          name: legado_debug_${{ matrix.product }}
-          path: app/build/outputs/apk/${{ matrix.product }}/debug/*.apk
+          name: legado_debug_app
+          path: app/build/outputs/apk/app/debug/*.apk
           retention-days: 7
 
   build-release:
-    name: Release Build (${{ matrix.product }})
+    name: Release Build
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release'
-    strategy:
-      matrix:
-        product: [app, google]
-      fail-fast: false
     environment:
       name: release
     steps:
@@ -137,7 +119,7 @@ jobs:
       - name: Build Release APK
         run: |
           chmod +x gradlew
-          ./gradlew assemble${{ matrix.product }}Release --build-cache --parallel --daemon
+          ./gradlew assembleAppRelease --build-cache --parallel --daemon
 
       - name: Organize Files
         run: |
@@ -147,12 +129,11 @@ jobs:
       - name: Upload Release APK
         uses: actions/upload-artifact@v6
         with:
-          name: legado_release_${{ matrix.product }}
+          name: legado_release_app
           path: ${{ github.workspace }}/apk/*.apk
           retention-days: 30
 
       - name: Create GitHub Release
-        if: matrix.product == 'app'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.run_number }}
