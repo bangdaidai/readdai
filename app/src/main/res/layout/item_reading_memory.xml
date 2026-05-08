@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    android:scrollbars="none"
+    tools:ignore="UnusedAttribute">
+
+    <!-- 顶部占位：给卡片上下外扩留空间 -->
+    <Space
+        android:id="@+id/space_top"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <!-- 卡片背景：左右固定16dp，上下外扩8dp -->
+    <View
+        android:id="@+id/card_bg"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:background="@drawable/bg_card_rounded"
+        android:layout_marginTop="-8dp"
+        android:layout_marginBottom="-8dp"
+        app:layout_constraintTop_toTopOf="@id/layout_content"
+        app:layout_constraintBottom_toBottomOf="@id/layout_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <!-- 内容容器：所有封面、文字放这里 -->
+    <LinearLayout
+        android:id="@+id/layout_content"
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:background="?android:attr/selectableItemBackground"
+        app:layout_constraintTop_toBottomOf="@id/space_top"
+        app:layout_constraintBottom_toTopOf="@id/space_bottom"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <io.legado.app.ui.widget.image.CoverImageView
+                android:id="@+id/coverView"
+                android:layout_width="46dp"
+                android:layout_height="61dp"
+                android:layout_marginEnd="12dp"
+                android:scaleType="centerCrop"
+                android:background="@drawable/shape_bg_cover"
+                android:clipToOutline="true"
+                android:contentDescription="@string/cover"
+                tools:src="@drawable/ic_image_default" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="top">
+
+                <io.legado.app.ui.widget.text.PrimaryTextView
+                    android:id="@+id/titleView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="0dp"
+                    android:layout_marginBottom="2dp"
+                    tools:text="书名示例" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="1dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <io.legado.app.ui.widget.text.SecondaryTextView
+                        android:id="@+id/authorView"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="0dp"
+                        tools:text="作者示例" />
+
+                    <io.legado.app.ui.widget.RatingView
+                        android:id="@+id/ratingView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        app:starCount="5"
+                        app:starSize="16dp"
+                        app:clickableView="false"
+                        app:useYellowStars="true" />
+
+                </LinearLayout>
+
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/tagContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:maxLines="1"
+                    app:flexWrap="nowrap"
+                    app:justifyContent="flex_start"
+                    app:alignItems="center">
+
+                    <io.legado.app.ui.widget.text.SecondaryTextView
+                        android:id="@+id/statusTagView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="3dp"
+                        android:paddingTop="0dp"
+                        android:paddingEnd="3dp"
+                        android:paddingBottom="1dp"
+                        android:background="@drawable/bg_tag_rounded"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        tools:text="在读" />
+
+                </com.google.android.flexbox.FlexboxLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 简介区域 -->
+        <LinearLayout
+            android:id="@+id/layout_intro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="6dp"
+            android:visibility="gone">
+
+            <!-- 简介内容 -->
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:id="@+id/introView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                tools:text="这是书籍简介内容示例..." />
+
+        </LinearLayout>
+
+        <!-- 书评区域 -->
+        <LinearLayout
+            android:id="@+id/layout_review"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="6dp"
+            android:visibility="gone">
+
+            <!-- 虚线分隔 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layerType="software"
+                android:background="@drawable/dashed_line" />
+
+            <!-- 书评内容 -->
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:id="@+id/reviewView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textSize="12sp"
+                android:lineSpacingExtra="4dp"
+                tools:text="这是书评内容示例..." />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- 底部占位：和顶部一样8dp -->
+    <Space
+        android:id="@+id/space_bottom"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

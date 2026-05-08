@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/tool_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_menu"
+        android:elevation="5dp"
+        android:theme="?attr/actionBarStyle"
+        app:displayHomeAsUp="false"
+        app:fitStatusBar="false"
+        app:popupTheme="@style/AppTheme.PopupOverlay"
+        app:title="@string/group_edit"
+        app:titleTextAppearance="@style/ToolbarTitle" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:layout_marginTop="8dp">
+
+        <io.legado.app.ui.widget.image.CoverImageView
+            android:id="@+id/iv_cover"
+            android:layout_width="100dp"
+            android:layout_height="140dp"
+            android:layout_margin="6dp"
+            android:contentDescription="@string/img_cover"
+            android:scaleType="centerCrop"
+            android:src="@drawable/image_cover_default"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="ImageContrastCheck" />
+
+        <!-- 右侧容器 -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:orientation="vertical"
+            android:weightSum="4"
+            app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
+            app:layout_constraintLeft_toRightOf="@+id/iv_cover"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/iv_cover">
+
+            <!-- 分组名称 -->
+            <io.legado.app.ui.widget.text.TextInputLayout
+                android:id="@+id/til_group_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/group_name"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:boxCollapsedPaddingTop="0dp">
+
+                <io.legado.app.lib.theme.view.ThemeEditText
+                    android:id="@+id/tie_group_name"
+                    android:layout_width="match_parent"
+                    android:layout_height="42dp"
+                    android:maxLines="2"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="2dp"
+                    android:gravity="bottom"
+                    android:includeFontPadding="false"
+                    tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
+            </io.legado.app.ui.widget.text.TextInputLayout>
+
+            <!-- 排序 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="2dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="4dp">
+
+                <io.legado.app.ui.widget.text.AccentTextView
+                    android:id="@+id/tv_sort"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="3dp"
+                    android:text="@string/sort"
+                    android:textColor="@color/primaryText" />
+
+                <androidx.appcompat.widget.AppCompatSpinner
+                    android:id="@+id/sp_sort"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="6dp"
+                    android:entries="@array/book_sort"
+                    android:theme="@style/SpinnerWithSmallText"
+                    tools:ignore="RtlHardcoded" />
+            </LinearLayout>
+
+            <!-- 允许下拉刷新 -->
+
+            <!-- 仅更新已读完 -->
+            <io.legado.app.lib.theme.view.ThemeCheckBox
+                android:id="@+id/cb_enable_refresh"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:layout_marginTop="2dp"
+                android:checked="true"
+                android:text="@string/allow_drop_down_refresh" />
+
+            <io.legado.app.lib.theme.view.ThemeCheckBox
+                android:id="@+id/cb_enable_only_read"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:layout_marginTop="6dp"
+                android:paddingBottom="0dp"
+                android:text="@string/only_update_read"
+                android:checked="false" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <io.legado.app.ui.widget.text.AccentTextView
+            android:id="@+id/btn_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:padding="6dp"
+            android:text="@string/delete"
+            tools:ignore="RtlHardcoded" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <io.legado.app.ui.widget.text.AccentTextView
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:padding="6dp"
+            android:text="@string/cancel" />
+
+        <io.legado.app.ui.widget.text.AccentTextView
+            android:id="@+id/btn_ok"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="12dp"
+            android:padding="6dp"
+            android:text="@string/ok"
+            tools:ignore="RtlHardcoded" />
+
+    </LinearLayout>
+</LinearLayout>

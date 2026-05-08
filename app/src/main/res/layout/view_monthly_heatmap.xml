@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="0dp">
+
+    <!-- 星期标题：周一至周日 -->
+    <LinearLayout
+        android:id="@+id/weekdaysLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="一"
+            android:textSize="12sp"
+            android:textColor="@color/secondaryText"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="二"
+            android:textSize="12sp"
+            android:textColor="@color/secondaryText"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="三"
+            android:textSize="12sp"
+            android:textColor="@color/secondaryText"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="四"
+            android:textSize="12sp"
+            android:textColor="@color/secondaryText"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="五"
+            android:textSize="12sp"
+            android:textColor="@color/secondaryText"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="六"
+            android:textSize="12sp"
+            android:textColor="@color/secondaryText"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="日"
+            android:textSize="12sp"
+            android:textColor="@color/secondaryText"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!-- 日历网格：6行×7列 = 42格，正方形 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/heatmap_monthly_grid_height"
+        android:layout_marginTop="@dimen/heatmap_monthly_grid_margin_top"
+        app:layout_constraintTop_toBottomOf="@id/weekdaysLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintWidth_percent="1.0"
+        tools:listitem="@layout/item_heatmap_day"
+        tools:itemCount="42"
+        tools:spanCount="7"
+        tools:layoutManager="androidx.recyclerview.widget.GridLayoutManager" />
+
+    <!-- 图例 -->
+    <LinearLayout
+        android:id="@+id/legendLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/heatmap_monthly_legend_margin_top"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/recyclerView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="少"
+            android:textSize="@dimen/heatmap_legend_size"
+            android:textColor="@color/secondaryText"
+            android:layout_gravity="center_vertical" />
+
+        <View
+            android:id="@+id/legendBox0"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="8dp"
+            android:layout_gravity="center_vertical" />
+
+        <View
+            android:id="@+id/legendBox1"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing"
+            android:layout_gravity="center_vertical" />
+
+        <View
+            android:id="@+id/legendBox2"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing"
+            android:layout_gravity="center_vertical" />
+
+        <View
+            android:id="@+id/legendBox3"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing"
+            android:layout_gravity="center_vertical" />
+
+        <View
+            android:id="@+id/legendBox4"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing"
+            android:layout_gravity="center_vertical" />
+
+        <View
+            android:id="@+id/legendBox5"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing"
+            android:layout_gravity="center_vertical" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="多"
+            android:layout_marginStart="8dp"
+            android:textSize="@dimen/heatmap_legend_size"
+            android:textColor="@color/secondaryText"
+            android:layout_gravity="center_vertical" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

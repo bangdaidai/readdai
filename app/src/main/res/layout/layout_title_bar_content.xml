@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="0dp"
+    android:paddingEnd="0dp">
+
+    <io.legado.app.ui.widget.SearchView
+        android:id="@+id/search_view"
+        android:layout_width="0dp"
+        android:layout_height="30dp"
+        android:layout_weight="1"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginEnd="0dp"
+        android:theme="?attr/actionBarStyle"
+        android:background="@drawable/bg_searchview"
+        android:imeOptions="actionSearch"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        app:searchIcon="@null"
+        app:queryBackground="@null"
+        app:submitBackground="@null"
+        app:searchHintIcon="@drawable/ic_search_hint"
+        app:iconifiedByDefault="false"
+        app:defaultQueryHint="搜索" />
+
+    <!-- 时间轴按钮 -->
+    <LinearLayout
+        android:id="@+id/btnTimeline"
+        android:layout_width="24dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iconTimeline"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_history" />
+
+    </LinearLayout>
+
+    <!-- 分组按钮 -->
+    <LinearLayout
+        android:id="@+id/btnGroup"
+        android:layout_width="24dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iconGroup"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_folder" />
+
+    </LinearLayout>
+
+    <!-- 评分按钮 -->
+    <LinearLayout
+        android:id="@+id/btnRating"
+        android:layout_width="24dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iconRating"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_star" />
+
+    </LinearLayout>
+
+    <!-- 阅读类型按钮 -->
+    <LinearLayout
+        android:id="@+id/btnReadType"
+        android:layout_width="24dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="0dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/iconReadType"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_sort" />
+
+    </LinearLayout>
+
+</LinearLayout>

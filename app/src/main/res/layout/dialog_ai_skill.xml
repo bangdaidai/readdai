@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+    <!-- 名称输入框 -->
+    <io.legado.app.ui.widget.text.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <io.legado.app.lib.theme.view.ThemeEditText
+            android:id="@+id/et_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="技能名称"
+            android:inputType="text"
+            android:maxLines="1" />
+
+    </io.legado.app.ui.widget.text.TextInputLayout>
+
+    <!-- 描述输入框 -->
+    <io.legado.app.ui.widget.text.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp">
+
+        <io.legado.app.lib.theme.view.ThemeEditText
+            android:id="@+id/et_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="技能描述（简要说明）"
+            android:inputType="text"
+            android:maxLines="2" />
+
+    </io.legado.app.ui.widget.text.TextInputLayout>
+
+    <!-- 触发词输入框 -->
+    <io.legado.app.ui.widget.text.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp">
+
+        <io.legado.app.lib.theme.view.ThemeEditText
+            android:id="@+id/et_trigger_word"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="触发词（用户输入的关键词）"
+            android:inputType="text"
+            android:maxLines="1" />
+
+    </io.legado.app.ui.widget.text.TextInputLayout>
+
+    <!-- 指令输入框 -->
+    <io.legado.app.ui.widget.text.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp">
+
+        <io.legado.app.lib.theme.view.ThemeEditText
+            android:id="@+id/et_instruction"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="详细指令（系统提示词模板）"
+            android:inputType="textMultiLine|textCapSentences"
+            android:maxLines="10"
+            android:gravity="top|start"
+            android:scrollbars="vertical" />
+
+    </io.legado.app.ui.widget.text.TextInputLayout>
+
+    <!-- 变量提示 -->
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="可用变量：{{bookName}}书名、{{bookAuthor}}作者、{{bookIntro}}简介、{{currentChapter}}当前章节号、{{chapterTitle}}章节标题、{{chapterContent}}章节内容、{{content}}内容、{{currentContent}}当前内容、{{selectedText}}选中文字、{{concept}}概念、{{contextText}}上下文、{{previousContent}}前情内容、{{question}}问题"
+        android:textSize="11sp"
+        android:layout_marginTop="8dp" />
+
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <io.legado.app.ui.widget.text.AccentTextView
+            android:id="@+id/btn_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:text="@string/delete"
+            android:textColor="@color/red"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <io.legado.app.ui.widget.text.AccentTextView
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:text="@string/cancel"
+            android:textSize="14sp" />
+
+        <io.legado.app.ui.widget.text.AccentTextView
+            android:id="@+id/btn_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:text="@string/action_save"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

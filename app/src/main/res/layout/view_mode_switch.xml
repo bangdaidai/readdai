@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="36dp"
+    android:orientation="horizontal"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:background="@drawable/bg_reading_filter_container"
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginTop="0dp"
+    android:layout_marginBottom="12dp">
+
+    <!-- 汇总按钮 -->
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:id="@+id/btn_aggregate"
+        android:layout_width="0dp"
+        android:layout_height="28dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="汇总"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:fontFamily="sans-serif-medium"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_reading_tab_selected"
+        android:layout_marginEnd="4dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- 时间线按钮 -->
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:id="@+id/btn_timeline"
+        android:layout_width="0dp"
+        android:layout_height="28dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="时间线"
+        android:textColor="@android:color/black"
+        android:textSize="14sp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_reading_tab_unselected"
+        android:layout_marginEnd="4dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- 最后阅读按钮 -->
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:id="@+id/btn_latest"
+        android:layout_width="0dp"
+        android:layout_height="28dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="最后阅读"
+        android:textColor="@android:color/black"
+        android:textSize="14sp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_reading_tab_unselected"
+        android:clickable="true"
+        android:focusable="true" />
+
+</LinearLayout>

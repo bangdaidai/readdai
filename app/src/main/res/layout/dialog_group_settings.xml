@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/tool_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_menu"
+        android:elevation="5dp"
+        android:theme="?attr/actionBarStyle"
+        app:displayHomeAsUp="false"
+        app:fitStatusBar="false"
+        app:popupTheme="@style/AppTheme.PopupOverlay"
+        app:title="分组方式"
+        app:titleTextAppearance="@style/ToolbarTitle" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+            <!-- 分组选项 -->
+            <RadioGroup
+                android:id="@+id/groupTypeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/radioNone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="不分组"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radioYear"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="按阅读年份"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radioRating"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="按评分等级"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radioStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="按阅读状态" />
+
+            </RadioGroup>
+
+        </LinearLayout>
+
+    </LinearLayout>

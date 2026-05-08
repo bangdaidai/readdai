@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <io.legado.app.ui.widget.TitleBar
+        android:id="@+id/title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:title="书单"
+        app:contentLayout="@layout/layout_title_bar_content"
+        app:contentInsetStartWithNavigation="0dp"
+        app:contentInsetEndWithActions="0dp" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- 阅读状态筛选标签栏 -->
+        <LinearLayout
+            android:id="@+id/filterTabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:background="@drawable/bg_reading_filter_container"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:id="@+id/tabAll"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="全部"
+                android:textColor="@android:color/white"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:background="@drawable/bg_reading_tab_selected"
+                android:layout_marginEnd="4dp"
+                android:singleLine="true" />
+
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:id="@+id/tabPending"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="待看"
+                android:textColor="@android:color/black"
+                android:textSize="13sp"
+                android:paddingStart="0dp"
+                android:paddingEnd="0dp"
+                android:background="@drawable/bg_reading_tab_unselected"
+                android:layout_marginEnd="4dp"
+                android:singleLine="true" />
+
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:id="@+id/tabReading"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="在看"
+                android:textColor="@android:color/black"
+                android:textSize="13sp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:background="@drawable/bg_reading_tab_unselected"
+                android:layout_marginEnd="4dp"
+                android:singleLine="true" />
+
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:id="@+id/tabFinished"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="看完"
+                android:textColor="@android:color/black"
+                android:textSize="13sp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:background="@drawable/bg_reading_tab_unselected"
+                android:layout_marginEnd="4dp"
+                android:singleLine="true" />
+
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:id="@+id/tabAbandoned"
+                android:layout_width="0dp"
+                android:layout_height="28dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="弃"
+                android:textColor="@android:color/black"
+                android:textSize="13sp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:background="@drawable/bg_reading_tab_unselected"
+                android:singleLine="true" />
+
+        </LinearLayout>
+
+
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:clipToPadding="false"
+            android:paddingTop="5dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/filterTabLayout"
+            tools:listitem="@layout/item_reading_memory" />
+
+        <io.legado.app.ui.widget.StatusView
+            android:id="@+id/emptyView"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/filterTabLayout" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/filterTabLayout" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

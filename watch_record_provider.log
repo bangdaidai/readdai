@@ -1,0 +1,371 @@
+2026-04-13 14:11:22.827: ========================================
+2026-04-13 14:11:22.828: !!! PROVIDER ONCREATE CALLED !!!
+2026-04-13 14:11:22.828: Context: io.legado.app.App@694a26b
+2026-04-13 14:11:22.828: Calling PID: 3348
+2026-04-13 14:11:22.828: My PID: 3348
+2026-04-13 14:12:30.128: ========================================
+2026-04-13 14:12:30.134: !!! INSERT CALLED !!!
+2026-04-13 14:12:30.134: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:12:30.134: Calling PID: 31423
+2026-04-13 14:12:30.134: My PID: 3348
+2026-04-13 14:12:30.135: Context is null: false
+2026-04-13 14:12:30.135: URI match result: 0
+2026-04-13 14:12:30.135: Request code: AddWatchRecord
+2026-04-13 14:12:30.135: ContentValues keys: json
+2026-04-13 14:12:30.135: JSON content: {"bookName":"黑袍纠察队 第五季","author":"","bookUrl":"","coverUrl":"","duration":16853,"startTime":1776060733257,"endTime":1776060750111,"episodeTitle":"1"}
+2026-04-13 14:12:30.135: Parsing JSON...
+2026-04-13 14:12:30.135: !!! FAILED TO PROCESS !!!
+2026-04-13 14:12:30.135: Exception type: JsonIOException
+2026-04-13 14:12:30.135: Exception message: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+2026-04-13 14:12:30.136: Stack trace:
+com.google.gson.JsonIOException: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+	at e9.e.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:34)
+	at yg.v.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:3)
+	at yg.u.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at vg.n.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:32)
+	at vg.n.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:15)
+	at vg.n.e(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at io.legado.app.api.WatchRecordProvider.insert(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:254)
+	at android.content.ContentProvider.insert(ContentProvider.java:1947)
+	at android.content.ContentProvider$Transport.insert(ContentProvider.java:452)
+	at android.content.ContentProviderNative.onTransact(ContentProviderNative.java:183)
+	at android.os.Binder.execTransactInternal(Binder.java:1428)
+	at android.os.Binder.execTransact(Binder.java:1372)
+
+2026-04-13 14:12:30.136: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:12:30.136: ========================================
+2026-04-13 14:23:52.923: ========================================
+2026-04-13 14:23:52.924: !!! INSERT CALLED !!!
+2026-04-13 14:23:52.924: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:23:52.924: Calling PID: 31423
+2026-04-13 14:23:52.924: My PID: 3348
+2026-04-13 14:23:52.924: Context is null: false
+2026-04-13 14:23:52.924: URI match result: 0
+2026-04-13 14:23:52.924: Request code: AddWatchRecord
+2026-04-13 14:23:52.925: ContentValues keys: json
+2026-04-13 14:23:52.925: JSON content: {"bookName":"黑袍纠察队 第五季","author":"","bookUrl":"","coverUrl":"","duration":11032,"startTime":1776061421870,"endTime":1776061432903,"episodeTitle":"【黑袍纠察队 第五季】第2集 4K超清中字 未删减"}
+2026-04-13 14:23:52.925: Parsing JSON...
+2026-04-13 14:23:52.930: !!! FAILED TO PROCESS !!!
+2026-04-13 14:23:52.930: Exception type: JsonIOException
+2026-04-13 14:23:52.930: Exception message: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+2026-04-13 14:23:52.930: Stack trace:
+com.google.gson.JsonIOException: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+	at e9.e.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:34)
+	at yg.v.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:3)
+	at yg.u.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at vg.n.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:32)
+	at vg.n.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:15)
+	at vg.n.e(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at io.legado.app.api.WatchRecordProvider.insert(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:254)
+	at android.content.ContentProvider.insert(ContentProvider.java:1947)
+	at android.content.ContentProvider$Transport.insert(ContentProvider.java:452)
+	at android.content.ContentProviderNative.onTransact(ContentProviderNative.java:183)
+	at android.os.Binder.execTransactInternal(Binder.java:1428)
+	at android.os.Binder.execTransact(Binder.java:1372)
+
+2026-04-13 14:23:52.931: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:23:52.931: ========================================
+2026-04-13 14:24:43.911: ========================================
+2026-04-13 14:24:43.911: !!! INSERT CALLED !!!
+2026-04-13 14:24:43.911: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:24:43.911: Calling PID: 31423
+2026-04-13 14:24:43.911: My PID: 3348
+2026-04-13 14:24:43.911: Context is null: false
+2026-04-13 14:24:43.911: URI match result: 0
+2026-04-13 14:24:43.912: Request code: AddWatchRecord
+2026-04-13 14:24:43.912: ContentValues keys: json
+2026-04-13 14:24:43.912: JSON content: {"bookName":"黑袍纠察队 第五季","author":"","bookUrl":"","coverUrl":"","duration":0,"startTime":1776061483900,"endTime":1776061483901,"episodeTitle":"【黑袍纠察队 第五季】第2集 4K超清中字 未删减"}
+2026-04-13 14:24:43.912: Parsing JSON...
+2026-04-13 14:24:43.912: !!! FAILED TO PROCESS !!!
+2026-04-13 14:24:43.912: Exception type: JsonIOException
+2026-04-13 14:24:43.912: Exception message: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+2026-04-13 14:24:43.912: Stack trace:
+com.google.gson.JsonIOException: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+	at e9.e.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:34)
+	at yg.v.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:3)
+	at yg.u.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at vg.n.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:32)
+	at vg.n.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:15)
+	at vg.n.e(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at io.legado.app.api.WatchRecordProvider.insert(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:254)
+	at android.content.ContentProvider.insert(ContentProvider.java:1947)
+	at android.content.ContentProvider$Transport.insert(ContentProvider.java:452)
+	at android.content.ContentProviderNative.onTransact(ContentProviderNative.java:183)
+	at android.os.Binder.execTransactInternal(Binder.java:1428)
+	at android.os.Binder.execTransact(Binder.java:1372)
+
+2026-04-13 14:24:43.913: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:24:43.913: ========================================
+2026-04-13 14:25:01.319: ========================================
+2026-04-13 14:25:01.319: !!! INSERT CALLED !!!
+2026-04-13 14:25:01.319: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:25:01.320: Calling PID: 31423
+2026-04-13 14:25:01.320: My PID: 3348
+2026-04-13 14:25:01.320: Context is null: false
+2026-04-13 14:25:01.320: URI match result: 0
+2026-04-13 14:25:01.320: Request code: AddWatchRecord
+2026-04-13 14:25:01.320: ContentValues keys: json
+2026-04-13 14:25:01.321: JSON content: {"bookName":"黑袍纠察队 第五季","author":"","bookUrl":"","coverUrl":"","duration":27469,"startTime":1776061473843,"endTime":1776061501314,"episodeTitle":"【黑袍纠察队 第五季】第2集 4K超清中字 未删减"}
+2026-04-13 14:25:01.321: Parsing JSON...
+2026-04-13 14:25:01.321: !!! FAILED TO PROCESS !!!
+2026-04-13 14:25:01.321: Exception type: JsonIOException
+2026-04-13 14:25:01.321: Exception message: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+2026-04-13 14:25:01.321: Stack trace:
+com.google.gson.JsonIOException: Abstract classes can't be instantiated! Adjust the R8 configuration or register an InstanceCreator or a TypeAdapter for this type. Class name: vk.d
+See https://github.com/google/gson/blob/main/Troubleshooting.md#r8-abstract-class
+	at e9.e.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:34)
+	at yg.v.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:3)
+	at yg.u.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at vg.n.b(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:32)
+	at vg.n.d(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:15)
+	at vg.n.e(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:14)
+	at io.legado.app.api.WatchRecordProvider.insert(r8-map-id-efeb9979ec0773d18fd0b3e1b451893ca287dc064e57809b1f2cbc14cf8ae343:254)
+	at android.content.ContentProvider.insert(ContentProvider.java:1947)
+	at android.content.ContentProvider$Transport.insert(ContentProvider.java:452)
+	at android.content.ContentProviderNative.onTransact(ContentProviderNative.java:183)
+	at android.os.Binder.execTransactInternal(Binder.java:1428)
+	at android.os.Binder.execTransact(Binder.java:1372)
+
+2026-04-13 14:25:01.321: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 14:25:01.321: ========================================
+2026-04-13 17:37:11.940: ========================================
+2026-04-13 17:37:11.940: !!! PROVIDER ONCREATE CALLED !!!
+2026-04-13 17:37:11.940: Context: io.legado.app.App@87f1c8
+2026-04-13 17:37:11.940: Calling PID: 20411
+2026-04-13 17:37:11.940: My PID: 20411
+2026-04-13 17:37:36.695: ========================================
+2026-04-13 17:37:36.698: !!! INSERT CALLED !!!
+2026-04-13 17:37:36.698: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:37:36.698: Calling PID: 31423
+2026-04-13 17:37:36.699: My PID: 20411
+2026-04-13 17:37:36.699: Context is null: false
+2026-04-13 17:37:36.706: URI match result: 0
+2026-04-13 17:37:36.707: Request code: AddWatchRecord
+2026-04-13 17:37:36.707: ContentValues keys: json
+2026-04-13 17:37:36.707: JSON content: {"bookName":"黑袍纠察队 第五季","author":"","bookUrl":"","coverUrl":"","duration":18775,"startTime":1776073037911,"endTime":1776073056688,"episodeTitle":"【黑袍纠察队 第五季】第1集 4K超清中字 未删减"}
+2026-04-13 17:37:36.707: Parsing JSON with JsonParser...
+2026-04-13 17:37:36.707: Parsed JsonObject successfully
+2026-04-13 17:37:36.707: Extracted fields:
+2026-04-13 17:37:36.707:   bookName: 黑袍纠察队 第五季
+2026-04-13 17:37:36.707:   author: 
+2026-04-13 17:37:36.707:   duration: 18775
+2026-04-13 17:37:36.708:   startTime: 1776073037911
+2026-04-13 17:37:36.708:   endTime: 1776073056688
+2026-04-13 17:37:36.708:   episodeTitle: 【黑袍纠察队 第五季】第1集 4K超清中字 未删减
+2026-04-13 17:37:36.708: Context is available: io.legado.app.App@87f1c8
+2026-04-13 17:37:36.709: Device ID obtained: 79afb9f60444ab23
+2026-04-13 17:37:36.710: Created ReadSession object
+2026-04-13 17:37:36.710:   bookName: 黑袍纠察队 第五季
+2026-04-13 17:37:36.710:   type: 4 (BookType.video = 4)
+2026-04-13 17:37:36.710: Checking appDb...
+2026-04-13 17:37:36.710: appDb instance: io.legado.app.data.AppDatabase_Impl@40af318
+2026-04-13 17:37:36.711: Calling insert in runBlocking...
+2026-04-13 17:37:36.711: Inside runBlocking, calling dao.insert...
+2026-04-13 17:37:36.714: Insert returned ID: 75
+2026-04-13 17:37:36.715: !!! INSERT SUCCESSFUL !!!
+2026-04-13 17:37:36.715: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:37:36.715: ========================================
+2026-04-13 17:40:40.256: ========================================
+2026-04-13 17:40:40.256: !!! INSERT CALLED !!!
+2026-04-13 17:40:40.256: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:40:40.256: Calling PID: 31423
+2026-04-13 17:40:40.256: My PID: 20411
+2026-04-13 17:40:40.256: Context is null: false
+2026-04-13 17:40:40.256: URI match result: 0
+2026-04-13 17:40:40.256: Request code: AddWatchRecord
+2026-04-13 17:40:40.257: ContentValues keys: json
+2026-04-13 17:40:40.257: JSON content: {"bookName":"雨人","author":"","bookUrl":"","coverUrl":"","duration":223381,"startTime":1776073016866,"endTime":1776073240249,"episodeTitle":"雨人"}
+2026-04-13 17:40:40.257: Parsing JSON with JsonParser...
+2026-04-13 17:40:40.257: Parsed JsonObject successfully
+2026-04-13 17:40:40.257: Extracted fields:
+2026-04-13 17:40:40.257:   bookName: 雨人
+2026-04-13 17:40:40.257:   author: 
+2026-04-13 17:40:40.257:   duration: 223381
+2026-04-13 17:40:40.257:   startTime: 1776073016866
+2026-04-13 17:40:40.257:   endTime: 1776073240249
+2026-04-13 17:40:40.257:   episodeTitle: 雨人
+2026-04-13 17:40:40.257: Context is available: io.legado.app.App@87f1c8
+2026-04-13 17:40:40.258: Device ID obtained: 79afb9f60444ab23
+2026-04-13 17:40:40.258: Created ReadSession object
+2026-04-13 17:40:40.259:   bookName: 雨人
+2026-04-13 17:40:40.259:   type: 4 (BookType.video = 4)
+2026-04-13 17:40:40.259: Checking appDb...
+2026-04-13 17:40:40.259: appDb instance: io.legado.app.data.AppDatabase_Impl@40af318
+2026-04-13 17:40:40.260: Calling insert in runBlocking...
+2026-04-13 17:40:40.260: Inside runBlocking, calling dao.insert...
+2026-04-13 17:40:40.269: Insert returned ID: 76
+2026-04-13 17:40:40.270: !!! INSERT SUCCESSFUL !!!
+2026-04-13 17:40:40.270: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:40:40.270: ========================================
+2026-04-13 17:40:47.159: ========================================
+2026-04-13 17:40:47.160: !!! INSERT CALLED !!!
+2026-04-13 17:40:47.160: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:40:47.160: Calling PID: 31423
+2026-04-13 17:40:47.160: My PID: 20411
+2026-04-13 17:40:47.161: Context is null: false
+2026-04-13 17:40:47.161: URI match result: 0
+2026-04-13 17:40:47.161: Request code: AddWatchRecord
+2026-04-13 17:40:47.162: ContentValues keys: json
+2026-04-13 17:40:47.162: JSON content: {"bookName":"雨人","author":"","bookUrl":"","coverUrl":"","duration":223392,"startTime":1776073023760,"endTime":1776073247156,"episodeTitle":"HD中字"}
+2026-04-13 17:40:47.162: Parsing JSON with JsonParser...
+2026-04-13 17:40:47.162: Parsed JsonObject successfully
+2026-04-13 17:40:47.162: Extracted fields:
+2026-04-13 17:40:47.162:   bookName: 雨人
+2026-04-13 17:40:47.162:   author: 
+2026-04-13 17:40:47.162:   duration: 223392
+2026-04-13 17:40:47.162:   startTime: 1776073023760
+2026-04-13 17:40:47.162:   endTime: 1776073247156
+2026-04-13 17:40:47.163:   episodeTitle: HD中字
+2026-04-13 17:40:47.163: Context is available: io.legado.app.App@87f1c8
+2026-04-13 17:40:47.163: Device ID obtained: 79afb9f60444ab23
+2026-04-13 17:40:47.163: Created ReadSession object
+2026-04-13 17:40:47.163:   bookName: 雨人
+2026-04-13 17:40:47.163:   type: 4 (BookType.video = 4)
+2026-04-13 17:40:47.163: Checking appDb...
+2026-04-13 17:40:47.163: appDb instance: io.legado.app.data.AppDatabase_Impl@40af318
+2026-04-13 17:40:47.163: Calling insert in runBlocking...
+2026-04-13 17:40:47.164: Inside runBlocking, calling dao.insert...
+2026-04-13 17:40:47.164: Insert returned ID: 77
+2026-04-13 17:40:47.164: !!! INSERT SUCCESSFUL !!!
+2026-04-13 17:40:47.164: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:40:47.164: ========================================
+2026-04-13 17:41:03.136: ========================================
+2026-04-13 17:41:03.136: !!! INSERT CALLED !!!
+2026-04-13 17:41:03.136: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:41:03.136: Calling PID: 31423
+2026-04-13 17:41:03.136: My PID: 20411
+2026-04-13 17:41:03.136: Context is null: false
+2026-04-13 17:41:03.136: URI match result: 0
+2026-04-13 17:41:03.136: Request code: AddWatchRecord
+2026-04-13 17:41:03.137: ContentValues keys: json
+2026-04-13 17:41:03.137: JSON content: {"bookName":"雨人","author":"","bookUrl":"","coverUrl":"","duration":229390,"startTime":1776073033732,"endTime":1776073263125,"episodeTitle":"HD中字"}
+2026-04-13 17:41:03.137: Parsing JSON with JsonParser...
+2026-04-13 17:41:03.137: Parsed JsonObject successfully
+2026-04-13 17:41:03.137: Extracted fields:
+2026-04-13 17:41:03.137:   bookName: 雨人
+2026-04-13 17:41:03.137:   author: 
+2026-04-13 17:41:03.137:   duration: 229390
+2026-04-13 17:41:03.137:   startTime: 1776073033732
+2026-04-13 17:41:03.137:   endTime: 1776073263125
+2026-04-13 17:41:03.137:   episodeTitle: HD中字
+2026-04-13 17:41:03.138: Context is available: io.legado.app.App@87f1c8
+2026-04-13 17:41:03.138: Device ID obtained: 79afb9f60444ab23
+2026-04-13 17:41:03.138: Created ReadSession object
+2026-04-13 17:41:03.138:   bookName: 雨人
+2026-04-13 17:41:03.138:   type: 4 (BookType.video = 4)
+2026-04-13 17:41:03.138: Checking appDb...
+2026-04-13 17:41:03.138: appDb instance: io.legado.app.data.AppDatabase_Impl@40af318
+2026-04-13 17:41:03.138: Calling insert in runBlocking...
+2026-04-13 17:41:03.139: Inside runBlocking, calling dao.insert...
+2026-04-13 17:41:03.142: Insert returned ID: 78
+2026-04-13 17:41:03.142: !!! INSERT SUCCESSFUL !!!
+2026-04-13 17:41:03.142: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:41:03.143: ========================================
+2026-04-13 17:41:03.508: ========================================
+2026-04-13 17:41:03.509: !!! INSERT CALLED !!!
+2026-04-13 17:41:03.509: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:41:03.509: Calling PID: 31423
+2026-04-13 17:41:03.509: My PID: 20411
+2026-04-13 17:41:03.509: Context is null: false
+2026-04-13 17:41:03.509: URI match result: 0
+2026-04-13 17:41:03.509: Request code: AddWatchRecord
+2026-04-13 17:41:03.509: ContentValues keys: json
+2026-04-13 17:41:03.509: JSON content: {"bookName":"雨人","author":"","bookUrl":"","coverUrl":"","duration":229390,"startTime":1776073034115,"endTime":1776073263507,"episodeTitle":"HD中字"}
+2026-04-13 17:41:03.509: Parsing JSON with JsonParser...
+2026-04-13 17:41:03.510: Parsed JsonObject successfully
+2026-04-13 17:41:03.510: Extracted fields:
+2026-04-13 17:41:03.510:   bookName: 雨人
+2026-04-13 17:41:03.510:   author: 
+2026-04-13 17:41:03.510:   duration: 229390
+2026-04-13 17:41:03.510:   startTime: 1776073034115
+2026-04-13 17:41:03.510:   endTime: 1776073263507
+2026-04-13 17:41:03.510:   episodeTitle: HD中字
+2026-04-13 17:41:03.510: Context is available: io.legado.app.App@87f1c8
+2026-04-13 17:41:03.510: Device ID obtained: 79afb9f60444ab23
+2026-04-13 17:41:03.510: Created ReadSession object
+2026-04-13 17:41:03.510:   bookName: 雨人
+2026-04-13 17:41:03.510:   type: 4 (BookType.video = 4)
+2026-04-13 17:41:03.511: Checking appDb...
+2026-04-13 17:41:03.511: appDb instance: io.legado.app.data.AppDatabase_Impl@40af318
+2026-04-13 17:41:03.511: Calling insert in runBlocking...
+2026-04-13 17:41:03.511: Inside runBlocking, calling dao.insert...
+2026-04-13 17:41:03.512: Insert returned ID: 79
+2026-04-13 17:41:03.512: !!! INSERT SUCCESSFUL !!!
+2026-04-13 17:41:03.512: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:41:03.512: ========================================
+2026-04-13 17:41:17.800: ========================================
+2026-04-13 17:41:17.801: !!! INSERT CALLED !!!
+2026-04-13 17:41:17.801: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:41:17.801: Calling PID: 31423
+2026-04-13 17:41:17.801: My PID: 20411
+2026-04-13 17:41:17.801: Context is null: false
+2026-04-13 17:41:17.801: URI match result: 0
+2026-04-13 17:41:17.801: Request code: AddWatchRecord
+2026-04-13 17:41:17.801: ContentValues keys: json
+2026-04-13 17:41:17.801: JSON content: {"bookName":"雨人","author":"","bookUrl":"","coverUrl":"","duration":229390,"startTime":1776073048403,"endTime":1776073277794,"episodeTitle":"HD中字"}
+2026-04-13 17:41:17.801: Parsing JSON with JsonParser...
+2026-04-13 17:41:17.802: Parsed JsonObject successfully
+2026-04-13 17:41:17.802: Extracted fields:
+2026-04-13 17:41:17.802:   bookName: 雨人
+2026-04-13 17:41:17.802:   author: 
+2026-04-13 17:41:17.802:   duration: 229390
+2026-04-13 17:41:17.802:   startTime: 1776073048403
+2026-04-13 17:41:17.802:   endTime: 1776073277794
+2026-04-13 17:41:17.802:   episodeTitle: HD中字
+2026-04-13 17:41:17.802: Context is available: io.legado.app.App@87f1c8
+2026-04-13 17:41:17.802: Device ID obtained: 79afb9f60444ab23
+2026-04-13 17:41:17.802: Created ReadSession object
+2026-04-13 17:41:17.803:   bookName: 雨人
+2026-04-13 17:41:17.803:   type: 4 (BookType.video = 4)
+2026-04-13 17:41:17.803: Checking appDb...
+2026-04-13 17:41:17.803: appDb instance: io.legado.app.data.AppDatabase_Impl@40af318
+2026-04-13 17:41:17.803: Calling insert in runBlocking...
+2026-04-13 17:41:17.803: Inside runBlocking, calling dao.insert...
+2026-04-13 17:41:17.804: Insert returned ID: 80
+2026-04-13 17:41:17.804: !!! INSERT SUCCESSFUL !!!
+2026-04-13 17:41:17.804: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 17:41:17.804: ========================================
+2026-04-13 18:00:30.602: ========================================
+2026-04-13 18:00:30.603: !!! PROVIDER ONCREATE CALLED !!!
+2026-04-13 18:00:30.603: Context: io.legado.app.App@f53cb0
+2026-04-13 18:00:30.603: Calling PID: 27392
+2026-04-13 18:00:30.603: My PID: 27392
+2026-04-13 18:00:30.606: ========================================
+2026-04-13 18:00:30.606: !!! INSERT CALLED !!!
+2026-04-13 18:00:30.606: URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 18:00:30.606: Calling PID: 31423
+2026-04-13 18:00:30.606: My PID: 27392
+2026-04-13 18:00:30.606: Context is null: false
+2026-04-13 18:00:30.606: URI match result: 0
+2026-04-13 18:00:30.607: Request code: AddWatchRecord
+2026-04-13 18:00:30.607: ContentValues keys: json
+2026-04-13 18:00:30.607: JSON content: {"bookName":"真相捕捉 第三季","author":"","bookUrl":"","coverUrl":"","duration":21441,"startTime":1776074409106,"endTime":1776074430548,"episodeTitle":"真相捕捉 第三季 第6集 【9分神剧回归！直播造假太敢拍】"}
+2026-04-13 18:00:30.607: Parsing JSON with JsonParser...
+2026-04-13 18:00:30.607: Parsed JsonObject successfully
+2026-04-13 18:00:30.607: Extracted fields:
+2026-04-13 18:00:30.607:   bookName: 真相捕捉 第三季
+2026-04-13 18:00:30.607:   author: 
+2026-04-13 18:00:30.607:   duration: 21441
+2026-04-13 18:00:30.607:   startTime: 1776074409106
+2026-04-13 18:00:30.607:   endTime: 1776074430548
+2026-04-13 18:00:30.607:   episodeTitle: 真相捕捉 第三季 第6集 【9分神剧回归！直播造假太敢拍】
+2026-04-13 18:00:30.607: Context is available: io.legado.app.App@f53cb0
+2026-04-13 18:00:30.608: Device ID obtained: 79afb9f60444ab23
+2026-04-13 18:00:30.608: Created ReadSession object
+2026-04-13 18:00:30.608:   bookName: 真相捕捉 第三季
+2026-04-13 18:00:30.608:   type: 4 (BookType.video = 4)
+2026-04-13 18:00:30.608: Checking appDb...
+2026-04-13 18:00:30.610: appDb instance: io.legado.app.data.AppDatabase_Impl@9bacb94
+2026-04-13 18:00:30.610: Calling insert in runBlocking...
+2026-04-13 18:00:30.610: Inside runBlocking, calling dao.insert...
+2026-04-13 18:00:30.633: Insert returned ID: 81
+2026-04-13 18:00:30.633: !!! INSERT SUCCESSFUL !!!
+2026-04-13 18:00:30.633: Returning URI: content://io.legado.app.watchRecordProvider/watchRecord/add
+2026-04-13 18:00:30.633: ========================================

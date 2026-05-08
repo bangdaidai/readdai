@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tv_chapter_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="8dp"
+        android:textColor="@color/primaryText"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="章节名称" />
+
+    <TextView
+        android:id="@+id/tv_book_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="8dp"
+        android:textColor="@color/primaryText"
+        android:textSize="14sp"
+        android:background="@color/background"
+        android:padding="12dp"
+        tools:text="原文内容" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="4dp"
+        android:paddingTop="8dp"
+        android:text="@string/note"
+        android:textColor="@color/primaryText"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <io.legado.app.lib.theme.view.ThemeTextView
+        android:id="@+id/annotation_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background"
+        android:padding="12dp"
+        android:textColor="@color/primaryText"
+        android:textSize="14sp"
+        tools:text="笔记内容" />
+
+</LinearLayout>

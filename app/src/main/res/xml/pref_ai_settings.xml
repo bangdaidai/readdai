@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- 服务商管理 - 点击弹出对话框列表 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_provider_manager"
+        android:title="服务商管理"
+        android:summary="添加、编辑、删除AI服务商"
+        app:iconSpaceReserved="false" />
+
+    <!-- 提示词管理 - 点击弹出对话框列表 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_prompt_manager"
+        android:title="提示词管理"
+        android:summary="添加、编辑提示词模板"
+        app:iconSpaceReserved="false" />
+
+    <!-- 技能管理 - 点击弹出对话框列表 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_skill_manager"
+        android:title="技能管理"
+        android:summary="添加、编辑、删除AI技能"
+        app:iconSpaceReserved="false" />
+
+    <!-- AI助手配置 - 点击弹出配置对话框 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_assistant_config"
+        android:title="AI助手配置"
+        android:summary="自定义空状态和快捷操作栏"
+        app:iconSpaceReserved="false" />
+
+    <!-- 聊天显示模式 - ListPreference自带对话框 -->
+    <io.legado.app.lib.prefs.ListPreference
+        android:key="aiChatDisplayMode"
+        android:title="聊天显示模式"
+        android:entries="@array/ai_display_modes"
+        android:entryValues="@array/ai_display_mode_values"
+        android:defaultValue="adaptive"
+        app:iconSpaceReserved="false" />
+
+    <!-- 面板位置 - ListPreference自带对话框 -->
+    <io.legado.app.lib.prefs.ListPreference
+        android:key="aiPanelPosition"
+        android:title="面板位置"
+        android:entries="@array/ai_panel_positions"
+        android:entryValues="@array/ai_panel_position_values"
+        android:defaultValue="bottom"
+        app:iconSpaceReserved="false" />
+
+    <!-- 前情提要 - SwitchPreference自带开关 -->
+    <io.legado.app.lib.prefs.SwitchPreference
+        android:key="aiAutoSummaryPreviousContent"
+        android:title="前情提要"
+        android:summary="打开书籍时显示AI生成的前情摘要"
+        android:defaultValue="false"
+        app:iconSpaceReserved="false" />
+
+    <!-- 流式输出 - SwitchPreference自带开关 -->
+    <io.legado.app.lib.prefs.SwitchPreference
+        android:key="aiStreamMode"
+        android:title="流式输出"
+        android:summary="关闭后AI会一次性返回完整回答（更稳定）"
+        android:defaultValue="true"
+        app:iconSpaceReserved="false" />
+
+    <!-- 工具配置 - 点击弹出多选对话框 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_tool_settings"
+        android:title="工具配置"
+        android:summary="配置AI功能工具开关"
+        app:iconSpaceReserved="false" />
+
+    <!-- 向量模型 - 点击弹出配置对话框 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_vector_settings"
+        android:title="向量模型"
+        android:summary="配置RAG向量化功能"
+        app:iconSpaceReserved="false" />
+
+    <!-- 缓存管理 - 点击弹出对话框 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_cache_manager"
+        android:title="缓存管理"
+        android:summary="管理AI对话缓存"
+        app:iconSpaceReserved="false" />
+
+    <!-- AI日志 - 点击查看日志 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_log_viewer"
+        android:title="AI日志"
+        android:summary="查看AI功能运行日志"
+        app:iconSpaceReserved="false" />
+
+</androidx.preference.PreferenceScreen>

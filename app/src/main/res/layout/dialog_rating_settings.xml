@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/tool_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/background_menu"
+        android:elevation="5dp"
+        android:theme="?attr/actionBarStyle"
+        app:displayHomeAsUp="false"
+        app:fitStatusBar="false"
+        app:popupTheme="@style/AppTheme.PopupOverlay"
+        app:title="评分筛选"
+        app:titleTextAppearance="@style/ToolbarTitle" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="10dp">
+
+            <!-- 评分筛选部分 -->
+
+            <RadioGroup
+                android:id="@+id/ratingFilterGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/radioAll"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="全部评分"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radio5Star"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="★★★★★ 5星"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radio4Star"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="★★★★☆ 4星"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radio3Star"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="★★★☆☆ 3星"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radio2Star"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="★★☆☆☆ 2星"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radio1Star"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="★☆☆☆☆ 1星"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radioUnrated"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="未评分" />
+
+            </RadioGroup>
+
+            <!-- 评分排序部分 -->
+            <io.legado.app.ui.widget.text.PrimaryTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="排序："
+                android:textSize="16sp"
+                android:layout_marginLeft="6dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp" />
+
+            <RadioGroup
+                android:id="@+id/ratingSortGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/radioHighToLow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="高分在前"
+                    android:layout_marginBottom="0dp" />
+
+                <RadioButton
+                    android:id="@+id/radioLowToHigh"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="低分在前" />
+
+            </RadioGroup>
+
+        </LinearLayout>
+
+    </LinearLayout>

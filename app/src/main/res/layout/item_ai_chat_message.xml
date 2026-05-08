@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingVertical="8dp">
+
+    <!-- 推理过程折叠面板 -->
+    <LinearLayout
+        android:id="@+id/layout_reasoning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp">
+
+        <!-- 推理过程标题栏 -->
+        <LinearLayout
+            android:id="@+id/btn_toggle_reasoning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="?attr/selectableItemBackground"
+            android:padding="8dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/iv_reasoning_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_brain"
+                app:tint="?attr/secondaryTextColor" />
+
+            <TextView
+                android:id="@+id/tv_reasoning_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="思考过程"
+                android:textSize="12sp"
+                android:textColor="?attr/secondaryTextColor" />
+
+            <ImageView
+                android:id="@+id/iv_expand_indicator"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_expand_more"
+                app:tint="?attr/secondaryTextColor" />
+        </LinearLayout>
+
+        <!-- 推理过程内容 -->
+        <TextView
+            android:id="@+id/tv_reasoning_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:paddingStart="32dp"
+            android:textSize="13sp"
+            android:textColor="?attr/secondaryTextColor"
+            android:lineSpacingExtra="2dp"
+            android:visibility="gone"
+            android:background="#0A000000" />
+    </LinearLayout>
+
+    <!-- 工具步骤列表 -->
+    <LinearLayout
+        android:id="@+id/layout_tool_steps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp">
+
+        <!-- 工具步骤标题 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_build"
+                app:tint="?attr/secondaryTextColor" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="工具调用"
+                android:textSize="12sp"
+                android:textColor="?attr/secondaryTextColor" />
+        </LinearLayout>
+
+        <!-- 工具步骤容器 -->
+        <LinearLayout
+            android:id="@+id/tool_steps_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp" />
+    </LinearLayout>
+
+    <!-- 主要内容 -->
+    <TextView
+        android:id="@+id/tv_content"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="?attr/primaryTextColor"
+        android:lineSpacingExtra="2dp"
+        android:includeFontPadding="false"
+        android:gravity="start"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layout_tool_steps" />
+
+    <!-- 流式输出光标指示器 -->
+    <TextView
+        android:id="@+id/tv_cursor"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="|"
+        android:textSize="15sp"
+        android:textColor="?attr/colorAccent"
+        android:visibility="gone"
+        android:layout_marginStart="2dp"
+        app:layout_constraintStart_toStartOf="@id/tv_content"
+        app:layout_constraintTop_toTopOf="@id/tv_content" />
+
+    <!-- 展开/折叠按钮和操作按钮放在同一行 - 参考 ReadAny 设计 -->
+    <LinearLayout
+        android:id="@+id/layout_ai_actions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="16dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_content">
+
+        <!-- 展开/折叠按钮 -->
+        <ImageButton
+            android:id="@+id/btn_expand_collapse"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_expand_more"
+            app:tint="?attr/secondaryTextColor"
+            android:contentDescription="展开/折叠"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:visibility="gone" />
+
+        <!-- 重新生成按钮 -->
+        <ImageButton
+            android:id="@+id/btn_regenerate"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_refresh"
+            app:tint="?attr/secondaryTextColor"
+            android:contentDescription="重新生成"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            android:visibility="gone" />
+
+        <!-- 复制按钮 -->
+        <ImageButton
+            android:id="@+id/btn_copy"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginStart="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_copy"
+            app:tint="?attr/secondaryTextColor"
+            android:contentDescription="复制"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true" />
+
+    </LinearLayout>
+
+    <!-- 旧的长文本渐变遮罩（保留备用） -->
+    <View
+        android:id="@+id/view_gradient_mask"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@drawable/bg_gradient_mask"
+        android:visibility="gone" />
+
+    <!-- 旧展开/折叠按钮（已替换为图标） -->
+    <Button
+        android:id="@+id/btn_expand_collapse_old"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="展开"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        android:minWidth="0dp"
+        android:minHeight="0dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

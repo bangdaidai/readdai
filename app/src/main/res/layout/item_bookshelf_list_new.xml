@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    android:scrollbars="none"
+    tools:ignore="UnusedAttribute">
+
+    <!-- 顶部占位：给卡片上下外扩留空间 -->
+    <Space
+        android:id="@+id/space_top"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <!-- 卡片背景：左右固定16dp，上下外扩8dp -->
+    <View
+        android:id="@+id/card_bg"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:background="@drawable/bg_card_rounded"
+        android:layout_marginTop="-8dp"
+        android:layout_marginBottom="-8dp"
+        app:layout_constraintTop_toTopOf="@id/layout_content"
+        app:layout_constraintBottom_toBottomOf="@id/layout_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <!-- 内容容器：所有封面、文字放这里 -->
+    <LinearLayout
+        android:id="@+id/layout_content"
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/space_top"
+        app:layout_constraintBottom_toTopOf="@id/space_bottom"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent">
+
+        <!-- 书籍信息区域 -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <io.legado.app.ui.widget.image.CoverImageView
+                android:id="@+id/iv_cover"
+                android:layout_width="48dp"
+                android:layout_height="64dp"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
+                android:contentDescription="@string/img_cover"
+                android:scaleType="centerCrop"
+                android:src="@drawable/image_cover_default"
+                android:transitionName="img_cover"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="UnusedAttribute" />
+
+            <!-- 第一行：书名+未读章节数 -->
+            <io.legado.app.ui.widget.text.PrimaryTextView
+                android:id="@+id/tv_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginBottom="0dp"
+                android:includeFontPadding="false"
+                android:paddingLeft="2dp"
+                android:gravity="center_vertical"
+                android:scrollbars="none"
+                android:singleLine="true"
+                android:textSize="16sp"
+                app:layout_constraintBottom_toTopOf="@+id/tv_author"
+                app:layout_constraintLeft_toRightOf="@+id/iv_cover"
+                app:layout_constraintRight_toLeftOf="@id/fl_has_new"
+                app:layout_constraintTop_toTopOf="@+id/iv_cover"
+                app:layout_constraintVertical_chainStyle="spread_inside"
+                tools:ignore="RtlHardcoded,RtlSymmetry"
+                tools:text="@string/book_name"/>
+
+            <FrameLayout
+                android:id="@+id/fl_has_new"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:layout_marginEnd="0dp"
+                app:layout_constraintBottom_toBottomOf="@+id/tv_name"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/tv_name"
+                app:layout_constraintVertical_bias="0.5">
+
+                <io.legado.app.ui.widget.text.BadgeView
+                    android:id="@+id/bv_unread"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:includeFontPadding="false"
+                    android:scrollbars="none"
+                    tools:ignore="RtlHardcoded" />
+
+                <io.legado.app.ui.widget.anima.RotateLoading
+                    android:id="@+id/rl_loading"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:visibility="invisible"
+                    app:loading_width="2dp"
+                    tools:ignore="RtlHardcoded" />
+            </FrameLayout>
+
+            <!-- 第二行：作者+星级评分+分隔符+阅读进度 -->
+            <io.legado.app.ui.widget.text.SummaryTextView
+                android:id="@+id/tv_author"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:paddingLeft="2dp"
+                android:scrollbars="none"
+                android:singleLine="true"
+                android:text="@string/author"
+                android:textSize="13sp"
+                app:layout_constraintBottom_toTopOf="@+id/tagContainer"
+                app:layout_constraintLeft_toLeftOf="@+id/tv_name"
+                app:layout_constraintRight_toLeftOf="@+id/tv_separator"
+                app:layout_constraintTop_toBottomOf="@+id/tv_name"
+                tools:ignore="RtlSymmetry,TextContrastCheck" />
+
+            <!-- 星级评分 -->
+            <io.legado.app.ui.widget.RatingView
+                android:id="@+id/ratingView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:starCount="5"
+                app:starSize="16dp"
+                app:useYellowStars="true"
+                app:layout_constraintBottom_toBottomOf="@+id/tv_author"
+                app:layout_constraintRight_toLeftOf="@+id/tv_separator"
+                app:layout_constraintTop_toTopOf="@+id/tv_author" />
+
+            <!-- 分隔符 -->
+            <TextView
+                android:id="@+id/tv_separator"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:scrollbars="none"
+                android:singleLine="true"
+                android:text="·"
+                android:textColor="@color/tv_text_summary"
+                android:textSize="13sp"
+                app:layout_constraintBottom_toBottomOf="@+id/tv_author"
+                app:layout_constraintRight_toLeftOf="@+id/tv_progress"
+                app:layout_constraintTop_toTopOf="@+id/tv_author"
+                tools:ignore="HardcodedText" />
+
+            <!-- 阅读进度 -->
+            <io.legado.app.ui.widget.text.AccentTextView
+                android:id="@+id/tv_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:scrollbars="none"
+                android:singleLine="true"
+                android:text="0%"
+                android:textSize="13sp"
+                app:layout_constraintBottom_toBottomOf="@+id/tv_author"
+                app:layout_constraintRight_toRightOf="@+id/fl_has_new"
+                app:layout_constraintTop_toTopOf="@+id/tv_author"
+                tools:ignore="TextContrastCheck" />
+
+            <!-- 第三行：标签 -->
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/tagContainer"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="0dp"
+                android:maxLines="1"
+                app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
+                app:layout_constraintLeft_toLeftOf="@+id/tv_name"
+                app:layout_constraintRight_toRightOf="@+id/fl_has_new"
+                app:layout_constraintTop_toBottomOf="@+id/tv_author"
+                app:flexWrap="nowrap"
+                app:justifyContent="flex_start" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <!-- 简介区域 -->
+        <LinearLayout
+            android:id="@+id/layout_intro"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:visibility="gone">
+
+            <!-- 简介内容 -->
+            <io.legado.app.ui.widget.text.SummaryTextView
+                android:id="@+id/tv_intro"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp"
+                android:maxLines="3"
+                android:ellipsize="end"
+                tools:text="这是书籍简介内容示例..." />
+
+        </LinearLayout>
+
+        <!-- 书评区域 -->
+        <LinearLayout
+            android:id="@+id/layout_review"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="8dp"
+            android:visibility="gone">
+
+            <!-- 虚线分隔 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0.5dp"
+                android:layerType="software"
+                android:background="@drawable/dashed_line" />
+
+            <!-- 书评内容 -->
+            <io.legado.app.ui.widget.text.SummaryTextView
+                android:id="@+id/tv_review"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp"
+                android:maxLines="3"
+                android:ellipsize="end"
+                tools:text="这是书评内容示例..." />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:id="@+id/vw_foreground"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:scrollbars="none"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0"
+        tools:layout_editor_absoluteX="0dp" />
+
+    <!-- 底部占位：和顶部一样8dp -->
+    <Space
+        android:id="@+id/space_bottom"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingLeft="0dp"
+    android:paddingTop="8dp"
+    android:paddingRight="0dp"
+    android:paddingBottom="8dp">
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:id="@+id/tvGroup"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="14sp" />
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:id="@+id/tvEdit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:paddingRight="8dp"
+        android:text="编辑"
+        android:layout_marginStart="16dp" />
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:id="@+id/tvDel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:paddingRight="0dp"
+        android:text="删除"
+        android:layout_marginStart="16dp" />
+
+
+
+</LinearLayout>

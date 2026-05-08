@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 标题栏 - 使用应用统一的 TitleBar 组件 -->
+    <io.legado.app.ui.widget.TitleBar
+        android:id="@+id/title_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:title="AI阅读助手"
+        app:menu="@menu/ai_chat_menu">
+
+    </io.legado.app.ui.widget.TitleBar>
+
+    <!-- 主内容区域 -->
+    <!-- 消息列表 - 使用 layout_weight 让输入法弹出时自动调整 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:scrollbarStyle="outsideOverlay"
+        android:fadeScrollbars="true" />
+
+    <!-- 空状态 - 与 RecyclerView 同级，通过代码控制显示/隐藏 -->
+    <LinearLayout
+        android:id="@+id/empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="我可以帮助你"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/primaryText"
+                android:layout_marginTop="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="关于本书的任何问题"
+                android:textSize="13sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="试试这样问"
+                android:textSize="12sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginTop="20dp" />
+
+            <!-- 试试这样问 - 动态加载技能 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp"
+                android:gravity="center">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/chipSuggest1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_suggestion_item"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="8dp"
+                        android:gravity="center"
+                        android:textSize="13sp"
+                        android:textColor="@color/primaryText"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/chipSuggest2"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:background="@drawable/bg_suggestion_item"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="8dp"
+                        android:gravity="center"
+                        android:textSize="13sp"
+                        android:textColor="@color/primaryText"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/chipSuggest3"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_suggestion_item"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="8dp"
+                        android:gravity="center"
+                        android:textSize="13sp"
+                        android:textColor="@color/primaryText"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/chipSuggest4"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:background="@drawable/bg_suggestion_item"
+                        android:paddingHorizontal="14dp"
+                        android:paddingVertical="8dp"
+                        android:gravity="center"
+                        android:textSize="13sp"
+                        android:textColor="@color/primaryText"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    <!-- 快捷提示区域 - 固定4个位置，与输入框左右对齐 -->
+    <LinearLayout
+        android:id="@+id/quick_prompts_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+
+        <LinearLayout
+            android:id="@+id/prompts_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/chipQuickAction1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/bg_quick_action_item"
+                android:backgroundTint="?attr/backgroundCard"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:gravity="center"
+                android:textSize="13sp"
+                android:textColor="@color/primaryText"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/chipQuickAction2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_quick_action_item"
+                android:backgroundTint="?attr/backgroundCard"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:gravity="center"
+                android:textSize="13sp"
+                android:textColor="@color/primaryText"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/chipQuickAction3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_quick_action_item"
+                android:backgroundTint="?attr/backgroundCard"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:gravity="center"
+                android:textSize="13sp"
+                android:textColor="@color/primaryText"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/chipQuickAction4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_quick_action_item"
+                android:backgroundTint="?attr/backgroundCard"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:gravity="center"
+                android:textSize="13sp"
+                android:textColor="@color/primaryText"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- 底部输入区域 - 参考 ReadAny 设计 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/input_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="8dp"
+        app:cardElevation="0dp"
+        app:cardCornerRadius="16dp"
+        app:cardBackgroundColor="?attr/backgroundCard"
+        app:strokeWidth="1dp"
+        app:strokeColor="?attr/divider"
+        app:contentPadding="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+        <!-- 选中的引用内容 -->
+        <LinearLayout
+            android:id="@+id/layout_quote"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_quote_chip"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tv_quote_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:textSize="12sp"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <ImageButton
+                android:id="@+id/btn_remove_quote"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_close"
+                android:contentDescription="移除引用"
+                android:padding="2dp" />
+
+        </LinearLayout>
+
+        <!-- 输入框 - 无背景、无分割线 -->
+        <EditText
+            android:id="@+id/edit_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="请输入问题..."
+            android:inputType="text"
+            android:imeOptions="actionSend"
+            android:minHeight="36dp"
+            android:maxHeight="160dp"
+            android:background="@android:color/transparent"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:textSize="14sp"
+            android:textColor="@color/primaryText"
+            android:gravity="top|start" />
+
+        <!-- 底部工具栏 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+
+                <!-- Deep Thinking 开关 - 只有边框，无背景色 -->
+                <LinearLayout
+                    android:id="@+id/layout_deep_thinking"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_option_chip_border_only"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="4dp">
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_brain"
+                        app:tint="@color/secondaryText" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="深度思考"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <!-- Spoiler Free 开关 - 只有边框，无背景色 -->
+                <LinearLayout
+                    android:id="@+id/layout_spoiler_free"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_option_chip_border_only"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="4dp">
+
+                    <ImageView
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:src="@drawable/ic_visibility_off"
+                        app:tint="@color/secondaryText" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:text="防剧透"
+                        android:textColor="@color/secondaryText"
+                        android:textSize="11sp" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <!-- 发送/取消按钮 - 同一个按钮，状态切换图标 -->
+                <ImageButton
+                    android:id="@+id/btn_send"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:background="@drawable/bg_send_button_circle"
+                    android:backgroundTint="?attr/colorAccent"
+                    android:contentDescription="发送"
+                    android:padding="7dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ic_send" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+</LinearLayout>

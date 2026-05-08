@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="添加主角名"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <io.legado.app.ui.widget.text.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="请输入主角名"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        app:boxCollapsedPaddingTop="0dp">
+
+        <io.legado.app.lib.theme.view.ThemeEditText
+            android:id="@+id/edit_protagonist_name"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:maxLines="1"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="2dp"
+            android:gravity="bottom"
+            android:includeFontPadding="false"
+            android:imeOptions="actionDone"
+            android:inputType="text"
+            android:textSize="14sp" />
+
+    </io.legado.app.ui.widget.text.TextInputLayout>
+
+</LinearLayout>

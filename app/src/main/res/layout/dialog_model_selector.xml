@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="选择AI模型"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="当前使用"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:id="@+id/tv_current_model"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="未选择"
+        android:textSize="16sp"
+        android:padding="12dp"
+        android:background="?attr/selectableItemBackground" />
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="可用模型"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_models"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:maxHeight="300dp" />
+
+</LinearLayout>

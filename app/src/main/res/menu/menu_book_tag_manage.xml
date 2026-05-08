@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+
+    <item
+        android:id="@+id/menu_add"
+        android:icon="@drawable/ic_add"
+        android:title="@string/add_tag"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_excluded_tags"
+        android:icon="@drawable/ic_block"
+        android:title="@string/excluded_tag_manage"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_group_manage"
+        android:icon="@drawable/ic_groups"
+        android:title="分组管理"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_tag_mapping"
+        android:icon="@drawable/ic_swap_horiz"
+        android:title="标签映射管理"
+        app:showAsAction="ifRoom" />
+
+</menu>

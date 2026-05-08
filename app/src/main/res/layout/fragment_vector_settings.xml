@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 标题 -->
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="向量搜索设置"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <io.legado.app.ui.widget.text.SecondaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="启用语义搜索功能，支持基于向量相似度的内容检索"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp" />
+
+        <!-- 启用开关 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp">
+
+            <io.legado.app.ui.widget.text.PrimaryTextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="启用向量搜索"
+                android:textSize="16sp" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switch_vector_enabled"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/divider"
+            android:layout_marginVertical="16dp" />
+
+        <!-- 提供商选择 -->
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="嵌入模型提供商"
+            android:textSize="14sp" />
+
+        <Spinner
+            android:id="@+id/spinner_provider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
+
+        <!-- 模型选择 -->
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="嵌入模型"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp" />
+
+        <Spinner
+            android:id="@+id/spinner_model"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" />
+
+        <!-- API Key -->
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="API Key"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/et_api_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="输入API Key"
+            android:inputType="textPassword"
+            android:layout_marginTop="8dp" />
+
+        <!-- Base URL -->
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="API 地址（可选）"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp" />
+
+        <EditText
+            android:id="@+id/et_base_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="留空使用默认地址"
+            android:inputType="textUri"
+            android:layout_marginTop="8dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/divider"
+            android:layout_marginVertical="16dp" />
+
+        <!-- 分块大小 -->
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="分块大小 (token数)"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <SeekBar
+                android:id="@+id/seekbar_chunk_size"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:min="100"
+                android:max="1000"
+                android:progress="500" />
+
+            <TextView
+                android:id="@+id/tv_chunk_size"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:text="500"
+                android:gravity="end" />
+
+        </LinearLayout>
+
+        <io.legado.app.ui.widget.text.SecondaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="每个文本块的token数量，建议500左右"
+            android:textSize="12sp" />
+
+        <!-- 重叠大小 -->
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="重叠大小 (token数)"
+            android:textSize="14sp"
+            android:layout_marginTop="16dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
+
+            <SeekBar
+                android:id="@+id/seekbar_chunk_overlap"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:min="0"
+                android:max="300"
+                android:progress="100" />
+
+            <TextView
+                android:id="@+id/tv_chunk_overlap"
+                android:layout_width="40dp"
+                android:layout_height="wrap_content"
+                android:text="100"
+                android:gravity="end" />
+
+        </LinearLayout>
+
+        <io.legado.app.ui.widget.text.SecondaryTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="相邻文本块之间的重叠token数"
+            android:textSize="12sp" />
+
+        <!-- 按钮 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="24dp"
+            android:gravity="end">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_test"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="测试连接"
+                style="@style/Widget.Material3.Button.OutlinedButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_save"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="保存"
+                android:layout_marginStart="12dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 阅读统计相关字符串 -->
+    <string name="reading_statistics">Reading Statistics</string>
+    <string name="total_read_time">Total Reading Time</string>
+    <string name="total_reading_days">Total Reading Days</string>
+    <string name="read_time_ranking">Reading Time Ranking</string>
+    <string name="read_time_ranking_top10">Reading Time Ranking TOP10</string>
+</resources>

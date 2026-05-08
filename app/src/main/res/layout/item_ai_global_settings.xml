@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?attr/colorSurface">
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="聊天显示模式"
+        android:textSize="14sp" />
+
+    <Spinner
+        android:id="@+id/spinner_display_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="面板位置"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+
+    <Spinner
+        android:id="@+id/spinner_panel_position"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <io.legado.app.ui.widget.text.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="RPM限流 (每分钟请求数，0为不限制)"
+        android:layout_marginTop="16dp">
+
+        <io.legado.app.lib.theme.view.ThemeEditText
+            android:id="@+id/et_rpm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number" />
+
+    </io.legado.app.ui.widget.text.TextInputLayout>
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="阅读功能"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="16dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <io.legado.app.ui.widget.text.PrimaryTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="打开书籍时显示前情提要"
+                android:textSize="14sp" />
+
+            <io.legado.app.ui.widget.text.SecondaryTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="非首次阅读时自动弹窗显示AI生成的前情摘要"
+                android:textSize="12sp" />
+
+        </LinearLayout>
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switch_auto_summary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <io.legado.app.ui.widget.text.PrimaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AI参数"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp" />
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Temperature (温度)"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <SeekBar
+            android:id="@+id/seekbar_temperature"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:min="0"
+            android:max="10"
+            android:progress="5" />
+
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:id="@+id/tv_temperature"
+            android:layout_width="48dp"
+            android:layout_height="wrap_content"
+            android:text="0.5"
+            android:textSize="14sp"
+            android:gravity="end" />
+
+    </LinearLayout>
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="控制输出的随机性，值越高越有创意，值越低越确定性"
+        android:textSize="12sp" />
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Max Tokens (最大令牌数)"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <SeekBar
+            android:id="@+id/seekbar_max_tokens"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:min="1024"
+            android:max="32768"
+            android:progress="4096"
+            android:stepSize="1024" />
+
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:id="@+id/tv_max_tokens"
+            android:layout_width="48dp"
+            android:layout_height="wrap_content"
+            android:text="4096"
+            android:textSize="14sp"
+            android:gravity="end" />
+
+    </LinearLayout>
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="限制单次响应最大令牌数"
+        android:textSize="12sp" />
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="滑动窗口大小"
+        android:textSize="14sp"
+        android:layout_marginTop="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <SeekBar
+            android:id="@+id/seekbar_window_size"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:min="2"
+            android:max="30"
+            android:progress="8" />
+
+        <io.legado.app.ui.widget.text.PrimaryTextView
+            android:id="@+id/tv_window_size"
+            android:layout_width="48dp"
+            android:layout_height="wrap_content"
+            android:text="8"
+            android:textSize="14sp"
+            android:gravity="end" />
+
+    </LinearLayout>
+
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="控制AI记住的对话轮数"
+        android:textSize="12sp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_save_global"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="保存"
+        android:layout_marginTop="24dp" />
+
+</LinearLayout>

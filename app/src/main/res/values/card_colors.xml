@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 卡片背景色 -->
+    <color name="card_background_light">#FFFFFF</color>  <!-- 浅色模式下的卡片背景 -->
+    <color name="card_background_dark">#424242</color>   <!-- 深色模式下的卡片背景 -->
+    
+    <!-- 统计类型按钮选中状态背景色 -->
+    <color name="statistics_button_selected_light">#2196F3</color>  <!-- 浅色模式下选中按钮背景 -->
+    <color name="statistics_button_selected_dark">#BB86FC</color>   <!-- 深色模式下选中按钮背景 -->
+</resources>

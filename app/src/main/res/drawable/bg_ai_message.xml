@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- AI 消息背景色 - 使用主题卡片背景色 -->
+    <solid android:color="?attr/backgroundCard" />
+    <!-- 不对称圆角：左上直角，右上圆角，左下圆角，右下直角 -->
+    <corners 
+        android:topLeftRadius="0dp"
+        android:topRightRadius="16dp"
+        android:bottomLeftRadius="16dp"
+        android:bottomRightRadius="0dp" />
+</shape>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">@color/md_blue_grey_600</color>
+    <color name="primaryDark">@color/md_blue_grey_700</color>
+    <color name="accent">@color/md_deep_orange_800</color>
+    <color name="primaryButtonColor">@color/primary</color>
+
+    <color name="disabled">@color/md_dark_disabled</color>
+
+    <!-- RadioButton 未选中状态颜色，暗色主题使用白色 -->
+    <color name="ate_control_normal">@color/ate_control_normal_dark</color>
+
+    <color name="background">@color/md_grey_900</color>
+    <color name="background_card">#FF303030</color>
+    <color name="background_menu">@color/md_grey_800</color>
+    <color name="background_prefs">#10303030</color>
+
+    <color name="night_mask">#69000000</color>
+
+    <color name="transparent10">#10ffffff</color>
+    <color name="transparent20">#20ffffff</color>
+    <color name="transparent30">#30ffffff</color>
+    <color name="transparent50">#50ffffff</color>
+
+    <color name="bg_divider_line">#363636</color>
+
+    <color name="btn_bg_press">#634D4D4D</color>
+    <color name="btn_bg_press_2">#63686868</color>
+    <color name="btn_bg_press_tp">#63C7C7C7</color>
+
+    <color name="card_bg_water">#69121212</color>
+    <color name="card_border_water">#39bdbdbd</color>
+
+    <color name="darker_gray">#66666666</color>
+
+    <color name="tv_btn_normal_black">#737373</color>
+    <color name="tv_btn_press_black">#565656</color>
+
+    <color name="primaryText">#ffffffff</color>
+    <color name="secondaryText">#b3ffffff</color>
+    <color name="textPrimary">#ffffffff</color>
+    <color name="textSecondary">#b3ffffff</color>
+    <color name="iconColor">#b3ffffff</color>
+    <color name="tv_text_summary">#B3B3B3</color>
+    <color name="menu_color_default">#b7b7b7</color>
+
+
+    <color name="tv_text_button_nor">#303030</color>
+
+    <!--statusBarBackground-->
+    <color name="navigation_bar_bag">#222222</color>
+
+    <!-- 热力图颜色 -->
+    <color name="heatmap_level_0">#404040</color> <!-- 未读 -->
+    <color name="heatmap_level_1">#0E4429</color> <!-- <30分钟 -->
+    <color name="heatmap_level_2">#006D32</color> <!-- 30-60分钟 -->
+    <color name="heatmap_level_3">#26A641</color> <!-- 1-3小时 -->
+    <color name="heatmap_level_4">#39D353</color> <!-- 3-6小时 -->
+    <color name="heatmap_level_5">#4AE868</color> <!-- >6小时 -->
+    <color name="heatmap_level_out_of_year">#404040</color> <!-- 非本年格子浅灰色（夜间模式） -->
+</resources>

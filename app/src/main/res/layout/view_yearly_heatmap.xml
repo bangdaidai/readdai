@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="0dp"
+    android:paddingEnd="0dp"
+    android:paddingTop="0dp"
+    android:paddingBottom="0dp">
+
+    <!-- 热力图主体：53列×7行，无滚动 -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/yearlyHeatmapRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/heatmap_yearly_grid_margin_top"
+        android:clipToPadding="false"
+        android:paddingStart="0dp"
+        android:paddingEnd="0dp"
+        android:overScrollMode="never"
+        android:scrollbars="none"
+        android:nestedScrollingEnabled="false"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/legendContainer"
+        app:layout_constraintVertical_bias="0.0"
+        app:layout_constraintWidth_percent="1.0"
+        app:layout_constrainedHeight="true"
+        android:minHeight="100dp"
+        tools:itemCount="371"
+        tools:spanCount="53"
+        tools:layoutManager="androidx.recyclerview.widget.GridLayoutManager" />
+
+    <!-- 图例 -->
+    <LinearLayout
+        android:id="@+id/legendContainer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/heatmap_yearly_legend_margin_top"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/yearlyHeatmapRecyclerView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="少"
+            android:textSize="@dimen/heatmap_legend_size"
+            android:textColor="@color/secondaryText" />
+
+        <View
+            android:id="@+id/legendBox0"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing" />
+
+        <View
+            android:id="@+id/legendBox1"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing" />
+
+        <View
+            android:id="@+id/legendBox2"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing" />
+
+        <View
+            android:id="@+id/legendBox3"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing" />
+
+        <View
+            android:id="@+id/legendBox4"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing" />
+
+        <View
+            android:id="@+id/legendBox5"
+            android:layout_width="@dimen/heatmap_legend_box_size"
+            android:layout_height="@dimen/heatmap_legend_box_size"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/heatmap_legend_spacing"
+            android:text="多"
+            android:textSize="@dimen/heatmap_legend_size"
+            android:textColor="@color/secondaryText" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

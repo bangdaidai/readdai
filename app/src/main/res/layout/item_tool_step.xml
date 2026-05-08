@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单个工具步骤项的布局 - 可展开版 -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="4dp"
+    app:cardElevation="0dp"
+    app:cardCornerRadius="8dp"
+    app:cardBackgroundColor="@color/background_card"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/divider">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- 头部（点击展开/收起） -->
+        <LinearLayout
+            android:id="@+id/layout_tool_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingVertical="10dp"
+            android:paddingHorizontal="12dp"
+            android:background="?attr/selectableItemBackground">
+
+            <!-- 状态图标 -->
+            <ImageView
+                android:id="@+id/iv_tool_icon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:src="@drawable/ic_circle_outline" />
+
+            <!-- 工具名称 -->
+            <TextView
+                android:id="@+id/tv_tool_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:textSize="14sp"
+                android:textColor="@color/primaryText" />
+
+            <!-- 展开图标 -->
+            <ImageView
+                android:id="@+id/iv_expand"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_arrow_drop_down"
+                app:tint="@color/secondaryText" />
+
+        </LinearLayout>
+
+        <!-- 展开后的内容区域 -->
+        <LinearLayout
+            android:id="@+id/layout_tool_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingBottom="12dp"
+            android:visibility="gone">
+
+            <!-- 输入参数 -->
+            <LinearLayout
+                android:id="@+id/layout_tool_input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="输入"
+                    android:textSize="12sp"
+                    android:textColor="@color/secondaryText"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_tool_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:padding="8dp"
+                    android:background="@drawable/bg_code_block"
+                    android:textSize="12sp"
+                    android:textColor="@color/primaryText"
+                    android:fontFamily="monospace"
+                    android:maxLines="8"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
+
+            <!-- 输出结果 -->
+            <LinearLayout
+                android:id="@+id/layout_tool_output"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="输出"
+                    android:textSize="12sp"
+                    android:textColor="@color/secondaryText"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_tool_output"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:padding="8dp"
+                    android:background="@drawable/bg_code_block"
+                    android:textSize="12sp"
+                    android:textColor="@color/primaryText"
+                    android:fontFamily="monospace"
+                    android:maxLines="8"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
+
+            <!-- 错误信息 -->
+            <LinearLayout
+                android:id="@+id/layout_tool_error"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="错误"
+                    android:textSize="12sp"
+                    android:textColor="@color/error"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_tool_error"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:padding="8dp"
+                    android:background="@drawable/bg_code_block"
+                    android:textSize="12sp"
+                    android:textColor="@color/error"
+                    android:fontFamily="monospace"
+                    android:maxLines="5"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

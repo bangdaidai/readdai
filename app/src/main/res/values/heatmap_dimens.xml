@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 热力图通用尺寸 -->
+    <dimen name="heatmap_padding">16dp</dimen>
+    <dimen name="heatmap_grid_spacing">6dp</dimen> <!-- 月度热力图间距 -->
+    <dimen name="heatmap_yearly_grid_spacing">1dp</dimen> <!-- 年度热力图间距 -->
+    <dimen name="heatmap_corner_radius">8dp</dimen>
+    <dimen name="heatmap_yearly_corner_radius">2dp</dimen> <!-- 年度热力图圆角 -->
+    <dimen name="heatmap_title_margin">16dp</dimen>
+    <dimen name="heatmap_legend_box_size">12dp</dimen>
+    <dimen name="heatmap_legend_spacing">6dp</dimen>
+    <dimen name="heatmap_legend_size">12sp</dimen>
+    
+    <!-- 月度热力图尺寸 -->
+    <dimen name="heatmap_day_cell_size">32dp</dimen>
+    <dimen name="heatmap_weekday_width">32dp</dimen>
+    <dimen name="heatmap_month_height">20dp</dimen>
+    <dimen name="heatmap_grid_margin_top">16dp</dimen>
+    <dimen name="heatmap_monthly_grid_height">260dp</dimen>
+    <dimen name="heatmap_monthly_legend_margin_top">12dp</dimen> <!-- 月度热力图图例顶部边距 -->
+    <dimen name="heatmap_monthly_grid_margin_top">10dp</dimen> <!-- 月度热力图网格顶部边距 -->
+
+    <!-- 年度热力图布局边距和文字大小（单元格尺寸已改为动态计算） -->
+    <dimen name="heatmap_yearly_month_label_height">18dp</dimen>
+    <dimen name="heatmap_yearly_month_text_size">8sp</dimen>
+    <dimen name="heatmap_yearly_grid_margin_top">6dp</dimen>
+    <dimen name="heatmap_yearly_legend_margin_top">12dp</dimen>
+    <!-- 以下属性用于适配不同屏幕尺寸，默认值与values-sw360dp保持一致 -->
+    <dimen name="heatmap_yearly_cell_width">8dp</dimen>
+    <dimen name="heatmap_yearly_cell_height">20dp</dimen>
+    <dimen name="heatmap_yearly_month_label_width">36dp</dimen>
+    <dimen name="heatmap_yearly_grid_margin_bottom">6dp</dimen>
+    <dimen name="heatmap_yearly_grid_margin_left">12dp</dimen>
+    <dimen name="heatmap_yearly_grid_margin_right">12dp</dimen>
+
+</resources>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TextAppearance styles for Legado app -->
+    
+    <!-- Book Title style -->
+    <style name="TextAppearance.Legado.BookTitle" parent="TextAppearance.AppCompat.Large">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <!-- Book Author style -->
+    <style name="TextAppearance.Legado.BookAuthor" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+    
+    <!-- Subtitle1 style -->
+    <style name="TextAppearance.Legado.Subtitle1" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <!-- Body1 style -->
+    <style name="TextAppearance.Legado.Body1" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+    
+    <!-- Body2 style -->
+    <style name="TextAppearance.Legado.Body2" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+    
+    <!-- BodyMedium style -->
+    <style name="TextAppearance.Legado.BodyMedium" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+    
+    <!-- BodyLarge style -->
+    <style name="TextAppearance.Legado.BodyLarge" parent="TextAppearance.AppCompat.Large">
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/textPrimary</item>
+    </style>
+    
+    <!-- BodySmall style -->
+    <style name="TextAppearance.Legado.BodySmall" parent="TextAppearance.AppCompat.Small">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+    
+    <!-- Annotation Chapter Name style -->
+    <style name="TextAppearance.Legado.AnnotationChapterName" parent="TextAppearance.AppCompat.Small">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/primaryText</item>
+    </style>
+    
+    <!-- BodyExtraSmall style - 用于正文内容，比BodySmall更小一号 -->
+    <style name="TextAppearance.Legado.BodyExtraSmall" parent="TextAppearance.AppCompat.Small">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/textSecondary</item>
+    </style>
+</resources>

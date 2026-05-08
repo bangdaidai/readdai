@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 年度热力图尺寸 - 大屏幕 -->
+    <dimen name="heatmap_yearly_cell_width">12dp</dimen> <!-- 单元格宽度，高宽比为2.5:1，所以高度为30dp -->
+    <dimen name="heatmap_yearly_cell_height">30dp</dimen> <!-- 单元格高度，高宽比为2.5:1 -->
+    <dimen name="heatmap_yearly_month_label_height">22dp</dimen> <!-- 月份标签高度 -->
+    <dimen name="heatmap_yearly_month_label_width">44dp</dimen> <!-- 月份标签宽度 -->
+    <dimen name="heatmap_yearly_grid_margin_top">10dp</dimen> <!-- 网格顶部边距 -->
+    <dimen name="heatmap_yearly_grid_margin_bottom">10dp</dimen> <!-- 网格底部边距 -->
+    <dimen name="heatmap_yearly_grid_margin_left">20dp</dimen> <!-- 网格左侧边距 -->
+    <dimen name="heatmap_yearly_grid_margin_right">20dp</dimen> <!-- 网格右侧边距 -->
+    <dimen name="heatmap_yearly_legend_margin_top">20dp</dimen> <!-- 图例顶部边距 -->
+    <dimen name="heatmap_yearly_month_text_size">11sp</dimen> <!-- 月份文字大小 -->
+    <dimen name="heatmap_monthly_legend_margin_top">20dp</dimen> <!-- 月度热力图图例顶部边距 -->
+    <dimen name="heatmap_monthly_grid_margin_top">10dp</dimen> <!-- 月度热力图网格顶部边距 -->
+</resources>

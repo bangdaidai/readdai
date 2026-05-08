@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/menu_show_card"
+        android:title="@string/show_book_card"
+        android:checkable="true"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_show_intro"
+        android:title="@string/show_reading_memory_intro"
+        android:checkable="true"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_show_review"
+        android:title="@string/show_book_review"
+        android:checkable="true"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_clear_all"
+        android:title="@string/clear_all_reading_memories"
+        app:showAsAction="never" />
+
+</menu>
