@@ -1,0 +1,170 @@
+name: Cloud Build - APK
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - debug
+          - release
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.caching=true'
+
+jobs:
+  build-debug:
+    name: Debug Build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'debug'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Check Java Version
+        run: |
+          java -version
+          echo "JAVA_HOME=$JAVA_HOME"
+
+      - name: Check Gradle Files
+        run: |
+          ls -la gradlew gradlew.bat
+          file gradlew
+
+      - name: Update Gradle Wrapper
+        run: |
+          chmod +x gradlew
+          ./gradlew wrapper --gradle-version 8.14.4
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-8.14.4-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: List Available Tasks
+        run: |
+          ./gradlew tasks --all 2>&1 | grep -i "assemble" || true
+
+      - name: Build Debug APK
+        run: |
+          ./gradlew assembleAppDebug --stacktrace --info 2>&1 | tee build.log
+          tail -100 build.log || true
+
+      - name: Check Build Output
+        run: |
+          echo "=== Build Output Directory ==="
+          find app/build/outputs -name "*.apk" -type f 2>/dev/null || echo "No APK found"
+          ls -lh app/build/outputs/apk/app/debug/ 2>/dev/null || echo "Debug APK directory not found"
+
+      - name: Upload Debug APK
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: legado_debug_app
+          path: |
+            app/build/outputs/apk/app/debug/*.apk
+            build.log
+          retention-days: 7
+          if-no-files-found: error
+
+  build-release:
+    name: Release Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release'
+    environment:
+      name: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Decode Keystore
+        if: secrets.RELEASE_KEY_STORE != ''
+        run: |
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> $GITHUB_ENV
+          echo "RELEASE_STORE_FILE=./key.jks" >> $GITHUB_ENV
+          echo ${{ secrets.RELEASE_KEY_STORE }} | base64 --decode > $GITHUB_WORKSPACE/app/key.jks
+          ls -lh app/key.jks
+
+      - name: Set Version
+        run: |
+          VERSION=$(date -d "8 hour" -u +3.%y.%m%d%H)
+          echo "VERSION=$VERSION"
+          sed -i "s/^def version = .*/def version = \"$VERSION\"/" $GITHUB_WORKSPACE/app/build.gradle
+          grep "def version" $GITHUB_WORKSPACE/app/build.gradle
+
+      - name: Update Gradle Wrapper
+        run: |
+          chmod +x gradlew
+          ./gradlew wrapper --gradle-version 8.14.4
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-8.14.4-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Release APK
+        run: |
+          ./gradlew assembleAppRelease --stacktrace 2>&1 | tee build.log
+          tail -100 build.log || true
+
+      - name: Organize Files
+        run: |
+          mkdir -p ${{ github.workspace }}/apk/
+          find app/build/outputs/apk -name "*.apk" -exec cp {} ${{ github.workspace }}/apk/ \;
+          ls -lh ${{ github.workspace }}/apk/
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: legado_release_app
+          path: ${{ github.workspace }}/apk/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          body_path: ${{ github.workspace }}/CHANGELOG.md
+          files: ${{ github.workspace }}/apk/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
