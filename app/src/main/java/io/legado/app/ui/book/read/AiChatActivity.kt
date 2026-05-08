@@ -487,7 +487,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             // 更新最后一条AI消息
             val lastMsg = messages.lastOrNull()
             if (lastMsg?.role == "ai" && lastMsg.content.isEmpty()) {
-                messages[messages.size - 1] = ChatMessageItem("ai", "[请求已取消]")
+                messages[messages.size - 1] = ChatMessageItem(
+                    "ai", 
+                    "[请求已取消]",
+                    reasoningContent = lastMsg.reasoningContent,
+                    toolSteps = lastMsg.toolSteps
+                )
                 adapter.notifyItemChanged(messages.size - 1)
             }
 
