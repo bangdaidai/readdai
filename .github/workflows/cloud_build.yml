@@ -1,0 +1,177 @@
+name: Cloud Build - APK
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'release'
+        type: choice
+        options:
+          - debug
+          - release
+      product:
+        description: '产品类型'
+        required: true
+        default: 'app'
+        type: choice
+        options:
+          - app
+          - google
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.caching=true'
+
+jobs:
+  build-debug:
+    name: Debug Build (${{ matrix.product }})
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.build_type == 'debug'
+    strategy:
+      matrix:
+        product: [app, google]
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Cache build outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/build
+            .gradle
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-build-
+
+      - name: Build Debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assemble${{ matrix.product }}Debug --build-cache --parallel --daemon
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: legado_debug_${{ matrix.product }}
+          path: app/build/outputs/apk/${{ matrix.product }}/debug/*.apk
+          retention-days: 7
+
+  build-release:
+    name: Release Build (${{ matrix.product }})
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'release'
+    strategy:
+      matrix:
+        product: [app, google]
+      fail-fast: false
+    environment:
+      name: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Decode Keystore
+        if: secrets.RELEASE_KEY_STORE != ''
+        run: |
+          echo -e "\n" >> gradle.properties
+          echo RELEASE_KEY_ALIAS='${{ secrets.RELEASE_KEY_ALIAS }}' >> gradle.properties
+          echo RELEASE_KEY_PASSWORD='${{ secrets.RELEASE_KEY_PASSWORD }}' >> gradle.properties
+          echo RELEASE_STORE_PASSWORD='${{ secrets.RELEASE_STORE_PASSWORD }}' >> gradle.properties
+          echo RELEASE_STORE_FILE='./key.jks' >> gradle.properties
+          echo ${{ secrets.RELEASE_KEY_STORE }} | base64 --decode > $GITHUB_WORKSPACE/app/key.jks
+
+      - name: Set Version
+        run: |
+          VERSION=$(date -d "8 hour" -u +3.%y.%m%d%H)
+          echo "版本号: $VERSION"
+          sed "/def version/c def version = \"$VERSION\"" $GITHUB_WORKSPACE/app/build.gradle -i
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Release APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assemble${{ matrix.product }}Release --build-cache --parallel --daemon
+
+      - name: Organize Files
+        run: |
+          mkdir -p ${{ github.workspace }}/apk/
+          cp -rf ${{ github.workspace }}/app/build/outputs/apk/*/*/*.apk ${{ github.workspace }}/apk/
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: legado_release_${{ matrix.product }}
+          path: ${{ github.workspace }}/apk/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: matrix.product == 'app'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.run_number }}
+          body_path: ${{ github.workspace }}/CHANGELOG.md
+          files: ${{ github.workspace }}/apk/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    needs: [build-debug, build-release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## 云端构建完成 ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**构建状态**: ${{ needs.build-debug.result == 'success' && '✅ 成功' || '❌ 失败' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**构建产物**: " >> $GITHUB_STEP_SUMMARY
+          echo "- App (标准版) Debug/Release APK" >> $GITHUB_STEP_SUMMARY
+          echo "- Google (共存版) Debug/Release APK" >> $GITHUB_STEP_SUMMARY
