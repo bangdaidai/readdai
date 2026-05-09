@@ -129,7 +129,6 @@ android {
                     'cronet-proguard-rules.pro'
         }
         debug {
-            signingConfig signingConfigs.debug
             manifestPlaceholders.put("app_name", "@string/app_name")
             applicationIdSuffix '.debug'
             versionNameSuffix 'debug'
