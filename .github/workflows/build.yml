@@ -22,12 +22,18 @@ jobs:
         run: |
           if [ ! -z "$KEYSTORE_BASE64" ]; then
             echo "✅ Setting up signing keys..."
-            echo $KEYSTORE_BASE64 | base64 --decode > $GITHUB_WORKSPACE/app/release.keystore
-            echo "RELEASE_STORE_FILE=./release.keystore" >> gradle.properties
-            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
-            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+            # 解码 keystore 文件到 app 目录
+            echo "$KEYSTORE_BASE64" | base64 --decode > ./app/release.keystore
+            
+            # 写入 gradle.properties（使用绝对路径）
+            echo "RELEASE_STORE_FILE=./app/release.keystore" >> ./gradle.properties
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> ./gradle.properties
+            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> ./gradle.properties
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> ./gradle.properties
+            
             echo "✅ Signing configuration completed"
+            echo "📄 gradle.properties content:"
+            cat ./gradle.properties
           else
             echo "⚠️ WARNING: No keystore found, building with debug signature"
           fi

@@ -64,15 +64,10 @@ android {
             }
         } else {
             // 降级：使用 debug 签名（仅用于测试，发布请配置正式密钥）
+            // 注意：debug signingConfig 会自动使用 Gradle 内置的 debug.keystore
             release {
-                storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
-                storePassword 'android'
-                keyAlias 'androiddebugkey'
-                keyPassword 'android'
-                enableV1Signing = true
-                enableV2Signing = true
-                enableV3Signing = true
-                enableV4Signing = true
+                // 不配置任何参数，Gradle 会自动使用 debug 签名
+                // 这样可以避免在 CI 环境中找不到 debug.keystore 的问题
             }
         }
         debug {
