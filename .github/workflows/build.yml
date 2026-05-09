@@ -1,5 +1,4 @@
-# 已禁用 - 使用 android-ci-cd.yml 替代
-name: Build APK (DISABLED)
+name: Build APK
 on:
   push:
     branches: [main]
@@ -17,21 +16,7 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Generate Debug Keystore
-        run: |
-          mkdir -p ~/.android
-          if [ ! -f ~/.android/debug.keystore ]; then
-            echo "Generating debug.keystore..."
-            keytool -genkeypair -v -storetype PKCS12 \
-              -keystore ~/.android/debug.keystore \
-              -storepass android -alias androiddebugkey \
-              -keypass android -keyalg RSA -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          fi
-          ls -lh ~/.android/debug.keystore
-
-      - name: Build Debug APK (Skip Lint)
+      - name: Build Debug APK
         run: |
           chmod +x gradlew
           ./gradlew assembleAppDebug --no-daemon -x lint
