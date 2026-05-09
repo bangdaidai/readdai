@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingVertical="4dp"
+            android:paddingVertical="8dp"
             android:paddingHorizontal="12dp"
             android:background="?attr/selectableItemBackground">
 
@@ -81,7 +81,8 @@
 
                 <ScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
+                    android:layout_height="wrap_content"
+                    android:maxHeight="200dp"
                     android:scrollbars="vertical"
                     android:fillViewport="false">
 
@@ -119,9 +120,10 @@
 
                 <ScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
+                    android:layout_height="wrap_content"
+                    android:maxHeight="200dp"
                     android:scrollbars="vertical"
-                    android:fillViewport="false">
+                    android:fillViewport="true">
 
                     <TextView
                         android:id="@+id/tv_tool_output"

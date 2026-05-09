@@ -252,6 +252,7 @@ class LangChain4jAgentService {
                 
                 val toolSteps = mutableListOf<ToolStep>()
                 var hasSentIntroMessage = false  // 标记是否已发送介绍消息
+                var introContent = ""  // 保存提示消息内容
                 
                 // 关键修复：支持多轮工具调用循环（类似ReadAny的ReAct agent）
                 var currentResponse = response
@@ -283,10 +284,9 @@ class LangChain4jAgentService {
                         "第 $iteration 轮：检测到LongCat工具调用格式，开始解析..."
                     )
                     
-                    // 关键修复：在第一次调用工具前，先发送一条友好的提示消息
+                    // 关键修复：在第一次调用工具前，记录提示消息
                     if (!hasSentIntroMessage) {
-                        trySend(LangChain4jResponse(content = "让我先查询一下相关信息...", toolSteps = emptyList()))
-                        kotlinx.coroutines.delay(200)  // 让用户看到提示
+                        introContent = "让我先查询一下相关信息...\n\n"
                         hasSentIntroMessage = true
                     }
                     
@@ -412,8 +412,15 @@ class LangChain4jAgentService {
                 // currentResponse 现在是最终回答（不包含工具调用）
                 response = currentResponse
                 
-                // 发送最终内容
-                trySend(LangChain4jResponse(content = response, toolSteps = toolSteps))
+                // 关键修复：将提示消息添加到最终内容前面
+                val finalContent = if (introContent.isNotEmpty()) {
+                    introContent + response
+                } else {
+                    response
+                }
+                
+                // 发送最终内容（包含提示消息和所有工具步骤）
+                trySend(LangChain4jResponse(content = finalContent, toolSteps = toolSteps))
                 close()
             } catch (e: Exception) {
                 io.legado.app.help.ai.AiLogManager.log(
