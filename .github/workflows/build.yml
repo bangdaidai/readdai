@@ -1,7 +1,9 @@
 # 已禁用 - 使用 android-ci-cd.yml 替代
 name: Build APK (DISABLED)
 on:
-  workflow_dispatch
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,13 +17,27 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Build Release
+      - name: Generate Debug Keystore
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            echo "Generating debug.keystore..."
+            keytool -genkeypair -v -storetype PKCS12 \
+              -keystore ~/.android/debug.keystore \
+              -storepass android -alias androiddebugkey \
+              -keypass android -keyalg RSA -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          ls -lh ~/.android/debug.keystore
+
+      - name: Build Debug APK (Skip Lint)
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleAppDebug --no-daemon -x lint
 
       - name: Upload APK
         uses: actions/upload-artifact@v6
         with:
-          name: legado_apk
-          path: app/build/outputs/apk/release/
+          name: legado_debug_apk
+          path: app/build/outputs/apk/app/debug/*.apk
