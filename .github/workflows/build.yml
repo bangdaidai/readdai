@@ -1,4 +1,4 @@
-name: Build APK
+name: Build Signed Release APK
 on:
   push:
     branches: [main]
@@ -16,13 +16,36 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Build Debug APK
+      - name: Setup Android Signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ ! -z "$KEYSTORE_BASE64" ]; then
+            echo "✅ Setting up signing keys..."
+            echo $KEYSTORE_BASE64 | base64 --decode > $GITHUB_WORKSPACE/app/release.keystore
+            echo "RELEASE_STORE_FILE=./release.keystore" >> gradle.properties
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
+            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+            echo "✅ Signing configuration completed"
+          else
+            echo "⚠️ WARNING: No keystore found, building with debug signature"
+          fi
+
+      - name: Build Release APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleAppDebug --no-daemon -x lint
+          ./gradlew assembleAppRelease --no-daemon -x lint
 
-      - name: Upload APK
+      - name: Check APK output
+        run: |
+          echo "📦 Checking for signed APK files..."
+          find app/build/outputs -name "*.apk" -type f
+          ls -la app/build/outputs/apk/app/release/ || echo "Release directory not found"
+
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v6
         with:
-          name: legado_debug_apk
-          path: app/build/outputs/apk/app/debug/*.apk
+          name: legado_release_signed_apk
+          path: app/build/outputs/apk/app/release/*.apk
+          retention-days: 30
