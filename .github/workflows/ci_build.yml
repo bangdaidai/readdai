@@ -11,6 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       
+      - name: Generate Debug Keystore
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            echo "Generating debug.keystore..."
+            keytool -genkeypair -v -storetype PKCS12 -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+            echo "Debug keystore generated successfully"
+          else
+            echo "Debug keystore already exists"
+          fi
+          ls -lh ~/.android/debug.keystore
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
         with:
@@ -25,10 +37,11 @@ jobs:
       
       - name: Check output
         run: |
-          echo "Checking APK output..."
-          find app/build/outputs -name "*.apk" 2>/dev/null || echo "No APK found"
+          echo "=== APK Files ==="
+          find app/build/outputs -name "*.apk" -type f -exec ls -lh {} \;
       
       - name: Upload artifact
+        if: success()
         uses: actions/upload-artifact@v6
         with:
           name: debug-apk
