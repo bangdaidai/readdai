@@ -111,7 +111,9 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Decode Keystore
-        if: secrets.RELEASE_KEY_STORE != ''
+        env:
+          RELEASE_KEY_STORE: ${{ secrets.RELEASE_KEY_STORE }}
+        if: env.RELEASE_KEY_STORE != ''
         run: |
           echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> $GITHUB_ENV
           echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> $GITHUB_ENV
