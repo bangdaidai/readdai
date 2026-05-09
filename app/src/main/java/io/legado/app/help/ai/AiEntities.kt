@@ -193,25 +193,42 @@ data class AiProviderEntity(
 data class ChatMessage(
     val type: String,    // "human", "ai", "system", "tool"
     val content: String,  // 消息内容
-    val toolCallId: String? = null  // 工具调用ID（用于tool类型的消息）
+    val toolCallId: String? = null,  // 工具调用ID（用于tool类型的消息）
+    val toolSteps: List<ToolStep> = emptyList()  // 工具调用步骤列表
 ) {
     fun toMap(): Map<String, Any> = mapOf(
         "type" to type,
         "content" to content
     ).let { map ->
-        if (toolCallId != null) {
+        val withToolCallId = if (toolCallId != null) {
             map + ("toolCallId" to toolCallId)
         } else {
             map
+        }
+        // 添加工具步骤数据
+        if (toolSteps.isNotEmpty()) {
+            withToolCallId + ("toolSteps" to toolSteps.map { it.toMap() })
+        } else {
+            withToolCallId
         }
     }
 
     companion object {
         fun fromMap(map: Map<String, Any>): ChatMessage {
+            val toolSteps = if (map.containsKey("toolSteps")) {
+                @Suppress("UNCHECKED_CAST")
+                (map["toolSteps"] as? List<*>)?.filterIsInstance<Map<String, Any>>()?.map {
+                    ToolStep.fromMap(it)
+                } ?: emptyList()
+            } else {
+                emptyList()
+            }
+            
             return ChatMessage(
                 type = map["type"]?.toString() ?: "human",
                 content = map["content"]?.toString() ?: "",
-                toolCallId = map["toolCallId"]?.toString()
+                toolCallId = map["toolCallId"]?.toString(),
+                toolSteps = toolSteps
             )
         }
     }

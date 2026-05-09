@@ -78,7 +78,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     private var deepThinkingEnabled: Boolean = false
     private var spoilerFreeEnabled: Boolean = false
     private var isRequestActive: Boolean = false
-    
+
     // 快捷操作栏配置（选中文字时显示）
     private var quickActionItems: List<QuickActionItem> = emptyList()
 
@@ -87,7 +87,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
     private val messages = mutableListOf<ChatMessageItem>()
     private var streamingPosition: Int = -1 // 当前流式输出的消息位置
-    
+
     // 快捷操作项
     data class QuickActionItem(
         val displayName: String,   // Chip显示的文字
@@ -110,11 +110,11 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         skillManager = SkillManager(this)
 
         initViews()
-        
+
         // 异步初始化AI服务内部状态
         lifecycleScope.launch {
             aiService.init()
-            
+
             // 传递当前书籍信息给AI服务（如果有）
             if (bookUrl != null) {
                 val book = appDb.bookDao.getBook(bookUrl!!)
@@ -136,7 +136,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 AiTools.registerAll(emptyContext)
             }
         }
-        
+
         // 创建新会话
         createNewSession()
     }
@@ -147,7 +147,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     private fun updateAdapter() {
-        adapter = ChatAdapter(this, messages, 
+        adapter = ChatAdapter(this, messages,
             onItemLongClick = { message, isLongClick ->
                 if (isLongClick) {
                     showMessageOptions(message)
@@ -159,7 +159,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             onRegenerateClick = {
                 regenerateLastMessage()
             },
-            isStreamingPosition = streamingPosition
+            getStreamingPosition = { streamingPosition }  // 传入lambda，动态获取最新值
         )
         binding.recyclerView.adapter = adapter
     }
@@ -174,11 +174,11 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
         // 初始化时发送按钮显示纸飞机图标
         binding.btnSend.setImageResource(R.drawable.ic_send)
-        
+
         // 设置发送按钮背景色为主题强调色（参考深度思考按钮的实现）
         val accentColor = ThemeStore.accentColor(this)
         binding.btnSend.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
-        
+
         // 强制设置输入框容器背景色和边框色为主题色（确保生效）
         val backgroundCardColor = ThemeStore.backgroundCard(this)
         val dividerColor = ThemeStore.dividerColor(this)
@@ -228,7 +228,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         // 初始化选项开关样式
         updateOptionStyle(binding.layoutDeepThinking, false)
         updateOptionStyle(binding.layoutSpoilerFree, false)
-        
+
         // 初始化空状态显示
         updateEmptyState()
     }
@@ -275,12 +275,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     // ========== 引用管理 ==========
-    
+
     private fun setQuote(text: String) {
         selectedQuote = text
         binding.layoutQuote.visibility = View.VISIBLE
         binding.tvQuoteText.text = text.take(50) + if (text.length > 50) "..." else ""
-        
+
         // 设置引用框背景色为主题强调色半透明（30%透明度）
         val accentColor = ThemeStore.accentColor(this)
         val semiTransparentAccent = android.graphics.Color.argb(
@@ -294,7 +294,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         gradientDrawable.cornerRadius = 12f.dpToPx().toFloat()
         gradientDrawable.setColor(semiTransparentAccent)
         binding.layoutQuote.background = gradientDrawable
-        
+
         updateQuickActionBar(hasSelectedText = true)
     }
 
@@ -305,7 +305,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     // ========== 模型选择器 ==========
-    
+
     private var modelSelectorTvCurrent: TextView? = null
 
     private fun showModelSelector() {
@@ -316,11 +316,11 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
         modelSelectorTvCurrent = dialogView.findViewById<TextView>(R.id.tv_current_model)
         val recyclerModels = dialogView.findViewById<RecyclerView>(R.id.recycler_models)
-        
+
         modelSelectorTvCurrent?.text = currentModel
 
         recyclerModels.layoutManager = LinearLayoutManager(this)
-        
+
         lifecycleScope.launch {
             val provider = aiService.getCurrentProvider()
             if (provider != null) {
@@ -332,7 +332,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     // 如果没有保存的模型列表，使用当前配置的模型
                     listOf(provider.model)
                 }
-                
+
                 recyclerModels.adapter = object : RecyclerView.Adapter<ModelViewHolder>() {
                     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ModelViewHolder {
                         val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, parent, false)
@@ -343,7 +343,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     }
                     override fun getItemCount() = models.size
                 }
-                
+
                 // 添加提示信息
                 val hint = if (savedModels.isNotEmpty()) {
                     "$currentModel (共${savedModels.size}个模型)"
@@ -371,7 +371,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
     inner class ModelViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(android.R.id.text1)
-        
+
         fun bind(model: String) {
             textView.text = model
             textView.setOnClickListener {
@@ -401,7 +401,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
         // 保存对话框引用
         historyDialog = dialog
-        
+
         // 加载历史会话列表
         lifecycleScope.launch {
             val sessions = AiHistoryStore.readHistory()
@@ -435,10 +435,10 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
         dialog.show()
     }
-    
+
     inner class HistoryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(android.R.id.text1)
-        
+
         fun bind(session: AiChatSession) {
             // 获取第一条用户消息作为标题
             val firstUserMessage = session.messages.firstOrNull { it.type == "human" }?.content ?: "空对话"
@@ -447,12 +447,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             } else {
                 firstUserMessage
             }
-            
+
             // 格式化时间
             val timeStr = formatTimestamp(session.updatedAt)
             textView.text = "$title\n$timeStr"
             textView.setPadding(32, 24, 32, 24)
-            
+
             itemView.setOnClickListener {
                 loadSession(session)
                 // 关闭历史对话框
@@ -461,11 +461,11 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             }
         }
     }
-    
+
     private fun formatTimestamp(timestamp: Long): String {
         val now = System.currentTimeMillis()
         val diff = now - timestamp
-        
+
         return when {
             diff < 60 * 1000 -> "刚刚"
             diff < 60 * 60 * 1000 -> "${diff / (60 * 1000)}分钟前"
@@ -488,7 +488,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             val lastMsg = messages.lastOrNull()
             if (lastMsg?.role == "ai" && lastMsg.content.isEmpty()) {
                 messages[messages.size - 1] = ChatMessageItem(
-                    "ai", 
+                    "ai",
                     "[请求已取消]",
                     reasoningContent = lastMsg.reasoningContent,
                     toolSteps = lastMsg.toolSteps
@@ -525,7 +525,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             val config = io.legado.app.help.ai.AiAssistantConfigManager.getEmptyStateConfig(this@AiChatActivity)
             val skillManager = io.legado.app.help.ai.SkillManager(this@AiChatActivity)
             val allSkills = skillManager.getAllSkills()
-            
+
             val chipViews = listOf(
                 binding.chipSuggest1,
                 binding.chipSuggest2,
@@ -550,7 +550,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             item.customTrigger ?: item.customName ?: ""
                         }
                     }
-                    
+
                     text = displayText
                     visibility = View.VISIBLE
                     setOnClickListener {
@@ -567,12 +567,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     }
                 }
             }
-            
+
             // 初始化快捷操作栏配置（默认5个）
             initQuickActionBar()
         }
     }
-    
+
     /**
      * 初始化快捷操作栏 - 固定5个位置
      * 根据是否有选中文字显示不同的操作
@@ -581,7 +581,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         // 默认配置：无选中文字时的通用操作
         updateQuickActionBar(hasSelectedText = false)
     }
-    
+
     /**
      * 更新快捷操作栏内容
      * @param hasSelectedText 是否有选中的文字
@@ -590,10 +590,10 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         // 从配置管理器加载快捷操作配置（根据是否有选中文字）
         val config = io.legado.app.help.ai.AiAssistantConfigManager.getQuickActionBarConfig(this, hasSelectedText)
         val skillManager = io.legado.app.help.ai.SkillManager(this)
-        
+
         lifecycleScope.launch {
             val allSkills = skillManager.getAllSkills()
-            
+
             quickActionItems = config.map { item ->
                 when (item.type) {
                     io.legado.app.help.ai.AiAssistantConfigManager.ConfigType.SKILL -> {
@@ -616,12 +616,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     }
                 }
             }
-            
+
             // 渲染快捷操作栏
             renderQuickActionBar()
         }
     }
-    
+
     /**
      * 渲染快捷操作栏到UI - 固定4个位置
      */
@@ -632,23 +632,23 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             binding.chipQuickAction3,
             binding.chipQuickAction4
         )
-        
+
         // 隐藏所有chip
         chipViews.forEach { it.visibility = View.GONE }
-        
+
         if (quickActionItems.isEmpty()) {
             binding.quickPromptsLayout.visibility = View.GONE
             return
         }
-        
+
         binding.quickPromptsLayout.visibility = View.VISIBLE
-        
+
         // 动态显示技能（最多4个）
         quickActionItems.take(4).forEachIndexed { index, item ->
             chipViews[index].apply {
                 text = item.displayName
                 visibility = View.VISIBLE
-                
+
                 // 强制设置主题色背景和边框（确保生效）
                 val backgroundCardColor = ThemeStore.backgroundCard(this@AiChatActivity)
                 val dividerColor = ThemeStore.dividerColor(this@AiChatActivity)
@@ -659,7 +659,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 drawable.setColor(backgroundCardColor)
                 drawable.setStroke(1.dpToPx(), dividerColor)
                 background = drawable
-                
+
                 setOnClickListener {
                     when (item.type) {
                         io.legado.app.help.ai.AiAssistantConfigManager.ConfigType.SKILL -> {
@@ -704,7 +704,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             val accentColor = ThemeStore.accentColor(context)
             gradientDrawable.setColor(accentColor)
             gradientDrawable.setStroke(1.dpToPx(), accentColor)
-            
+
             // 更新图标和文字颜色为白色（在强调色背景上）
             val linearLayout = view as? LinearLayout
             linearLayout?.let {
@@ -725,7 +725,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             gradientDrawable.setColor(Color.TRANSPARENT)
             val borderColor = ThemeStore.textColorSecondary(context)
             gradientDrawable.setStroke(1.dpToPx(), borderColor)
-            
+
             // 恢复图标和文字颜色
             val linearLayout = view as? LinearLayout
             linearLayout?.let {
@@ -801,12 +801,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     private fun loadSession(session: AiChatSession) {
         // 设置当前会话
         currentSession = session
-        
+
         // 清空并加载消息
         messages.clear()
         session.messages.forEach { msg ->
             messages.add(ChatMessageItem(
-                role = if (msg.type == "human") "user" else "ai", 
+                role = if (msg.type == "human") "user" else "ai",
                 content = msg.content,
                 reasoningContent = "",
                 toolSteps = emptyList(),
@@ -814,21 +814,21 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 isReasoningExpanded = false
             ))
         }
-        
+
         // 重置流式位置
         streamingPosition = -1
-        
+
         // 重新创建适配器以确保正确显示
         updateAdapter()
-        
+
         // 更新空状态
         updateEmptyState()
-        
+
         // 滚动到底部
         if (messages.isNotEmpty()) {
             binding.recyclerView.scrollToPosition(messages.size - 1)
         }
-        
+
         // 显示提示
         Toast.makeText(this, "已加载历史对话", Toast.LENGTH_SHORT).show()
     }
@@ -841,7 +841,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         lifecycleScope.launch {
             // 先初始化历史存储
             AiHistoryStore.init(this@AiChatActivity)
-            
+
             aiService.init()
 
             // 传递当前书籍信息给AI服务（如果有）
@@ -874,47 +874,47 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
     override fun onDestroy() {
         super.onDestroy()
-        
+
         // 取消所有正在进行的AI请求
         if (isRequestActive) {
             aiService.cancelCurrentRequest()
         }
-        
+
         // 关闭历史对话框（如果打开）
         historyDialog?.dismiss()
         historyDialog = null
-        
+
         // 清理资源
         messages.clear()
         currentSession = null
-        
+
         android.util.Log.d("AiChatActivity", "onDestroy: 资源已清理")
     }
-    
+
     override fun onStop() {
         super.onStop()
-        
+
         // 页面不可见时，不自动取消请求（让用户手动控制）
         // 如果希望后台继续生成，不要在这里取消
         // if (isRequestActive) {
         //     aiService.cancelCurrentRequest()
         //     setRequestState(false)
         // }
-        
+
         android.util.Log.d("AiChatActivity", "onStop: 请求状态=${isRequestActive}")
     }
-    
+
     override fun onPause() {
         super.onPause()
-        
+
         // 页面暂停时不做特殊处理（会话已在发送消息时保存）
-        
+
         android.util.Log.d("AiChatActivity", "onPause: 消息数=${messages.size}")
     }
-    
+
     override fun onResume() {
         super.onResume()
-        
+
         // 页面恢复时，重新加载会话（如果需要）
         android.util.Log.d("AiChatActivity", "onResume")
     }
@@ -934,13 +934,13 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
             this@AiChatActivity.messages.add(ChatMessageItem("user", messages))
             this@AiChatActivity.messages.add(ChatMessageItem("ai", ""))
-            
+
             // 设置流式位置
             streamingPosition = this@AiChatActivity.messages.size - 1
             updateAdapter()
-            
+
             updateEmptyState()
-            
+
             // 滚动到底部
             binding.recyclerView.post {
                 binding.recyclerView.smoothScrollToPosition(this@AiChatActivity.messages.size - 1)
@@ -948,13 +948,13 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
             // 构建变量 - 优先从 ReadingContextService 获取实时上下文
             val readingContext = ReadingContextService.getContext()
-            
+
             // 如果 ReadingContextService 有实时数据，使用它；否则回退到 Activity 参数
             val realBookTitle = readingContext?.bookTitle?.takeIf { it.isNotBlank() } ?: bookTitle ?: ""
             val realAuthor = readingContext?.author?.takeIf { it.isNotBlank() } ?: author ?: ""
             val realChapterTitle = readingContext?.currentChapter?.title?.takeIf { it.isNotBlank() } ?: chapterTitle ?: ""
             val realChapterContent: String = readingContext?.surroundingText?.takeIf { it.isNotBlank() } ?: chapterContent ?: ""
-            
+
             // 获取书籍简介（从数据库）
             val bookIntro = try {
                 val bookUrl = readingContext?.bookId?.takeIf { it.isNotBlank() }
@@ -964,7 +964,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             } catch (e: Exception) {
                 ""
             }
-            
+
             // 获取前情内容（真正的前文，不是当前章节）
             val previousContent = try {
                 val bookUrl = readingContext?.bookId?.takeIf { it.isNotBlank() }
@@ -986,7 +986,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 io.legado.app.utils.LogUtils.e("AiChatActivity", "获取前情内容失败: ${e.message}")
                 ""
             }
-            
+
             val variables = mutableMapOf<String, String>(
                 "bookName" to realBookTitle,
                 "bookAuthor" to realAuthor,
@@ -1025,7 +1025,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             }
                             this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
                                 ChatMessageItem(
-                                    "ai", 
+                                    "ai",
                                     newContent,
                                     reasoningContent = lastMsg.reasoningContent,
                                     toolSteps = lastMsg.toolSteps
@@ -1058,7 +1058,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             ))
                             this@AiChatActivity.messages[streamingPosition] = aiMsg.copy(toolSteps = updatedSteps)
                             adapter.notifyItemChanged(streamingPosition)
-                            
+
                             // 滚动到底部
                             binding.recyclerView.post {
                                 binding.recyclerView.smoothScrollToPosition(streamingPosition)
@@ -1106,7 +1106,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             }
                             this@AiChatActivity.messages[streamingPosition] = aiMsg.copy(toolSteps = updatedSteps)
                             adapter.notifyItemChanged(streamingPosition)
-                            
+
                             // 滚动到底部
                             binding.recyclerView.post {
                                 binding.recyclerView.smoothScrollToPosition(streamingPosition)
@@ -1118,7 +1118,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
                             this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
                                 ChatMessageItem(
-                                    "ai", 
+                                    "ai",
                                     result.content,
                                     reasoningContent = existingMsg.reasoningContent,
                                     toolSteps = existingMsg.toolSteps
@@ -1127,21 +1127,27 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content))
                         }
                         adapter.notifyDataSetChanged()
-                        
+
                         // 参考 anx/readany：滚动到底部
                         binding.recyclerView.post {
                             binding.recyclerView.smoothScrollToPosition(this@AiChatActivity.messages.size - 1)
                         }
-                        
+
                         // 关键：成功后重置请求状态和流式位置，按钮变回纸飞机
                         streamingPosition = -1
                         setRequestState(false)
-                        
+
                         // 保存到历史
                         currentSession?.let { session ->
                             val updatedMessages = session.messages.toMutableList()
                             updatedMessages.add(ChatMessage("human", userQuestion))
-                            updatedMessages.add(ChatMessage("ai", result.content))
+                            // 关键修复：保存AI消息时包含toolSteps
+                            val lastAiMessage = this@AiChatActivity.messages.lastOrNull { it.role == "ai" }
+                            updatedMessages.add(ChatMessage(
+                                "ai", 
+                                result.content,
+                                toolSteps = lastAiMessage?.toolSteps ?: emptyList()
+                            ))
                             val updatedSession = session.copy(
                                 messages = updatedMessages,
                                 model = currentModel,
@@ -1159,7 +1165,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
                             this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
                                 ChatMessageItem(
-                                    "ai", 
+                                    "ai",
                                     "错误：${result.message}",
                                     reasoningContent = existingMsg.reasoningContent,
                                     toolSteps = existingMsg.toolSteps
@@ -1168,7 +1174,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             this@AiChatActivity.messages.add(ChatMessageItem("ai", "错误：${result.message}"))
                         }
                         adapter.notifyDataSetChanged()
-                        
+
                         // 保存错误信息到历史
                         currentSession?.let { session ->
                             val updatedMessages = session.messages.toMutableList()
@@ -1208,12 +1214,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         }
 
         val userMessage = messages[lastUserMessageIndex]
-        
+
         // 删除最后一条 AI 消息（如果存在）
         if (messages.size > lastUserMessageIndex + 1 && messages[lastUserMessageIndex + 1].role == "ai") {
             messages.removeAt(lastUserMessageIndex + 1)
         }
-        
+
         // 重新发送用户消息
         sendMessage(userMessage.content, isRegenerate = true)
     }
@@ -1224,7 +1230,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             "AiChat",
             "用户发送消息: length=${content.length}, isRegenerate=$isRegenerate"
         )
-        
+
         // 如果有引用，以紧凑格式添加到消息中
         val fullMessage = buildString {
             append(content)
@@ -1247,7 +1253,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         binding.recyclerView.post {
             binding.recyclerView.smoothScrollToPosition(messages.size - 1)
         }
-        
+
         binding.editText.setText("")
 
         // 清除引用
@@ -1260,7 +1266,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             "设置请求状态为活跃，切换为停止图标"
         )
         setRequestState(true)
-        
+
         // 立即保存草稿会话（参考 anx53）
         saveDraftSession(content)
 
@@ -1291,18 +1297,18 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                                     existingMsg.content + result.content
                                 }
                                 messages[streamingPosition] = ChatMessageItem(
-                                    "ai", 
+                                    "ai",
                                     newContent,
                                     reasoningContent = existingMsg.reasoningContent,
                                     toolSteps = existingMsg.toolSteps
                                 )
                                 adapter.notifyItemChanged(streamingPosition)
-                                
+
                                 // 滚动到底部
                                 binding.recyclerView.post {
                                     binding.recyclerView.smoothScrollToPosition(messages.size - 1)
                                 }
-                                
+
                                 // 每收到50个字符保存一次进度
                                 if (messages[streamingPosition].content.length % 50 == 0) {
                                     saveStreamingProgress()
@@ -1311,21 +1317,45 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                         }
                         is ChatResult.ToolCall -> {
                             // 工具调用开始
+                            io.legado.app.help.ai.AiLogManager.log(
+                                io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                                "AiChat",
+                                "收到ToolCall事件: name=${result.name}, arguments长度=${result.arguments.length}"
+                            )
                             val aiMsg = this@AiChatActivity.messages.getOrNull(streamingPosition)
                             if (aiMsg != null) {
                                 val updatedSteps = aiMsg.toolSteps.toMutableList()
+                                // 解析arguments JSON为格式化字符串
+                                val formattedArgs = try {
+                                    val argsJson = org.json.JSONObject(result.arguments)
+                                    argsJson.toString(2) // 格式化输出
+                                } catch (e: Exception) {
+                                    result.arguments
+                                }
                                 updatedSteps.add(ToolStep(
                                     name = result.name,
                                     status = ToolStepStatus.PENDING,
-                                    input = result.arguments
+                                    input = formattedArgs
                                 ))
                                 this@AiChatActivity.messages[streamingPosition] = aiMsg.copy(toolSteps = updatedSteps)
                                 adapter.notifyItemChanged(streamingPosition)
                                 
+                                io.legado.app.help.ai.AiLogManager.log(
+                                    io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                                    "AiChat",
+                                    "ToolCall已添加到消息，当前toolSteps数=${updatedSteps.size}"
+                                )
+
                                 // 滚动到底部
                                 binding.recyclerView.post {
                                     binding.recyclerView.smoothScrollToPosition(streamingPosition)
                                 }
+                            } else {
+                                io.legado.app.help.ai.AiLogManager.log(
+                                    io.legado.app.help.ai.AiLogManager.LogLevel.WARNING,
+                                    "AiChat",
+                                    "ToolCall事件但streamingPosition无效: $streamingPosition"
+                                )
                             }
                         }
                         is ChatResult.ToolStart -> {
@@ -1358,33 +1388,49 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             }
                         }
                         is ChatResult.Success -> {
-                // 关键：先重置流式位置，再更新UI
-                streamingPosition = -1
-                
                 // AI回复完成，更新最后一条消息
                 if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
                     val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
+                    
+                    // 关键：合并现有的 toolSteps 和新的 toolSteps
+                    val mergedToolSteps = if (result.toolSteps.isNotEmpty()) {
+                        result.toolSteps
+                    } else {
+                        existingMsg.toolSteps
+                    }
+                    
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                        "AiChat",
+                        "Success事件: content长度=${result.content.length}, toolSteps数=${mergedToolSteps.size}"
+                    )
+                    
                     this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
                         ChatMessageItem(
-                            "ai", 
+                            "ai",
                             result.content,
                             reasoningContent = existingMsg.reasoningContent,
-                            toolSteps = existingMsg.toolSteps,
+                            toolSteps = mergedToolSteps,
                             isExpanded = true  // 确保默认展开
                         )
                 } else {
                     this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content, isExpanded = true))
                 }
-                adapter.notifyDataSetChanged()
                 
+                // 关键：先重置流式位置，再更新UI
+                streamingPosition = -1
+                
+                // 使用 notifyItemChanged 而不是 notifyDataSetChanged，确保正确刷新
+                adapter.notifyItemChanged(this@AiChatActivity.messages.size - 1)
+
                 // 滚动到底部
                 binding.recyclerView.post {
                     binding.recyclerView.smoothScrollToPosition(this@AiChatActivity.messages.size - 1)
                 }
-                
+
                 // 重置请求状态，按钮变回纸飞机
                 setRequestState(false)
-                
+
                 // 保存到历史（用户消息已经在saveDraftSession中添加过了）
                 currentSession?.let { session ->
                     val updatedMessages = session.messages.toMutableList()
@@ -1392,7 +1438,13 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     if (updatedMessages.isNotEmpty() && updatedMessages.last().type == "ai") {
                         updatedMessages.removeAt(updatedMessages.size - 1)
                     }
-                    updatedMessages.add(ChatMessage("ai", result.content))
+                    // 关键修复：保存AI消息时包含toolSteps
+                    val lastAiMessage = this@AiChatActivity.messages.getOrNull(streamingPosition)
+                    updatedMessages.add(ChatMessage(
+                        "ai", 
+                        result.content,
+                        toolSteps = lastAiMessage?.toolSteps ?: emptyList()
+                    ))
                     val updatedSession = session.copy(
                         messages = updatedMessages,
                         model = currentModel,
@@ -1413,20 +1465,20 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             )
                             val existingMsg = messages[streamingPosition]
                             messages[streamingPosition] = ChatMessageItem(
-                                "ai", 
+                                "ai",
                                 "抱歉，处理请求时出错: ${result.message}",
                                 reasoningContent = existingMsg.reasoningContent,
                                 toolSteps = existingMsg.toolSteps
                             )
                             adapter.notifyItemChanged(streamingPosition)
-                            
+
                             // 清除流式位置
                             streamingPosition = -1
                             updateAdapter()
-                            
+
                             // 关键：错误时必须重置请求状态，否则按钮会一直是正方形
                             setRequestState(false)
-                            
+
                             // 保存错误信息到历史
                             currentSession?.let { session ->
                                 val updatedMessages = session.messages.toMutableList()
@@ -1484,22 +1536,28 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             currentSession = draftSession
         }
     }
-    
+
     /**
      * 保存流式输出进度（定期调用）
      */
     private fun saveStreamingProgress() {
         currentSession?.let { session ->
-            val aiContent = messages.getOrNull(streamingPosition)?.content ?: ""
+            val aiMessage = messages.getOrNull(streamingPosition)
+            val aiContent = aiMessage?.content ?: ""
             if (aiContent.isEmpty()) return
-            
+
             val updatedMessages = session.messages.toMutableList()
             // 移除最后一条 AI 消息（如果存在），然后添加最新的
             if (updatedMessages.isNotEmpty() && updatedMessages.last().type == "ai") {
                 updatedMessages.removeAt(updatedMessages.size - 1)
             }
-            updatedMessages.add(ChatMessage("ai", aiContent))
-            
+            // 关键修复：保存时包含toolSteps
+            updatedMessages.add(ChatMessage(
+                "ai", 
+                aiContent,
+                toolSteps = aiMessage?.toolSteps ?: emptyList()
+            ))
+
             val progressSession = session.copy(
                 messages = updatedMessages,
                 model = currentModel,
@@ -1622,24 +1680,20 @@ class ChatAdapter(
     private val onItemLongClick: (ChatMessageItem, Boolean) -> Unit,
     private val onCopyClick: ((String) -> Unit)? = null,
     private val onRegenerateClick: (() -> Unit)? = null,
-    private val isStreamingPosition: Int = -1 // 当前流式输出的消息位置
+    private val getStreamingPosition: () -> Int = { -1 } // 获取当前流式输出的消息位置的函数
 ) : RecyclerView.Adapter<ChatAdapter.ViewHolder>() {
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val contentText: TextView = view.findViewById(R.id.tv_content)
         val tvCursor: TextView = view.findViewById(R.id.tv_cursor)
-        val viewGradientMask: View = view.findViewById(R.id.view_gradient_mask)
         val btnExpandCollapse: ImageButton = view.findViewById(R.id.btn_expand_collapse)
         val layoutAiActions: LinearLayout = view.findViewById(R.id.layout_ai_actions)
         val btnCopy: ImageButton = view.findViewById(R.id.btn_copy)
         val btnRegenerate: ImageButton = view.findViewById(R.id.btn_regenerate)
-        
+
         // 推理过程相关视图
         val layoutReasoning: LinearLayout = view.findViewById(R.id.layout_reasoning)
-        val btnToggleReasoning: LinearLayout = view.findViewById(R.id.btn_toggle_reasoning)
-        val tvReasoningContent: TextView = view.findViewById(R.id.tv_reasoning_content)
-        val ivExpandIndicator: ImageView = view.findViewById(R.id.iv_expand_indicator)
-        
+
         // 工具步骤相关视图
         val layoutToolSteps: LinearLayout = view.findViewById(R.id.layout_tool_steps)
         val toolStepsContainer: LinearLayout = view.findViewById(R.id.tool_steps_container)
@@ -1653,10 +1707,13 @@ class ChatAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val message = messages[position]
-        
+
         // 获取主题颜色（在方法开头定义，供AI和用户消息分支使用）
         val textColorPrimary = ThemeStore.textColorPrimary(context)
         
+        // 统一设置 item 的左右 padding 为 16dp
+        holder.itemView.setPadding(16.dpToPx(), holder.itemView.paddingTop, 16.dpToPx(), holder.itemView.paddingBottom)
+
         // 复制功能
         fun copyToClipboard(text: String) {
             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -1664,7 +1721,7 @@ class ChatAdapter(
             clipboard.setPrimaryClip(clip)
             android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
         }
-        
+
         // AI 消息使用 Markdown 渲染，用户消息使用纯文本
         if (message.role == "ai") {
             // AI 消息：先重置所有视图状态，防止复用问题
@@ -1672,32 +1729,35 @@ class ChatAdapter(
             holder.contentText.background = null
             holder.contentText.setTextColor(textColorPrimary)
             holder.contentText.maxLines = Int.MAX_VALUE
-            holder.viewGradientMask.visibility = View.GONE
             holder.btnExpandCollapse.visibility = View.GONE
             holder.tvCursor.visibility = View.GONE
             holder.layoutReasoning.visibility = View.GONE
             holder.layoutToolSteps.visibility = View.GONE
             holder.layoutAiActions.visibility = View.GONE
             holder.btnRegenerate.visibility = View.GONE
-            
-            // AI 消息：设置固定的约束参数
+
+            // AI 消息：设置固定的约束参数（不设置 margin，由 itemView 的 padding 控制）
             val contentParams = holder.contentText.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
             contentParams.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
             contentParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
             contentParams.topToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
             contentParams.topToBottom = R.id.layout_tool_steps
-            contentParams.marginStart = 16.dpToPx()
-            contentParams.marginEnd = 16.dpToPx()
-            contentParams.marginTop = 0
+            contentParams.marginStart = 0
+            contentParams.marginEnd = 0
+            contentParams.topMargin = 0
             contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
             contentParams.matchConstraintMinWidth = 0
             holder.contentText.layoutParams = contentParams
-            
+
             // 渲染 Markdown
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
-            
+
             // 流式输出时显示光标动画
-            val isStreaming = position == isStreamingPosition
+            val isStreaming = position == getStreamingPosition()
+            
+            // 判断AI是否还在工作：流式中 或 有工具步骤但还没有最终内容
+            val isAiWorking = isStreaming || (message.toolSteps.isNotEmpty() && message.content.isEmpty())
+            
             if (isStreaming && message.content.isEmpty()) {
                 holder.tvCursor.visibility = View.VISIBLE
                 holder.tvCursor.startAnimation(
@@ -1710,36 +1770,76 @@ class ChatAdapter(
                 holder.tvCursor.visibility = View.GONE
                 holder.tvCursor.clearAnimation()
             }
-            
+
             // 显示推理过程（如果有）
             if (message.reasoningContent.isNotEmpty()) {
                 holder.layoutReasoning.visibility = View.VISIBLE
-                holder.tvReasoningContent.text = message.reasoningContent
+                holder.layoutReasoning.removeAllViews()
                 
-                if (message.isReasoningExpanded) {
-                    holder.tvReasoningContent.visibility = View.VISIBLE
-                    holder.ivExpandIndicator.rotation = 180f
+                // 关键修复：使用卡片布局，与工具调用样式一致
+                val reasoningView = android.view.LayoutInflater.from(context)
+                    .inflate(R.layout.item_reasoning_step, holder.layoutReasoning, false)
+                
+                val layoutHeader = reasoningView.findViewById<LinearLayout>(R.id.layout_reasoning_header)
+                val tvTitle = reasoningView.findViewById<TextView>(R.id.tv_reasoning_title)
+                val ivExpand = reasoningView.findViewById<ImageView>(R.id.iv_expand_indicator)
+                val tvContent = reasoningView.findViewById<TextView>(R.id.tv_reasoning_content)
+                
+                tvContent.text = message.reasoningContent
+                
+                // 默认折叠
+                var isExpanded = message.isReasoningExpanded
+                if (isExpanded) {
+                    tvContent.visibility = View.VISIBLE
+                    ivExpand.rotation = 180f
                 } else {
-                    holder.tvReasoningContent.visibility = View.GONE
-                    holder.ivExpandIndicator.rotation = 0f
+                    tvContent.visibility = View.GONE
+                    ivExpand.rotation = 0f
                 }
                 
-                holder.btnToggleReasoning.setOnClickListener {
-                    message.isReasoningExpanded = !message.isReasoningExpanded
-                    notifyItemChanged(position)
+                layoutHeader.setOnClickListener {
+                    isExpanded = !isExpanded
+                    message.isReasoningExpanded = isExpanded
+                    if (isExpanded) {
+                        tvContent.visibility = View.VISIBLE
+                        ivExpand.rotation = 180f
+                    } else {
+                        tvContent.visibility = View.GONE
+                        ivExpand.rotation = 0f
+                    }
                 }
+                
+                holder.layoutReasoning.addView(reasoningView)
             }
-            
+
             // 显示工具步骤（如果有）
             if (message.toolSteps.isNotEmpty()) {
                 holder.layoutToolSteps.visibility = View.VISIBLE
                 holder.toolStepsContainer.removeAllViews()
                 
+                io.legado.app.help.ai.AiLogManager.log(
+                    io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                    "AiChat",
+                    "渲染工具步骤: position=$position, toolSteps数=${message.toolSteps.size}"
+                )
+
                 val adapterContext = context
-                message.toolSteps.forEach { step ->
+                message.toolSteps.forEachIndexed { index, step ->
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                        "AiChat",
+                        "渲染工具步骤[$index]: name=${step.name}, status=${step.status}"
+                    )
+                    
                     val stepView = android.view.LayoutInflater.from(adapterContext)
                         .inflate(R.layout.item_tool_step, holder.toolStepsContainer, false)
                     
+                    // 关键修复：在代码中统一设置垂直 margin，与 AI/用户消息保持一致
+                    val layoutParams = stepView.layoutParams as android.widget.LinearLayout.LayoutParams
+                    layoutParams.topMargin = if (index == 0) 0 else 8.dpToPx()  // 第一个没有上边距，其他有 8dp
+                    layoutParams.bottomMargin = 8.dpToPx()  // 所有都有下边距
+                    stepView.layoutParams = layoutParams
+
                     val layoutHeader = stepView.findViewById<LinearLayout>(R.id.layout_tool_header)
                     val ivIcon = stepView.findViewById<ImageView>(R.id.iv_tool_icon)
                     val tvName = stepView.findViewById<TextView>(R.id.tv_tool_name)
@@ -1751,9 +1851,11 @@ class ChatAdapter(
                     val tvOutput = stepView.findViewById<TextView>(R.id.tv_tool_output)
                     val layoutError = stepView.findViewById<LinearLayout>(R.id.layout_tool_error)
                     val tvError = stepView.findViewById<TextView>(R.id.tv_tool_error)
-                    
-                    tvName.text = step.name
-                    
+
+                    // 关键修复：显示工具的中文名称，而不是 ID
+                    val toolDisplayName = io.legado.app.help.ai.AiToolRegistry.getDefinition(step.name)?.displayNameBuilder?.invoke() ?: step.name
+                    tvName.text = toolDisplayName
+
                     when (step.status) {
                         ToolStepStatus.PENDING -> {
                             ivIcon.setImageResource(R.drawable.ic_circle_outline)
@@ -1768,37 +1870,40 @@ class ChatAdapter(
                             ivIcon.setImageResource(R.drawable.ic_circle_failed)
                         }
                     }
-                    
-                    var isExpanded = step.output != null || step.input != null || step.error != null
-                    
+
+                    // 默认不展开，用户点击后才展开
+                    var isExpanded = false
+
                     if (!step.input.isNullOrBlank()) {
                         layoutInput.visibility = View.VISIBLE
                         tvInput.text = step.input
                     } else {
                         layoutInput.visibility = View.GONE
                     }
-                    
+
                     if (!step.output.isNullOrBlank()) {
                         layoutOutput.visibility = View.VISIBLE
                         tvOutput.text = step.output
                     } else {
                         layoutOutput.visibility = View.GONE
                     }
-                    
+
                     if (!step.error.isNullOrBlank()) {
                         layoutError.visibility = View.VISIBLE
                         tvError.text = step.error
                     } else {
                         layoutError.visibility = View.GONE
                     }
-                    
-                    if (step.output != null || step.input != null || step.error != null) {
+
+                    // 默认折叠内容区域
+                    if (isExpanded) {
                         layoutContent.visibility = View.VISIBLE
                         ivExpand.rotation = 180f
                     } else {
                         layoutContent.visibility = View.GONE
+                        ivExpand.rotation = 0f
                     }
-                    
+
                     layoutHeader.setOnClickListener {
                         isExpanded = !isExpanded
                         if (isExpanded) {
@@ -1809,61 +1914,58 @@ class ChatAdapter(
                             ivExpand.rotation = 0f
                         }
                     }
-                    
+
                     holder.toolStepsContainer.addView(stepView)
                 }
             }
-            
+
             // 长文本折叠功能（超过 300 字符）
             if (message.content.length > 300) {
                 holder.btnExpandCollapse.visibility = View.VISIBLE
 
                 if (message.isExpanded) {
                     holder.contentText.maxLines = Int.MAX_VALUE
-                    holder.viewGradientMask.visibility = View.GONE
                     holder.btnExpandCollapse.rotation = 180f
                 } else {
                     holder.contentText.maxLines = 10
-                    holder.viewGradientMask.visibility = View.VISIBLE
                     holder.btnExpandCollapse.rotation = 0f
                 }
-                
+
                 holder.btnExpandCollapse.setOnClickListener {
                     message.isExpanded = !message.isExpanded
                     // 关键：调用 notifyItemChanged 强制重新绑定数据，防止 RecyclerView 复用导致的布局污染
                     notifyItemChanged(position)
                 }
             }
-            
-            // 显示操作按钮（流式输出时隐藏）
-            holder.layoutAiActions.visibility = if (isStreaming) View.GONE else View.VISIBLE
-            
-            // 复制按钮：所有AI消息都显示
-            holder.btnCopy.visibility = if (isStreaming) View.GONE else View.VISIBLE
+
+            // 显示操作按钮（AI工作时隐藏）
+            holder.layoutAiActions.visibility = if (isAiWorking) View.GONE else View.VISIBLE
+                        
+            // 复制按钮：AI工作时隐藏
+            holder.btnCopy.visibility = if (isAiWorking) View.GONE else View.VISIBLE
             
             // 展开/折叠按钮：只在长文本时显示
             if (message.content.length <= 300) {
                 holder.btnExpandCollapse.visibility = View.GONE
             }
-            
-            // 只有最后一条 AI 消息显示“重新生成”按钮
+
+            // 只有最后一条 AI 消息显示“重新生成”按钮（AI工作时隐藏）
             val isLastAiMessage = position == messages.lastIndex &&
                                   messages.indexOfLast { it.role == "ai" } == position
-            holder.btnRegenerate.visibility = if (isLastAiMessage && !isStreaming) View.VISIBLE else View.GONE
-            
+            holder.btnRegenerate.visibility = if (isLastAiMessage && !isAiWorking) View.VISIBLE else View.GONE
+
             holder.btnCopy.setOnClickListener {
                 onCopyClick?.invoke(message.content)
             }
-            
+
             holder.btnRegenerate.setOnClickListener {
                 onRegenerateClick?.invoke()
             }
-            
+
         } else {
             // 用户消息：先重置所有视图状态，防止复用问题
             holder.itemView.setBackgroundResource(0)
             holder.contentText.maxLines = Int.MAX_VALUE
-            holder.viewGradientMask.visibility = View.GONE
             holder.btnExpandCollapse.visibility = View.GONE
             holder.tvCursor.visibility = View.GONE
             holder.layoutReasoning.visibility = View.GONE
@@ -1871,13 +1973,13 @@ class ChatAdapter(
             holder.layoutAiActions.visibility = View.GONE
             holder.btnRegenerate.visibility = View.GONE
             holder.btnCopy.visibility = View.GONE
-            
+
             // 用户消息：设置内容和样式
             holder.contentText.text = message.content
-            
+
             // 使用主题强调色作为气泡背景（半透明）
             val accentColor = ThemeStore.accentColor(context)
-            
+
             // 创建半透明强调色（60% 不透明度）
             val semiTransparentAccent = android.graphics.Color.argb(
                 153, // 60% 不透明度 (255 * 0.6 = 153)
@@ -1885,36 +1987,36 @@ class ChatAdapter(
                 android.graphics.Color.green(accentColor),
                 android.graphics.Color.blue(accentColor)
             )
-            
+
             // 创建气泡背景 - 圆角矩形
             val gradientDrawable = android.graphics.drawable.GradientDrawable()
             gradientDrawable.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
             gradientDrawable.cornerRadius = 16f.dpToPx().toFloat()
             gradientDrawable.setColor(semiTransparentAccent)
             holder.contentText.background = gradientDrawable  // 关键：背景设置在 contentText 上
-            
+
             // 文字颜色为白色（在强调色背景上）
             holder.contentText.setTextColor(android.graphics.Color.WHITE)
-            
+
             // 设置内边距 - 文字距离气泡边缘的距离
             holder.contentText.setPadding(12.dpToPx(), 8.dpToPx(), 12.dpToPx(), 8.dpToPx())
-            
-            // 用户消息：靠右对齐，重置所有约束参数
+
+            // 用户消息：靠右对齐，重置所有约束参数（不设置 margin，由 itemView 的 padding 控制）
             val contentParams = holder.contentText.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
             contentParams.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
             contentParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
             contentParams.topToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
             contentParams.topToBottom = R.id.layout_tool_steps
             contentParams.marginStart = 0
-            contentParams.marginEnd = 16.dpToPx()
-            contentParams.marginTop = 0
-            
+            contentParams.marginEnd = 0
+            contentParams.topMargin = 0
+
             // 限制最大宽度为 85% - 参考 ReadAny: max-w-[85%]
             val displayMetrics = context.resources.displayMetrics
             val maxWidth = (displayMetrics.widthPixels * 0.85).toInt()
             contentParams.matchConstraintMaxWidth = maxWidth
             contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
-            
+
             holder.contentText.layoutParams = contentParams
         }
 

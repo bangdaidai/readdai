@@ -327,28 +327,47 @@ class AiService(private val context: Context) {
         AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "当前上下文: book=${context.currentBook?.name ?: "null"}, chapter=${context.currentChapter?.title ?: "null"}")
         
         try {
-            langChain4jService!!.chatStream(message, context).collect { response ->
-                // 发送工具步骤
+            // 关键修复：传递会话历史消息给LangChain4j，保持上下文
+            val sessionMessages = session?.messages ?: emptyList()
+            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "传递 ${sessionMessages.size} 条历史消息")
+            
+            langChain4jService!!.chatStream(message, context, sessionMessages).collect { response ->
+                // 关键：先发送工具步骤，再发送内容
+                // 这样UI可以按顺序显示工具调用过程
                 for (step in response.toolSteps) {
                     when (step.status) {
                         io.legado.app.help.ai.ToolStepStatus.PENDING -> {
+                            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "发送ToolCall: ${step.name}")
                             trySend(ChatResult.ToolCall(step.name, step.input ?: ""))
+                            // 短暂延迟，让UI有时间渲染
+                            kotlinx.coroutines.delay(100)
                         }
                         io.legado.app.help.ai.ToolStepStatus.RUNNING -> {
+                            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "发送ToolStart: ${step.name}")
                             trySend(ChatResult.ToolStart(step.name))
+                            kotlinx.coroutines.delay(100)
                         }
                         io.legado.app.help.ai.ToolStepStatus.SUCCESS -> {
+                            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "发送ToolResult: ${step.name}, output长度=${step.output?.length ?: 0}")
                             trySend(ChatResult.ToolResult(step.name, step.output ?: ""))
+                            kotlinx.coroutines.delay(100)
                         }
                         io.legado.app.help.ai.ToolStepStatus.FAILED -> {
+                            AiLogManager.log(AiLogManager.LogLevel.ERROR, "AiService", "工具失败: ${step.name}, error=${step.error}")
                             trySend(ChatResult.Error("工具 ${step.name} 执行失败: ${step.error}"))
+                            kotlinx.coroutines.delay(100)
                         }
                     }
                 }
                 
                 // 发送最终内容
-                trySend(ChatResult.Chunk(response.content))
-                trySend(ChatResult.Success(response.content))
+                if (response.content.isNotEmpty()) {
+                    trySend(ChatResult.Chunk(response.content))
+                    trySend(ChatResult.Success(response.content, toolSteps = response.toolSteps))
+                } else if (response.toolSteps.isNotEmpty()) {
+                    // 如果只有工具步骤没有内容，也发送Success
+                    trySend(ChatResult.Success("", toolSteps = response.toolSteps))
+                }
             }
             close()
         } catch (e: Exception) {

@@ -202,7 +202,34 @@ data class ToolStep(
     val output: String? = null,
     val error: String? = null,
     val timestamp: Long = System.currentTimeMillis()
-)
+) {
+    fun toMap(): Map<String, Any> = mapOf(
+        "name" to name,
+        "status" to status.name,
+        "timestamp" to timestamp
+    ).let { map ->
+        val withInput = if (input != null) map + ("input" to input) else map
+        val withOutput = if (output != null) withInput + ("output" to output) else withInput
+        if (error != null) withOutput + ("error" to error) else withOutput
+    }
+
+    companion object {
+        fun fromMap(map: Map<String, Any>): ToolStep {
+            return ToolStep(
+                name = map["name"]?.toString() ?: "",
+                status = try {
+                    ToolStepStatus.valueOf(map["status"]?.toString() ?: "PENDING")
+                } catch (e: Exception) {
+                    ToolStepStatus.PENDING
+                },
+                input = map["input"]?.toString(),
+                output = map["output"]?.toString(),
+                error = map["error"]?.toString(),
+                timestamp = (map["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis()
+            )
+        }
+    }
+}
 
 /**
  * 工具步骤状态

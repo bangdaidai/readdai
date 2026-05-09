@@ -187,7 +187,7 @@ class LangChain4jAgentService {
     /**
      * 流式聊天（每次调用都创建新的Assistant）
      */
-    fun chatStream(message: String, context: AiToolContext): Flow<LangChain4jResponse> = callbackFlow {
+    fun chatStream(message: String, context: AiToolContext, sessionMessages: List<io.legado.app.help.ai.ChatMessage> = emptyList()): Flow<LangChain4jResponse> = callbackFlow {
         // 在IO线程执行网络请求，避免NetworkOnMainThreadException
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val model = chatModel ?: throw IllegalStateException("Chat model not initialized")
@@ -196,12 +196,54 @@ class LangChain4jAgentService {
                 io.legado.app.help.ai.AiLogManager.log(
                     io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
                     "LangChain4j",
-                    "开始聊天: message长度=${message.length}"
+                    "开始聊天: message长度=${message.length}, 历史消息数=${sessionMessages.size}"
                 )
                 
-                // LangChain4j的AiServices不支持流式+Tool的组合
-                // 这里使用同步方式模拟流式（与anx/readany的做法一致）
-                var response = chat(message, context)
+                // 创建Tool执行器
+                val toolExecutor = LangChain4jUniversalToolExecutor(context)
+                
+                // 构建System Prompt
+                val systemPrompt = buildSystemPrompt(context)
+                
+                // 创建Chat Memory并加载历史消息
+                val chatMemory = MessageWindowChatMemory.withMaxMessages(20)
+                
+                // 添加历史消息到memory中，保持上下文
+                if (sessionMessages.isNotEmpty()) {
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                        "LangChain4j",
+                        "加载历史消息到Chat Memory"
+                    )
+                    
+                    for (msg in sessionMessages) {
+                        when (msg.type) {
+                            "human" -> {
+                                chatMemory.add(dev.langchain4j.data.message.UserMessage.from(msg.content))
+                            }
+                            "ai" -> {
+                                chatMemory.add(dev.langchain4j.data.message.AiMessage.from(msg.content))
+                            }
+                        }
+                    }
+                    
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                        "LangChain4j",
+                        "已加载 ${sessionMessages.size} 条历史消息"
+                    )
+                }
+                
+                // 创建Assistant（不保存，用完即弃）
+                val assistant = AiServices.builder(ReadingAssistant::class.java)
+                    .chatLanguageModel(model)
+                    .tools(toolExecutor)
+                    .systemMessageProvider { systemPrompt }
+                    .chatMemory(chatMemory)
+                    .build()
+                
+                // 执行聊天并获取响应
+                var response = assistant.chat(message)
                 io.legado.app.help.ai.AiLogManager.log(
                     io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
                     "LangChain4j",
@@ -209,27 +251,168 @@ class LangChain4jAgentService {
                 )
                 
                 val toolSteps = mutableListOf<ToolStep>()
+                var hasSentIntroMessage = false  // 标记是否已发送介绍消息
                 
-                // 检查是否包含LongCat工具调用格式
-                if (response.contains("<longcat_tool_call>")) {
-                    io.legado.app.help.ai.AiLogManager.log(
-                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
-                        "LangChain4j",
-                        "检测到LongCat工具调用格式，开始解析..."
-                    )
-                    
-                    // 解析并执行工具调用，同时收集工具步骤
-                    val result = executeLongCatToolCallsWithSteps(response, context)
-                    response = result.content
-                    toolSteps.addAll(result.toolSteps)
-                    
+                // 关键修复：支持多轮工具调用循环（类似ReadAny的ReAct agent）
+                var currentResponse = response
+                var iteration = 0
+                val maxIterations = 10  // 最多10轮工具调用，防止无限循环
+                
+                while (iteration < maxIterations) {
+                    iteration++
                     io.legado.app.help.ai.AiLogManager.log(
                         io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
                         "LangChain4j",
-                        "工具调用执行完成: response长度=${response.length}, 工具步骤数=${toolSteps.size}"
+                        "第 $iteration 轮工具调用检查..."
+                    )
+                    
+                    // 检查是否包含LongCat工具调用格式
+                    if (!currentResponse.contains("<longcat_tool_call>")) {
+                        // 没有工具调用了，退出循环
+                        io.legado.app.help.ai.AiLogManager.log(
+                            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                            "LangChain4j",
+                            "第 $iteration 轮：没有检测到工具调用，退出循环"
+                        )
+                        break
+                    }
+                    
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                        "LangChain4j",
+                        "第 $iteration 轮：检测到LongCat工具调用格式，开始解析..."
+                    )
+                    
+                    // 关键修复：在第一次调用工具前，先发送一条友好的提示消息
+                    if (!hasSentIntroMessage) {
+                        trySend(LangChain4jResponse(content = "让我先查询一下相关信息...", toolSteps = emptyList()))
+                        kotlinx.coroutines.delay(200)  // 让用户看到提示
+                        hasSentIntroMessage = true
+                    }
+                    
+                    // 解析所有工具调用
+                    val regex = Regex("<longcat_tool_call>\\s*(.*?)\\s*</longcat_tool_call>", RegexOption.DOT_MATCHES_ALL)
+                    val matches = regex.findAll(currentResponse)
+                    
+                    for (match in matches) {
+                        val toolCallJson = match.groupValues[1]
+                        io.legado.app.help.ai.AiLogManager.log(
+                            io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                            "LangChain4j",
+                            "解析到工具调用JSON: $toolCallJson"
+                        )
+                        
+                        try {
+                            val jsonObject = org.json.JSONObject(toolCallJson)
+                            val toolName = jsonObject.getString("name")
+                            val arguments = jsonObject.getJSONObject("arguments").toString()
+                            
+                            io.legado.app.help.ai.AiLogManager.log(
+                                io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                                "LangChain4j",
+                                "执行LongCat工具: name=$toolName, args=$arguments"
+                            )
+                            
+                            // 添加工具步骤（PENDING状态）并立即发送
+                            val pendingStep = ToolStep(
+                                name = toolName,
+                                status = ToolStepStatus.PENDING,
+                                input = arguments
+                            )
+                            toolSteps.add(pendingStep)
+                            trySend(LangChain4jResponse(content = "", toolSteps = listOf(pendingStep)))
+                            
+                            // 短暂延迟让UI有时间渲染
+                            kotlinx.coroutines.delay(100)
+                            
+                            // 更新为RUNNING状态并发送
+                            val runningStep = pendingStep.copy(status = ToolStepStatus.RUNNING)
+                            toolSteps[toolSteps.size - 1] = runningStep
+                            trySend(LangChain4jResponse(content = "", toolSteps = listOf(runningStep)))
+                            
+                            // 短暂延迟让UI有时间渲染
+                            kotlinx.coroutines.delay(100)
+                            
+                            // 执行工具
+                            val result = toolExecutor.executeToolByName(toolName, arguments)
+                            
+                            io.legado.app.help.ai.AiLogManager.log(
+                                io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                                "LangChain4j",
+                                "工具执行结果: $result"
+                            )
+                            
+                            // 更新为SUCCESS状态并发送
+                            val successStep = runningStep.copy(
+                                status = ToolStepStatus.SUCCESS,
+                                output = result
+                            )
+                            toolSteps[toolSteps.size - 1] = successStep
+                            trySend(LangChain4jResponse(content = "", toolSteps = listOf(successStep)))
+                            
+                            // 短暂延迟让UI有时间渲染
+                            kotlinx.coroutines.delay(100)
+                            
+                        } catch (e: Exception) {
+                            io.legado.app.help.ai.AiLogManager.log(
+                                io.legado.app.help.ai.AiLogManager.LogLevel.ERROR,
+                                "LangChain4j",
+                                "执行LongCat工具调用失败: ${e.message}",
+                                e
+                            )
+                            
+                            // 更新为FAILED状态并发送
+                            if (toolSteps.isNotEmpty()) {
+                                val failedStep = toolSteps.last().copy(
+                                    status = ToolStepStatus.FAILED,
+                                    error = e.message
+                                )
+                                toolSteps[toolSteps.size - 1] = failedStep
+                                trySend(LangChain4jResponse(content = "", toolSteps = listOf(failedStep)))
+                                
+                                // 短暂延迟让UI有时间渲染
+                                kotlinx.coroutines.delay(100)
+                            }
+                        }
+                    }
+                    
+                    // 将所有工具结果组合，返回给AI继续决策
+                    val resultsText = toolSteps.filter { it.status == ToolStepStatus.SUCCESS }
+                        .map { "工具 [${it.name}] 执行结果：${it.output}" }
+                        .joinToString("\n\n")
+                    val followUpMessage = "已执行以下工具：\n\n$resultsText\n\n请根据这些结果决定：如果需要更多信息，可以继续调用工具；如果信息足够，请直接回答用户的问题。"
+                    
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                        "LangChain4j",
+                        "第 $iteration 轮工具执行完成，正在请求AI继续决策..."
+                    )
+                    
+                    // 关键修复：发送空Chunk保持光标闪烁
+                    trySend(LangChain4jResponse(content = "", toolSteps = emptyList()))
+                    
+                    // 使用同一个assistant继续对话，让AI决定是否需要再次调用工具
+                    currentResponse = assistant.chat(followUpMessage)
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                        "LangChain4j",
+                        "第 $iteration 轮AI响应完成: response长度=${currentResponse.length}"
                     )
                 }
                 
+                // 检查是否达到最大迭代次数
+                if (iteration >= maxIterations) {
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.WARNING,
+                        "LangChain4j",
+                        "达到最大迭代次数 ($maxIterations)，强制退出"
+                    )
+                }
+                
+                // currentResponse 现在是最终回答（不包含工具调用）
+                response = currentResponse
+                
+                // 发送最终内容
                 trySend(LangChain4jResponse(content = response, toolSteps = toolSteps))
                 close()
             } catch (e: Exception) {
