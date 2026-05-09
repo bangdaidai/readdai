@@ -19,6 +19,11 @@ class VectorSearchService(private val context: Context) {
 
     private val vectorDao get() = appDb.vectorDao
     private val chunkDao get() = appDb.chunkDao
+    
+    // ✅ 缓存机制：缓存已加载的 chunks，避免重复查询数据库
+    private val chunkCache = android.util.LruCache<String, List<io.legado.app.data.entities.ChunkEntity>>(10)
+    private val CACHE_TTL_MS = 5 * 60 * 1000L // 5分钟
+    private data class CacheEntry(val chunks: List<io.legado.app.data.entities.ChunkEntity>, val timestamp: Long)
 
     /**
      * 向量化书籍
@@ -222,14 +227,65 @@ class VectorSearchService(private val context: Context) {
     }
 
     /**
-     * 语义搜索
+     * 获取缓存的 chunks（参考 ReadAny 实现）
+     */
+    private suspend fun getCachedChunks(bookUrl: String): List<io.legado.app.data.entities.ChunkEntity> {
+        // 检查缓存
+        chunkCache.get(bookUrl)?.let { return it }
+        
+        // 从数据库加载
+        val chunks = chunkDao.getByBookUrl(bookUrl)
+        
+        // 存入缓存
+        if (chunks.isNotEmpty()) {
+            chunkCache.put(bookUrl, chunks)
+        }
+        
+        return chunks
+    }
+
+    /**
+     * 智能截断内容，控制 token 数量（参考 ReadAny 实现）
+     */
+    private fun truncateByTokens(content: String, maxTokens: Int): String {
+        // 简单估算：1个中文字符 ≈ 1 token，1个英文单词 ≈ 1.3 tokens
+        // 保守估计：按字符数截断
+        if (content.length <= maxTokens) return content
+        
+        // 找到合适的截断点（尽量在句子边界）
+        val truncated = content.take(maxTokens)
+        val lastSentenceEnd = maxOf(
+            truncated.lastIndexOf('。'),
+            truncated.lastIndexOf('！'),
+            truncated.lastIndexOf('？'),
+            truncated.lastIndexOf('.'),
+            truncated.lastIndexOf('!'),
+            truncated.lastIndexOf('?')
+        )
+        
+        return if (lastSentenceEnd > maxTokens / 2) {
+            truncated.substring(0, lastSentenceEnd + 1) + "..."
+        } else {
+            truncated + "..."
+        }
+    }
+
+    /**
+     * 语义搜索（优化版：添加缓存和智能截断）
      */
     suspend fun semanticSearch(
         query: String,
         bookUrl: String?,
         config: VectorConfig,
-        topK: Int = 5
+        topK: Int = 5,
+        maxTokensPerResult: Int = 500  // ✅ 新增：每个结果的最大 token 数
     ): List<SearchResult> = withContext(Dispatchers.IO) {
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "VectorSearch",
+            "开始语义搜索: query='$query', topK=$topK"
+        )
+        
         // 1. 向量化查询
         val embeddingService = EmbeddingService(config)
         val queryEmbedding = embeddingService.embed(query)
@@ -245,6 +301,10 @@ class VectorSearchService(private val context: Context) {
 
             if (vectorEntities.isEmpty()) continue
 
+            // ✅ 使用缓存获取 chunks（减少数据库查询）
+            val cachedChunks = getCachedChunks(url)
+            val chunkMap = cachedChunks.associateBy { it.id }
+
             // 计算余弦相似度
             val scoredVectors = vectorEntities.map { entity ->
                 val embeddingList: List<Double> = gson.fromJson(
@@ -258,7 +318,8 @@ class VectorSearchService(private val context: Context) {
                 .take(topK)
 
             for ((entity, score) in scoredVectors) {
-                val chunkEntity = chunkDao.getById(entity.chunkId)
+                // ✅ 从缓存中获取 chunk（而不是再次查询数据库）
+                val chunkEntity = chunkMap[entity.chunkId]
                 if (chunkEntity != null) {
                     val chunk = TextChunk(
                         id = chunkEntity.id,
@@ -276,16 +337,26 @@ class VectorSearchService(private val context: Context) {
             }
         }
 
-        // 3. 排序返回topK
-        allResults.sortedByDescending { it.second }
+        // 3. 排序返回topK，并智能截断内容
+        val results = allResults.sortedByDescending { it.second }
             .take(topK)
             .map { (chunk, score) ->
+                // ✅ 智能截断，控制 token 数量
+                val truncatedContent = truncateByTokens(chunk.content, maxTokensPerResult)
                 SearchResult(
                     chunk = chunk,
                     score = score,
-                    content = chunk.content
+                    content = truncatedContent
                 )
             }
+        
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "VectorSearch",
+            "搜索完成: 返回 ${results.size} 条结果"
+        )
+        
+        return@withContext results
     }
 
     /**

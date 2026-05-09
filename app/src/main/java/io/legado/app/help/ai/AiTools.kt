@@ -2363,7 +2363,8 @@ class RagSearchTool(
 
         return try {
             val vectorService = VectorSearchService(context.appContext)
-            val results = vectorService.semanticSearch(query, bookUrl, config, topK)
+            // ✅ 使用优化后的搜索方法（带缓存和智能截断）
+            val results = vectorService.semanticSearch(query, bookUrl, config, topK, maxTokensPerResult = 500)
 
             if (results.isEmpty()) {
                 return ToolResult(
@@ -2379,12 +2380,13 @@ class RagSearchTool(
                 )
             }
 
+            // ✅ 结果已经被智能截断，不需要再次 take(800)
             val searchResults = results.map { result ->
                 mapOf(
                     "chunkId" to result.chunk.id,
                     "chapterIndex" to result.chunk.chapterIndex,
                     "chapterTitle" to result.chunk.chapterTitle,
-                    "content" to result.content.take(800),
+                    "content" to result.content,  // 已经截断过了
                     "score" to result.score,
                     "matchType" to "vector"
                 )
