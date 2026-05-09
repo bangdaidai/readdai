@@ -34,11 +34,11 @@ updates:
         patterns:
           - "org.jetbrains.kotlin:*"
           - "com.google.devtools.ksp"
-  # Maintain dependencies for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+  # 已禁用 GitHub Actions 自动更新，避免频繁触发工作流
+  # - package-ecosystem: "github-actions"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
   - package-ecosystem: npm
     directory: "modules/web"
     schedule:
