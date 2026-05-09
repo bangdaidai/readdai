@@ -1,4 +1,5 @@
-name: Build APK
+# 已禁用 - 使用 android-ci-cd.yml 替代
+name: Build APK (DISABLED)
 on:
   workflow_dispatch
 
