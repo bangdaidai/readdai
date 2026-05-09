@@ -1,7 +1,8 @@
-# 已禁用 - 使用 android-ci-cd.yml 替代
-name: Build APK (DISABLED)
+name: Build APK
 on:
-  workflow_dispatch
+  push:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -15,13 +16,13 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Build Release
+      - name: Build Debug APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleAppDebug --no-daemon -x lint
 
       - name: Upload APK
         uses: actions/upload-artifact@v6
         with:
-          name: legado_apk
-          path: app/build/outputs/apk/release/
+          name: legado_debug_apk
+          path: app/build/outputs/apk/app/debug/*.apk
