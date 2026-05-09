@@ -1,0 +1,282 @@
+name: Auto Version & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: '版本类型'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      publish_github:
+        description: '发布到 GitHub Releases'
+        required: true
+        type: boolean
+        default: true
+      publish_play_store:
+        description: '发布到 Google Play (需要配置)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -XX:+UseParallelGC"
+
+jobs:
+  # 计算新版本号
+  calculate-version:
+    name: Calculate Version
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+      version_code: ${{ steps.version.outputs.version_code }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        id: current
+        run: |
+          # 从 build.gradle 提取当前版本号
+          CURRENT_VERSION=$(grep -oP 'def version = "\K[^"]+' app/build.gradle || echo "3.0.0")
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          
+          # 获取 git commit 数量作为 version code
+          VERSION_CODE=$(git rev-list HEAD --count)
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+      - name: Calculate new version
+        id: version
+        run: |
+          CURRENT="${{ steps.current.outputs.current_version }}"
+          TYPE="${{ github.event.inputs.version_type }}"
+          
+          # 解析版本号
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+          
+          case $TYPE in
+            major)
+              NEW_MAJOR=$((MAJOR + 1))
+              NEW_MINOR=0
+              NEW_PATCH=0
+              ;;
+            minor)
+              NEW_MAJOR=$MAJOR
+              NEW_MINOR=$((MINOR + 1))
+              NEW_PATCH=0
+              ;;
+            patch)
+              NEW_MAJOR=$MAJOR
+              NEW_MINOR=$MINOR
+              NEW_PATCH=$((PATCH + 1))
+              ;;
+          esac
+          
+          NEW_VERSION="${NEW_MAJOR}.${NEW_MINOR}.${NEW_PATCH}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=${{ steps.current.outputs.version_code }}" >> $GITHUB_OUTPUT
+          
+          echo "Current version: $CURRENT"
+          echo "New version: $NEW_VERSION"
+          echo "Version code: ${{ steps.current.outputs.version_code }}"
+
+  # 更新版本号并构建
+  build-and-tag:
+    name: Build & Tag
+    needs: calculate-version
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Update version in build.gradle
+        run: |
+          NEW_VERSION="${{ needs.calculate-version.outputs.new_version }}"
+          sed -i "s/def version = \".*\"/def version = \"$NEW_VERSION\"/" app/build.gradle
+          echo "Updated version to $NEW_VERSION"
+          cat app/build.gradle | grep "def version"
+
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+
+      - name: Setup Android Signing
+        if: env.KEYSTORE_BASE64 != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ ! -z "$KEYSTORE_BASE64" ]; then
+            echo "Setting up signing keys..."
+            echo $KEYSTORE_BASE64 | base64 --decode > $GITHUB_WORKSPACE/app/release.keystore
+            echo "RELEASE_STORE_FILE=./release.keystore" >> gradle.properties
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
+            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+          fi
+
+      - name: Build Release APK
+        run: ./gradlew assembleAppRelease --no-daemon --info
+
+      - name: Check APK output
+        run: |
+          echo "Checking for APK files..."
+          find app/build/outputs -name "*.apk" -type f || echo "No APK found"
+
+      - name: Build Release AAB
+        run: ./gradlew bundleAppRelease --no-daemon --info
+
+      - name: Check AAB output
+        run: |
+          echo "Checking for AAB files..."
+          find app/build/outputs -name "*.aab" -type f || echo "No AAB found"
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk-v${{ needs.calculate-version.outputs.new_version }}
+          path: |
+            app/build/outputs/apk/app/release/*.apk
+            app/build/outputs/apk/**/*.apk
+          if-no-files-found: warn
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aab-v${{ needs.calculate-version.outputs.new_version }}
+          path: |
+            app/build/outputs/bundle/appRelease/*.aab
+            app/build/outputs/bundle/**/*.aab
+          if-no-files-found: warn
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ needs.calculate-version.outputs.new_version }}"
+          git push origin "v${{ needs.calculate-version.outputs.new_version }}"
+
+      - name: Commit version update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/build.gradle
+          git commit -m "chore: bump version to ${{ needs.calculate-version.outputs.new_version }}"
+          git push origin HEAD:main
+
+  # 发布到 GitHub Releases
+  release-github:
+    name: Release to GitHub
+    needs: [calculate-version, build-and-tag]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.publish_github == 'true'
+    
+    steps:
+      - name: Download Release APK
+        uses: actions/download-artifact@v4
+        with:
+          name: release-apk-v${{ needs.calculate-version.outputs.new_version }}
+          path: artifacts/apk
+
+      - name: Download Release AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab-v${{ needs.calculate-version.outputs.new_version }}
+          path: artifacts/aab
+
+      - name: Generate Release Notes
+        run: |
+          echo "## 🎉 Release v${{ needs.calculate-version.outputs.new_version }}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "**Build Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> RELEASE_NOTES.md
+          echo "**Commit:** ${{ github.sha }}" >> RELEASE_NOTES.md
+          echo "**Version Code:** ${{ needs.calculate-version.outputs.version_code }}" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### 📦 Downloads" >> RELEASE_NOTES.md
+          echo "- **APK:** For direct installation on Android devices" >> RELEASE_NOTES.md
+          echo "- **AAB:** For Google Play Store submission" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### 🔧 Changes" >> RELEASE_NOTES.md
+          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s (%h)" >> RELEASE_NOTES.md 2>/dev/null || echo "- Initial release" >> RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.calculate-version.outputs.new_version }}
+          name: Release v${{ needs.calculate-version.outputs.new_version }}
+          body_path: RELEASE_NOTES.md
+          files: |
+            artifacts/apk/*.apk
+            artifacts/aab/*.aab
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 发布到 Google Play（可选）
+  release-play-store:
+    name: Release to Google Play
+    needs: [calculate-version, build-and-tag]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.publish_play_store == 'true'
+    
+    steps:
+      - name: Download Release AAB
+        uses: actions/download-artifact@v4
+        with:
+          name: release-aab-v${{ needs.calculate-version.outputs.new_version }}
+          path: artifacts/aab
+
+      - name: Prepare Play Store metadata
+        run: |
+          mkdir -p ReleaseNotes
+          echo "Version ${{ needs.calculate-version.outputs.new_version }}" > ReleaseNotes/whatsnew-en-US
+          echo "版本 ${{ needs.calculate-version.outputs.new_version }}" > ReleaseNotes/whatsnew-zh-CN
+
+      - name: Release to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: io.legado.app
+          releaseFiles: artifacts/aab/*.aab
+          track: production
+          whatsNewDirectory: ReleaseNotes
+          status: completed
+
+  # 通知完成
+  notify:
+    name: Notify Completion
+    needs: [release-github, release-play-store]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check status
+        run: |
+          echo "✅ Auto version and release completed!"
+          echo "Version: ${{ needs.calculate-version.outputs.new_version }}"
+          echo "GitHub Release: ${{ needs.release-github.result }}"
+          echo "Play Store Release: ${{ needs.release-play-store.result }}"
