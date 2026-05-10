@@ -23,7 +23,11 @@ class MaxHeightScrollView @JvmOverloads constructor(
             intArrayOf(android.R.attr.maxHeight),
             0, 0
         ).apply {
-            maxHeight = getDimensionPixelSize(0, Int.MAX_VALUE)
+            val height = getDimensionPixelSize(0, Int.MAX_VALUE)
+            if (height != Int.MAX_VALUE) {
+                maxHeight = height
+                android.util.Log.d("MaxHeightScrollView", "设置最大高度: ${height}px = ${height / resources.displayMetrics.density}dp")
+            }
             recycle()
         }
     }
@@ -47,8 +51,12 @@ class MaxHeightScrollView @JvmOverloads constructor(
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         // 关键：限制测量高度不超过 maxHeight
         val modifiedHeightSpec = if (maxHeight < Int.MAX_VALUE) {
+            val originalSize = MeasureSpec.getSize(heightMeasureSpec)
+            val limitedSize = minOf(originalSize, maxHeight)
+            android.util.Log.d("MaxHeightScrollView", "onMeasure: 原始=$originalSize px, 限制后=$limitedSize px, maxHeight=$maxHeight px")
+            
             MeasureSpec.makeMeasureSpec(
-                minOf(MeasureSpec.getSize(heightMeasureSpec), maxHeight),
+                limitedSize,
                 MeasureSpec.getMode(heightMeasureSpec)
             )
         } else {

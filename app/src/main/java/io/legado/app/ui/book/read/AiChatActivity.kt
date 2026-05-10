@@ -1988,6 +1988,7 @@ class ChatAdapter(
                     val layoutContent = stepView.findViewById<LinearLayout>(R.id.layout_tool_content)
                     val layoutInput = stepView.findViewById<LinearLayout>(R.id.layout_tool_input)
                     val tvInput = stepView.findViewById<TextView>(R.id.tv_tool_input)
+                    val scrollOutput = stepView.findViewById<io.legado.app.ui.widget.MaxHeightScrollView>(R.id.scroll_output)  // ✅ 获取 MaxHeightScrollView
                     val layoutOutput = stepView.findViewById<LinearLayout>(R.id.layout_tool_output)
                     val tvOutput = stepView.findViewById<TextView>(R.id.tv_tool_output)
                     val layoutError = stepView.findViewById<LinearLayout>(R.id.layout_tool_error)
@@ -2025,6 +2026,12 @@ class ChatAdapter(
                     if (!step.output.isNullOrBlank()) {
                         layoutOutput.visibility = View.VISIBLE
                         tvOutput.text = step.output
+                        
+                        // ✅ 最简单可靠的方法：直接设置 ScrollView 的 LayoutParams 高度
+                        val maxHeightPx = (200 * context.resources.displayMetrics.density).toInt()
+                        val params = scrollOutput.layoutParams
+                        params.height = maxHeightPx  // 固定高度
+                        scrollOutput.layoutParams = params
                     } else {
                         layoutOutput.visibility = View.GONE
                     }
