@@ -114,7 +114,8 @@ data class VectorRecord(
 data class SearchResult(
     val chunk: TextChunk,
     val score: Float,
-    val content: String
+    val content: String,
+    val matchType: String = "vector"  // "vector", "bm25", "hybrid"
 )
 
 /**

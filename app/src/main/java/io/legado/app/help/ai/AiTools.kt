@@ -1403,11 +1403,34 @@ class ListBooksTool(
 
     override suspend fun run(input: Map<String, Any>): ToolResult {
         val maxItems = (input["maxItems"] as? Number)?.toInt() ?: 50
-        val keyword = input["keyword"]?.toString()
+        
+        // ✅ 容错处理：尝试多种可能的参数名
+        val keyword = (
+            input["keyword"]?.toString() ?:           // 标准参数名
+            input["search"]?.toString() ?:            // 备选
+            input["q"]?.toString() ?:                 // 简写
+            input["arg0"]?.toString()                 // AI可能使用的错误参数名
+        )
+        
         val category = input["category"]?.toString()
         val status = input["status"]?.toString()
-        val sortBy = input["sortBy"]?.toString() ?: "lastRead"
+        
+        // ✅ 容错处理：sortBy参数
+        val sortBy = (
+            input["sortBy"]?.toString() ?:            // 标准参数名
+            input["sort"]?.toString() ?:              // 备选
+            input["arg1"]?.toString() ?:              // AI可能使用的错误参数名
+            "lastRead"                                // 默认值
+        )
+        
         val includeTags = input["includeTags"] as? Boolean ?: true
+        
+        // ✅ 关键修复：如果有搜索关键词，不限制返回数量，返回所有匹配结果
+        val effectiveLimit = if (!keyword.isNullOrBlank()) {
+            Int.MAX_VALUE  // 搜索时返回所有匹配结果
+        } else {
+            maxItems       // 无搜索时限制数量
+        }
 
         // 使用 Repository 获取数据
         val books = repository.searchBooks(
@@ -1415,20 +1438,33 @@ class ListBooksTool(
             category = category,
             status = status,
             sortBy = sortBy,
-            limit = maxItems,
+            limit = effectiveLimit,
             includeTags = includeTags
         )
 
         // 获取分组信息
         val groups = repository.getGroups()
+        
+        // ✅ 关键修复：如果有搜索关键词，添加明确的提示信息
+        val searchHint = if (!keyword.isNullOrBlank()) {
+            if (books.isEmpty()) {
+                "\n\n⚠️ 未找到包含'$keyword'的书籍。请检查书名是否正确，或者尝试其他关键词。"
+            } else {
+                "\n\n✅ 找到 ${books.size} 本包含'$keyword'的书籍："
+            }
+        } else {
+            ""
+        }
 
         return ToolResult(
             status = "ok",
             name = id,
             data = mapOf(
                 "totalBooks" to books.size,
+                "searchKeyword" to keyword,  // 返回搜索关键词，方便AI确认
                 "books" to books.map { it.toMap() },
-                "groups" to groups.map { it.toMap() }
+                "groups" to groups.map { it.toMap() },
+                "hint" to searchHint  // 添加提示信息
             )
         )
     }
@@ -2328,24 +2364,134 @@ class RagSearchTool(
 ) : BaseTool(
     id = "rag_search",
     name = "RAG搜索",
-    description = "在向量化的书籍内容中进行搜索。当用户询问书中的特定内容、查找相关信息时使用。",
+    description = "在已向量化的书籍内容中进行搜索。支持语义搜索、关键词搜索和混合搜索。返回相关段落及其位置信息，可用于精确定位和引用。",
     inputSchema = mapOf(
         "type" to "object",
         "properties" to mapOf(
             "query" to mapOf("type" to "string", "description" to "搜索查询", "required" to true),
+            "mode" to mapOf("type" to "string", "description" to "搜索模式：hybrid(混合，推荐)、vector(语义)、bm25(关键词)", "default" to "hybrid"),
             "topK" to mapOf("type" to "integer", "description" to "返回结果数量，默认5")
         )
     ),
     timeout = 30000  // 30秒超时
 ) {
     override suspend fun run(input: Map<String, Any>): ToolResult {
-        val query = (input["query"] as? String)?.trim()
-            ?: return ToolResult(status = "error", name = id, message = "缺少query参数")
+        // ✅ 容错处理：尝试多种可能的参数名
+        var query = (
+            (input["query"] as? String)?.trim() ?:           // 标准参数名
+            (input["q"] as? String)?.trim() ?:               // 简写
+            (input["search"] as? String)?.trim() ?:          // 备选
+            (input["keyword"] as? String)?.trim()            // 其他可能
+        )
+        
+        // ✅ 如果AI使用了arg0/arg1格式，将它们合并
+        if (query.isNullOrBlank()) {
+            val arg0 = input["arg0"] as? String
+            val arg1 = input["arg1"] as? String
+            
+            if (!arg0.isNullOrBlank() && !arg1.isNullOrBlank()) {
+                // 合并两个参数，例如："童话保质期" + "故事结局" -> "童话保质期 故事结局"
+                query = "$arg0 $arg1".trim()
+                io.legado.app.help.ai.AiLogManager.log(
+                    io.legado.app.help.ai.AiLogManager.LogLevel.WARNING,
+                    "RagSearch",
+                    "检测到arg0/arg1格式，已合并为: $query"
+                )
+            } else if (!arg0.isNullOrBlank()) {
+                query = arg0.trim()
+                io.legado.app.help.ai.AiLogManager.log(
+                    io.legado.app.help.ai.AiLogManager.LogLevel.WARNING,
+                    "RagSearch",
+                    "使用arg0作为query: $query"
+                )
+            }
+        }
+        
+        if (query.isNullOrBlank()) {
+            io.legado.app.help.ai.AiLogManager.log(
+                io.legado.app.help.ai.AiLogManager.LogLevel.WARNING,
+                "RagSearch",
+                "缺少query参数，收到的参数: ${input.keys.joinToString(", ")}"
+            )
+            return ToolResult(
+                status = "error", 
+                name = id, 
+                message = "缺少query参数。正确格式：{\"query\": \"搜索内容\"}。例如：{\"query\": \"童话保质期的结局是什么\"}。不要使用arg0/arg1等参数名。"
+            )
+        }
+        
         val topK = (input["topK"] as? Number)?.toInt() ?: 5
 
-        val bookUrl = context.bookUrl
+        // 优先从 ReadingContextService 获取实时上下文
+        val readingContext = ReadingContextService.getContext()
+        
+        // 如果 ReadingContextService 有数据，使用它；否则回退到静态 context
+        var bookUrl = readingContext?.bookId?.takeIf { it.isNotBlank() } ?: context.bookUrl
+        
+        // ✅ 如果没有 bookUrl，尝试从查询中匹配已向量化的书籍
         if (bookUrl.isBlank()) {
-            return ToolResult(status = "error", name = id, message = "无法获取书籍URL")
+            io.legado.app.help.ai.AiLogManager.log(
+                io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                "RagSearch",
+                "没有当前阅读上下文，尝试从查询中匹配书籍"
+            )
+            
+            // 尝试与已向量化的书籍名称进行模糊匹配
+            val vectorizedBooks = context.appDatabase.vectorizedBookDao.getAll()
+            if (vectorizedBooks.isNotEmpty()) {
+                // 将查询分词，尝试匹配书名中的关键词
+                val queryWords = query.split(Regex("[\\s,，、。！？；;]+"))
+                    .filter { it.length >= 2 }  // 只保留长度>=2的词
+                
+                if (queryWords.isNotEmpty()) {
+                    // 计算每个书籍的匹配度
+                    val scoredBooks = vectorizedBooks.mapNotNull { book ->
+                        val title = book.bookTitle
+                        var score = 0
+                        
+                        // 完全包含查询词
+                        for (word in queryWords) {
+                            if (title.contains(word, ignoreCase = true)) {
+                                score += word.length * 2
+                            }
+                        }
+                        
+                        // 查询包含书名的部分
+                        if (query.contains(title, ignoreCase = true)) {
+                            score += title.length * 3
+                        }
+                        
+                        if (score > 0) Pair(book, score) else null
+                    }.sortedByDescending { it.second }
+                    
+                    if (scoredBooks.isNotEmpty()) {
+                        val bestMatch = scoredBooks.first()
+                        bookUrl = bestMatch.first.bookUrl
+                        io.legado.app.help.ai.AiLogManager.log(
+                            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                            "RagSearch",
+                            "模糊匹配到书籍: ${bestMatch.first.bookTitle}, 匹配度: ${bestMatch.second}"
+                        )
+                    }
+                }
+            }
+        }
+        
+        if (bookUrl.isBlank()) {
+            // 获取已向量化的书籍列表，给用户一些建议
+            val vectorizedBooks = context.appDatabase.vectorizedBookDao.getAll()
+            val suggestions = if (vectorizedBooks.isNotEmpty()) {
+                val bookTitles = vectorizedBooks.take(3).map { it.bookTitle }.joinToString("、")
+                "\n\n已向量化的书籍：$bookTitles"
+            } else {
+                "\n\n提示：还没有已向量化书籍，请先在书籍详情页进行向量化"
+            }
+            
+            return ToolResult(
+                status = "error", 
+                name = id, 
+                message = "未找到匹配的书籍$suggestions"
+            )
         }
 
         val config = VectorConfigManager.getConfig()
@@ -2363,8 +2509,41 @@ class RagSearchTool(
 
         return try {
             val vectorService = VectorSearchService(context.appContext)
-            // ✅ 使用优化后的搜索方法（带缓存和智能截断）
-            val results = vectorService.semanticSearch(query, bookUrl, config, topK, maxTokensPerResult = 500)
+            
+            // ✅ 获取搜索模式，默认使用混合搜索
+            val mode = (input["mode"] as? String)?.lowercase() ?: "hybrid"
+            
+            // 根据模式选择搜索方法
+            val results = when (mode) {
+                "bm25" -> {
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                        "RagSearch",
+                        "使用BM25关键词搜索模式"
+                    )
+                    if (bookUrl != null) {
+                        vectorService.bm25Search(query, bookUrl, topK)
+                    } else {
+                        emptyList()
+                    }
+                }
+                "vector" -> {
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                        "RagSearch",
+                        "使用向量语义搜索模式"
+                    )
+                    vectorService.semanticSearch(query, bookUrl, config, topK, maxTokensPerResult = 500)
+                }
+                else -> {  // hybrid
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                        "RagSearch",
+                        "使用混合搜索模式（vector + BM25）"
+                    )
+                    vectorService.hybridSearch(query, bookUrl, config, topK)
+                }
+            }
 
             if (results.isEmpty()) {
                 return ToolResult(
@@ -2426,7 +2605,11 @@ class RagTocTool(
     timeout = 5000  // 5秒超时
 ) {
     override suspend fun run(input: Map<String, Any>): ToolResult {
-        val bookUrl = context.bookUrl
+        // 优先从 ReadingContextService 获取实时上下文
+        val readingContext = ReadingContextService.getContext()
+        
+        // 如果 ReadingContextService 有数据，使用它；否则回退到静态 context
+        val bookUrl = readingContext?.bookId?.takeIf { it.isNotBlank() } ?: context.bookUrl
         if (bookUrl.isBlank()) {
             return ToolResult(status = "error", name = id, message = "无法获取书籍URL")
         }
@@ -2499,7 +2682,11 @@ class RagContextTool(
             ?: return ToolResult(status = "error", name = id, message = "缺少chapterIndex参数")
         val range = (input["range"] as? Number)?.toInt() ?: 2
 
-        val bookUrl = context.bookUrl
+        // 优先从 ReadingContextService 获取实时上下文
+        val readingContext = ReadingContextService.getContext()
+        
+        // 如果 ReadingContextService 有数据，使用它；否则回退到静态 context
+        val bookUrl = readingContext?.bookId?.takeIf { it.isNotBlank() } ?: context.bookUrl
         if (bookUrl.isBlank()) {
             return ToolResult(status = "error", name = id, message = "无法获取书籍URL")
         }

@@ -20,7 +20,33 @@ class LangChain4jUniversalToolExecutor(
      * @param arguments Tool的参数（JSON格式）
      * @return Tool执行结果的JSON字符串
      */
-    @Tool("Execute a tool by name with the given arguments. Available tools: list_books (get user's bookshelf), reading_history (get reading history). Use this to fetch real data when user asks about their books or reading progress.")
+    @Tool("""
+Execute a tool by name with the given arguments. 
+
+Available tools and their parameters:
+- list_books: Get user's bookshelf. Parameters: {"title": "optional filter", "author": "optional filter", "status": "reading|completed|paused"}
+- reading_history: Get reading history. Parameters: {"bookTitle": "optional filter", "maxItems": 20}
+- rag_search: Semantic search in vectorized books. REQUIRED parameter: {"query": "search query string"}. Optional: {"topK": 5}
+- rag_toc: Get table of contents of vectorized book. No parameters needed.
+- rag_context: Get chapter context. Parameters: {"chapterIndex": number, "range": 2}
+- get_current_book_info: Get current book info. No parameters needed.
+- current_chapter: Get current chapter content. No parameters needed.
+- book_toc: Get book table of contents. No parameters needed.
+- search_content: Search in current book. Parameters: {"keyword": "search keyword"}
+- extract_entities: Extract entities from text. No parameters needed.
+- analyze_arguments: Analyze arguments. No parameters needed.
+- find_quotes: Find quotes. Parameters: {"quoteType": "inspiring|romantic|philosophical"}
+- compare_sections: Compare chapters. Parameters: {"chapterIndex1": number, "chapterIndex2": number}
+- vectorization_status: Check vectorization status. No parameters needed.
+- tags_list: List all tags. Parameters: {"searchKeyword": "optional"}
+- book_tags: Get book tags. No parameters needed.
+- apply_book_tags: Apply tags to book. Parameters: {"tagIds": [number], "action": "add|remove"}
+- manage_tags: Manage tags. Parameters: {"action": "create|delete|rename", "tagName": "string", "newName": "optional"}
+- add_quote: Add citation. Parameters: {"citationIndex": number, "chapterTitle": "string", "chapterIndex": number, "cfi": "string", "quotedText": "string", "reasoning": "string"}
+
+IMPORTANT: Always use the correct parameter names as specified above. For rag_search, you MUST use "query" parameter, not "argo" or other names.
+Example for rag_search: {"query": "童话保质期的结局是什么", "topK": 5}
+""")
     fun executeToolByName(
         toolName: String,
         arguments: String

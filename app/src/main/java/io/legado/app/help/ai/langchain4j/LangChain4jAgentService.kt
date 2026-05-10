@@ -252,9 +252,8 @@ class LangChain4jAgentService {
                 
                 val toolSteps = mutableListOf<ToolStep>()
                 var hasSentIntroMessage = false  // 标记是否已发送介绍消息
-                var introContent = ""  // 保存提示消息内容
                 
-                // 关键修复：支持多轮工具调用循环（类似ReadAny的ReAct agent）
+                // ✅ 关键修复：支持多轮工具调用循环（类似ReadAny的ReAct agent）
                 var currentResponse = response
                 var iteration = 0
                 val maxIterations = 10  // 最多10轮工具调用，防止无限循环
@@ -284,9 +283,9 @@ class LangChain4jAgentService {
                         "第 $iteration 轮：检测到LongCat工具调用格式，开始解析..."
                     )
                     
-                    // 关键修复：在第一次调用工具前，记录提示消息
+                    // ✅ 关键修复：在第一次调用工具前，立即发送提示消息
                     if (!hasSentIntroMessage) {
-                        introContent = "让我先查询一下相关信息...\n\n"
+                        trySend(LangChain4jResponse(content = "让我先查询一下相关信息...", toolSteps = emptyList()))
                         hasSentIntroMessage = true
                     }
                     
@@ -377,9 +376,15 @@ class LangChain4jAgentService {
                     }
                     
                     // 将所有工具结果组合，返回给AI继续决策
-                    val resultsText = toolSteps.filter { it.status == ToolStepStatus.SUCCESS }
-                        .map { "工具 [${it.name}] 执行结果：${it.output}" }
-                        .joinToString("\n\n")
+                    // ✅ 关键修复：包含失败的工具步骤，让AI知道哪些工具执行失败了
+                    val resultsText = toolSteps.map { step ->
+                        when (step.status) {
+                            ToolStepStatus.SUCCESS -> "工具 [${step.name}] 执行成功：${step.output}"
+                            ToolStepStatus.FAILED -> "工具 [${step.name}] 执行失败：${step.error ?: "未知错误"}"
+                            else -> "工具 [${step.name}] 状态：${step.status}"
+                        }
+                    }.joinToString("\n\n")
+                    
                     val followUpMessage = "已执行以下工具：\n\n$resultsText\n\n请根据这些结果决定：如果需要更多信息，可以继续调用工具；如果信息足够，请直接回答用户的问题。"
                     
                     io.legado.app.help.ai.AiLogManager.log(
@@ -412,15 +417,8 @@ class LangChain4jAgentService {
                 // currentResponse 现在是最终回答（不包含工具调用）
                 response = currentResponse
                 
-                // 关键修复：将提示消息添加到最终内容前面
-                val finalContent = if (introContent.isNotEmpty()) {
-                    introContent + response
-                } else {
-                    response
-                }
-                
-                // 发送最终内容（包含提示消息和所有工具步骤）
-                trySend(LangChain4jResponse(content = finalContent, toolSteps = toolSteps))
+                // ✅ 直接发送最终内容，不再合并提示消息（因为已经单独发送了）
+                trySend(LangChain4jResponse(content = response, toolSteps = toolSteps))
                 close()
             } catch (e: Exception) {
                 io.legado.app.help.ai.AiLogManager.log(
@@ -643,28 +641,72 @@ class LangChain4jAgentService {
 $bookInfo
 
 ## 工具使用原则
-1. **先收集信息** - 在回答之前，使用工具了解情况
-2. **高效组合工具** - 根据需要并行或顺序使用多个工具
-3. **优先使用具体工具** - 当用户在阅读时，优先使用当前相关的工具
-4. **保持透明** - 简要说明你使用复杂工具组合的原因
+1. **理解问题** - 先弄清楚用户真正想要什么
+2. **选择合适的工具** - 根据需要选择最合适的工具（不是所有问题都需要工具）
+3. **保持透明** - 简要说明你使用工具的原因
+4. **避免重复** - 不要反复调用相同的工具获取相似信息
 
 ## 可用工具
-- list_books: 🔥 **重要** - 获取用户的书架列表。支持按标题、作者、分类、阅读状态筛选。当用户询问有哪些书、找特定书籍时使用。
-- reading_history: 获取用户的阅读历史记录
-- get_current_book_info: 获取当前阅读书籍的详细信息
-- **rag_search**: 🔥 **重要** - 在已向量化的书籍中进行语义搜索。当用户询问书籍的具体内容、情节、人物、细节时，必须使用此工具。例如：“XX书讲的啥”、“XX章节有什么内容”、“主角是谁”等问题。
-- rag_toc: 获取向量化书籍的目录结构
-- rag_context: 获取特定章节的上下文内容
+
+### 书架和阅读历史
+- **list_books**: 获取用户的书架列表。支持按标题、作者、分类、阅读状态筛选。
+- **reading_history**: 获取用户的阅读历史记录
+- **search_all_notes**: 在所有书籍中搜索笔记和高亮
+
+### 当前阅读上下文
+- **get_current_book_info**: 获取当前阅读书籍的详细信息
+- **current_chapter**: 获取当前章节的内容
+- **book_toc**: 获取书籍完整目录
+- **search_content**: 在当前书籍中搜索指定内容
+- **reading_progress**: 获取当前阅读进度
+- **book_notes**: 获取当前书籍的笔记和高亮
+
+### RAG 向量搜索（需要书籍已向量化）
+- **rag_search**: 在已向量化的书籍中进行搜索，支持三种模式：
+  - `mode="hybrid"` (默认): 混合搜索，结合语义和关键词，推荐用于大多数场景
+  - `mode="vector"`: 纯语义搜索，适合概念性问题
+  - `mode="bm25"`: 纯关键词搜索，适合精确匹配特定词汇
+  - **当用户询问某本书的具体内容、情节、结局、角色等信息时，优先使用此工具**
+- **rag_toc**: 获取向量化书籍的目录结构
+- **rag_context**: 获取特定章节的上下文内容
+- **vectorization_status**: 检查书籍的向量化状态
+
+### 内容分析
+- **extract_entities**: 从当前阅读内容中提取人物、地点、时间等实体
+- **analyze_arguments**: 分析作者的论证逻辑和论据
+- **find_quotes**: 查找书中的精彩引用和金句
+- **compare_sections**: 比较两个章节的内容差异
+
+### 标签管理
+- **tags_list**: 获取用户创建的所有标签
+- **book_tags**: 获取当前书籍的所有标签
+- **apply_book_tags**: 为书籍添加或移除标签
+- **manage_tags**: 创建、删除、重命名标签
+
+### 其他
+- **bookshelf_organize**: 规划书架分组重组方案
+- **add_quote**: 在回答中引用书籍原文
 
 ## 响应策略
 
 ### 回答用户问题时：
 1. **理解意图** - 用户真正想要什么？
-2. **收集数据** - 使用工具收集相关信息
-   - ⚠️ **重要**：如果用户询问书籍的具体内容、情节、人物等细节，**必须**先调用 `rag_search` 工具搜索相关内容
-   - 例如：用户问“童话保质期讲的啥”，应该调用 `rag_search(query="童话保质期的故事内容")`
-3. **综合分析** - 将信息片段整合成连贯的见解
-4. **提供价值** - 给出可操作的建议或清晰的答案
+2. **决定是否需要工具** - 
+   - **如果用户询问某本书的具体内容、情节、结局、角色、主题等** → 优先使用 `rag_search` 在已向量化的书籍中搜索
+   - **如果用户询问书架上有哪些书** → 使用 `list_books`
+   - **如果用户询问阅读历史** → 使用 `reading_history`
+   - **如果只是闲聊或一般性问题** → 直接回答即可
+3. **重要提示**：当用户提到具体书名并询问其内容时（如“童话保质期的结局是什么”），应该使用 `rag_search` 而不是 `list_books`。`list_books` 只用于获取书架列表，不能用于查询书籍内容。
+4. **RAG 搜索策略**：
+   - **默认使用混合搜索** (`mode="hybrid"`)，它结合了语义搜索和关键词搜索的优势
+   - **当用户询问“结局”、“结尾”、“最后”等内容时**：
+     - 先用 `rag_toc` 获取目录，确定总章节数
+     - 再用 `rag_context` 获取最后几章的内容
+     - 或者用 `rag_search` 搜索时明确提到“最后一章”、“结尾部分”
+   - **当用户询问特定关键词时**：可以使用 `mode="bm25"` 进行精准的关键词匹配
+   - **当用户询问概念性或语义相关问题时**：可以使用 `mode="vector"` 进行语义搜索
+5. **综合分析** - 将信息片段整合成连贯的见解
+6. **提供价值** - 给出可操作的建议或清晰的答案
 
 ### 沟通风格：
 - **简洁而完整** - 不必要的赘述

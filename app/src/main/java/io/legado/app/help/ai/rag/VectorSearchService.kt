@@ -380,4 +380,215 @@ class VectorSearchService(private val context: Context) {
             "books" to vectorizedBooks
         )
     }
+    
+    // ============================================
+    // BM25 关键词搜索（参考 ReadAny 实现）
+    // ============================================
+    
+    /**
+     * BM25 关键词搜索
+     */
+    suspend fun bm25Search(
+        query: String,
+        bookUrl: String,
+        topK: Int = 5
+    ): List<SearchResult> = withContext(Dispatchers.IO) {
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "BM25Search",
+            "开始BM25搜索: query='$query', topK=$topK"
+        )
+        
+        val chunks = getCachedChunks(bookUrl)
+        if (chunks.isEmpty()) return@withContext emptyList()
+        
+        // 分词
+        val queryTerms = tokenizeQuery(query)
+        if (queryTerms.isEmpty()) return@withContext emptyList()
+        
+        // 计算 BM25 分数
+        val results = chunks.mapNotNull { chunk ->
+            val score = calculateBM25Score(chunk.content, queryTerms, chunks.size)
+            if (score > 0) SearchResult(
+                chunk = TextChunk(
+                    id = chunk.id,
+                    bookUrl = chunk.bookUrl,
+                    chapterIndex = chunk.chapterIndex,
+                    chapterTitle = chunk.chapterTitle,
+                    content = chunk.content,
+                    startIndex = chunk.startIndex,
+                    endIndex = chunk.endIndex,
+                    tokenCount = chunk.tokenCount,
+                    createdAt = chunk.createdAt
+                ),
+                score = score.toFloat(),
+                content = chunk.content.take(500)  // 限制长度
+            ) else null
+        }.sortedByDescending { it.score }
+         .take(topK)
+        
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "BM25Search",
+            "BM25搜索完成: 返回 ${results.size} 条结果"
+        )
+        
+        return@withContext results
+    }
+    
+    /**
+     * 混合搜索（vector + BM25 + RRF融合）
+     */
+    suspend fun hybridSearch(
+        query: String,
+        bookUrl: String?,
+        config: VectorConfig,
+        topK: Int = 5
+    ): List<SearchResult> = withContext(Dispatchers.IO) {
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "HybridSearch",
+            "开始混合搜索: query='$query', topK=$topK"
+        )
+        
+        // 扩大搜索范围，获取两倍结果用于融合
+        val expandedTopK = topK * 2
+        
+        // 并行执行两种搜索
+        val vectorResults = try {
+            semanticSearch(query, bookUrl, config, expandedTopK)
+        } catch (e: Exception) {
+            io.legado.app.help.ai.AiLogManager.log(
+                io.legado.app.help.ai.AiLogManager.LogLevel.WARNING,
+                "HybridSearch",
+                "向量搜索失败: ${e.message}，回退到BM25"
+            )
+            emptyList()
+        }
+        
+        val bm25Results = if (bookUrl != null) {
+            bm25Search(query, bookUrl, expandedTopK)
+        } else {
+            emptyList()
+        }
+        
+        // RRF 融合
+        val fusedResults = rrfFusion(vectorResults, bm25Results, topK)
+        
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "HybridSearch",
+            "混合搜索完成: vector=${vectorResults.size}, bm25=${bm25Results.size}, fused=${fusedResults.size}"
+        )
+        
+        return@withContext fusedResults
+    }
+    
+    /**
+     * RRF (Reciprocal Rank Fusion) 融合算法
+     */
+    private fun rrfFusion(
+        vectorResults: List<SearchResult>,
+        bm25Results: List<SearchResult>,
+        topK: Int,
+        k: Int = 60
+    ): List<SearchResult> {
+        val scores = mutableMapOf<String, Double>()
+        val chunkMap = mutableMapOf<String, SearchResult>()
+        
+        // 向量结果的分数：1 / (k + 排名)
+        vectorResults.forEachIndexed { rank, result ->
+            val id = result.chunk.id
+            scores[id] = scores.getOrDefault(id, 0.0) + 1.0 / (k + rank + 1)
+            chunkMap[id] = result
+        }
+        
+        // BM25 结果的分数：1 / (k + 排名)
+        bm25Results.forEachIndexed { rank, result ->
+            val id = result.chunk.id
+            scores[id] = scores.getOrDefault(id, 0.0) + 1.0 / (k + rank + 1)
+            if (!chunkMap.containsKey(id)) {
+                chunkMap[id] = result.copy(matchType = "hybrid")
+            }
+        }
+        
+        // 按综合分数排序，返回 topK
+        return scores.entries
+            .sortedByDescending { it.value }
+            .take(topK)
+            .mapNotNull { (id, score) ->
+                chunkMap[id]?.copy(score = score.toFloat())
+            }
+    }
+    
+    /**
+     * 简化的中文分词（用于 BM25）
+     */
+    private fun tokenizeQuery(query: String): List<String> {
+        // 移除停用词
+        val stopWords = setOf("的", "了", "在", "是", "我", "有", "和", "就", "不", "人", "都", "一", "什么", "怎么")
+        
+        // 提取中英文词汇
+        val tokens = mutableListOf<String>()
+        
+        // 英文单词
+        Regex("[a-zA-Z0-9]+").findAll(query).forEach {
+            tokens.add(it.value.lowercase())
+        }
+        
+        // 中文双字组合（bigram）
+        val chineseChars = query.filter { it in '\u4e00'..'\u9fff' }
+        for (i in 0 until chineseChars.length - 1) {
+            val bigram = chineseChars.substring(i, i + 2)
+            if (!stopWords.contains(bigram)) {
+                tokens.add(bigram)
+            }
+        }
+        
+        return tokens.distinct().filter { it.length >= 2 }
+    }
+    
+    /**
+     * 计算 BM25 分数（简化版）
+     */
+    private fun calculateBM25Score(content: String, queryTerms: List<String>, totalDocs: Int): Double {
+        if (queryTerms.isEmpty()) return 0.0
+        
+        var totalScore = 0.0
+        val k1 = 1.2  // BM25 参数
+        val b = 0.75  // BM25 参数
+        
+        for (term in queryTerms) {
+            // 计算词频
+            val termFreq = content.countOccurrences(term)
+            if (termFreq == 0) continue
+            
+            // 简化的 IDF（假设所有文档都包含该词）
+            val idf = kotlin.math.log((totalDocs + 1.0) / (totalDocs * 0.5 + 0.5))
+            
+            // TF 归一化
+            val docLen = content.length
+            val avgDocLen = 500.0  // 假设平均文档长度
+            val normalizedTf = termFreq.toDouble() / (k1 * (1 - b + b * docLen / avgDocLen) + termFreq)
+            
+            totalScore += idf * normalizedTf
+        }
+        
+        return totalScore
+    }
+    
+    /**
+     * 计算字符串中子串出现次数
+     */
+    private fun String.countOccurrences(substring: String): Int {
+        var count = 0
+        var index = 0
+        while (true) {
+            index = this.indexOf(substring, index)
+            if (index == -1) break
+            count++
+            index += substring.length
+        }
+        return count
+    }
 }

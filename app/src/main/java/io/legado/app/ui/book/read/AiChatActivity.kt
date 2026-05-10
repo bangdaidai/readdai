@@ -804,15 +804,47 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
         // 清空并加载消息
         messages.clear()
-        session.messages.forEach { msg ->
+        
+        // 🔍 简单调试：打印所有AI消息的toolSteps数量
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "AiChat",
+            "=== 开始加载历史 ===\n会话ID: ${session.id}\n消息总数: ${session.messages.size}"
+        )
+        
+        session.messages.forEachIndexed { index, msg ->
+            if (msg.type == "ai") {
+                io.legado.app.help.ai.AiLogManager.log(
+                    io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                    "AiChat",
+                    "[$index] AI消息 - toolSteps数: ${msg.toolSteps.size}, 内容: ${msg.content.take(30)}..."
+                )
+            }
+            
             messages.add(ChatMessageItem(
                 role = if (msg.type == "human") "user" else "ai",
                 content = msg.content,
                 reasoningContent = "",
-                toolSteps = emptyList(),
-                isExpanded = true,  // 历史对话也默认展开
+                toolSteps = msg.toolSteps,  // ✅ 从历史消息中恢复 toolSteps
+                isExpanded = true,
                 isReasoningExpanded = false
             ))
+        }
+        
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "AiChat",
+            "=== 加载完成 ===\nUI层 messages 总数: ${messages.size}"
+        )
+        
+        messages.forEachIndexed { index, item ->
+            if (item.role == "ai" && item.toolSteps.isNotEmpty()) {
+                io.legado.app.help.ai.AiLogManager.log(
+                    io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                    "AiChat",
+                    "[$index] UI AI消息 - toolSteps数: ${item.toolSteps.size}"
+                )
+            }
         }
 
         // 重置流式位置
@@ -1114,8 +1146,46 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                         }
                     }
                     is ChatResult.Success -> {
-                        if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
-                            val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
+                        // ✅ 关键修复：在更大的作用域定义 existingMsg，供后续保存历史使用
+                        val existingMsg = if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
+                            this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
+                        } else null
+                        
+                        // 🔍 调试日志：检查 UI 层 messages 的状态
+                        io.legado.app.help.ai.AiLogManager.log(
+                            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                            "AiChat",
+                            "=== ChatResult.Success ===\n" +
+                            "messages 总数: ${this@AiChatActivity.messages.size}\n" +
+                            "streamingPosition: $streamingPosition"
+                        )
+                        
+                        if (streamingPosition >= 0 && streamingPosition < this@AiChatActivity.messages.size) {
+                            val streamingMsg = this@AiChatActivity.messages[streamingPosition]
+                            io.legado.app.help.ai.AiLogManager.log(
+                                io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                                "AiChat",
+                                "streamingPosition 消息 role: ${streamingMsg.role}, toolSteps数: ${streamingMsg.toolSteps.size}"
+                            )
+                        }
+                        
+                        io.legado.app.help.ai.AiLogManager.log(
+                            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                            "AiChat",
+                            "最后一条消息 role: ${this@AiChatActivity.messages.lastOrNull()?.role}\n" +
+                            "existingMsg != null: ${existingMsg != null}\n" +
+                            "existingMsg?.toolSteps?.size: ${existingMsg?.toolSteps?.size}"
+                        )
+                        
+                        if (existingMsg != null && existingMsg.toolSteps.isNotEmpty()) {
+                            io.legado.app.help.ai.AiLogManager.log(
+                                io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                                "AiChat",
+                                "existingMsg toolSteps 详情: ${existingMsg.toolSteps.map { "${it.name}(${it.status})" }.joinToString(", ")}"
+                            )
+                        }
+                        
+                        if (existingMsg != null) {
                             this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
                                 ChatMessageItem(
                                     "ai",
@@ -1139,15 +1209,34 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
                         // 保存到历史
                         currentSession?.let { session ->
-                            val updatedMessages = session.messages.toMutableList()
-                            updatedMessages.add(ChatMessage("human", userQuestion))
-                            // 关键修复：保存AI消息时包含toolSteps
-                            val lastAiMessage = this@AiChatActivity.messages.lastOrNull { it.role == "ai" }
-                            updatedMessages.add(ChatMessage(
-                                "ai", 
-                                result.content,
-                                toolSteps = lastAiMessage?.toolSteps ?: emptyList()
-                            ))
+                            // ✅ 关键修复：将 UI 层的 ChatMessageItem 转换为存储层的 ChatMessage
+                            val updatedMessages = this@AiChatActivity.messages.map { item ->
+                                val chatMessage = ChatMessage(
+                                    type = if (item.role == "user") "human" else "ai",
+                                    content = item.content,
+                                    toolSteps = item.toolSteps  // ← 保留 toolSteps
+                                )
+                                
+                                // 🔍 调试日志：检查每条消息的 toolSteps
+                                if (item.role == "ai" && item.toolSteps.isNotEmpty()) {
+                                    io.legado.app.help.ai.AiLogManager.log(
+                                        io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                                        "AiChat",
+                                        "保存 AI 消息 - toolSteps: ${item.toolSteps.size}个\n" +
+                                        item.toolSteps.mapIndexed { idx, step -> "  [$idx] ${step.name} (${step.status})" }.joinToString("\n")
+                                    )
+                                }
+                                
+                                chatMessage
+                            }.toMutableList()
+                            
+                            io.legado.app.help.ai.AiLogManager.log(
+                                io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                                "AiChat",
+                                "更新后的消息总数: ${updatedMessages.size}\n" +
+                                "最后一条消息的 toolSteps 数量: ${updatedMessages.lastOrNull()?.toolSteps?.size}"
+                            )
+                            
                             val updatedSession = session.copy(
                                 messages = updatedMessages,
                                 model = currentModel,
@@ -1156,6 +1245,11 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             )
                             lifecycleScope.launch {
                                 AiHistoryStore.upsertSession(updatedSession)
+                                io.legado.app.help.ai.AiLogManager.log(
+                                    io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                                    "AiChat",
+                                    "会话已保存到数据库"
+                                )
                             }
                             currentSession = updatedSession
                         }
@@ -1231,12 +1325,15 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             "用户发送消息: length=${content.length}, isRegenerate=$isRegenerate"
         )
 
-        // 如果有引用，以紧凑格式添加到消息中
+        // ✅ 关键修复：在清除引用前，先保存引用内容的副本
+        val quoteForSending = selectedQuote
+
+        // 如果有引用，以紧凑格式添加到消息中（仅用于UI显示）
         val fullMessage = buildString {
             append(content)
-            if (!selectedQuote.isNullOrBlank()) {
+            if (!quoteForSending.isNullOrBlank()) {
                 append("：")
-                append(selectedQuote)
+                append(quoteForSending)
             }
         }
 
@@ -1268,14 +1365,23 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         setRequestState(true)
 
         // 立即保存草稿会话（参考 anx53）
-        saveDraftSession(content)
+        // ✅ 关键修复：保存包含引用内容的完整消息到历史
+        saveDraftSession(fullMessage)
 
         lifecycleScope.launch {
             // 不再每次都调用init()，LangChain4j使用无状态模式
             // init()只在Activity初始化或服务商配置变化时调用
 
+            // ✅ 关键修复：构建发送给AI的消息时，使用保存的引用副本
             val messageWithOptions = buildString {
                 append(content)
+                
+                // 如果有引用内容，将其添加到消息中
+                if (!quoteForSending.isNullOrBlank()) {
+                    append("\n\n【引用内容】")
+                    append(quoteForSending)
+                }
+                
                 if (spoilerFreeEnabled) {
                     append("\n\n[请注意：不要剧透后续情节]")
                 }
@@ -1438,12 +1544,12 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     if (updatedMessages.isNotEmpty() && updatedMessages.last().type == "ai") {
                         updatedMessages.removeAt(updatedMessages.size - 1)
                     }
-                    // 关键修复：保存AI消息时包含toolSteps
-                    val lastAiMessage = this@AiChatActivity.messages.getOrNull(streamingPosition)
+                    // ✅ 关键修复：在重置 streamingPosition 之前保存 AI 消息的引用
+                    val lastAiMessage = this@AiChatActivity.messages.lastOrNull { it.role == "ai" }
                     updatedMessages.add(ChatMessage(
                         "ai", 
                         result.content,
-                        toolSteps = lastAiMessage?.toolSteps ?: emptyList()
+                        toolSteps = lastAiMessage?.toolSteps ?: emptyList()  // ← 使用最后一条 AI 消息的 toolSteps
                     ))
                     val updatedSession = session.copy(
                         messages = updatedMessages,
@@ -1683,6 +1789,12 @@ class ChatAdapter(
     private val getStreamingPosition: () -> Int = { -1 } // 获取当前流式输出的消息位置的函数
 ) : RecyclerView.Adapter<ChatAdapter.ViewHolder>() {
 
+    // ✅ 关键修复：定义不同的 ViewType，防止 AI 和用户消息互相复用
+    companion object {
+        const val VIEW_TYPE_AI = 0
+        const val VIEW_TYPE_USER = 1
+    }
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val contentText: TextView = view.findViewById(R.id.tv_content)
         val tvCursor: TextView = view.findViewById(R.id.tv_cursor)
@@ -1699,6 +1811,11 @@ class ChatAdapter(
         val toolStepsContainer: LinearLayout = view.findViewById(R.id.tool_steps_container)
     }
 
+    override fun getItemViewType(position: Int): Int {
+        // ✅ 关键修复：根据消息角色返回不同的 ViewType
+        return if (messages[position].role == "ai") VIEW_TYPE_AI else VIEW_TYPE_USER
+    }
+
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): ViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
             .inflate(R.layout.item_ai_chat_message, parent, false)
@@ -1711,8 +1828,10 @@ class ChatAdapter(
         // 获取主题颜色（在方法开头定义，供AI和用户消息分支使用）
         val textColorPrimary = ThemeStore.textColorPrimary(context)
         
-        // 统一设置 item 的左右 padding 为 16dp
-        holder.itemView.setPadding(16.dpToPx(), holder.itemView.paddingTop, 16.dpToPx(), holder.itemView.paddingBottom)
+        // ✅ 关键修复：统一设置 item 的左右 padding 为 16dp，保持上下 padding 不变（防止复用导致边距异常）
+        val horizontalPadding = 16.dpToPx()
+        // 保持原有的上下 padding（XML 中设置的 paddingVertical="8dp"）
+        holder.itemView.setPadding(horizontalPadding, holder.itemView.paddingTop, horizontalPadding, holder.itemView.paddingBottom)
 
         // 复制功能
         fun copyToClipboard(text: String) {
@@ -1724,7 +1843,7 @@ class ChatAdapter(
 
         // AI 消息使用 Markdown 渲染，用户消息使用纯文本
         if (message.role == "ai") {
-            // AI 消息：先重置所有视图状态，防止复用问题
+            // ✅ 关键修复：AI 消息先重置所有视图状态，防止复用问题
             holder.itemView.setBackgroundResource(0)
             holder.contentText.background = null
             holder.contentText.setTextColor(textColorPrimary)
@@ -1745,9 +1864,19 @@ class ChatAdapter(
             contentParams.marginStart = 0
             contentParams.marginEnd = 0
             contentParams.topMargin = 0
+            // ✅ 关键修复：AI 消息使用 MATCH_CONSTRAINT 宽度，不受限制
             contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
             contentParams.matchConstraintMinWidth = 0
+            // ✅ 关键修复：重置 matchConstraintMaxWidth，防止从用户消息复用时的宽度限制
+            contentParams.matchConstraintMaxWidth = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
             holder.contentText.layoutParams = contentParams
+            
+            // ✅ 关键修复：强制刷新布局，防止某些机型 measure 过了但 draw 没更新
+            holder.contentText.requestLayout()
+            holder.contentText.invalidate()
+            
+            // 📝 调试日志：验证 ConstraintLayout 参数是否正确重置
+            android.util.Log.d("VH", "AI消息 - width=${contentParams.width}, maxW=${contentParams.matchConstraintMaxWidth}")
 
             // 渲染 Markdown
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
@@ -1816,6 +1945,18 @@ class ChatAdapter(
             if (message.toolSteps.isNotEmpty()) {
                 holder.layoutToolSteps.visibility = View.VISIBLE
                 holder.toolStepsContainer.removeAllViews()
+                
+                // 🔍 调试日志：确认渲染时的 toolSteps 数据
+                io.legado.app.help.ai.AiLogManager.log(
+                    io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+                    "AiChat",
+                    "=== 渲染工具步骤 ===\n" +
+                    "position: $position\n" +
+                    "toolSteps 数量: ${message.toolSteps.size}\n" +
+                    message.toolSteps.mapIndexed { idx, step ->
+                        "  [$idx] name=${step.name}, status=${step.status}"
+                    }.joinToString("\n")
+                )
                 
                 io.legado.app.help.ai.AiLogManager.log(
                     io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
@@ -1895,7 +2036,7 @@ class ChatAdapter(
                         layoutError.visibility = View.GONE
                     }
 
-                    // 默认折叠内容区域
+                    // 根据状态显示/隐藏内容区域
                     if (isExpanded) {
                         layoutContent.visibility = View.VISIBLE
                         ivExpand.rotation = 180f
@@ -2039,4 +2180,31 @@ data class ChatMessageItem(
     val toolSteps: List<ToolStep> = emptyList(),  // 工具步骤列表
     var isExpanded: Boolean = true,  // 长文本是否展开（默认展开）
     var isReasoningExpanded: Boolean = false  // 推理过程是否展开
-)
+) {
+    // ✅ 序列化为 Map（用于保存历史）
+    fun toMap(): Map<String, Any> = mapOf(
+        "role" to role,
+        "content" to content,
+        "reasoningContent" to reasoningContent,
+        "toolSteps" to toolSteps.map { it.toMap() },
+        "isExpanded" to isExpanded,
+        "isReasoningExpanded" to isReasoningExpanded
+    )
+    
+    companion object {
+        // ✅ 从 Map 反序列化（用于加载历史）
+        fun fromMap(map: Map<String, Any>): ChatMessageItem {
+            return ChatMessageItem(
+                role = map["role"]?.toString() ?: "user",
+                content = map["content"]?.toString() ?: "",
+                reasoningContent = map["reasoningContent"]?.toString() ?: "",
+                toolSteps = (map["toolSteps"] as? List<*>)
+                    ?.filterIsInstance<Map<String, Any>>()
+                    ?.map { ToolStep.fromMap(it) }
+                    ?: emptyList(),
+                isExpanded = map["isExpanded"] as? Boolean ?: true,
+                isReasoningExpanded = map["isReasoningExpanded"] as? Boolean ?: false
+            )
+        }
+    }
+}

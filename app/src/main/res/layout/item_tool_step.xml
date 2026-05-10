@@ -63,7 +63,7 @@
             android:paddingBottom="12dp"
             android:visibility="gone">
 
-            <!-- 输入参数 -->
+            <!-- ✅ 输入参数 - 使用 FrameLayout 限制最大高度 -->
             <LinearLayout
                 android:id="@+id/layout_tool_input"
                 android:layout_width="match_parent"
@@ -79,29 +79,36 @@
                     android:textColor="@color/secondaryText"
                     android:textStyle="bold" />
 
-                <ScrollView
+                <!-- ✅ 关键修复：使用 FrameLayout 包裹，确保 maxHeight 生效 -->
+                <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="200dp"
-                    android:scrollbars="vertical"
-                    android:fillViewport="false">
+                    android:maxHeight="200dp">
 
-                    <TextView
-                        android:id="@+id/tv_tool_input"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:padding="8dp"
-                        android:background="@drawable/bg_code_block"
-                        android:textSize="12sp"
-                        android:textColor="@color/primaryText"
-                        android:fontFamily="monospace" />
+                        android:scrollbars="vertical"
+                        android:fillViewport="false">
 
-                </ScrollView>
+                        <TextView
+                            android:id="@+id/tv_tool_input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:padding="8dp"
+                            android:background="@drawable/bg_code_block"
+                            android:textSize="12sp"
+                            android:textColor="@color/primaryText"
+                            android:fontFamily="monospace" />
+
+                    </ScrollView>
+
+                </FrameLayout>
 
             </LinearLayout>
 
-            <!-- 输出结果 -->
+                <!-- ✅ 输出结果 - 使用 FrameLayout 限制最大高度 -->
             <LinearLayout
                 android:id="@+id/layout_tool_output"
                 android:layout_width="match_parent"
@@ -118,29 +125,36 @@
                     android:textColor="@color/secondaryText"
                     android:textStyle="bold" />
 
-                <ScrollView
+                <!-- ✅ 关键修复：使用 FrameLayout 包裹，确保 maxHeight 生效 -->
+                <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="200dp"
-                    android:scrollbars="vertical"
-                    android:fillViewport="true">
+                    android:maxHeight="200dp">
 
-                    <TextView
-                        android:id="@+id/tv_tool_output"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:padding="8dp"
-                        android:background="@drawable/bg_code_block"
-                        android:textSize="12sp"
-                        android:textColor="@color/primaryText"
-                        android:fontFamily="monospace" />
+                        android:scrollbars="vertical"
+                        android:fillViewport="false">
 
-                </ScrollView>
+                        <TextView
+                            android:id="@+id/tv_tool_output"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:padding="8dp"
+                            android:background="@drawable/bg_code_block"
+                            android:textSize="12sp"
+                            android:textColor="@color/primaryText"
+                            android:fontFamily="monospace" />
+
+                    </ScrollView>
+
+                </FrameLayout>
 
             </LinearLayout>
 
-            <!-- 错误信息 -->
+            <!-- ✅ 错误信息 - 使用 FrameLayout 限制最大高度 -->
             <LinearLayout
                 android:id="@+id/layout_tool_error"
                 android:layout_width="match_parent"
@@ -157,24 +171,32 @@
                     android:textColor="@color/error"
                     android:textStyle="bold" />
 
-                <ScrollView
+                <!-- ✅ 关键修复：使用 FrameLayout 包裹，确保 maxHeight 生效 -->
+                <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="150dp"
-                    android:scrollbars="vertical"
-                    android:fillViewport="false">
+                    android:layout_height="wrap_content"
+                    android:maxHeight="150dp">
 
-                    <TextView
-                        android:id="@+id/tv_tool_error"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:padding="8dp"
-                        android:background="@drawable/bg_code_block"
-                        android:textSize="12sp"
-                        android:textColor="@color/error"
-                        android:fontFamily="monospace" />
+                        android:scrollbars="vertical"
+                        android:fillViewport="false">
 
-                </ScrollView>
+                        <TextView
+                            android:id="@+id/tv_tool_error"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:padding="8dp"
+                            android:background="@drawable/bg_code_block"
+                            android:textSize="12sp"
+                            android:textColor="@color/error"
+                            android:fontFamily="monospace" />
+
+                    </ScrollView>
+
+                </FrameLayout>
 
             </LinearLayout>
 

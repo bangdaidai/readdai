@@ -21,7 +21,8 @@ on:
           - both
 
 env:
-  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -XX:+UseParallelGC"
+  # ✅ 云端构建内存优化（避免 OOM），与 gradle.properties 保持一致
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -XX:+UseParallelGC"
   GRADLE_BUILD_CACHE: true
 
 jobs:
@@ -46,6 +47,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            ~/.gradle/build-cache  # ✅ 添加构建缓存
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
@@ -92,6 +94,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            ~/.gradle/build-cache  # ✅ 添加构建缓存
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
@@ -100,7 +103,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleAppDebug --no-daemon --info
+        run: ./gradlew assembleAppDebug --no-daemon
 
       - name: Check APK output
         run: |
@@ -157,6 +160,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
+            ~/.gradle/build-cache  # ✅ 添加构建缓存
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
@@ -179,7 +183,7 @@ jobs:
           fi
 
       - name: Build Release APK
-        run: ./gradlew assembleAppRelease --no-daemon --info
+        run: ./gradlew assembleAppRelease --no-daemon
 
       - name: Check Release APK output
         run: |
@@ -188,7 +192,7 @@ jobs:
           ls -la app/build/outputs/apk/app/release/ 2>/dev/null || echo "Release directory not found"
 
       - name: Build Release AAB (Google Play)
-        run: ./gradlew bundleAppRelease --no-daemon --info
+        run: ./gradlew bundleAppRelease --no-daemon
 
       - name: Check AAB output
         run: |

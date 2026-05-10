@@ -87,4 +87,10 @@ interface VectorizedBookDao {
 
     @Query("SELECT COUNT(*) FROM ai_vectorized_books")
     suspend fun getCount(): Int
+    
+    /**
+     * 根据书名模糊搜索已向量化的书籍
+     */
+    @Query("SELECT * FROM ai_vectorized_books WHERE bookTitle LIKE '%' || :keyword || '%'")
+    suspend fun searchByTitle(keyword: String): List<VectorizedBookEntity>
 }
