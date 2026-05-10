@@ -564,7 +564,7 @@ class VectorSearchService(private val context: Context) {
             if (termFreq == 0) continue
             
             // 简化的 IDF（假设所有文档都包含该词）
-            val idf = kotlin.math.log((totalDocs + 1.0) / (totalDocs * 0.5 + 0.5))
+            val idf = Math.log((totalDocs + 1.0) / (totalDocs * 0.5 + 0.5))
             
             // TF 归一化
             val docLen = content.length

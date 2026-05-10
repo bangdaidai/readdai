@@ -25,10 +25,14 @@ def version = "3." + releaseTime()
 // 🔢 Git Commit 计数（带容错，避免非 Git 环境构建失败）
 def gitCommits = 0
 try {
-    def proc = 'git rev-list HEAD --count'.execute()
-    proc.waitFor()
-    if (proc.exitValue() == 0 && proc.text.trim()) {
-        gitCommits = Integer.parseInt(proc.text.trim())
+    // ✅ 使用 providers.exec() 以兼容 Configuration Cache
+    def result = providers.exec {
+        commandLine 'git', 'rev-list', 'HEAD', '--count'
+        ignoreExitValue = true
+    }
+    def output = result.standardOutput.asText.get().trim()
+    if (result.exitValue == 0 && output) {
+        gitCommits = Integer.parseInt(output)
     }
 } catch (Exception e) {
     logger.warn("⚠️ Failed to get git commits count: ${e.message}")
