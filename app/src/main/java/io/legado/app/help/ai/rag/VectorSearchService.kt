@@ -451,8 +451,9 @@ class VectorSearchService(private val context: Context) {
             "开始混合搜索: query='$query', topK=$topK"
         )
         
-        // 扩大搜索范围，获取两倍结果用于融合
-        val expandedTopK = topK * 2
+        // ✅ 扩大搜索范围，获取足够多的结果用于融合（至少3倍）
+        // 这样可以确保靠后章节的 chunk 有机会进入候选列表
+        val expandedTopK = topK * 3
         
         // 并行执行两种搜索
         val vectorResults = try {
@@ -486,6 +487,7 @@ class VectorSearchService(private val context: Context) {
     
     /**
      * RRF (Reciprocal Rank Fusion) 融合算法
+     * ✅ 增强版：添加章节位置权重，优先返回靠后章节的内容
      */
     private fun rrfFusion(
         vectorResults: List<SearchResult>,
@@ -495,6 +497,10 @@ class VectorSearchService(private val context: Context) {
     ): List<SearchResult> {
         val scores = mutableMapOf<String, Double>()
         val chunkMap = mutableMapOf<String, SearchResult>()
+        
+        // 找到最大章节索引，用于归一化
+        val allChunks = vectorResults.map { it.chunk } + bm25Results.map { it.chunk }
+        val maxChapterIndex = allChunks.maxOfOrNull { it.chapterIndex } ?: 0
         
         // 向量结果的分数：1 / (k + 排名)
         vectorResults.forEachIndexed { rank, result ->
@@ -512,17 +518,33 @@ class VectorSearchService(private val context: Context) {
             }
         }
         
-        // 按综合分数排序，返回 topK
-        return scores.entries
+        // ✅ 按综合分数排序，然后应用章节位置权重
+        val sortedResults = scores.entries
             .sortedByDescending { it.value }
-            .take(topK)
             .mapNotNull { (id, score) ->
-                chunkMap[id]?.copy(score = score.toFloat())
+                chunkMap[id]?.let { result ->
+                    // 计算章节位置权重（0-1之间，越靠后权重越高）
+                    val positionWeight = if (maxChapterIndex > 0) {
+                        result.chunk.chapterIndex.toFloat() / maxChapterIndex
+                    } else {
+                        0.5f
+                    }
+                    
+                    // 综合分数 = RRF分数 × 0.7 + 位置权重 × 0.3
+                    val combinedScore = (score * 0.7 + positionWeight * 0.3).toFloat()
+                    
+                    // ✅ 创建新的 SearchResult，更新分数
+                    result.copy(score = combinedScore)
+                }
             }
+        
+        // 返回 topK
+        return sortedResults.take(topK)
     }
     
     /**
      * 简化的中文分词（用于 BM25）
+     * ✅ 增强版：对“结局”、“最后”等关键词给予特殊处理
      */
     private fun tokenizeQuery(query: String): List<String> {
         // 移除停用词
@@ -542,6 +564,14 @@ class VectorSearchService(private val context: Context) {
             val bigram = chineseChars.substring(i, i + 2)
             if (!stopWords.contains(bigram)) {
                 tokens.add(bigram)
+            }
+        }
+        
+        // ✅ 特殊处理：如果查询包含“结局”、“结尾”、“最后”等词，添加额外的关键词
+        val endingKeywords = listOf("结局", "结尾", "最后", "最终", "结束")
+        for (keyword in endingKeywords) {
+            if (query.contains(keyword)) {
+                tokens.add(keyword)  // 添加完整关键词，提高匹配度
             }
         }
         

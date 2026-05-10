@@ -1402,14 +1402,34 @@ class ListBooksTool(
     private val repository = io.legado.app.help.ai.repository.BooksRepository(context.appDatabase)
 
     override suspend fun run(input: Map<String, Any>): ToolResult {
-        val maxItems = (input["maxItems"] as? Number)?.toInt() ?: 50
+        // ✅ 参考 ReadAny：默认限制 20 本，避免 token 消耗过大
+        val defaultLimit = 20
+        val maxItems = (input["maxItems"] as? Number)?.toInt() ?: defaultLimit
         
-        // ✅ 容错处理：尝试多种可能的参数名
+        // ✅ 调试：打印所有接收到的参数
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+            "ListBooks",
+            "原始输入参数: ${input.entries.joinToString { "${it.key}=${it.value}" }}"
+        )
+        
+        // ✅ 容错处理：尝试所有可能的参数名
         val keyword = (
             input["keyword"]?.toString() ?:           // 标准参数名
+            input["title"]?.toString() ?:             // AI可能使用的参数名（搜索书名）
             input["search"]?.toString() ?:            // 备选
             input["q"]?.toString() ?:                 // 简写
+            input["query"]?.toString() ?:             // 另一种常见命名
+            input["name"]?.toString() ?:              // 书名
+            input["book"]?.toString() ?:              // 书
             input["arg0"]?.toString()                 // AI可能使用的错误参数名
+        )
+        
+        // ✅ 添加调试日志
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "ListBooks",
+            "提取的关键词: keyword=$keyword"
         )
         
         val category = input["category"]?.toString()
@@ -1424,10 +1444,10 @@ class ListBooksTool(
         )
         
         val includeTags = input["includeTags"] as? Boolean ?: true
-        
-        // ✅ 关键修复：如果有搜索关键词，不限制返回数量，返回所有匹配结果
+
+        // ✅ 关键修复：如果有搜索关键词，返回所有匹配结果；否则限制数量
         val effectiveLimit = if (!keyword.isNullOrBlank()) {
-            Int.MAX_VALUE  // 搜索时返回所有匹配结果
+            Int.MAX_VALUE  // 搜索时返回所有匹配
         } else {
             maxItems       // 无搜索时限制数量
         }
@@ -1440,6 +1460,13 @@ class ListBooksTool(
             sortBy = sortBy,
             limit = effectiveLimit,
             includeTags = includeTags
+        )
+        
+        // ✅ 添加调试日志
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
+            "ListBooks",
+            "搜索结果: 找到 ${books.size} 本书, 关键词='$keyword'"
         )
 
         // 获取分组信息

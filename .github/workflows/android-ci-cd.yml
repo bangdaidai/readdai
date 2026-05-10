@@ -21,8 +21,10 @@ on:
           - both
 
 env:
-  # ✅ 云端构建内存优化（避免 OOM），与 gradle.properties 保持一致
-  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3g -XX:+UseParallelGC"
+  # ✅ 云端构建内存优化（2GB Gradle + 1.5GB Kotlin），避免 OOM
+  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -XX:+UseParallelGC"
+  # ✅ 覆盖 Kotlin Daemon 内存配置
+  ORG_GRADLE_PROJECT_kotlin_daemon_jvmargs: "-Xmx1536m -XX:MaxMetaspaceSize=512m"
   GRADLE_BUILD_CACHE: true
 
 jobs:

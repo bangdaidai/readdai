@@ -1977,8 +1977,8 @@ class ChatAdapter(
                     
                     // 关键修复：在代码中统一设置垂直 margin，与 AI/用户消息保持一致
                     val layoutParams = stepView.layoutParams as android.widget.LinearLayout.LayoutParams
-                    layoutParams.topMargin = if (index == 0) 0 else 8.dpToPx()  // 第一个没有上边距，其他有 8dp
-                    layoutParams.bottomMargin = 8.dpToPx()  // 所有都有下边距
+                    layoutParams.topMargin = if (index == 0) 0 else 4.dpToPx()  // 第一个没有上边距，其他有 4dp
+                    layoutParams.bottomMargin = 4.dpToPx()  // 所有都有下边距
                     stepView.layoutParams = layoutParams
 
                     val layoutHeader = stepView.findViewById<LinearLayout>(R.id.layout_tool_header)

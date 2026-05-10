@@ -63,7 +63,7 @@
             android:paddingBottom="12dp"
             android:visibility="gone">
 
-            <!-- ✅ 输入参数 - 使用 FrameLayout 限制最大高度 -->
+                <!-- ✅ 输入参数 - 使用 MaxHeightScrollView 确保高度限制生效 -->
             <LinearLayout
                 android:id="@+id/layout_tool_input"
                 android:layout_width="match_parent"
@@ -79,36 +79,30 @@
                     android:textColor="@color/secondaryText"
                     android:textStyle="bold" />
 
-                <!-- ✅ 关键修复：使用 FrameLayout 包裹，确保 maxHeight 生效 -->
-                <FrameLayout
+                <io.legado.app.ui.widget.MaxHeightScrollView
+                    android:id="@+id/scroll_input"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="200dp">
+                    android:maxHeight="200dp"
+                    android:scrollbars="vertical"
+                    android:fillViewport="false">
 
-                    <ScrollView
+                    <TextView
+                        android:id="@+id/tv_tool_input"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:scrollbars="vertical"
-                        android:fillViewport="false">
+                        android:layout_marginTop="4dp"
+                        android:padding="8dp"
+                        android:background="@drawable/bg_code_block"
+                        android:textSize="12sp"
+                        android:textColor="@color/primaryText"
+                        android:fontFamily="monospace" />
 
-                        <TextView
-                            android:id="@+id/tv_tool_input"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:padding="8dp"
-                            android:background="@drawable/bg_code_block"
-                            android:textSize="12sp"
-                            android:textColor="@color/primaryText"
-                            android:fontFamily="monospace" />
-
-                    </ScrollView>
-
-                </FrameLayout>
+                </io.legado.app.ui.widget.MaxHeightScrollView>
 
             </LinearLayout>
 
-                <!-- ✅ 输出结果 - 使用 FrameLayout 限制最大高度 -->
+                <!-- ✅ 输出结果 - 使用 MaxHeightScrollView 确保高度限制生效 -->
             <LinearLayout
                 android:id="@+id/layout_tool_output"
                 android:layout_width="match_parent"
@@ -125,36 +119,30 @@
                     android:textColor="@color/secondaryText"
                     android:textStyle="bold" />
 
-                <!-- ✅ 关键修复：使用 FrameLayout 包裹，确保 maxHeight 生效 -->
-                <FrameLayout
+                <io.legado.app.ui.widget.MaxHeightScrollView
+                    android:id="@+id/scroll_output"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="200dp">
+                    android:maxHeight="200dp"
+                    android:scrollbars="vertical"
+                    android:fillViewport="false">
 
-                    <ScrollView
+                    <TextView
+                        android:id="@+id/tv_tool_output"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:scrollbars="vertical"
-                        android:fillViewport="false">
+                        android:layout_marginTop="4dp"
+                        android:padding="8dp"
+                        android:background="@drawable/bg_code_block"
+                        android:textSize="12sp"
+                        android:textColor="@color/primaryText"
+                        android:fontFamily="monospace" />
 
-                        <TextView
-                            android:id="@+id/tv_tool_output"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:padding="8dp"
-                            android:background="@drawable/bg_code_block"
-                            android:textSize="12sp"
-                            android:textColor="@color/primaryText"
-                            android:fontFamily="monospace" />
-
-                    </ScrollView>
-
-                </FrameLayout>
+                </io.legado.app.ui.widget.MaxHeightScrollView>
 
             </LinearLayout>
 
-            <!-- ✅ 错误信息 - 使用 FrameLayout 限制最大高度 -->
+            <!-- ✅ 错误信息 - 使用 MaxHeightScrollView 确保高度限制生效 -->
             <LinearLayout
                 android:id="@+id/layout_tool_error"
                 android:layout_width="match_parent"
@@ -171,32 +159,26 @@
                     android:textColor="@color/error"
                     android:textStyle="bold" />
 
-                <!-- ✅ 关键修复：使用 FrameLayout 包裹，确保 maxHeight 生效 -->
-                <FrameLayout
+                <io.legado.app.ui.widget.MaxHeightScrollView
+                    android:id="@+id/scroll_error"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="150dp">
+                    android:maxHeight="150dp"
+                    android:scrollbars="vertical"
+                    android:fillViewport="false">
 
-                    <ScrollView
+                    <TextView
+                        android:id="@+id/tv_tool_error"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:scrollbars="vertical"
-                        android:fillViewport="false">
+                        android:layout_marginTop="4dp"
+                        android:padding="8dp"
+                        android:background="@drawable/bg_code_block"
+                        android:textSize="12sp"
+                        android:textColor="@color/error"
+                        android:fontFamily="monospace" />
 
-                        <TextView
-                            android:id="@+id/tv_tool_error"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:padding="8dp"
-                            android:background="@drawable/bg_code_block"
-                            android:textSize="12sp"
-                            android:textColor="@color/error"
-                            android:fontFamily="monospace" />
-
-                    </ScrollView>
-
-                </FrameLayout>
+                </io.legado.app.ui.widget.MaxHeightScrollView>
 
             </LinearLayout>
 

@@ -27,8 +27,11 @@ def gitCommits = 0
 try {
     // ✅ 使用 providers.exec() 以兼容 Configuration Cache
     def result = providers.exec {
-        commandLine 'git', 'rev-list', 'HEAD', '--count'
+        executable = 'git'
+        args = ['rev-list', 'HEAD', '--count']
         ignoreExitValue = true
+        // 设置超时，避免长时间等待
+        timeout = java.time.Duration.ofSeconds(10)
     }
     def output = result.standardOutput.asText.get().trim()
     if (result.exitValue == 0 && output) {

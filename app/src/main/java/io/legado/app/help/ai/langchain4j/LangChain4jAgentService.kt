@@ -481,26 +481,29 @@ class LangChain4jAgentService {
                     input = arguments
                 ))
                 
-                // 更新为RUNNING状态
-                toolSteps[toolSteps.size - 1] = toolSteps.last().copy(status = ToolStepStatus.RUNNING)
-                
-                // 创建Tool执行器并执行
-                val toolExecutor = LangChain4jUniversalToolExecutor(context)
-                val result = toolExecutor.executeToolByName(toolName, arguments)
-                
-                io.legado.app.help.ai.AiLogManager.log(
-                    io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
-                    "LangChain4j",
-                    "工具执行结果: $result"
-                )
-                
-                // 更新为SUCCESS状态
-                toolSteps[toolSteps.size - 1] = toolSteps.last().copy(
-                    status = ToolStepStatus.SUCCESS,
-                    output = result
-                )
-                
-                toolResults.add("工具 [$toolName] 执行结果：$result")
+                // ✅ 安全检查：确保列表不为空后再访问
+                if (toolSteps.isNotEmpty()) {
+                    // 更新为RUNNING状态
+                    toolSteps[toolSteps.size - 1] = toolSteps.last().copy(status = ToolStepStatus.RUNNING)
+                    
+                    // 创建Tool执行器并执行
+                    val toolExecutor = LangChain4jUniversalToolExecutor(context)
+                    val result = toolExecutor.executeToolByName(toolName, arguments)
+                    
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                        "LangChain4j",
+                        "工具执行结果: $result"
+                    )
+                    
+                    // 更新为SUCCESS状态
+                    toolSteps[toolSteps.size - 1] = toolSteps.last().copy(
+                        status = ToolStepStatus.SUCCESS,
+                        output = result
+                    )
+                    
+                    toolResults.add("工具 [$toolName] 执行结果：$result")
+                }
             } catch (e: Exception) {
                 io.legado.app.help.ai.AiLogManager.log(
                     io.legado.app.help.ai.AiLogManager.LogLevel.ERROR,
@@ -645,11 +648,32 @@ $bookInfo
 2. **选择合适的工具** - 根据需要选择最合适的工具（不是所有问题都需要工具）
 3. **保持透明** - 简要说明你使用工具的原因
 4. **避免重复** - 不要反复调用相同的工具获取相似信息
+5. **按需获取数据** - ⭐ **重要原则**：
+   - ✅ **精确搜索时**：使用关键词参数，只获取相关数据
+     - 例："童话保质期结局" → `rag_search(query="结局", keyword="童话保质期")`
+   - ✅ **分类查询时**：使用分类/标签参数，过滤无关数据
+     - 例："我有哪些科幻小说" → `list_books(keyword="科幻")`
+   - ❌ **不要盲目获取所有数据**：除非用户明确要求浏览全部内容
+     - 错误：用户问某本书 → 你获取整个书架
+     - 正确：用户问某本书 → 你直接搜索那本书
 
 ## 可用工具
 
 ### 书架和阅读历史
-- **list_books**: 获取用户的书架列表。支持按标题、作者、分类、阅读状态筛选。
+- **list_books**: 获取用户的书架列表。
+  - 参数：`keyword`（搜索关键词，匹配标题或作者）、`category`（分类）、`status`（阅读状态）、`sortBy`（排序方式）、`maxItems`（最大返回数量，默认20）
+  - **重要**：
+    - 搜索书籍时使用 `keyword` 参数，不是 `title`！例如：`{"keyword": "童话保质期"}`
+    - **默认只返回最近阅读的 20 本书**，避免消耗过多 token
+    - **如果需要查找特定书籍，请使用 `keyword` 参数进行搜索**，此时会返回所有匹配结果
+  - **智能使用策略**：
+    - ✅ **用户询问特定书名** → 使用 `keyword` 参数精确搜索
+      - 例："我的书架上有童话保质期吗" → `list_books(keyword="童话保质期")`
+    - ✅ **用户询问某类书籍** → 使用 `keyword` 或 `category` 参数
+      - 例："我有哪些科幻小说" → `list_books(keyword="科幻")`
+    - ✅ **用户浏览书架** → 不使用参数，返回最近阅读的 20 本
+      - 例："我的书架上有哪些书" → `list_books()`
+    - ❌ **不要盲目获取所有书籍**，除非用户明确要求
 - **reading_history**: 获取用户的阅读历史记录
 - **search_all_notes**: 在所有书籍中搜索笔记和高亮
 
@@ -700,11 +724,15 @@ $bookInfo
 4. **RAG 搜索策略**：
    - **默认使用混合搜索** (`mode="hybrid"`)，它结合了语义搜索和关键词搜索的优势
    - **当用户询问“结局”、“结尾”、“最后”等内容时**：
-     - 先用 `rag_toc` 获取目录，确定总章节数
-     - 再用 `rag_context` 获取最后几章的内容
-     - 或者用 `rag_search` 搜索时明确提到“最后一章”、“结尾部分”
+     - **❌ 不要直接使用 rag_search！** 因为它返回的是碎片化的段落，无法提供完整的结局
+     - **✅ 正确做法**：
+       1. **第一步**：先用 `rag_toc` 获取目录，确定总章节数（例如：共82章）
+       2. **第二步**：再用 `rag_context` 获取最后几章的完整内容（例如：chapterIndex=80, range=2，获取第80-82章）
+       3. **第三步**：基于完整的章节内容，总结并回答用户的问颗
+     - **备选方案**：如果向量化不完整，可以提示用户“这本书可能没有完整向量化，建议您重新向量化或手动阅读最后几章”
    - **当用户询问特定关键词时**：可以使用 `mode="bm25"` 进行精准的关键词匹配
    - **当用户询问概念性或语义相关问题时**：可以使用 `mode="vector"` 进行语义搜索
+   - **重要**：如果 `rag_search` 返回的都是前几章的内容，说明向量化可能不完整，应该改用 `rag_toc` + `rag_context` 策略
 5. **综合分析** - 将信息片段整合成连贯的见解
 6. **提供价值** - 给出可操作的建议或清晰的答案
 
