@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.View
+import android.widget.AutoCompleteTextView
 import android.widget.EditText
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
@@ -109,6 +110,41 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
                 "未启用"
             }
         }
+
+        // MCP 服务器状态
+        findPreference<Preference>("ai_mcp_server_manager")?.let {
+            val servers = io.legado.app.help.config.AppConfig.aiMcpServers
+            val enabledCount = servers.count { it.enabled }
+            it.summary = if (servers.isEmpty()) {
+                "暂无 MCP 服务器配置"
+            } else {
+                "已配置 ${servers.size} 个服务器（${enabledCount} 个启用）"
+            }
+        }
+
+        // Tavily 状态
+        findPreference<SwitchPreference>("aiTavilyEnabled")?.let {
+            val apiKey = io.legado.app.help.config.AppConfig.aiTavilyApiKey.orEmpty()
+            it.summary = if (apiKey.isBlank()) {
+                "需要配置 API Key 才能使用"
+            } else {
+                "已配置 API Key，可以搜索实时网络信息"
+            }
+        }
+
+        // Tavily 统一配置状态
+        findPreference<Preference>("aiTavilyConfig")?.let {
+            val apiKey = io.legado.app.help.config.AppConfig.aiTavilyApiKey.orEmpty()
+            val topic = io.legado.app.help.config.AppConfig.aiTavilyTopic.orEmpty()
+            val depth = io.legado.app.help.config.AppConfig.aiTavilySearchDepth.orEmpty()
+            val maxResults = io.legado.app.help.config.AppConfig.aiTavilyMaxResults
+            
+            it.summary = if (apiKey.isBlank()) {
+                "未配置（点击配置）"
+            } else {
+                "主题: ${getTopicLabel(topic)} | 深度: ${getDepthLabel(depth)} | 结果数: $maxResults"
+            }
+        }
     }
 
     override fun onPreferenceTreeClick(preference: Preference): Boolean {
@@ -121,6 +157,8 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             "ai_vector_settings" -> showVectorSettingsDialog()
             "ai_cache_manager" -> showCacheManagerDialog()
             "ai_log_viewer" -> openAiLogViewer()
+            "ai_mcp_server_manager" -> showMcpServerManagerDialog()
+            "aiTavilyConfig" -> showTavilyConfigDialog()
         }
         return super.onPreferenceTreeClick(preference)
     }
@@ -1267,5 +1305,257 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
     override fun onResume() {
         super.onResume()
         updateSummary()
+    }
+
+    // ==================== MCP 服务器管理 ====================
+
+    private fun showMcpServerManagerDialog() {
+        val servers = io.legado.app.help.config.AppConfig.aiMcpServers
+        
+        if (servers.isEmpty()) {
+            AlertDialog(requireContext())
+                .setTitle("MCP 服务器")
+                .setMessage("暂无 MCP 服务器配置")
+                .setPositiveButton("添加") { _, _ -> showEditMcpServerDialog() }
+                .setNegativeButton("关闭", null)
+                .show()
+            return
+        }
+        
+        val items = servers.map { server ->
+            "${server.name}${if (!server.enabled) " (已禁用)" else ""}"
+        }.toTypedArray()
+        
+        AlertDialog(requireContext())
+            .setTitle("MCP 服务器管理")
+            .setItems(items) { _, which ->
+                showMcpServerOptionsDialog(servers[which])
+            }
+            .setPositiveButton("添加") { _, _ -> showEditMcpServerDialog() }
+            .setNegativeButton("关闭", null)
+            .show()
+    }
+    
+    private fun showMcpServerOptionsDialog(server: io.legado.app.ui.main.ai.AiMcpServerConfig) {
+        val options = arrayOf(
+            if (server.enabled) "禁用" else "启用",
+            "编辑",
+            "删除"
+        )
+        
+        AlertDialog(requireContext())
+            .setTitle(server.name)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> toggleMcpServerEnabled(server)
+                    1 -> showEditMcpServerDialog(server)
+                    2 -> confirmDeleteMcpServer(server)
+                }
+            }
+            .show()
+    }
+    
+    private fun toggleMcpServerEnabled(server: io.legado.app.ui.main.ai.AiMcpServerConfig) {
+        val servers = io.legado.app.help.config.AppConfig.aiMcpServers.toMutableList()
+        val index = servers.indexOfFirst { it.id == server.id }
+        if (index >= 0) {
+            servers[index] = server.copy(enabled = !server.enabled)
+            io.legado.app.help.config.AppConfig.aiMcpServers = servers
+            Toast.makeText(requireContext(), "已${if (server.enabled) "禁用" else "启用"}", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun showEditMcpServerDialog(server: io.legado.app.ui.main.ai.AiMcpServerConfig? = null) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_ai_mcp_server_edit, null)
+        val etName = dialogView.findViewById<EditText>(R.id.et_mcp_name)
+        val etEndpoint = dialogView.findViewById<EditText>(R.id.et_mcp_endpoint)
+        val etApiKey = dialogView.findViewById<EditText>(R.id.et_mcp_api_key)
+        val switchEnabled = dialogView.findViewById<com.google.android.material.switchmaterial.SwitchMaterial>(R.id.switch_mcp_enabled)
+        
+        if (server != null) {
+            etName.setText(server.name)
+            etEndpoint.setText(server.endpoint)
+            etApiKey.setText(server.apiKey)
+            switchEnabled.isChecked = server.enabled
+        } else {
+            switchEnabled.isChecked = true
+        }
+        
+        val title = if (server == null) "添加 MCP 服务器" else "编辑 MCP 服务器"
+        
+        AlertDialog(requireContext())
+            .setTitle(title)
+            .setView(dialogView)
+            .setPositiveButton("保存") { _, _ ->
+                val name = etName.text.toString().trim()
+                val endpoint = etEndpoint.text.toString().trim()
+                val apiKey = etApiKey.text.toString().trim()
+                val enabled = switchEnabled.isChecked
+                
+                if (name.isEmpty() || endpoint.isEmpty()) {
+                    Toast.makeText(requireContext(), "名称和端点不能为空", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                
+                val servers = io.legado.app.help.config.AppConfig.aiMcpServers.toMutableList()
+                val newServer = if (server != null) {
+                    server.copy(name = name, endpoint = endpoint, apiKey = apiKey, enabled = enabled)
+                } else {
+                    io.legado.app.ui.main.ai.AiMcpServerConfig(
+                        name = name,
+                        endpoint = endpoint,
+                        apiKey = apiKey,
+                        enabled = enabled
+                    )
+                }
+                
+                if (server != null) {
+                    val index = servers.indexOfFirst { it.id == server.id }
+                    if (index >= 0) servers[index] = newServer
+                } else {
+                    servers.add(newServer)
+                }
+                
+                io.legado.app.help.config.AppConfig.aiMcpServers = servers
+                Toast.makeText(requireContext(), "已保存", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+    
+    private fun confirmDeleteMcpServer(server: io.legado.app.ui.main.ai.AiMcpServerConfig) {
+        AlertDialog(requireContext())
+            .setTitle("删除 MCP 服务器")
+            .setMessage("确定要删除 \"${server.name}\" 吗？")
+            .setPositiveButton("删除") { _, _ ->
+                val servers = io.legado.app.help.config.AppConfig.aiMcpServers.filterNot { it.id == server.id }
+                io.legado.app.help.config.AppConfig.aiMcpServers = servers
+                Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    // ==================== Tavily 统一配置 ====================
+
+    /**
+     * 获取搜索主题的中文标签
+     */
+    private fun getTopicLabel(topic: String): String {
+        return when (topic) {
+            "news" -> "新闻"
+            "finance" -> "金融"
+            else -> "通用"
+        }
+    }
+
+    /**
+     * 获取搜索深度的中文标签
+     */
+    private fun getDepthLabel(depth: String): String {
+        return when (depth) {
+            "advanced" -> "高级"
+            "ultra-fast" -> "超快速"
+            else -> "基础"
+        }
+    }
+
+    /**
+     * 显示统一的 Tavily 配置对话框
+     */
+    private fun showTavilyConfigDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_tavily_config, null)
+        
+        // 初始化控件
+        val etApiKey = dialogView.findViewById<EditText>(R.id.et_tavily_api_key)
+        val etBaseUrl = dialogView.findViewById<EditText>(R.id.et_tavily_base_url)
+        val etTopic = dialogView.findViewById<AutoCompleteTextView>(R.id.et_tavily_topic)
+        val etSearchDepth = dialogView.findViewById<AutoCompleteTextView>(R.id.et_tavily_search_depth)
+        val etMaxResults = dialogView.findViewById<EditText>(R.id.et_tavily_max_results)
+        
+        // 加载当前配置
+        etApiKey.setText(io.legado.app.help.config.AppConfig.aiTavilyApiKey.orEmpty())
+        etBaseUrl.setText(io.legado.app.help.config.AppConfig.aiTavilyBaseUrl.orEmpty())
+        etTopic.setText(getTopicLabel(io.legado.app.help.config.AppConfig.aiTavilyTopic.orEmpty()))
+        etSearchDepth.setText(getDepthLabel(io.legado.app.help.config.AppConfig.aiTavilySearchDepth.orEmpty()))
+        etMaxResults.setText(io.legado.app.help.config.AppConfig.aiTavilyMaxResults.toString())
+        
+        // 设置下拉选项
+        val topicOptions = listOf("通用", "新闻", "金融")
+        val topicAdapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, topicOptions)
+        etTopic.setAdapter(topicAdapter)
+        
+        val depthOptions = listOf("基础", "高级", "超快速")
+        val depthAdapter = android.widget.ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, depthOptions)
+        etSearchDepth.setAdapter(depthAdapter)
+        
+        // 点击下拉框时显示选项
+        etTopic.setOnClickListener {
+            etTopic.showDropDown()
+        }
+        
+        etSearchDepth.setOnClickListener {
+            etSearchDepth.showDropDown()
+        }
+        
+        AlertDialog(requireContext())
+            .setTitle("Tavily 联网搜索配置")
+            .setView(dialogView)
+            .setPositiveButton("保存") { _, _ ->
+                // 验证 API Key
+                val apiKey = etApiKey.text.toString().trim()
+                if (apiKey.isEmpty()) {
+                    Toast.makeText(requireContext(), "API Key 不能为空", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                
+                // 验证 Base URL
+                val baseUrl = etBaseUrl.text.toString().trim()
+                if (baseUrl.isEmpty()) {
+                    Toast.makeText(requireContext(), "Base URL 不能为空", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                
+                // 验证最大结果数
+                val maxResultsText = etMaxResults.text.toString().trim()
+                val maxResults = maxResultsText.toIntOrNull()
+                if (maxResults == null || maxResults < 1 || maxResults > 10) {
+                    Toast.makeText(requireContext(), "最大结果数必须在 1-10 之间", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                
+                // 转换主题为英文值
+                val topicValue = when (etTopic.text.toString()) {
+                    "新闻" -> "news"
+                    "金融" -> "finance"
+                    else -> "general"
+                }
+                
+                // 转换深度为英文值
+                val depthValue = when (etSearchDepth.text.toString()) {
+                    "高级" -> "advanced"
+                    "超快速" -> "ultra-fast"
+                    else -> "basic"
+                }
+                
+                // 保存配置
+                io.legado.app.help.config.AppConfig.aiTavilyApiKey = apiKey
+                io.legado.app.help.config.AppConfig.aiTavilyBaseUrl = baseUrl
+                io.legado.app.help.config.AppConfig.aiTavilyTopic = topicValue
+                io.legado.app.help.config.AppConfig.aiTavilySearchDepth = depthValue
+                io.legado.app.help.config.AppConfig.aiTavilyMaxResults = maxResults
+                
+                updateSummary()
+                Toast.makeText(requireContext(), "配置已保存", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("取消", null)
+            .setNeutralButton("恢复默认") { _, _ ->
+                etApiKey.setText("")
+                etBaseUrl.setText("https://api.tavily.com")
+                etTopic.setText("通用")
+                etSearchDepth.setText("基础")
+                etMaxResults.setText("5")
+            }
+            .show()
     }
 }

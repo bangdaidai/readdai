@@ -63,7 +63,7 @@
             android:paddingBottom="12dp"
             android:visibility="gone">
 
-                <!-- ✅ 输入参数 - 使用 MaxHeightScrollView 确保高度限制生效 -->
+            <!-- 输入参数 -->
             <LinearLayout
                 android:id="@+id/layout_tool_input"
                 android:layout_width="match_parent"
@@ -79,30 +79,20 @@
                     android:textColor="@color/secondaryText"
                     android:textStyle="bold" />
 
-                <io.legado.app.ui.widget.MaxHeightScrollView
-                    android:id="@+id/scroll_input"
+                <TextView
+                    android:id="@+id/tv_tool_input"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="200dp"
-                    android:scrollbars="vertical"
-                    android:fillViewport="false">
-
-                    <TextView
-                        android:id="@+id/tv_tool_input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:padding="8dp"
-                        android:background="@drawable/bg_code_block"
-                        android:textSize="12sp"
-                        android:textColor="@color/primaryText"
-                        android:fontFamily="monospace" />
-
-                </io.legado.app.ui.widget.MaxHeightScrollView>
+                    android:layout_marginTop="4dp"
+                    android:padding="8dp"
+                    android:background="@drawable/bg_code_block"
+                    android:textSize="12sp"
+                    android:textColor="@color/primaryText"
+                    android:fontFamily="monospace" />
 
             </LinearLayout>
 
-                <!-- ✅ 输出结果 - 使用 MaxHeightScrollView 确保高度限制生效 -->
+            <!-- 输出结果 -->
             <LinearLayout
                 android:id="@+id/layout_tool_output"
                 android:layout_width="match_parent"
@@ -119,30 +109,20 @@
                     android:textColor="@color/secondaryText"
                     android:textStyle="bold" />
 
-                <io.legado.app.ui.widget.MaxHeightScrollView
-                    android:id="@+id/scroll_output"
+                <TextView
+                    android:id="@+id/tv_tool_output"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="200dp"
-                    android:scrollbars="vertical"
-                    android:fillViewport="false">
-
-                    <TextView
-                        android:id="@+id/tv_tool_output"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:padding="8dp"
-                        android:background="@drawable/bg_code_block"
-                        android:textSize="12sp"
-                        android:textColor="@color/primaryText"
-                        android:fontFamily="monospace" />
-
-                </io.legado.app.ui.widget.MaxHeightScrollView>
+                    android:layout_marginTop="4dp"
+                    android:padding="8dp"
+                    android:background="@drawable/bg_code_block"
+                    android:textSize="12sp"
+                    android:textColor="@color/primaryText"
+                    android:fontFamily="monospace" />
 
             </LinearLayout>
 
-            <!-- ✅ 错误信息 - 使用 MaxHeightScrollView 确保高度限制生效 -->
+            <!-- 错误信息 -->
             <LinearLayout
                 android:id="@+id/layout_tool_error"
                 android:layout_width="match_parent"
@@ -159,26 +139,16 @@
                     android:textColor="@color/error"
                     android:textStyle="bold" />
 
-                <io.legado.app.ui.widget.MaxHeightScrollView
-                    android:id="@+id/scroll_error"
+                <TextView
+                    android:id="@+id/tv_tool_error"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxHeight="150dp"
-                    android:scrollbars="vertical"
-                    android:fillViewport="false">
-
-                    <TextView
-                        android:id="@+id/tv_tool_error"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:padding="8dp"
-                        android:background="@drawable/bg_code_block"
-                        android:textSize="12sp"
-                        android:textColor="@color/error"
-                        android:fontFamily="monospace" />
-
-                </io.legado.app.ui.widget.MaxHeightScrollView>
+                    android:layout_marginTop="4dp"
+                    android:padding="8dp"
+                    android:background="@drawable/bg_code_block"
+                    android:textSize="12sp"
+                    android:textColor="@color/error"
+                    android:fontFamily="monospace" />
 
             </LinearLayout>
 

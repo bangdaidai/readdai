@@ -44,6 +44,7 @@ object EventBus {
     const val READ_SESSION_UPDATED = "readSessionUpdated"
     const val TAGS_UPDATED = "tagsUpdated"
     const val THEME_CHANGED = "themeChanged"
+    const val NAVIGATION_BAR_CHANGED = "navigationBarChanged"
     const val MEMORY_BOOK_INFO_UPDATED = "memoryBookInfoUpdated"
     const val BOOK_REVIEW_UPDATED = "bookReviewUpdated"
     const val BOOK_INTRO_UPDATED = "bookIntroUpdated"

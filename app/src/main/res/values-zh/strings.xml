@@ -225,6 +225,7 @@
     <string name="import_local">本地导入</string>
     <string name="import_on_line">网络导入</string>
     <string name="replace_rule_title">替换净化</string>
+    <string name="ai_chat">AI</string>
     <string name="replace_rule_edit">替换规则编辑</string>
     <string name="replace_rule">替换规则</string>
     <string name="replace_to">替换为</string>
@@ -1299,7 +1300,7 @@
     <string name="no_reviews">暂无书评</string>
     <string name="review_content_hint">写下想法</string>
     <string name="confirm_delete_review">确认删除吗？</string>
-    
+
     <!-- 标签管理相关 -->
     <string name="book_tag_manage">标签</string>
     <string name="book_tag_manage_summary">管理所有书籍标签</string>
@@ -1333,7 +1334,7 @@
     <string name="tag_delete_error">标签删除失败</string>
     <string name="tag_create_success">标签创建成功</string>
     <string name="tag_create_error">标签创建失败</string>
-    
+
     <!-- 我的阅读相关 -->
     <string name="reading_memory">我的书单</string>
     <string name="reading_memory_summary">自动记录阅读进度和笔记</string>
@@ -1367,4 +1368,50 @@
     <string name="welcome_show_time">欢迎显示时间</string>
     <string name="welcome_show_time_summary">设置欢迎页面显示时间</string>
     <string name="night_background_card_color">夜间卡片背景色</string>
+
+    <!-- 底部导航栏管理 -->
+    <string name="bottom_bar_layout_mode">底栏样式</string>
+    <string name="bottom_bar_layout_classic">经典模式</string>
+    <string name="bottom_bar_layout_floating">悬浮模式</string>
+    <string name="bottom_bar_effect_mode">底栏效果</string>
+    <string name="bottom_bar_effect_solid">实色</string>
+    <string name="bottom_bar_effect_glass">玻璃</string>
+    <string name="bottom_bar_effect_frosted">磨砂玻璃</string>
+    <string name="bottom_bar_opacity">不透明度</string>
+    <string name="navigation_icon_select_file">选择图标文件</string>
+    <string name="navigation_icon_normal">正常状态</string>
+    <string name="navigation_icon_selected">选中状态</string>
+    <string name="navigation_icon_decode_failed">图标解码失败</string>
+    <string name="navigation_bar_custom_name">自定义底栏</string>
+    <string name="navigation_bar_default_readonly">默认配置不可编辑</string>
+    <string name="navigation_bar_download_first">请先下载远程配置</string>
+    <string name="navigation_bar_edit">编辑底栏配置</string>
+    <string name="navigation_bar_name">配置名称</string>
+    <string name="navigation_bar_package_summary">管理多个底栏配置方案</string>
+    <string name="navigation_bar_upload">上传到云端</string>
+    <string name="navigation_bar_delete_local_confirm">确定删除本地配置？</string>
+    <string name="navigation_bar_delete_remote_confirm">确定删除云端配置？</string>
+    <string name="navigation_bar_delete_both_confirm">确定同时删除本地和云端配置？</string>
+    <string name="theme_delete_local">删除本地</string>
+    <string name="theme_delete_remote">删除云端</string>
+    <string name="theme_delete_both">全部删除</string>
+
+    <!-- 通用 -->
+    <string name="apply">应用</string>
+    <string name="more">更多</string>
+
+    <!-- 底部导航栏管理 -->
+    <string name="navigation_bar_manage">底栏配置</string>
+    <string name="theme_day">日间</string>
+    <string name="theme_night">夜间</string>
+    <string name="theme_add">添加</string>
+    <string name="theme_apply">应用</string>
+    <string name="theme_applied_state">已应用</string>
+    <string name="theme_import_zip">导入 ZIP</string>
+    <string name="theme_manual_config">手动配置</string>
+    <string name="theme_saved_local">已保存到本地</string>
+    <string name="theme_source_using">使用中</string>
+    <string name="theme_source_local">本地</string>
+    <string name="theme_source_remote">远程</string>
+    <string name="theme_source_both">两者</string>
 </resources>

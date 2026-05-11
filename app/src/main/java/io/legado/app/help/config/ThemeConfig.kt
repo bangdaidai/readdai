@@ -226,7 +226,12 @@ object ThemeConfig {
         return null
     }
 
-    fun applyConfig(context: Context, config: Config) {
+    fun applyConfig(
+        context: Context,
+        config: Config,
+        switchNightMode: Boolean = true,
+        notify: Boolean = true
+    ) {
         try {
             if (needClearImg) {
                 needClearImg = false
@@ -244,6 +249,7 @@ object ThemeConfig {
             val isNightTheme = config.isNightTheme
             val transparentNavBar = config.transparentNavBar
             val backgroundPath = config.backgroundImgPath
+
             if (backgroundPath != null && backgroundPath.startsWith("http")) {
                 val fileRoot = context.externalFiles
                 val preferenceKey = if (isNightTheme) {
@@ -308,7 +314,9 @@ object ThemeConfig {
                 context.putPrefString(PreferKey.bgImage, backgroundPath)
                 context.putPrefInt(PreferKey.bgImageBlurring, backgroundBlur)
             }
-            AppConfig.isNightTheme = isNightTheme
+            if (switchNightMode) {
+                AppConfig.isNightTheme = isNightTheme
+            }
             applyDayNight(context)
         } catch (e: Exception) {
             AppLog.put("设置主题出错\n$e", e, true)
@@ -426,6 +434,14 @@ object ThemeConfig {
     fun saveNightTheme(context: Context, name: String) {
         val config = getNightTheme(context, name)
         addConfig(config)
+    }
+
+    fun getThemeConfig(context: Context, isNightTheme: Boolean): Config {
+        return if (isNightTheme) {
+            getNightTheme(context, "")
+        } else {
+            getDayTheme(context, "")
+        }
     }
 
     /**
@@ -630,17 +646,15 @@ object ThemeConfig {
         var accentColor: String,
         var backgroundColor: String,
         var bottomBackground: String,
-        var backgroundCard: String = "#FFFFFF",
-        var dividerColor: String = "#66666666",
-        var titleBarTextIconColor: String = "#FFFFFF",
-        var textPrimaryColor: String = "#de000000",
-        var textSecondaryColor: String = "#8a000000",
-        var textSummaryColor: String = "#8A2C2C2C",
-        var textMenuColor: String = "#383838",
-        var textOtherColor: String = "#de000000",
-        var transparentNavBar: Boolean = false,
-        var backgroundImgPath: String? = null,
-        var backgroundImgBlur: Int = 0
+        var backgroundCard: String,
+        var dividerColor: String,
+        var titleBarTextIconColor: String,
+        var textPrimaryColor: String,
+        var textSecondaryColor: String,
+        var textOtherColor: String,
+        var transparentNavBar: Boolean,
+        var backgroundImgPath: String?,
+        var backgroundImgBlur: Int
     ) {
 
         override fun hashCode(): Int {
@@ -657,11 +671,10 @@ object ThemeConfig {
                         && other.backgroundColor == backgroundColor
                         && other.bottomBackground == bottomBackground
                         && other.backgroundCard == backgroundCard
+                        && other.dividerColor == dividerColor
                         && other.titleBarTextIconColor == titleBarTextIconColor
                         && other.textPrimaryColor == textPrimaryColor
                         && other.textSecondaryColor == textSecondaryColor
-                        && other.textSummaryColor == textSummaryColor
-                        && other.textMenuColor == textMenuColor
                         && other.textOtherColor == textOtherColor
                         && other.transparentNavBar == transparentNavBar
                         && other.backgroundImgPath == backgroundImgPath
@@ -678,17 +691,15 @@ object ThemeConfig {
             "backgroundColor" to backgroundColor,
             "bottomBackground" to bottomBackground,
             "backgroundCard" to backgroundCard,
+            "dividerColor" to dividerColor,
             "titleBarTextIconColor" to titleBarTextIconColor,
             "textPrimaryColor" to textPrimaryColor,
             "textSecondaryColor" to textSecondaryColor,
-            "textSummaryColor" to textSummaryColor,
-            "textMenuColor" to textMenuColor,
             "textOtherColor" to textOtherColor,
             "transparentNavBar" to transparentNavBar,
             "backgroundImgPath" to backgroundImgPath,
             "backgroundImgBlur" to backgroundImgBlur
         )
-
     }
 
 }

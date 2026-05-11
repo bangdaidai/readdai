@@ -43,4 +43,35 @@
     <dimen name="dp_6">6dp</dimen>
     <dimen name="dp_8">8dp</dimen>
 
+    <!-- Bookshelf tag dimensions -->
+    <dimen name="bookshelf_tag_item_height">28dp</dimen>
+    <dimen name="bookshelf_tag_item_margin_horizontal">2dp</dimen>
+    <dimen name="bookshelf_tag_item_min_width">36dp</dimen>
+    <dimen name="bookshelf_tag_item_max_width">96dp</dimen>
+    <dimen name="bookshelf_tag_item_padding_horizontal">12dp</dimen>
+
+    <!-- UI action radius -->
+    <dimen name="ui_action_radius">9dp</dimen>
+    <dimen name="ui_panel_radius">12dp</dimen>
+
+    <!-- Main content bottom bar padding -->
+    <dimen name="main_content_bottom_bar_padding">90dp</dimen>
+
+    <!-- Bookshelf title and tag bar dimensions -->
+    <dimen name="bookshelf_action_button_size">34dp</dimen>
+    <dimen name="bookshelf_action_button_padding">8dp</dimen>
+    <dimen name="bookshelf_title_row_margin_top">8dp</dimen>
+    <dimen name="bookshelf_title_select_height">42dp</dimen>
+    <dimen name="bookshelf_title_arrow_size">18dp</dimen>
+    <dimen name="bookshelf_tag_bar_height">38dp</dimen>
+    <dimen name="bookshelf_tag_bar_margin_horizontal">16dp</dimen>
+    <dimen name="bookshelf_tag_bar_margin_top">8dp</dimen>
+    <dimen name="bookshelf_tag_bar_radius">10dp</dimen>
+    <dimen name="bookshelf_tag_bar_padding_horizontal">3dp</dimen>
+    <dimen name="bookshelf_tag_bar_padding_vertical">1dp</dimen>
+    <dimen name="bookshelf_tag_recycler_padding_vertical">4dp</dimen>
+
+    <!-- Bottom navigation bar dimensions -->
+    <dimen name="main_bottom_nav_icon_size">23dp</dimen>
+
 </resources>

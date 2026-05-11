@@ -3,9 +3,11 @@
 package io.legado.app.ui.main
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.text.format.DateUtils
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
 import androidx.activity.addCallback
 import androidx.activity.viewModels
@@ -17,6 +19,7 @@ import androidx.fragment.app.FragmentStatePagerAdapter
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.qmdeve.liquidglass.widget.LiquidGlassView
 import io.legado.app.BuildConfig
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
@@ -29,6 +32,7 @@ import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
+import io.legado.app.help.config.NavigationBarIconConfig
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.storage.Backup
 import io.legado.app.lib.dialogs.alert
@@ -96,13 +100,33 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     }
     private var onUpBooksBadgeView: BadgeView? = null
 
+    /**
+     * Get the current ViewPager based on layout mode
+     */
+    private val currentPageViewPager: io.legado.app.ui.widget.LockableViewPager
+        get() = if (AppConfig.bottomBarLayoutMode == "floating") {
+            binding.viewPagerMainFloating
+        } else {
+            binding.viewPagerMain
+        }
+
+    /**
+     * Get the current BottomNavigationView based on layout mode
+     */
+    private val currentBottomNav: io.legado.app.lib.theme.view.ThemeBottomNavigationVIew
+        get() = if (AppConfig.bottomBarLayoutMode == "floating") {
+            binding.bottomNavigationViewFloating
+        } else {
+            binding.bottomNavigationView
+        }
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         upBottomMenu()
         initView()
         upHomePage()
         onBackPressedDispatcher.addCallback(this) {
             if (pagePosition != 0) {
-                binding.viewPagerMain.currentItem = 0
+                currentPageViewPager.currentItem = 0
                 return@addCallback
             }
             (fragmentMap[getFragmentId(0)] as? BookshelfFragment2)?.let {
@@ -140,17 +164,17 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             //设置回调
             viewModel.setActivityCallback(this@MainActivity)
             //自动更新书源
-            binding.viewPagerMain.postDelayed(1000) {
+            currentPageViewPager.postDelayed(1000) {
                 viewModel.ruleSubsUp()
             }
             //自动更新书籍
             val isAutoRefreshedBook = savedInstanceState?.getBoolean("isAutoRefreshedBook") ?: false
             if (AppConfig.autoRefreshBook && !isAutoRefreshedBook) {
-                binding.viewPagerMain.postDelayed(2000) {
+                currentPageViewPager.postDelayed(2000) {
                     viewModel.upAllBookToc()
                 }
             }
-            binding.viewPagerMain.postDelayed(3000) {
+            currentPageViewPager.postDelayed(3000) {
                 viewModel.postLoad()
             }
         }
@@ -175,25 +199,26 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             else -> R.id.menu_bookshelf
         }
         binding.bottomNavigationView.menu.findItem(menuItemId)?.isChecked = true
+        binding.bottomNavigationViewFloating.menu.findItem(menuItemId)?.isChecked = true
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean = binding.run {
         when (item.itemId) {
             R.id.menu_bookshelf ->
-                viewPagerMain.setCurrentItem(0, false)
+                currentPageViewPager.setCurrentItem(0, false)
 
             R.id.menu_discovery ->
-                viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
+                currentPageViewPager.setCurrentItem(realPositions.indexOf(idExplore), false)
 
             R.id.menu_ai_read -> {
                 startActivity(Intent(this@MainActivity, AiChatActivity::class.java))
             }
 
             R.id.menu_rss ->
-                viewPagerMain.setCurrentItem(realPositions.indexOf(idRss), false)
+                currentPageViewPager.setCurrentItem(realPositions.indexOf(idRss), false)
 
             R.id.menu_my_config ->
-                viewPagerMain.setCurrentItem(realPositions.indexOf(idMy), false)
+                currentPageViewPager.setCurrentItem(realPositions.indexOf(idMy), false)
         }
         return true
     }
@@ -219,19 +244,169 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     }
 
     private fun initView() = binding.run {
-        viewPagerMain.setEdgeEffectColor(primaryColor)
-        viewPagerMain.offscreenPageLimit = 3
-        viewPagerMain.adapter = adapter
-        viewPagerMain.addOnPageChangeListener(PageChangeCallback())
-        bottomNavigationView.setOnNavigationItemSelectedListener(this@MainActivity)
-        bottomNavigationView.setOnNavigationItemReselectedListener(this@MainActivity)
-        if (AppConfig.isEInkMode) {
-            bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
+        // Determine which layout to use
+        val isFloatingMode = AppConfig.bottomBarLayoutMode == "floating"
+        
+        classicLayout.visibility = if (isFloatingMode) View.GONE else View.VISIBLE
+        floatingLayout.visibility = if (isFloatingMode) View.VISIBLE else View.GONE
+        
+        // Initialize the appropriate ViewPager and BottomNavigationView
+        val viewPager = if (isFloatingMode) viewPagerMainFloating else viewPagerMain
+        val bottomNav = if (isFloatingMode) bottomNavigationViewFloating else bottomNavigationView
+        
+        viewPager.setEdgeEffectColor(primaryColor)
+        viewPager.offscreenPageLimit = 3
+        viewPager.adapter = adapter
+        viewPager.addOnPageChangeListener(PageChangeCallback())
+        
+        bottomNav.setOnNavigationItemSelectedListener(this@MainActivity)
+        bottomNav.setOnNavigationItemReselectedListener(this@MainActivity)
+        
+        // Apply floating navigation bar style if in floating mode
+        if (isFloatingMode) {
+            updateBottomBarStyle()
+        } else {
+            // Classic mode: always use solid opaque background
+            bottomNav.setBackgroundColor(getBottomBackgroundColor())
+            bottomNav.alpha = 1.0f
+            
+            // Apply e-ink border if needed
+            if (AppConfig.isEInkMode) {
+                bottomNav.setBackgroundResource(R.drawable.bg_eink_border_top)
+            }
+            bottomNav.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
+                val height = windowInsets.navigationBarHeight
+                view.bottomPadding = height
+                windowInsets.inset(0, 0, 0, height)
+            }
         }
-        bottomNavigationView.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
-            val height = windowInsets.navigationBarHeight
-            view.bottomPadding = height
-            windowInsets.inset(0, 0, 0, height)
+    }
+
+    /**
+     * Update bottom navigation bar style based on configuration
+     */
+    private fun updateBottomBarStyle() {
+        // Only apply styles in floating mode
+        if (AppConfig.bottomBarLayoutMode != "floating") return
+        
+        val liquidGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_liquid_glass)
+        val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
+        
+        when (AppConfig.bottomBarEffectMode) {
+            "solid" -> {
+                // Solid mode: hide liquid glass, show solid background with capsule shape
+                liquidGlassView?.visibility = View.GONE
+                backgroundView?.visibility = View.VISIBLE
+                // Create a capsule-shaped background with theme color
+                val bgColor = getBottomBackgroundColor()
+                val capsuleDrawable = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = 28f.dpToPx().toFloat()
+                    setColor(bgColor)
+                }
+                backgroundView?.background = capsuleDrawable
+                backgroundView?.alpha = 1.0f // Fully opaque for solid mode
+            }
+            "frosted", "glass" -> {
+                // Frosted/Glass mode: use LiquidGlassView with real blur effect
+                liquidGlassView?.visibility = View.VISIBLE
+                backgroundView?.visibility = View.VISIBLE  // Keep background visible for LiquidGlassView to work on
+                
+                liquidGlassView?.let { glass ->
+                    setupLiquidGlassView(glass)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Setup LiquidGlassView with archive-style parameters
+     */
+    private fun setupLiquidGlassView(liquidGlassView: LiquidGlassView) {
+        // Bind to content container for blur effect
+        liquidGlassView.bind(binding.contentContainer)
+        
+        val effectMode = AppConfig.bottomBarEffectMode
+        val isFrosted = effectMode == "frosted"
+        val glassLevel = if (isFrosted) {
+            AppConfig.frostedGlassLevel / 100f
+        } else {
+            AppConfig.liquidGlassLevel / 100f
+        }
+        
+        // Calculate blur radius - frosted has stronger blur
+        val blurRadius = if (isFrosted) {
+            (10f + glassLevel * 24f).dpToPx()
+        } else {
+            (5f + glassLevel * 14f).dpToPx()
+        }
+        
+        // Calculate tint alpha - frosted is more opaque
+        val tintAlpha = if (isFrosted) {
+            0.12f + glassLevel * 0.18f
+        } else {
+            0.05f + glassLevel * 0.10f
+        }
+        
+        // Calculate dispersion - frosted has less dispersion
+        val dispersion = if (isFrosted) {
+            (0.18f + glassLevel * 0.16f).coerceAtMost(0.42f)
+        } else {
+            0.46f + glassLevel * 0.32f
+        }
+        
+        // Calculate refraction parameters
+        val refractionHeight = if (isFrosted) {
+            (12f + glassLevel * 10f).dpToPx()
+        } else {
+            (18f + glassLevel * 14f).dpToPx()
+        }
+        
+        val refractionOffset = if (isFrosted) {
+            (36f + glassLevel * 18f).dpToPx()
+        } else {
+            (72f + glassLevel * 34f).dpToPx()
+        }
+        
+        // Configure LiquidGlassView
+        liquidGlassView.setCornerRadius(28f.dpToPx())  // Match bg_bottom_nav_floating.xml corner radius
+        liquidGlassView.setRefractionHeight(refractionHeight)
+        liquidGlassView.setRefractionOffset(refractionOffset)
+        liquidGlassView.setDispersion(dispersion)
+        liquidGlassView.setBlurRadius(blurRadius)
+        liquidGlassView.setTintAlpha(tintAlpha)
+        
+        // Set tint color based on theme
+        if (AppConfig.isNightTheme) {
+            liquidGlassView.setTintColorRed(0.10f)
+            liquidGlassView.setTintColorGreen(0.10f)
+            liquidGlassView.setTintColorBlue(0.10f)
+        } else {
+            liquidGlassView.setTintColorRed(0.95f)
+            liquidGlassView.setTintColorGreen(0.95f)
+            liquidGlassView.setTintColorBlue(0.95f)
+        }
+        
+        liquidGlassView.setDraggableEnabled(false)
+        
+        // Enable clipping to ensure capsule shape
+        liquidGlassView.clipToOutline = true
+        liquidGlassView.setElasticEnabled(true)
+        liquidGlassView.setTouchEffectEnabled(true)
+        liquidGlassView.isClickable = false
+        liquidGlassView.isFocusable = false
+        liquidGlassView.invalidate()
+    }
+    
+    private fun Float.dpToPx(): Float {
+        return this * resources.displayMetrics.density
+    }
+
+    private fun getBottomBackgroundColor(): Int {
+        return if (AppConfig.isNightTheme) {
+            android.graphics.Color.parseColor("#CC1A1A1A")
+        } else {
+            android.graphics.Color.parseColor("#CCFFFFFF")
         }
     }
 
@@ -371,7 +546,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     override fun observeLiveBus() {
         viewModel.onUpBooksLiveData.observe(this) {
             if (onUpBooksBadgeView == null) {
-                onUpBooksBadgeView = binding.bottomNavigationView.addBadgeView(0)
+                onUpBooksBadgeView = currentBottomNav.addBadgeView(0)
             }
             onUpBooksBadgeView!!.setBadgeCount(it)
         }
@@ -383,13 +558,19 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 if (it) {
                     bottomNavigationView.menu.clear()
                     bottomNavigationView.inflateMenu(R.menu.main_bnv)
+                    bottomNavigationViewFloating.menu.clear()
+                    bottomNavigationViewFloating.inflateMenu(R.menu.main_bnv)
                     onUpBooksBadgeView = null
                 }
                 upBottomMenu()
                 if (it) {
-                    viewPagerMain.setCurrentItem(bottomMenuCount - 1, false)
+                    currentPageViewPager.setCurrentItem(bottomMenuCount - 1, false)
                 }
             }
+        }
+        observeEvent<Boolean>(EventBus.NAVIGATION_BAR_CHANGED) {
+            upBottomMenu()
+            updateBottomBarStyle()
         }
         observeEvent<String>(PreferKey.threadCount) {
             viewModel.upPool()
@@ -399,11 +580,40 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     private fun upBottomMenu() {
         val showDiscovery = AppConfig.showDiscovery
         val showRss = AppConfig.showRSS
+        
+        // Switch between classic and floating layout
+        if (AppConfig.bottomBarLayoutMode == "floating") {
+            binding.bottomNavigationView.visibility = View.GONE
+            binding.bottomNavigationViewFloating.visibility = View.VISIBLE
+            binding.viewPagerMain.visibility = View.GONE
+            binding.viewPagerMainFloating.visibility = View.VISIBLE
+        } else {
+            binding.bottomNavigationView.visibility = View.VISIBLE
+            binding.bottomNavigationViewFloating.visibility = View.GONE
+            binding.viewPagerMain.visibility = View.VISIBLE
+            binding.viewPagerMainFloating.visibility = View.GONE
+        }
+        
         binding.bottomNavigationView.menu.let { menu ->
             menu.findItem(R.id.menu_discovery).isVisible = showDiscovery
             menu.findItem(R.id.menu_ai_read).isVisible = true
             menu.findItem(R.id.menu_rss).isVisible = showRss
         }
+        binding.bottomNavigationViewFloating.menu.let { menu ->
+            menu.findItem(R.id.menu_discovery).isVisible = showDiscovery
+            menu.findItem(R.id.menu_ai_read).isVisible = true
+            menu.findItem(R.id.menu_rss).isVisible = showRss
+        }
+        NavigationBarIconConfig.applyTo(
+            binding.bottomNavigationView.menu,
+            this,
+            AppConfig.isNightTheme
+        )
+        NavigationBarIconConfig.applyTo(
+            binding.bottomNavigationViewFloating.menu,
+            this,
+            AppConfig.isNightTheme
+        )
         var index = 0
         realPositions[index] = idBookshelf
         index++
@@ -424,14 +634,14 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         when (AppConfig.defaultHomePage) {
             "bookshelf" -> {}
             "explore" -> if (AppConfig.showDiscovery) {
-                binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
+                currentPageViewPager.setCurrentItem(realPositions.indexOf(idExplore), false)
             }
 
             "rss" -> if (AppConfig.showRSS) {
-                binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idRss), false)
+                currentPageViewPager.setCurrentItem(realPositions.indexOf(idRss), false)
             }
 
-            "my" -> binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idMy), false)
+            "my" -> currentPageViewPager.setCurrentItem(realPositions.indexOf(idMy), false)
         }
     }
 

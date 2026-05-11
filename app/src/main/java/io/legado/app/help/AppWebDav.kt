@@ -42,6 +42,7 @@ object AppWebDav {
     private val bookProgressUrl get() = "${rootWebDavUrl}bookProgress/"
     private val exportsWebDavUrl get() = "${rootWebDavUrl}books/"
     private val bgWebDavUrl get() = "${rootWebDavUrl}background/"
+    private val navigationBarsWebDavUrl get() = "${rootWebDavUrl}navigationBars/"
 
     var authorization: Authorization? = null
         private set
@@ -84,6 +85,7 @@ object AppWebDav {
                 WebDav(bookProgressUrl, mAuthorization).makeAsDir()
                 WebDav(exportsWebDavUrl, mAuthorization).makeAsDir()
                 WebDav(bgWebDavUrl, mAuthorization).makeAsDir()
+                WebDav(navigationBarsWebDavUrl, mAuthorization).makeAsDir()
                 val rootBooksUrl = "${rootWebDavUrl}books/"
                 defaultBookWebDav = RemoteBookWebDav(rootBooksUrl, mAuthorization)
                 authorization = mAuthorization
@@ -166,6 +168,44 @@ object AppWebDav {
             val putUrl = "$rootWebDavUrl$fileName"
             WebDav(putUrl, it).upload(Backup.zipFilePath)
         }
+    }
+
+    suspend fun listNavigationBarPackages(isNightTheme: Boolean): List<WebDavFile> {
+        val authorization = authorization ?: return emptyList()
+        if (!NetworkUtils.isAvailable()) return emptyList()
+        val dirUrl = getNavigationBarTypeUrl(isNightTheme)
+        WebDav(dirUrl, authorization).makeAsDir()
+        return WebDav(dirUrl, authorization).listFiles()
+            .filter { !it.isDir && it.displayName.endsWith(".zip", ignoreCase = true) }
+    }
+
+    suspend fun uploadNavigationBarPackage(isNightTheme: Boolean, remoteDirName: String, zipFile: File) {
+        val authorization = authorization ?: throw NoStackTraceException("webDav未配置")
+        if (!NetworkUtils.isAvailable()) throw NoStackTraceException("网络未连接")
+        val fileName = "${remoteDirName.trimEnd('/').removeSuffix(".zip")}.zip"
+        val typeUrl = getNavigationBarTypeUrl(isNightTheme)
+        WebDav(typeUrl, authorization).makeAsDir()
+        WebDav(typeUrl + fileName, authorization).upload(zipFile)
+    }
+
+    suspend fun downloadNavigationBarPackage(isNightTheme: Boolean, remoteDirName: String, zipFile: File) {
+        val authorization = authorization ?: throw NoStackTraceException("webDav未配置")
+        if (!NetworkUtils.isAvailable()) throw NoStackTraceException("网络未连接")
+        val fileName = "${remoteDirName.trimEnd('/').removeSuffix(".zip")}.zip"
+        zipFile.parentFile?.mkdirs()
+        WebDav(getNavigationBarTypeUrl(isNightTheme) + fileName, authorization)
+            .downloadTo(zipFile.absolutePath, true)
+    }
+
+    suspend fun deleteNavigationBarPackage(isNightTheme: Boolean, remoteDirName: String) {
+        val authorization = authorization ?: throw NoStackTraceException("webDav未配置")
+        if (!NetworkUtils.isAvailable()) throw NoStackTraceException("网络未连接")
+        val fileName = "${remoteDirName.trimEnd('/').removeSuffix(".zip")}.zip"
+        WebDav(getNavigationBarTypeUrl(isNightTheme) + fileName, authorization).delete()
+    }
+
+    private fun getNavigationBarTypeUrl(isNightTheme: Boolean): String {
+        return navigationBarsWebDavUrl + if (isNightTheme) "night/" else "day/"
     }
 
     /**

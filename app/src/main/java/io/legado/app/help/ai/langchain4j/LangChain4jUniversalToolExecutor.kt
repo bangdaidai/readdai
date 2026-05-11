@@ -21,12 +21,13 @@ class LangChain4jUniversalToolExecutor(
      * @return Tool执行结果的JSON字符串
      */
     @Tool("""
-Execute a tool by name with the given arguments. 
+Execute a tool by name with the given arguments.
 
 Available tools and their parameters:
-- list_books: Get user's bookshelf. Parameters: {"title": "optional filter", "author": "optional filter", "status": "reading|completed|paused"}
+- list_books: Get user's bookshelf. Parameters: {"keyword": "search keyword", "status": "reading|completed|paused", "maxItems": 20}
 - reading_history: Get reading history. Parameters: {"bookTitle": "optional filter", "maxItems": 20}
-- rag_search: Semantic search in vectorized books. REQUIRED parameter: {"query": "search query string"}. Optional: {"topK": 5}
+- search_web_tavily: Search the web for real-time information. Parameters: {"query": "search query string", "topic": "general|news|finance", "maxResults": 5}
+- rag_search: Semantic search in vectorized books. REQUIRED parameter: {"query": "search query string"}. Optional: {"topK": 5, "mode": "hybrid|vector|bm25"}
 - rag_toc: Get table of contents of vectorized book. No parameters needed.
 - rag_context: Get chapter context. Parameters: {"chapterIndex": number, "range": 2}
 - get_current_book_info: Get current book info. No parameters needed.
@@ -43,9 +44,11 @@ Available tools and their parameters:
 - apply_book_tags: Apply tags to book. Parameters: {"tagIds": [number], "action": "add|remove"}
 - manage_tags: Manage tags. Parameters: {"action": "create|delete|rename", "tagName": "string", "newName": "optional"}
 - add_quote: Add citation. Parameters: {"citationIndex": number, "chapterTitle": "string", "chapterIndex": number, "cfi": "string", "quotedText": "string", "reasoning": "string"}
+- MCP tools: Extended tools via MCP servers (if MCP servers are configured)
 
 IMPORTANT: Always use the correct parameter names as specified above. For rag_search, you MUST use "query" parameter, not "argo" or other names.
 Example for rag_search: {"query": "童话保质期的结局是什么", "topK": 5}
+Example for search_web_tavily: {"query": "今天天气怎么样", "maxResults": 3}
 """)
     fun executeToolByName(
         toolName: String,

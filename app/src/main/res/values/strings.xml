@@ -565,7 +565,7 @@
     <string name="files_tree">Directory</string>
     <string name="intelligent_import">Intelligent import</string>
     <string name="discovery">Discovery</string>
-    <string name="ai_read_assistant">AI Reader</string>
+    <string name="side_nav_assistant">Assistant</string>
     <string name="switch_display_style">Switch display styles</string>
     <string name="import_per">Import local books requires storage permission</string>
     <string name="night_theme">Night Theme</string>
@@ -954,6 +954,7 @@
     <string name="search_content">Search content</string>
     <string name="rss_source_empty">Empty now!</string>
     <string name="explore_empty">Empty now!</string>
+    <string name="discover_group_other">Other</string>
     <string name="page_key_set_help">Focusing on the input box and pressing a physical key will automatically enter the value of the key, and multiple keys will be automatically separated by commas.</string>
     <string name="theme_name">Theme name</string>
     <string name="auto_clear_expired">"Clear expired search histories automatically "</string>
@@ -1030,6 +1031,10 @@
     <string name="hide_when_status_bar_show">Hide when status bar show</string>
     <string name="reverse_toc">Reverse toc</string>
     <string name="show_discovery">Show Discovery</string>
+    <string name="modern_discovery_page">Use Modern Discovery Page</string>
+    <string name="modern_discovery_page_summary">Use source selector + tag tabs + in-page discovery book list</string>
+    <string name="discovery_page_mode_modern">Modern discovery</string>
+    <string name="discovery_page_mode_legacy">Classic discovery</string>
     <string name="style">Style</string>
     <string name="group_style">Group style</string>
     <string name="export_file_name">Export file name</string>
@@ -1580,4 +1585,56 @@
     <string name="unknown">Unknown</string>
     <string name="date_format">yyyy-MM-dd</string>
     <string name="screen_landscape_reversed">screen_landscape_reversed</string>
+
+    <!-- Common -->
+    <string name="apply">Apply</string>
+    <string name="more">More</string>
+
+    <!-- Navigation Bar Management -->
+    <string name="navigation_bar_manage">Bottom Bar Config</string>
+    <string name="navigation_bar_manage_summary">Manage bottom navigation bar appearance and icons</string>
+    <string name="navigation_bar_edit">Edit Bottom Bar</string>
+    <string name="navigation_bar_name">Name</string>
+    <string name="navigation_bar_custom_name">Custom</string>
+    <string name="navigation_bar_default_readonly">Default config is read-only</string>
+    <string name="navigation_bar_download_first">Please download remote config first</string>
+    <string name="navigation_icon_normal">Normal Icon</string>
+    <string name="navigation_icon_selected">Selected Icon</string>
+    <string name="navigation_icon_select_file">Select icon file</string>
+    <string name="navigation_icon_decode_failed">Failed to decode icon</string>
+    <string name="bottom_bar_layout_mode">Layout Mode</string>
+    <string name="bottom_bar_layout_classic">Classic</string>
+    <string name="bottom_bar_layout_floating">Floating</string>
+    <string name="bottom_bar_effect_mode">Effect Mode</string>
+    <string name="bottom_bar_effect_solid">Solid</string>
+    <string name="bottom_bar_effect_glass">Glass</string>
+    <string name="bottom_bar_effect_frosted">Frosted</string>
+    <string name="bottom_bar_opacity">Opacity</string>
+    <string name="theme_day">Day</string>
+    <string name="theme_night">Night</string>
+    <string name="theme_add">Add</string>
+    <string name="theme_apply">Apply</string>
+    <string name="theme_applied_state">Applied</string>
+    <string name="theme_import_zip">Import ZIP</string>
+    <string name="theme_manual_config">Manual Config</string>
+    <string name="theme_saved_local">Saved locally</string>
+    <string name="theme_source_using">In Use</string>
+    <string name="theme_source_local">Local</string>
+    <string name="theme_source_remote">Remote</string>
+    <string name="theme_source_both">Both</string>
+    <string name="theme_delete_local">Delete Local</string>
+    <string name="theme_delete_remote">Delete Remote</string>
+    <string name="theme_delete_both">Delete Both</string>
+    <string name="navigation_bar_delete_local_confirm">Delete local config?</string>
+    <string name="navigation_bar_delete_remote_confirm">Delete remote config?</string>
+    <string name="navigation_bar_delete_both_confirm">Delete both local and remote configs?</string>
+    <string name="navigation_bar_upload">Upload</string>
+    <string name="theme_zip_read_failed">Unable to read theme ZIP</string>
+    <string name="update_current_theme">Update Current Theme</string>
+    <string name="create_new_theme">Create New Theme</string>
+    <string name="navigation_bar_day_default_name">Day bottom bar</string>
+    <string name="navigation_bar_night_default_name">Night bottom bar</string>
+    <string name="navigation_bar_name_exists">A bottom bar theme with the same name already exists.</string>
+    <string name="navigation_bar_config_missing">Bottom bar theme config is missing.</string>
+    <string name="navigation_bar_import_suffix">Imported</string>
 </resources>

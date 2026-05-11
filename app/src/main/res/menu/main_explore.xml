@@ -12,4 +12,10 @@
 
     </item>
 
+    <item
+        android:id="@+id/menu_discovery_mode"
+        android:title="@string/modern_discovery_page"
+        android:icon="@drawable/ic_view_list"
+        app:showAsAction="never" />
+
 </menu>

@@ -2,35 +2,35 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <!-- 服务商管理 - 点击弹出对话框列表 -->
+    <!-- 服务商管理 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_provider_manager"
         android:title="服务商管理"
         android:summary="添加、编辑、删除AI服务商"
         app:iconSpaceReserved="false" />
 
-    <!-- 提示词管理 - 点击弹出对话框列表 -->
+    <!-- 提示词管理 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_prompt_manager"
         android:title="提示词管理"
-        android:summary="添加、编辑提示词模板"
+        android:summary="管理提示词模板"
         app:iconSpaceReserved="false" />
 
-    <!-- 技能管理 - 点击弹出对话框列表 -->
+    <!-- 技能管理 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_skill_manager"
         android:title="技能管理"
-        android:summary="添加、编辑、删除AI技能"
+        android:summary="管理AI技能库"
         app:iconSpaceReserved="false" />
 
-    <!-- AI助手配置 - 点击弹出配置对话框 -->
+    <!-- AI助手配置 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_assistant_config"
         android:title="AI助手配置"
         android:summary="自定义空状态和快捷操作栏"
         app:iconSpaceReserved="false" />
 
-    <!-- 聊天显示模式 - ListPreference自带对话框 -->
+    <!-- 聊天显示模式 -->
     <io.legado.app.lib.prefs.ListPreference
         android:key="aiChatDisplayMode"
         android:title="聊天显示模式"
@@ -39,7 +39,7 @@
         android:defaultValue="adaptive"
         app:iconSpaceReserved="false" />
 
-    <!-- 面板位置 - ListPreference自带对话框 -->
+    <!-- 面板位置 -->
     <io.legado.app.lib.prefs.ListPreference
         android:key="aiPanelPosition"
         android:title="面板位置"
@@ -48,44 +48,66 @@
         android:defaultValue="bottom"
         app:iconSpaceReserved="false" />
 
-    <!-- 前情提要 - SwitchPreference自带开关 -->
-    <io.legado.app.lib.prefs.SwitchPreference
-        android:key="aiAutoSummaryPreviousContent"
-        android:title="前情提要"
-        android:summary="打开书籍时显示AI生成的前情摘要"
-        android:defaultValue="false"
-        app:iconSpaceReserved="false" />
-
-    <!-- 流式输出 - SwitchPreference自带开关 -->
+    <!-- 流式输出 -->
     <io.legado.app.lib.prefs.SwitchPreference
         android:key="aiStreamMode"
         android:title="流式输出"
-        android:summary="关闭后AI会一次性返回完整回答（更稳定）"
+        android:summary="逐字显示AI回复（关闭后一次性返回）"
         android:defaultValue="true"
         app:iconSpaceReserved="false" />
 
-    <!-- 工具配置 - 点击弹出多选对话框 -->
+    <!-- 前情提要 -->
+    <io.legado.app.lib.prefs.SwitchPreference
+        android:key="aiAutoSummaryPreviousContent"
+        android:title="前情提要"
+        android:summary="打开书籍时自动生成前情摘要"
+        android:defaultValue="false"
+        app:iconSpaceReserved="false" />
+
+    <!-- 工具配置 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_tool_settings"
         android:title="工具配置"
-        android:summary="配置AI功能工具开关"
+        android:summary="启用/禁用AI可调用的工具"
         app:iconSpaceReserved="false" />
 
-    <!-- 向量模型 - 点击弹出配置对话框 -->
+    <!-- 向量模型 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_vector_settings"
         android:title="向量模型"
-        android:summary="配置RAG向量化功能"
+        android:summary="配置RAG向量化搜索功能"
         app:iconSpaceReserved="false" />
 
-    <!-- 缓存管理 - 点击弹出对话框 -->
+    <!-- Tavily 开关 -->
+    <io.legado.app.lib.prefs.SwitchPreference
+        android:key="aiTavilyEnabled"
+        android:title="启用 Tavily 搜索"
+        android:summary="允许AI搜索实时网络信息"
+        android:defaultValue="false"
+        app:iconSpaceReserved="false" />
+
+    <!-- Tavily 统一配置入口 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="aiTavilyConfig"
+        android:title="Tavily 配置"
+        android:summary="点击配置 API Key、搜索参数等"
+        app:iconSpaceReserved="false" />
+
+    <!-- MCP 服务器管理 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="ai_mcp_server_manager"
+        android:title="MCP 服务器管理"
+        android:summary="配置 Model Context Protocol 服务器"
+        app:iconSpaceReserved="false" />
+
+    <!-- 缓存管理 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_cache_manager"
         android:title="缓存管理"
-        android:summary="管理AI对话缓存"
+        android:summary="清理AI对话缓存数据"
         app:iconSpaceReserved="false" />
 
-    <!-- AI日志 - 点击查看日志 -->
+    <!-- AI日志 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_log_viewer"
         android:title="AI日志"

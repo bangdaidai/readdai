@@ -213,6 +213,7 @@ class ThemeConfigFragment : PreferenceFragment(),
             PreferKey.bgImage -> selectBgAction(false)
             PreferKey.bgImageN -> selectBgAction(true)
             "themeList" -> ThemeListDialog().show(childFragmentManager, "themeList")
+            "navigation_bar_manage" -> startActivity<NavigationBarManageActivity>()
             "saveDayTheme",
             "saveNightTheme" -> alertSaveTheme(key)
 
@@ -229,6 +230,32 @@ class ThemeConfigFragment : PreferenceFragment(),
 
     @SuppressLint("InflateParams")
     private fun alertSaveTheme(key: String) {
+        val isNight = key == "saveNightTheme"
+        val currentThemeName = ThemeConfig.getDurConfig(requireContext()).themeName
+
+        val actions = listOf(
+            getString(R.string.update_current_theme),
+            getString(R.string.create_new_theme)
+        )
+        context?.selector(items = actions) { _, which ->
+            when (which) {
+                0 -> {
+                    if (isNight) {
+                        ThemeConfig.saveNightTheme(requireContext(), currentThemeName)
+                    } else {
+                        ThemeConfig.saveDayTheme(requireContext(), currentThemeName)
+                    }
+                    requireContext().toastOnUi(R.string.success)
+                }
+                1 -> {
+                    alertSaveThemeAsNew(isNight)
+                }
+            }
+        }
+    }
+
+    @SuppressLint("InflateParams")
+    private fun alertSaveThemeAsNew(isNight: Boolean) {
         alert(R.string.theme_name) {
             val alertBinding = DialogEditTextBinding.inflate(layoutInflater).apply {
                 editView.hint = "name"
@@ -236,15 +263,12 @@ class ThemeConfigFragment : PreferenceFragment(),
             customView { alertBinding.root }
             okButton {
                 alertBinding.editView.text?.toString()?.let { themeName ->
-                    when (key) {
-                        "saveDayTheme" -> {
-                            ThemeConfig.saveDayTheme(requireContext(), themeName)
-                        }
-
-                        "saveNightTheme" -> {
-                            ThemeConfig.saveNightTheme(requireContext(), themeName)
-                        }
+                    if (isNight) {
+                        ThemeConfig.saveNightTheme(requireContext(), themeName)
+                    } else {
+                        ThemeConfig.saveDayTheme(requireContext(), themeName)
                     }
+                    requireContext().toastOnUi(R.string.success)
                 }
             }
             cancelButton()

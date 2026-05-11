@@ -2,6 +2,8 @@ package io.legado.app.ui.widget
 
 import android.content.Context
 import android.util.AttributeSet
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ScrollView
 
 /**
@@ -17,7 +19,7 @@ class MaxHeightScrollView @JvmOverloads constructor(
     private var maxHeight = Int.MAX_VALUE
 
     init {
-        // 从 XML 属性中读取 maxHeight（如果设置了）
+        isNestedScrollingEnabled = true
         context.theme.obtainStyledAttributes(
             attrs,
             intArrayOf(android.R.attr.maxHeight),
@@ -26,43 +28,61 @@ class MaxHeightScrollView @JvmOverloads constructor(
             val height = getDimensionPixelSize(0, Int.MAX_VALUE)
             if (height != Int.MAX_VALUE) {
                 maxHeight = height
-                android.util.Log.d("MaxHeightScrollView", "设置最大高度: ${height}px = ${height / resources.displayMetrics.density}dp")
             }
             recycle()
         }
     }
 
-    /**
-     * 设置最大高度（像素）
-     */
     fun setMaxHeightPixels(height: Int) {
         maxHeight = height
         requestLayout()
     }
 
-    /**
-     * 设置最大高度（dp）
-     */
     fun setMaxHeightDp(dp: Int) {
         val pixels = (dp * resources.displayMetrics.density).toInt()
         setMaxHeightPixels(pixels)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // 关键：限制测量高度不超过 maxHeight
-        val modifiedHeightSpec = if (maxHeight < Int.MAX_VALUE) {
-            val originalSize = MeasureSpec.getSize(heightMeasureSpec)
-            val limitedSize = minOf(originalSize, maxHeight)
-            android.util.Log.d("MaxHeightScrollView", "onMeasure: 原始=$originalSize px, 限制后=$limitedSize px, maxHeight=$maxHeight px")
-            
-            MeasureSpec.makeMeasureSpec(
-                limitedSize,
-                MeasureSpec.getMode(heightMeasureSpec)
-            )
-        } else {
-            heightMeasureSpec
+        if (maxHeight < Int.MAX_VALUE) {
+            val mode = MeasureSpec.getMode(widthMeasureSpec)
+            val widthSize = MeasureSpec.getSize(widthMeasureSpec)
+
+            var maxWidth = Int.MAX_VALUE
+            if (mode == MeasureSpec.EXACTLY || mode == MeasureSpec.AT_MOST) {
+                maxWidth = widthSize
+            }
+
+            val childWidthSpec = MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.EXACTLY)
+            val childHeightSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
+
+            val child = getChildAt(0)
+            if (child != null && child.visibility != View.GONE) {
+                child.measure(childWidthSpec, childHeightSpec)
+                val childHeight = child.measuredHeight
+                val measuredHeight = minOf(childHeight, maxHeight)
+
+                val heightMode = MeasureSpec.getMode(heightMeasureSpec)
+                val heightSize = MeasureSpec.getSize(heightMeasureSpec)
+
+                val finalHeight = when {
+                    heightMode == MeasureSpec.EXACTLY -> minOf(heightSize, measuredHeight)
+                    heightMode == MeasureSpec.AT_MOST -> minOf(minOf(heightSize, measuredHeight), maxHeight)
+                    else -> measuredHeight
+                }
+
+                setMeasuredDimension(widthSize, finalHeight)
+                return
+            }
         }
-        
-        super.onMeasure(widthMeasureSpec, modifiedHeightSpec)
+
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        super.onLayout(changed, l, t, r, b)
+        if (changed) {
+            requestLayout()
+        }
     }
 }

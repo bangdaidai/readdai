@@ -59,6 +59,14 @@
         app:allowDividerBelow="false"
         app:iconSpaceReserved="false" />
 
+    <io.legado.app.lib.prefs.Preference
+        android:key="navigation_bar_manage"
+        android:summary="@string/navigation_bar_manage_summary"
+        android:title="@string/navigation_bar_manage"
+        app:allowDividerAbove="false"
+        app:allowDividerBelow="false"
+        app:iconSpaceReserved="false" />
+
     <io.legado.app.lib.prefs.PreferenceCategory
         android:key="dayThemeCategory"
         android:title="@string/day"

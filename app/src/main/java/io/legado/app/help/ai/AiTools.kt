@@ -19,6 +19,7 @@ import io.legado.app.data.dao.ReadRecordDao
 import io.legado.app.data.AppDatabase
 import io.legado.app.help.ai.rag.VectorSearchService
 import io.legado.app.help.ai.rag.VectorConfigManager
+import io.legado.app.help.config.AppConfig
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -164,6 +165,16 @@ abstract class BaseTool(
         }
     }
 }
+
+/**
+ * AI工具解析结果
+ * 用于LangChain4j集成
+ */
+data class AiResolvedTool(
+    val name: String,
+    val definition: org.json.JSONObject,
+    val execute: suspend (org.json.JSONObject?) -> String
+)
 
 /**
  * AI工具注册表
@@ -681,8 +692,9 @@ object AiTools {
      * 只启用最核心的工具，避免过多工具导致AI无法正确选择
      */
     val DEFAULT_ENABLED_TOOL_IDS = setOf(
-        "list_books",           // 列出书籍（回答"最近看了什么书"）
-        "reading_history"       // 阅读历史
+        "list_books",           // 列出书籍（回答“最近看了什么书”）
+        "reading_history",      // 阅读历史
+        "search_web_tavily"     // ✅ Tavily 网络搜索（如果已配置）
     )
 
     fun registerAll(context: AiToolContext) {
@@ -1000,7 +1012,214 @@ object AiTools {
             )
         ) { BookReadTimeRankTool(context) }
 
+        // ✅ 注册 Tavily 网络搜索工具
+        if (AppConfig.aiTavilyEnabled && !AppConfig.aiTavilyApiKey.isNullOrBlank()) {
+            AiToolRegistry.register(
+                AiToolDefinition(
+                    id = "search_web_tavily",
+                    displayNameBuilder = { "Tavily 网络搜索" },
+                    descriptionBuilder = { "使用 Tavily 联网搜索实时网页信息，返回答案摘要、来源链接和内容片段。适合新闻、实时事件、最新产品信息和网页检索。" },
+                    inputSchema = mapOf(
+                        "query" to mapOf("type" to "string", "description" to "要搜索的问题或关键词"),
+                        "topic" to mapOf("type" to "string", "description" to "搜索主题: general/news/finance"),
+                        "searchDepth" to mapOf("type" to "string", "description" to "搜索深度: basic/advanced/ultra-fast"),
+                        "maxResults" to mapOf("type" to "integer", "description" to "最多返回几条结果，默认5")
+                    )
+                )
+            ) { TavilySearchTool() }
+        }
+
+        // ✅ 注册 MCP 工具（动态加载）
+        val mcpServers: List<io.legado.app.ui.main.ai.AiMcpServerConfig> = AppConfig.aiMcpServers.filter { server -> server.enabled }
+        if (mcpServers.isNotEmpty()) {
+            kotlinx.coroutines.runBlocking {
+                try {
+                    val mcpTools = AiMcpClient.resolveTools(mcpServers)
+                    mcpTools.forEach { mcpTool ->
+                        AiToolRegistry.register(
+                            AiToolDefinition(
+                                id = mcpTool.name,
+                                displayNameBuilder = { mcpTool.name },
+                                descriptionBuilder = { 
+                                    mcpTool.definition.optJSONObject("function")?.optString("description") ?: "MCP 工具"
+                                },
+                                inputSchema = convertJsonToMap(
+                                    mcpTool.definition.optJSONObject("function")?.optJSONObject("parameters")
+                                )
+                            )
+                        ) { McpToolExecutor(mcpTool) }
+                    }
+                } catch (e: Exception) {
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.ERROR,
+                        "AiTools",
+                        "加载 MCP 工具失败: ${e.message}"
+                    )
+                }
+            }
+        }
+
         // 注意：reading_history 已在前面注册，此处不再重复
+    }
+    
+    /**
+     * 将 JSONObject 转换为 Map<String, Any>
+     */
+    private fun convertJsonToMap(jsonObject: org.json.JSONObject?): Map<String, Any> {
+        if (jsonObject == null) return emptyMap()
+        val map = mutableMapOf<String, Any>()
+        val keys = jsonObject.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            val value = jsonObject.get(key)
+            when (value) {
+                is org.json.JSONObject -> map[key] = convertJsonToMap(value)
+                is org.json.JSONArray -> map[key] = convertJsonArrayToList(value)
+                else -> map[key] = value
+            }
+        }
+        return map
+    }
+    
+    private fun convertJsonArrayToList(jsonArray: org.json.JSONArray): List<Any> {
+        val list = mutableListOf<Any>()
+        for (i in 0 until jsonArray.length()) {
+            val value = jsonArray.get(i)
+            when (value) {
+                is org.json.JSONObject -> list.add(convertJsonToMap(value))
+                is org.json.JSONArray -> list.add(convertJsonArrayToList(value))
+                else -> list.add(value)
+            }
+        }
+        return list
+    }
+}
+
+/**
+ * Tavily 网络搜索工具适配器
+ */
+class TavilySearchTool : BaseTool(
+    id = "search_web_tavily",
+    name = "Tavily 网络搜索",
+    description = "使用 Tavily 联网搜索实时网页信息，返回答案摘要、来源链接和内容片段。适合新闻、实时事件、最新产品信息和网页检索。",
+    inputSchema = mapOf(
+        "query" to mapOf("type" to "string", "description" to "要搜索的问题或关键词"),
+        "topic" to mapOf("type" to "string", "description" to "搜索主题: general/news/finance"),
+        "searchDepth" to mapOf("type" to "string", "description" to "搜索深度: basic/advanced/ultra-fast"),
+        "maxResults" to mapOf("type" to "integer", "description" to "最多返回几条结果，默认5")
+    ),
+    timeout = 15000  // 15秒超时
+) {
+    override suspend fun run(input: Map<String, Any>): ToolResult {
+        return try {
+            // 将 Map 转换为 JSONObject
+            val args = org.json.JSONObject().apply {
+                input.forEach { (key, value) ->
+                    put(key, value)
+                }
+            }
+            
+            // 调用 AiTavilyTool 的 search 方法
+            val resultJson = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                // 由于 AiTavilyTool.search 是 private，我们需要通过 resolvedTools 来获取
+                val tavilyTools = io.legado.app.help.ai.AiTavilyTool.resolvedTools()
+                if (tavilyTools.isEmpty()) {
+                    return@withContext org.json.JSONObject().apply {
+                        put("ok", false)
+                        put("error", "Tavily 未启用或 API Key 未配置")
+                    }.toString()
+                }
+                tavilyTools.first().execute(args)
+            }
+            
+            val result = org.json.JSONObject(resultJson)
+            if (result.optBoolean("ok", false)) {
+                ToolResult(
+                    status = "ok",
+                    name = id,
+                    data = mapOf(
+                        "query" to result.optString("query"),
+                        "answer" to result.optString("answer"),
+                        "results" to parseResultsArray(result.optJSONArray("results")),
+                        "responseTime" to result.opt("response_time")
+                    )
+                )
+            } else {
+                ToolResult(
+                    status = "error",
+                    name = id,
+                    message = result.optString("error", "搜索失败")
+                )
+            }
+        } catch (e: Exception) {
+            ToolResult(
+                status = "error",
+                name = id,
+                message = "Tavily 搜索异常: ${e.message}"
+            )
+        }
+    }
+    
+    private fun parseResultsArray(resultsArray: org.json.JSONArray?): List<Map<String, Any>> {
+        if (resultsArray == null) return emptyList()
+        val results = mutableListOf<Map<String, Any>>()
+        for (i in 0 until resultsArray.length()) {
+            val item = resultsArray.optJSONObject(i) ?: continue
+            results.add(mapOf(
+                "title" to item.optString("title"),
+                "url" to item.optString("url"),
+                "content" to item.optString("content"),
+                "score" to item.optDouble("score", 0.0)
+            ))
+        }
+        return results
+    }
+}
+
+/**
+ * MCP 工具执行器
+ */
+class McpToolExecutor(
+    private val mcpTool: io.legado.app.help.ai.AiResolvedTool
+) : BaseTool(
+    id = mcpTool.name,
+    name = mcpTool.name,
+    description = mcpTool.definition.optJSONObject("function")?.optString("description") ?: "MCP 工具",
+    inputSchema = emptyMap(),  // MCP 工具的 schema 在 definition 中
+    timeout = 30000  // 30秒超时
+) {
+    override suspend fun run(input: Map<String, Any>): ToolResult {
+        return try {
+            // 将 Map 转换为 JSONObject
+            val args = org.json.JSONObject().apply {
+                input.forEach { (key, value) ->
+                    when (value) {
+                        is String -> put(key, value)
+                        is Number -> put(key, value)
+                        is Boolean -> put(key, value)
+                        is List<*> -> put(key, org.json.JSONArray(value))
+                        is Map<*, *> -> put(key, org.json.JSONObject(value as Map<*, *>))
+                        else -> put(key, value.toString())
+                    }
+                }
+            }
+            
+            // 执行 MCP 工具
+            val resultJson = mcpTool.execute(args)
+            val result = org.json.JSONObject(resultJson)
+            
+            ToolResult(
+                status = "ok",
+                name = id,
+                data = mapOf("result" to result.toString())
+            )
+        } catch (e: Exception) {
+            ToolResult(
+                status = "error",
+                name = id,
+                message = "MCP 工具执行失败: ${e.message}"
+            )
+        }
     }
 }
 

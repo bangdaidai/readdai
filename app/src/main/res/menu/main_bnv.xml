@@ -14,7 +14,7 @@
     <item
         android:id="@+id/menu_ai_read"
         android:icon="@drawable/ic_bottom_ai_read"
-        android:title="@string/ai_read_assistant" />
+        android:title="@string/side_nav_assistant" />
     <item
         android:id="@+id/menu_rss"
         android:icon="@drawable/ic_bottom_rss_feed"

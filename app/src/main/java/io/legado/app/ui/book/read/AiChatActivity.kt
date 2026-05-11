@@ -1551,11 +1551,26 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                         result.content,
                         toolSteps = lastAiMessage?.toolSteps ?: emptyList()  // ← 使用最后一条 AI 消息的 toolSteps
                     ))
+                    
+                    // ✅ 关键修复：只有当有实际内容且没有正在运行的工具时，才标记为完成
+                    val hasContent = result.content.isNotBlank()
+                    val hasRunningTools = lastAiMessage?.toolSteps?.any { 
+                        it.status == ToolStepStatus.RUNNING ||
+                        it.status == ToolStepStatus.PENDING
+                    } ?: false
+                    val isCompleted = hasContent && !hasRunningTools
+                    
+                    io.legado.app.help.ai.AiLogManager.log(
+                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                        "AiChat",
+                        "会话保存: hasContent=$hasContent, hasRunningTools=$hasRunningTools, isCompleted=$isCompleted"
+                    )
+                    
                     val updatedSession = session.copy(
                         messages = updatedMessages,
                         model = currentModel,
                         updatedAt = System.currentTimeMillis(),
-                        completed = true
+                        completed = isCompleted  // ✅ 根据实际状态决定是否完成
                     )
                     lifecycleScope.launch {
                         AiHistoryStore.upsertSession(updatedSession)
@@ -1884,8 +1899,15 @@ class ChatAdapter(
             // 流式输出时显示光标动画
             val isStreaming = position == getStreamingPosition()
             
-            // 判断AI是否还在工作：流式中 或 有工具步骤但还没有最终内容
-            val isAiWorking = isStreaming || (message.toolSteps.isNotEmpty() && message.content.isEmpty())
+            // ✅ 关键修复：判断AI是否还在工作
+            // 1. 流式中 → AI在工作
+            // 2. 有工具步骤且没有最终内容 → AI在工作
+            // 3. 有未完成（PENDING/RUNNING）的工具步骤 → AI在工作
+            val hasUnfinishedTools = message.toolSteps.any { 
+                it.status == ToolStepStatus.PENDING ||
+                it.status == ToolStepStatus.RUNNING
+            }
+            val isAiWorking = isStreaming || hasUnfinishedTools || (message.toolSteps.isNotEmpty() && message.content.isEmpty())
             
             if (isStreaming && message.content.isEmpty()) {
                 holder.tvCursor.visibility = View.VISIBLE
@@ -1988,14 +2010,14 @@ class ChatAdapter(
                     val layoutContent = stepView.findViewById<LinearLayout>(R.id.layout_tool_content)
                     val layoutInput = stepView.findViewById<LinearLayout>(R.id.layout_tool_input)
                     val tvInput = stepView.findViewById<TextView>(R.id.tv_tool_input)
-                    val scrollOutput = stepView.findViewById<io.legado.app.ui.widget.MaxHeightScrollView>(R.id.scroll_output)  // ✅ 获取 MaxHeightScrollView
                     val layoutOutput = stepView.findViewById<LinearLayout>(R.id.layout_tool_output)
                     val tvOutput = stepView.findViewById<TextView>(R.id.tv_tool_output)
                     val layoutError = stepView.findViewById<LinearLayout>(R.id.layout_tool_error)
                     val tvError = stepView.findViewById<TextView>(R.id.tv_tool_error)
 
                     // 关键修复：显示工具的中文名称，而不是 ID
-                    val toolDisplayName = io.legado.app.help.ai.AiToolRegistry.getDefinition(step.name)?.displayNameBuilder?.invoke() ?: step.name
+                    val toolDef = io.legado.app.help.ai.AiToolRegistry.getDefinition(step.name)
+                    val toolDisplayName = toolDef?.displayNameBuilder?.invoke() ?: step.name
                     tvName.text = toolDisplayName
 
                     when (step.status) {
@@ -2026,12 +2048,6 @@ class ChatAdapter(
                     if (!step.output.isNullOrBlank()) {
                         layoutOutput.visibility = View.VISIBLE
                         tvOutput.text = step.output
-                        
-                        // ✅ 最简单可靠的方法：直接设置 ScrollView 的 LayoutParams 高度
-                        val maxHeightPx = (200 * context.resources.displayMetrics.density).toInt()
-                        val params = scrollOutput.layoutParams
-                        params.height = maxHeightPx  // 固定高度
-                        scrollOutput.layoutParams = params
                     } else {
                         layoutOutput.visibility = View.GONE
                     }

@@ -42,6 +42,12 @@ object PreferKey {
     const val prevKeys = "prevKeyCodes"
     const val nextKeys = "nextKeyCodes"
     const val showDiscovery = "showDiscovery"
+    const val modernDiscoveryPage = "modernDiscoveryPage"
+    const val modernRssPage = "modernRssPage"
+    const val mergeDiscoveryRss = "mergeDiscoveryRss"
+    const val mergedDiscoveryRssTarget = "mergedDiscoveryRssTarget"
+    const val modernDiscoverySourceUrl = "modernDiscoverySourceUrl"
+    const val modernRssSourceUrl = "modernRssSourceUrl"
     const val enableReview = "enableReview"
     const val showRss = "showRss"
     const val showAI = "showAI"
@@ -250,4 +256,14 @@ object PreferKey {
     const val editAutoWrap = "editAutoWrap"
     const val editAutoComplete = "editAutoComplete"
     const val showBoardLine = "showBoardLine"
+    const val uiFontPath = "uiFontPath"
+    const val titleFontPath = "titleFontPath"
+    
+    // 底部导航栏配置
+    const val frostedGlassLevel = "frostedGlassLevel"
+    const val liquidGlassLevel = "liquidGlassLevel"
+    const val bottomBarEffectMode = "bottomBarEffectMode"
+    const val bottomBarLayoutMode = "bottomBarLayoutMode"
+    const val bottomBarSidebarGravity = "bottomBarSidebarGravity"
+    const val syncThemePackages = "syncThemePackages"
 }

@@ -6,8 +6,10 @@ import io.legado.app.BuildConfig
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
+import io.legado.app.ui.main.ai.AiMcpServerConfig
 import io.legado.app.utils.GSON
 import io.legado.app.utils.canvasrecorder.CanvasRecorderFactory
+import io.legado.app.utils.fromJsonArray
 import io.legado.app.utils.fromJsonObject
 import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.getPrefInt
@@ -56,6 +58,52 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     var showBoardLine = appCtx.getPrefInt(PreferKey.showBoardLine, 1)
     var adaptSpecialStyle = appCtx.getPrefBoolean(PreferKey.adaptSpecialStyle, true)
     var aiStreamMode = appCtx.getPrefBoolean(PreferKey.aiStreamMode, true)
+
+    // UI 字体配置
+    var uiFontPath: String
+        get() = appCtx.getPrefString(PreferKey.uiFontPath).orEmpty()
+        set(value) = appCtx.putPrefString(PreferKey.uiFontPath, value)
+
+    var titleFontPath: String
+        get() = appCtx.getPrefString(PreferKey.titleFontPath).orEmpty()
+        set(value) = appCtx.putPrefString(PreferKey.titleFontPath, value)
+
+    // Tavily 联网搜索配置
+    var aiTavilyEnabled: Boolean
+        get() = appCtx.getPrefBoolean("aiTavilyEnabled", false)
+        set(value) = appCtx.putPrefBoolean("aiTavilyEnabled", value)
+
+    var aiTavilyApiKey: String?
+        get() = appCtx.getPrefString("aiTavilyApiKey", "")
+        set(value) = appCtx.putPrefString("aiTavilyApiKey", value)
+
+    var aiTavilyBaseUrl: String?
+        get() = appCtx.getPrefString("aiTavilyBaseUrl", "https://api.tavily.com")
+        set(value) = appCtx.putPrefString("aiTavilyBaseUrl", value)
+
+    var aiTavilyTopic: String?
+        get() = appCtx.getPrefString("aiTavilyTopic", "general")
+        set(value) = appCtx.putPrefString("aiTavilyTopic", value)
+
+    var aiTavilySearchDepth: String?
+        get() = appCtx.getPrefString("aiTavilySearchDepth", "basic")
+        set(value) = appCtx.putPrefString("aiTavilySearchDepth", value)
+
+    var aiTavilyMaxResults: Int
+        get() = appCtx.getPrefInt("aiTavilyMaxResults", 5)
+        set(value) = appCtx.putPrefInt("aiTavilyMaxResults", value)
+
+    // MCP 服务器配置
+    var aiMcpServers: List<AiMcpServerConfig>
+        get() {
+            val json = appCtx.getPrefString("aiMcpServers", "[]")
+            return runCatching {
+                GSON.fromJsonArray<AiMcpServerConfig>(json).getOrNull() ?: emptyList()
+            }.getOrElse { emptyList() }
+        }
+        set(value) {
+            appCtx.putPrefString("aiMcpServers", GSON.toJson(value))
+        }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
@@ -291,6 +339,42 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
 
     val showDiscovery: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showDiscovery, true)
+
+    var modernDiscoveryPage: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.modernDiscoveryPage, true)
+        set(value) {
+            appCtx.putPrefBoolean(PreferKey.modernDiscoveryPage, value)
+        }
+
+    val modernRssPage: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.modernRssPage, true)
+
+    val mergeDiscoveryRss: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.mergeDiscoveryRss, false)
+
+    var mergedDiscoveryRssTarget: String
+        get() = appCtx.getPrefString(PreferKey.mergedDiscoveryRssTarget, "explore") ?: "explore"
+        set(value) = appCtx.putPrefString(PreferKey.mergedDiscoveryRssTarget, value)
+
+    var modernDiscoverySourceUrl: String?
+        get() = appCtx.getPrefString(PreferKey.modernDiscoverySourceUrl)
+        set(value) {
+            if (value.isNullOrBlank()) {
+                appCtx.removePref(PreferKey.modernDiscoverySourceUrl)
+            } else {
+                appCtx.putPrefString(PreferKey.modernDiscoverySourceUrl, value)
+            }
+        }
+
+    var modernRssSourceUrl: String?
+        get() = appCtx.getPrefString(PreferKey.modernRssSourceUrl)
+        set(value) {
+            if (value.isNullOrBlank()) {
+                appCtx.removePref(PreferKey.modernRssSourceUrl)
+            } else {
+                appCtx.putPrefString(PreferKey.modernRssSourceUrl, value)
+            }
+        }
 
     val showRSS: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showRss, true)
@@ -850,5 +934,55 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         }
 
     val autoUpdateVariant get() = appCtx.getPrefBoolean("autoUpdateVariant", true)
+
+    // 底部导航栏配置
+    var frostedGlassLevel: Int
+        get() = appCtx.getPrefInt(PreferKey.frostedGlassLevel, 76).coerceIn(0, 100)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.frostedGlassLevel, value.coerceIn(0, 100))
+        }
+
+    var liquidGlassLevel: Int
+        get() = appCtx.getPrefInt(PreferKey.liquidGlassLevel, 68).coerceIn(0, 100)
+        set(value) {
+            appCtx.putPrefInt(PreferKey.liquidGlassLevel, value.coerceIn(0, 100))
+        }
+
+    var bottomBarEffectMode: String
+        get() = appCtx.getPrefString(PreferKey.bottomBarEffectMode, "glass")
+            ?.takeIf { it in setOf("glass", "frosted", "solid") }
+            ?: "glass"
+        set(value) {
+            appCtx.putPrefString(
+                PreferKey.bottomBarEffectMode,
+                value.takeIf { it in setOf("glass", "frosted", "solid") } ?: "glass"
+            )
+        }
+
+    var bottomBarLayoutMode: String
+        get() = appCtx.getPrefString(PreferKey.bottomBarLayoutMode, "classic")
+            ?.takeIf { it in setOf("classic", "floating") }
+            ?: "classic"
+        set(value) {
+            appCtx.putPrefString(
+                PreferKey.bottomBarLayoutMode,
+                value.takeIf { it in setOf("classic", "floating") } ?: "classic"
+            )
+        }
+
+    var bottomBarSidebarGravity: String
+        get() = appCtx.getPrefString(PreferKey.bottomBarSidebarGravity, "start")
+            ?.takeIf { it in setOf("start", "end") }
+            ?: "start"
+        set(value) {
+            appCtx.putPrefString(
+                PreferKey.bottomBarSidebarGravity,
+                value.takeIf { it in setOf("start", "end") } ?: "start"
+            )
+        }
+
+    var syncThemePackages: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.syncThemePackages, false)
+        set(value) = appCtx.putPrefBoolean(PreferKey.syncThemePackages, value)
 }
 

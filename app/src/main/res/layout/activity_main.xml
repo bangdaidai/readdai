@@ -1,26 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <androidx.viewpager.widget.ViewPager
-        android:id="@+id/view_pager_main"
+    <!-- Classic Mode Layout -->
+    <LinearLayout
+        android:id="@+id/classic_layout"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        tools:ignore="SpeakableTextPresentCheck" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <io.legado.app.lib.theme.view.ThemeBottomNavigationVIew
-        android:id="@+id/bottom_navigation_view"
+        <io.legado.app.ui.widget.LockableViewPager
+            android:id="@+id/view_pager_main"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            tools:ignore="SpeakableTextPresentCheck" />
+
+        <io.legado.app.lib.theme.view.ThemeBottomNavigationVIew
+            android:id="@+id/bottom_navigation_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/background"
+            android:minHeight="50dp"
+            app:itemActiveIndicatorStyle="@color/transparent"
+            app:labelVisibilityMode="unlabeled"
+            app:menu="@menu/main_bnv" />
+
+    </LinearLayout>
+
+    <!-- Floating Mode Layout -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/floating_layout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/background"
-        android:minHeight="50dp"
-        app:itemActiveIndicatorStyle="@color/transparent"
-        app:labelVisibilityMode="unlabeled"
-        app:menu="@menu/main_bnv" />
+        android:layout_height="match_parent"
+        android:visibility="gone">
 
-</LinearLayout>
+        <FrameLayout
+            android:id="@+id/content_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <io.legado.app.ui.widget.LockableViewPager
+                android:id="@+id/view_pager_main_floating"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:paddingBottom="76dp"
+                tools:ignore="SpeakableTextPresentCheck" />
+
+        </FrameLayout>
+
+        <!-- Floating Bottom Navigation - Single Capsule with 5 buttons -->
+        <FrameLayout
+            android:id="@+id/bottom_navigation_glass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/bg_bottom_nav_floating"
+            android:clipToOutline="true"
+            android:elevation="12dp"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <!-- LiquidGlassView for frosted/glass effect -->
+            <com.qmdeve.liquidglass.widget.LiquidGlassView
+                android:id="@+id/bottom_navigation_liquid_glass"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:clickable="false"
+                android:focusable="false" />
+
+            <!-- Background overlay for solid mode -->
+            <View
+                android:id="@+id/bottom_navigation_background"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@drawable/bg_bottom_nav_floating"
+                android:visibility="gone" />
+
+            <io.legado.app.lib.theme.view.ThemeBottomNavigationVIew
+                android:id="@+id/bottom_navigation_view_floating"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:background="@color/transparent"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:itemIconSize="24dp"
+                app:labelVisibilityMode="unlabeled"
+                app:menu="@menu/main_bnv" />
+
+        </FrameLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</FrameLayout>

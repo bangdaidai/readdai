@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="14dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="8dp"
+    android:background="@drawable/bg_book_info_intro_panel">
+
+    <TextView
+        android:id="@+id/textName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="15sp"
+        android:textColor="?attr/primaryTextColor" />
+
+    <ImageView
+        android:id="@+id/iconNormal"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="8dp"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:contentDescription="@string/navigation_icon_normal"
+        android:background="@drawable/bg_bookshelf_tag_item" />
+
+    <ImageView
+        android:id="@+id/iconSelected"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="8dp"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:contentDescription="@string/navigation_icon_selected"
+        android:background="@drawable/bg_bookshelf_tag_item" />
+
+    <Button
+        android:id="@+id/btnSelectNormal"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="@string/navigation_icon_select_file"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btnClearNormal"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/clear"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btnSelectSelected"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="@string/navigation_icon_select_file"
+        android:textSize="12sp" />
+
+    <Button
+        android:id="@+id/btnClearSelected"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/clear"
+        android:textSize="12sp" />
+
+</LinearLayout>

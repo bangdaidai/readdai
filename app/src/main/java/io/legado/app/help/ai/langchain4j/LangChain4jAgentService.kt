@@ -8,6 +8,7 @@ import dev.langchain4j.model.openai.OpenAiChatModel
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel
 import dev.langchain4j.service.AiServices
 import io.legado.app.help.ai.AiToolContext
+import io.legado.app.help.ai.AiToolRegistry
 import io.legado.app.help.ai.ToolStep
 import io.legado.app.help.ai.ToolStepStatus
 import kotlinx.coroutines.channels.awaitClose
@@ -294,17 +295,28 @@ class LangChain4jAgentService {
                     val matches = regex.findAll(currentResponse)
                     
                     for (match in matches) {
-                        val toolCallJson = match.groupValues[1]
+                        val toolCallContent = match.groupValues[1].trim()
                         io.legado.app.help.ai.AiLogManager.log(
                             io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
                             "LangChain4j",
-                            "解析到工具调用JSON: $toolCallJson"
+                            "解析到工具调用内容: $toolCallContent"
                         )
                         
                         try {
-                            val jsonObject = org.json.JSONObject(toolCallJson)
-                            val toolName = jsonObject.getString("name")
-                            val arguments = jsonObject.getJSONObject("arguments").toString()
+                            // ✅ 支持两种格式：
+                            // 1. 标准 JSON 格式：{"name": "list_books", "arguments": {...}}
+                            // 2. LongCat 自定义格式：list_books\n<longcat_arg_key>keyword</longcat_arg_key>\n<longcat_arg_value>童话保质期</longcat_arg_value>
+                            
+                            val (toolName, arguments) = if (toolCallContent.startsWith("{")) {
+                                // 标准 JSON 格式
+                                val jsonObject = org.json.JSONObject(toolCallContent)
+                                val name = jsonObject.getString("name")
+                                val args = jsonObject.getJSONObject("arguments").toString()
+                                Pair(name, args)
+                            } else {
+                                // LongCat 自定义格式
+                                parseLongCatToolCall(toolCallContent)
+                            }
                             
                             io.legado.app.help.ai.AiLogManager.log(
                                 io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
@@ -360,11 +372,22 @@ class LangChain4jAgentService {
                                 e
                             )
                             
-                            // 更新为FAILED状态并发送
+                            // ✅ 关键修复：更新为FAILED状态，并添加明确的错误提示
                             if (toolSteps.isNotEmpty()) {
+                                val errorMessage = """
+                                    工具 [${toolSteps.last().name}] 执行失败。
+                                    错误原因：${e.message ?: "未知错误"}
+                                    
+                                    **重要提示**：
+                                    - 如果这是解析错误，请检查工具调用格式是否正确
+                                    - 如果工具不存在，请不要再尝试调用这个工具
+                                    - 如果参数错误，请修正参数后重试（最多重试1次）
+                                    - **不要无限重试同一个工具**，如果连续失败2次，请换其他方式或告知用户
+                                """.trimIndent()
+                                
                                 val failedStep = toolSteps.last().copy(
                                     status = ToolStepStatus.FAILED,
-                                    error = e.message
+                                    error = errorMessage
                                 )
                                 toolSteps[toolSteps.size - 1] = failedStep
                                 trySend(LangChain4jResponse(content = "", toolSteps = listOf(failedStep)))
@@ -633,9 +656,9 @@ class LangChain4jAgentService {
         } else {
             "📚 用户正在浏览书架或查询阅读历史"
         }
-        
+
         return """
-你是“dai411 AI助手”，一个智能阅读助手。
+你是"棒呆呆的AI助手"，一个智能阅读助手。
 
 ## 你的角色
 帮助读者理解、组织并享受阅读体验的智能伙伴。
@@ -656,60 +679,17 @@ $bookInfo
    - ❌ **不要盲目获取所有数据**：除非用户明确要求浏览全部内容
      - 错误：用户问某本书 → 你获取整个书架
      - 正确：用户问某本书 → 你直接搜索那本书
+6. **工具调用失败处理** - ⭐ **重要原则**：
+   - ❌ **不要无限重试**：如果同一个工具连续失败 2 次，立即停止重试
+   - ✅ **分析失败原因**：
+     - 解析错误 → 检查格式是否正确
+     - 工具不存在 → 换用其他可用工具
+     - 参数错误 → 修正后最多重试 1 次
+   - ✅ **告知用户**：如果无法通过工具获取信息，直接告诉用户并建议其他方式
 
 ## 可用工具
 
-### 书架和阅读历史
-- **list_books**: 获取用户的书架列表。
-  - 参数：`keyword`（搜索关键词，匹配标题或作者）、`category`（分类）、`status`（阅读状态）、`sortBy`（排序方式）、`maxItems`（最大返回数量，默认20）
-  - **重要**：
-    - 搜索书籍时使用 `keyword` 参数，不是 `title`！例如：`{"keyword": "童话保质期"}`
-    - **默认只返回最近阅读的 20 本书**，避免消耗过多 token
-    - **如果需要查找特定书籍，请使用 `keyword` 参数进行搜索**，此时会返回所有匹配结果
-  - **智能使用策略**：
-    - ✅ **用户询问特定书名** → 使用 `keyword` 参数精确搜索
-      - 例："我的书架上有童话保质期吗" → `list_books(keyword="童话保质期")`
-    - ✅ **用户询问某类书籍** → 使用 `keyword` 或 `category` 参数
-      - 例："我有哪些科幻小说" → `list_books(keyword="科幻")`
-    - ✅ **用户浏览书架** → 不使用参数，返回最近阅读的 20 本
-      - 例："我的书架上有哪些书" → `list_books()`
-    - ❌ **不要盲目获取所有书籍**，除非用户明确要求
-- **reading_history**: 获取用户的阅读历史记录
-- **search_all_notes**: 在所有书籍中搜索笔记和高亮
-
-### 当前阅读上下文
-- **get_current_book_info**: 获取当前阅读书籍的详细信息
-- **current_chapter**: 获取当前章节的内容
-- **book_toc**: 获取书籍完整目录
-- **search_content**: 在当前书籍中搜索指定内容
-- **reading_progress**: 获取当前阅读进度
-- **book_notes**: 获取当前书籍的笔记和高亮
-
-### RAG 向量搜索（需要书籍已向量化）
-- **rag_search**: 在已向量化的书籍中进行搜索，支持三种模式：
-  - `mode="hybrid"` (默认): 混合搜索，结合语义和关键词，推荐用于大多数场景
-  - `mode="vector"`: 纯语义搜索，适合概念性问题
-  - `mode="bm25"`: 纯关键词搜索，适合精确匹配特定词汇
-  - **当用户询问某本书的具体内容、情节、结局、角色等信息时，优先使用此工具**
-- **rag_toc**: 获取向量化书籍的目录结构
-- **rag_context**: 获取特定章节的上下文内容
-- **vectorization_status**: 检查书籍的向量化状态
-
-### 内容分析
-- **extract_entities**: 从当前阅读内容中提取人物、地点、时间等实体
-- **analyze_arguments**: 分析作者的论证逻辑和论据
-- **find_quotes**: 查找书中的精彩引用和金句
-- **compare_sections**: 比较两个章节的内容差异
-
-### 标签管理
-- **tags_list**: 获取用户创建的所有标签
-- **book_tags**: 获取当前书籍的所有标签
-- **apply_book_tags**: 为书籍添加或移除标签
-- **manage_tags**: 创建、删除、重命名标签
-
-### 其他
-- **bookshelf_organize**: 规划书架分组重组方案
-- **add_quote**: 在回答中引用书籍原文
+${buildToolsDescription()}
 
 ## 响应策略
 
@@ -752,6 +732,103 @@ $bookInfo
 ## 记住
 你不只是工具执行者，而是用户的阅读伙伴。你的使命是让每次阅读都更有洞察力和乐趣。
         """.trimIndent()
+    }
+
+    /**
+     * 动态构建工具描述列表
+     * 从 AiToolRegistry 获取所有已注册的工具，生成格式化的工具说明
+     */
+    private fun buildToolsDescription(): String {
+        val definitions = AiToolRegistry.getDefinitions()
+
+        if (definitions.isEmpty()) {
+            return "（暂无可用工具）"
+        }
+
+        // 按工具ID前缀分组
+        val grouped = definitions.groupBy { def ->
+            when {
+                def.id.startsWith("list_") || def.id.startsWith("reading_") || def.id == "search_all_notes" -> "书架和阅读历史"
+                def.id.startsWith("current_") || def.id == "book_toc" || def.id == "search_content" || def.id == "reading_progress" -> "当前阅读上下文"
+                def.id.startsWith("rag_") || def.id == "vectorization_status" || def.id == "summarize_content" -> "RAG向量搜索"
+                def.id.startsWith("extract_") || def.id.startsWith("analyze_") || def.id.startsWith("find_") || def.id.startsWith("compare_") -> "内容分析"
+                def.id.startsWith("tags_") || def.id.startsWith("book_tags") || def.id == "apply_book_tags" || def.id == "manage_tags" -> "标签管理"
+                def.id == "bookshelf_lookup" || def.id == "bookshelf_organize" -> "书架管理"
+                def.id == "add_quote" -> "引用系统"
+                def.id == "search_web_tavily" -> "联网搜索"
+                def.id.startsWith("mcp_") -> "MCP扩展"
+                def.id == "book_read_time_rank" || def.id == "reading_stats" -> "阅读统计"
+                else -> "其他"
+            }
+        }
+
+        val sb = StringBuilder()
+
+        grouped.forEach { (category, tools) ->
+            sb.append("### $category\n")
+            tools.forEach { def ->
+                sb.append("- **${def.id}**: ${def.descriptionBuilder()}")
+                if (def.inputSchema.isNotEmpty()) {
+                    val params = def.inputSchema.keys.joinToString(", ") { "`$it`" }
+                    sb.append("\n  - 参数：$params")
+                }
+                sb.append("\n")
+            }
+            sb.append("\n")
+        }
+
+        return sb.toString().trimEnd()
+    }
+
+    /**
+     * ✅ 解析 LongCat 自定义工具调用格式
+     * 格式示例：
+     * list_books
+     * <longcat_arg_key>keyword</longcat_arg_key>
+     * <longcat_arg_value>童话保质期</longcat_arg_value>
+     * <longcat_arg_key>status</longcat_arg_key>
+     * <longcat_arg_value>reading</longcat_arg_value>
+     */
+    private fun parseLongCatToolCall(content: String): Pair<String, String> {
+        val lines = content.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+        
+        if (lines.isEmpty()) {
+            throw IllegalArgumentException("Empty tool call content")
+        }
+        
+        // 第一行是工具名称
+        val toolName = lines[0]
+        
+        // 解析参数
+        val arguments = mutableMapOf<String, String>()
+        var i = 1
+        while (i < lines.size - 1) {
+            if (lines[i].startsWith("<longcat_arg_key>") && lines[i + 1].startsWith("<longcat_arg_value>")) {
+                val key = lines[i]
+                    .removePrefix("<longcat_arg_key>")
+                    .removeSuffix("</longcat_arg_key>")
+                    .trim()
+                val value = lines[i + 1]
+                    .removePrefix("<longcat_arg_value>")
+                    .removeSuffix("</longcat_arg_value>")
+                    .trim()
+                arguments[key] = value
+                i += 2
+            } else {
+                i++
+            }
+        }
+        
+        // 转换为 JSON 字符串
+        val jsonArguments = org.json.JSONObject(arguments as Map<*, *>).toString()
+        
+        io.legado.app.help.ai.AiLogManager.log(
+            io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+            "LangChain4j",
+            "解析 LongCat 工具: name=$toolName, args=$jsonArguments"
+        )
+        
+        return Pair(toolName, jsonArguments)
     }
 }
 

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- API Key -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="API Key *"
+            app:endIconMode="password_toggle">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_tavily_api_key"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword"
+                android:imeOptions="actionNext" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Base URL -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="Base URL">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_tavily_base_url"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:imeOptions="actionNext"
+                android:text="https://api.tavily.com" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- 搜索主题 -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="搜索主题"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+            <AutoCompleteTextView
+                android:id="@+id/et_tavily_topic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:text="通用" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- 搜索深度 -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="搜索深度"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+            <AutoCompleteTextView
+                android:id="@+id/et_tavily_search_depth"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none"
+                android:text="基础" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- 最大结果数 -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="最大结果数 (1-10)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_tavily_max_results"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:imeOptions="actionDone"
+                android:text="5" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- 说明文字 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="💡 提示：\n• API Key 为必填项\n• Base URL 默认为 https://api.tavily.com\n• 搜索主题影响搜索结果类型\n• 搜索深度影响搜索质量与速度\n• 最大结果数建议设置为 3-7"
+            android:textSize="12sp"
+            android:textColor="?android:attr/textColorSecondary"
+            android:lineSpacingExtra="4dp" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>

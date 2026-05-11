@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-sdk tools:overrideLibrary="com.qmdeve.liquidglass" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -618,6 +620,10 @@
         <meta-data
             android:name="channel"
             android:value="${APP_CHANNEL_VALUE}" />
+
+        <activity
+            android:name=".ui.config.NavigationBarManageActivity"
+            android:launchMode="standard" />
     </application>
 
     <queries>
