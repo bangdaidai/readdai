@@ -180,12 +180,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         binding.btnSend.backgroundTintList = android.content.res.ColorStateList.valueOf(accentColor)
 
         // 强制设置输入框容器背景色和边框色为主题色（确保生效）
-        val backgroundCardColor = ThemeStore.backgroundCard(this)
-        val dividerColor = ThemeStore.dividerColor(this)
-        android.util.Log.d("AiChatActivity", "主题色 - backgroundCard: ${String.format("#%06X", 0xFFFFFF and backgroundCardColor)}, divider: ${String.format("#%06X", 0xFFFFFF and dividerColor)}")
-        binding.inputLayout.setCardBackgroundColor(backgroundCardColor)
-        binding.inputLayout.strokeWidth = 1.dpToPx()
-        binding.inputLayout.strokeColor = dividerColor
+        applyThemeColors()
 
         // 显示传递过来的引用内容
         val initialQuote = intent.getStringExtra("selectedText")
@@ -949,6 +944,41 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
         // 页面恢复时，重新加载会话（如果需要）
         android.util.Log.d("AiChatActivity", "onResume")
+        
+        // ✅ 关键修复：重新应用主题颜色，确保设置更改后立即生效
+        applyThemeColors()
+    }
+
+    /**
+     * 应用主题颜色到输入框和快捷操作栏
+     */
+    private fun applyThemeColors() {
+        val backgroundCardColor = ThemeStore.backgroundCard(this)
+        val dividerColor = ThemeStore.dividerColor(this)
+        android.util.Log.d("AiChatActivity", "应用主题色 - backgroundCard: ${String.format("#%06X", 0xFFFFFF and backgroundCardColor)}, divider: ${String.format("#%06X", 0xFFFFFF and dividerColor)}")
+        
+        // 更新输入框容器背景色和边框色
+        binding.inputLayout.setCardBackgroundColor(backgroundCardColor)
+        binding.inputLayout.strokeWidth = 1.dpToPx()
+        binding.inputLayout.strokeColor = dividerColor
+        
+        // 更新快捷操作栏按钮的背景色和边框色
+        val chipViews = listOf(
+            binding.chipQuickAction1,
+            binding.chipQuickAction2,
+            binding.chipQuickAction3,
+            binding.chipQuickAction4
+        )
+        chipViews.forEach { chip ->
+            if (chip.visibility == View.VISIBLE) {
+                val drawable = android.graphics.drawable.GradientDrawable()
+                drawable.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                drawable.cornerRadius = 12.dpToPx().toFloat()
+                drawable.setColor(backgroundCardColor)
+                drawable.setStroke(1.dpToPx(), dividerColor)
+                chip.background = drawable
+            }
+        }
     }
 
     private fun executeSkillDirectly(skillId: String, userQuestion: String) {

@@ -256,6 +256,30 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
             }
             addView(nameInput)
             
+            // Add enable tint switch
+            val tintLayout = LinearLayout(this@NavigationBarManageActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = 16.dp
+                }
+            }
+            
+            val tintLabel = TextView(this@NavigationBarManageActivity).apply {
+                text = "启用图标着色"
+                textSize = 14f
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            
+            val tintSwitch = io.legado.app.lib.theme.view.ThemeSwitch(this@NavigationBarManageActivity).apply {
+                tag = "enable_tint"
+                isChecked = editingEntry?.config?.enableTint ?: true
+            }
+            
+            tintLayout.addView(tintLabel)
+            tintLayout.addView(tintSwitch)
+            addView(tintLayout)
+            
             // Add icon editing rows for all navigation items
             NavigationBarIconConfig.items.forEach { item ->
                 addView(iconRow(item))
@@ -283,24 +307,36 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
         val textName = view.findViewById<TextView>(R.id.textName)
         textName.setText(item.titleRes)
         
-        // Setup normal icon preview
+        // Setup normal icon preview - load asynchronously in coroutine
         val iconNormal = view.findViewById<ImageView>(R.id.iconNormal)
-        setupIconPreview(iconNormal, entry, item, false)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val drawable = NavigationBarIconConfig.previewDrawable(this@NavigationBarManageActivity, entry, item, false)
+            withContext(Dispatchers.Main) {
+                iconNormal.setImageDrawable(drawable)
+            }
+        }
+        setupIconClick(iconNormal, entry, item, false)
         
-        // Setup selected icon preview
+        // Setup selected icon preview - load asynchronously in coroutine
         val iconSelected = view.findViewById<ImageView>(R.id.iconSelected)
-        setupIconPreview(iconSelected, entry, item, true)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val drawable = NavigationBarIconConfig.previewDrawable(this@NavigationBarManageActivity, entry, item, true)
+            withContext(Dispatchers.Main) {
+                iconSelected.setImageDrawable(drawable)
+            }
+        }
+        setupIconClick(iconSelected, entry, item, true)
         
         return view
     }
     
-    private fun setupIconPreview(iconView: ImageView, entry: NavigationBarIconConfig.Entry, item: NavigationBarIconConfig.NavItem, selected: Boolean) {
-        iconView.contentDescription = getString(if (selected) R.string.navigation_icon_selected else R.string.navigation_icon_normal)
-        iconView.setImageDrawable(NavigationBarIconConfig.previewDrawable(this, entry, item, selected))
+    private fun setupIconClick(iconView: ImageView, entry: NavigationBarIconConfig.Entry, item: NavigationBarIconConfig.NavItem, selected: Boolean) {
+        val descRes = if (selected) R.string.navigation_icon_selected else R.string.navigation_icon_normal
+        iconView.contentDescription = getString(descRes)
         
         iconView.setOnClickListener {
             selector(
-                iconView.contentDescription.toString(),
+                getString(descRes),
                 listOf(getString(R.string.select_image), getString(R.string.delete))
             ) { _, index ->
                 if (index == 0) {
@@ -315,7 +351,6 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
                 } else {
                     editingEntry = NavigationBarIconConfig.clearIcon(entry, item.key, selected)
                     pendingConfig = editingEntry!!.config.copy(icons = editingEntry!!.config.icons.toMutableMap())
-                    // Notify MainActivity to update bottom bar icons
                     postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
                     refreshEditDialog()
                 }
@@ -326,10 +361,11 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
     private fun saveEditingPackage() {
         val config = pendingConfig ?: return
         val name = editingDialog?.findViewWithTag<TextView>("name")?.text?.toString()?.trim().orEmpty()
+        val enableTint = editingDialog?.findViewWithTag<io.legado.app.lib.theme.view.ThemeSwitch>("enable_tint")?.isChecked ?: true
         lifecycleScope.launch {
             kotlin.runCatching {
                 withContext(Dispatchers.IO) {
-                    NavigationBarIconConfig.addOrUpdate(config.copy(name = name.ifBlank { nextPackageName() }), editingEntry)
+                    NavigationBarIconConfig.addOrUpdate(config.copy(name = name.ifBlank { nextPackageName() }, enableTint = enableTint), editingEntry)
                 }
             }.onSuccess {
                 // Notify MainActivity to update bottom bar icons
@@ -480,24 +516,25 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
                     UiCorner.panelRadius(this@NavigationBarManageActivity)
                 )
                 tvName.text = entry.config.name
-                tvInfo.text = "${entry.config.icons.size} 个自定义图标"
-                tvSource.text = if (entry.dirName == activeDirName) getString(R.string.theme_source_using) else "未应用"
-                tvName.setTextColor(primaryTextColor)
-                tvInfo.setTextColor(secondaryTextColor)
-                tvSource.setTextColor(accentColor)
-                listOf(tvSource).forEach {
-                    it.background = UiCorner.actionSelector(
-                        ContextCompat.getColor(this@NavigationBarManageActivity, R.color.background_card),
-                        ContextCompat.getColor(this@NavigationBarManageActivity, R.color.background_menu),
-                        UiCorner.actionRadius(this@NavigationBarManageActivity)
-                    )
+                
+                // 设置预览图 - 显示第一个图标作为预览
+                val firstItem = NavigationBarIconConfig.items.firstOrNull()
+                if (firstItem != null) {
+                    ivPreview.setImageDrawable(NavigationBarIconConfig.previewDrawable(this@NavigationBarManageActivity, entry, firstItem, false))
+                    cardPreview.visibility = View.VISIBLE
+                } else {
+                    cardPreview.visibility = View.GONE
                 }
-                cardPreview.visibility = View.GONE
+                
                 btnApply.text = getString(if (entry.dirName == activeDirName) R.string.theme_applied_state else R.string.theme_apply)
                 btnEdit.text = getString(R.string.edit)
-                btnMore.visibility = View.GONE
+                
+                // 默认套装不能删除
+                btnDelete.visibility = if (entry.dirName == NavigationBarIconConfig.DEFAULT_DIR_NAME) View.GONE else View.VISIBLE
+                
                 btnApply.setOnClickListener { applyPackage(entry) }
                 btnEdit.setOnClickListener { showEditDialog(entry) }
+                btnDelete.setOnClickListener { confirmDelete(entry) }
                 root.setOnClickListener { showActions(entry) }
             }
         }

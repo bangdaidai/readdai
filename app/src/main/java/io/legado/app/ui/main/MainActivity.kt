@@ -11,7 +11,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.addCallback
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import androidx.core.view.get
+import androidx.core.view.doOnPreDraw
 import androidx.core.view.postDelayed
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -59,6 +61,7 @@ import io.legado.app.utils.setOnApplyWindowInsetsListenerCompat
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
+import io.legado.app.utils.ColorUtils
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -99,6 +102,26 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         TabFragmentPageAdapter(supportFragmentManager)
     }
     private var onUpBooksBadgeView: BadgeView? = null
+    private var liquidGlassReady = false
+    private var styleUpdateJob: kotlinx.coroutines.Job? = null
+    private val bottomIndicatorAnimator by lazy {
+        android.animation.ValueAnimator().apply {
+            duration = 320L
+            interpolator = android.view.animation.OvershootInterpolator(0.55f)
+        }
+    }
+    private val bottomGlassPulseInterpolator by lazy { 
+        android.view.animation.AccelerateDecelerateInterpolator() 
+    }
+    private val hideBottomIndicatorRunnable = Runnable {
+        binding.bottomNavigationIndicatorContainer.animate()
+            .alpha(0f)
+            .scaleX(0.88f)
+            .scaleY(0.88f)
+            .setDuration(220L)
+            .setInterpolator(bottomGlassPulseInterpolator)
+            .start()
+    }
 
     /**
      * Get the current ViewPager based on layout mode
@@ -198,8 +221,13 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             idMy -> R.id.menu_my_config
             else -> R.id.menu_bookshelf
         }
-        binding.bottomNavigationView.menu.findItem(menuItemId)?.isChecked = true
-        binding.bottomNavigationViewFloating.menu.findItem(menuItemId)?.isChecked = true
+        // Only update if not already selected to avoid redundant UI refreshes
+        if (binding.bottomNavigationView.menu.findItem(menuItemId)?.isChecked != true) {
+            binding.bottomNavigationView.menu.findItem(menuItemId)?.isChecked = true
+        }
+        if (binding.bottomNavigationViewFloating.menu.findItem(menuItemId)?.isChecked != true) {
+            binding.bottomNavigationViewFloating.menu.findItem(menuItemId)?.isChecked = true
+        }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean = binding.run {
@@ -219,6 +247,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
 
             R.id.menu_my_config ->
                 currentPageViewPager.setCurrentItem(realPositions.indexOf(idMy), false)
+        }
+        // Update indicator position when item is selected
+        if (AppConfig.bottomBarLayoutMode == "floating") {
+            updateBottomNavigationIndicator(animate = true)
         }
         return true
     }
@@ -262,59 +294,128 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         bottomNav.setOnNavigationItemSelectedListener(this@MainActivity)
         bottomNav.setOnNavigationItemReselectedListener(this@MainActivity)
         
-        // Apply floating navigation bar style if in floating mode
+        // Apply styles based on mode
         if (isFloatingMode) {
-            updateBottomBarStyle()
+            // Schedule LiquidGlass setup after layout is ready
+            contentContainer.doOnPreDraw {
+                liquidGlassReady = true
+                updateBottomBarStyle()
+            }
         } else {
-            // Classic mode: always use solid opaque background
-            bottomNav.setBackgroundColor(getBottomBackgroundColor())
-            bottomNav.alpha = 1.0f
+            // Classic mode: ThemeBottomNavigationVIew handles background color automatically
+            // Just handle immersive navigation bar like dai411
+            if (AppConfig.immNavigationBar) {
+                bottomNav.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
+                    val height = windowInsets.navigationBarHeight
+                    view.bottomPadding = height
+                    windowInsets.inset(0, 0, 0, height)
+                }
+            }
             
             // Apply e-ink border if needed
             if (AppConfig.isEInkMode) {
                 bottomNav.setBackgroundResource(R.drawable.bg_eink_border_top)
             }
-            bottomNav.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
-                val height = windowInsets.navigationBarHeight
-                view.bottomPadding = height
-                windowInsets.inset(0, 0, 0, height)
-            }
         }
     }
 
     /**
-     * Update bottom navigation bar style based on configuration
+     * Update bottom navigation bar style based on configuration with debounce
      */
     private fun updateBottomBarStyle() {
-        // Only apply styles in floating mode
         if (AppConfig.bottomBarLayoutMode != "floating") return
         
-        val liquidGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_liquid_glass)
-        val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
+        styleUpdateJob?.cancel()
+        styleUpdateJob = lifecycleScope.launch {
+            kotlinx.coroutines.delay(50) // Debounce to prevent rapid updates
+            applyBottomBarStyleInternal()
+        }
+    }
+    
+    /**
+     * Internal method to apply bottom bar style after layout is ready
+     */
+    private fun applyBottomBarStyleInternal() {
+        if (AppConfig.bottomBarLayoutMode != "floating") return
+        
+        val contentContainer = binding.contentContainer
+        if (!liquidGlassReady || !contentContainer.isLaidOut) {
+            liquidGlassReady = true
+            binding.root.postDelayed(32) {
+                if (!isFinishing) applyBottomBarStyleInternal()
+            }
+            return
+        }
+
+        // Use binding to access views directly
+        val liquidGlassView = binding.bottomNavigationGlassView
+        val shellOverlay = binding.bottomNavigationShellOverlay
+        val backgroundView = binding.bottomNavigationBackground
         
         when (AppConfig.bottomBarEffectMode) {
             "solid" -> {
-                // Solid mode: hide liquid glass, show solid background with capsule shape
-                liquidGlassView?.visibility = View.GONE
-                backgroundView?.visibility = View.VISIBLE
+                // Solid mode: hide liquid glass and shell overlay, show solid background with capsule shape
+                liquidGlassView.visibility = View.GONE
+                shellOverlay.visibility = View.GONE
+                backgroundView.visibility = View.VISIBLE
                 // Create a capsule-shaped background with theme color
                 val bgColor = getBottomBackgroundColor()
+                val cornerRadius = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_corner_radius)
                 val capsuleDrawable = android.graphics.drawable.GradientDrawable().apply {
                     shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                    cornerRadius = 28f.dpToPx().toFloat()
+                    cornerRadius = cornerRadius.toFloat()
                     setColor(bgColor)
                 }
-                backgroundView?.background = capsuleDrawable
-                backgroundView?.alpha = 1.0f // Fully opaque for solid mode
+                backgroundView.background = capsuleDrawable
+                backgroundView.alpha = 1.0f // Fully opaque for solid mode
+                
+                // Show indicator in solid mode
+                binding.bottomNavigationIndicatorContainer.apply {
+                    visibility = View.VISIBLE
+                    alpha = 1f
+                    scaleX = 1f
+                    scaleY = 1f
+                }
+                binding.bottomNavigationIndicatorOverlay.visibility = View.VISIBLE
+                
+                // Initialize indicator position
+                updateBottomNavigationIndicator(animate = false)
             }
             "frosted", "glass" -> {
-                // Frosted/Glass mode: use LiquidGlassView with real blur effect
-                liquidGlassView?.visibility = View.VISIBLE
-                backgroundView?.visibility = View.VISIBLE  // Keep background visible for LiquidGlassView to work on
+                // Frosted/Glass mode: use LiquidGlassView with real blur effect and shell overlay
+                liquidGlassView.visibility = View.VISIBLE
+                shellOverlay.visibility = View.VISIBLE  // Show shell overlay for color and border
+                backgroundView.visibility = View.GONE  // Hide solid background
                 
-                liquidGlassView?.let { glass ->
-                    setupLiquidGlassView(glass)
+                // Show indicator
+                binding.bottomNavigationIndicatorContainer.apply {
+                    visibility = View.VISIBLE
+                    alpha = 0f
+                    scaleX = 0.82f
+                    scaleY = 0.82f
                 }
+                binding.bottomNavigationIndicatorOverlay.visibility = View.VISIBLE
+                
+                // Setup main LiquidGlassView
+                setupLiquidGlassView(liquidGlassView)
+                
+                // Setup indicator LiquidGlassView
+                binding.bottomNavigationIndicatorGlassView.apply {
+                    visibility = View.VISIBLE
+                    setupLiquidGlassView(this)
+                }
+                
+                // Update shell overlay with dynamic drawable based on glass level
+                val cornerRadius = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_corner_radius).toFloat()
+                val glassLevel = if (AppConfig.bottomBarEffectMode == "frosted") {
+                    AppConfig.frostedGlassLevel / 100f
+                } else {
+                    AppConfig.liquidGlassLevel / 100f
+                }
+                shellOverlay.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius)
+                
+                // Initialize indicator position
+                updateBottomNavigationIndicator(animate = false)
             }
         }
     }
@@ -369,7 +470,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         
         // Configure LiquidGlassView
-        liquidGlassView.setCornerRadius(28f.dpToPx())  // Match bg_bottom_nav_floating.xml corner radius
+        val cornerRadius = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_corner_radius)
+        liquidGlassView.setCornerRadius(cornerRadius.toFloat())  // Match bg_bottom_nav_floating.xml corner radius
         liquidGlassView.setRefractionHeight(refractionHeight)
         liquidGlassView.setRefractionOffset(refractionOffset)
         liquidGlassView.setDispersion(dispersion)
@@ -397,17 +499,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         liquidGlassView.isFocusable = false
         liquidGlassView.invalidate()
     }
-    
-    private fun Float.dpToPx(): Float {
-        return this * resources.displayMetrics.density
-    }
 
     private fun getBottomBackgroundColor(): Int {
-        return if (AppConfig.isNightTheme) {
-            android.graphics.Color.parseColor("#CC1A1A1A")
-        } else {
-            android.graphics.Color.parseColor("#CCFFFFFF")
-        }
+        return io.legado.app.lib.theme.ThemeStore.bottomBackground()
     }
 
     /**
@@ -570,7 +664,18 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         observeEvent<Boolean>(EventBus.NAVIGATION_BAR_CHANGED) {
             upBottomMenu()
+            // Reset liquidGlassReady to force re-initialization
+            liquidGlassReady = false
             updateBottomBarStyle()
+        }
+        observeEvent<String>(EventBus.THEME_CHANGED) {
+            // Update bottom bar style when theme changes
+            if (AppConfig.bottomBarLayoutMode == "floating") {
+                // Reset liquidGlassReady to force re-initialization with new theme
+                liquidGlassReady = false
+                updateBottomBarStyle()
+            }
+            // Classic mode: ThemeBottomNavigationVIew handles theme changes automatically
         }
         observeEvent<String>(PreferKey.threadCount) {
             viewModel.upPool()
@@ -582,7 +687,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val showRss = AppConfig.showRSS
         
         // Switch between classic and floating layout
-        if (AppConfig.bottomBarLayoutMode == "floating") {
+        val isFloatingMode = AppConfig.bottomBarLayoutMode == "floating"
+        if (isFloatingMode) {
             binding.bottomNavigationView.visibility = View.GONE
             binding.bottomNavigationViewFloating.visibility = View.VISIBLE
             binding.viewPagerMain.visibility = View.GONE
@@ -614,6 +720,35 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             this,
             AppConfig.isNightTheme
         )
+        
+        // Handle icon tinting based on whether custom icons are applied
+        val hasCustomIconsClassic = binding.bottomNavigationView.menu.let { menu ->
+            (0 until menu.size()).any { index ->
+                val item = menu.getItem(index)
+                val drawable = item.icon
+                val defaultRes = when (item.itemId) {
+                    R.id.menu_bookshelf -> R.drawable.ic_bottom_bookshelf
+                    R.id.menu_discovery -> R.drawable.ic_bottom_explore
+                    R.id.menu_ai_read -> R.drawable.ic_bottom_ai_e
+                    R.id.menu_rss -> R.drawable.ic_bottom_rss_feed
+                    R.id.menu_my_config -> R.drawable.ic_bottom_my_config
+                    else -> 0
+                }
+                drawable != null && defaultRes != 0 && 
+                    !drawable.constantState?.equals(ContextCompat.getDrawable(this, defaultRes)?.constantState) ?: false
+            }
+        }
+        
+        if (!hasCustomIconsClassic) {
+            // Restore theme tint if using default icons
+            binding.bottomNavigationView.restoreThemeIconTint()
+            binding.bottomNavigationViewFloating.restoreThemeIconTint()
+        } else {
+            // Clear tint for custom icons
+            binding.bottomNavigationView.itemIconTintList = null
+            binding.bottomNavigationViewFloating.itemIconTintList = null
+        }
+        
         var index = 0
         realPositions[index] = idBookshelf
         index++
@@ -628,6 +763,17 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         realPositions[index] = idMy
         bottomMenuCount = index + 1
         adapter.notifyDataSetChanged()
+        
+        // Update bottom bar style after menu changes without reinitializing views
+        if (isFloatingMode) {
+            updateBottomBarStyle()
+        } else {
+            // Classic mode: ThemeBottomNavigationVIew handles background automatically
+            // Just apply e-ink border if needed
+            if (AppConfig.isEInkMode) {
+                binding.bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
+            }
+        }
     }
 
     private fun upHomePage() {
@@ -666,6 +812,12 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 else -> R.id.menu_bookshelf
             }
             binding.bottomNavigationView.menu.findItem(menuItemId)?.isChecked = true
+            binding.bottomNavigationViewFloating.menu.findItem(menuItemId)?.isChecked = true
+            
+            // Update indicator position when page changes
+            if (AppConfig.bottomBarLayoutMode == "floating") {
+                updateBottomNavigationIndicator(animate = true)
+            }
         }
 
     }
@@ -717,6 +869,164 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             return fragment
         }
 
+    }
+
+    /**
+     * Create liquid glass shell drawable with gradient effect
+     */
+    private fun createLiquidGlassShellDrawable(
+        glassLevel: Float,
+        cornerRadius: Float
+    ): android.graphics.drawable.GradientDrawable {
+        val baseColor = getBottomBackgroundColor()
+        val isLight = ColorUtils.isColorLight(baseColor)
+        val surfaceColor = if (isLight) {
+            ColorUtils.blendColors(baseColor, Color.WHITE, 0.72f)
+        } else {
+            ColorUtils.blendColors(baseColor, Color.BLACK, 0.24f)
+        }
+        val startAlpha = (0.32f + glassLevel * 0.44f).coerceIn(0f, 0.86f)
+        val centerAlpha = (0.24f + glassLevel * 0.38f).coerceIn(0f, 0.74f)
+        val endAlpha = (0.18f + glassLevel * 0.32f).coerceIn(0f, 0.66f)
+        val strokeAlpha = (0.22f + glassLevel * 0.22f).coerceIn(0f, 0.58f)
+        return android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(
+                ColorUtils.withAlpha(surfaceColor, startAlpha),
+                ColorUtils.withAlpha(surfaceColor, centerAlpha),
+                ColorUtils.withAlpha(surfaceColor, endAlpha)
+            )
+        ).apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            setCornerRadius(cornerRadius)
+            setStroke(1.dpToPx(), ColorUtils.withAlpha(surfaceColor, strokeAlpha))
+        }
+    }
+
+    /**
+     * Update bottom navigation indicator position
+     */
+    private fun updateBottomNavigationIndicator(animate: Boolean) {
+        if (AppConfig.bottomBarLayoutMode != "floating") return
+        if (AppConfig.isEInkMode) return
+        
+        val bottomNav = binding.bottomNavigationViewFloating
+        val menuView = bottomNav.getChildAt(0) as? ViewGroup ?: return
+        val itemId = getBottomNavigationItemId(pagePosition)
+        val itemView = findBottomNavigationItemView(menuView, itemId) ?: return
+        
+        val indicator = binding.bottomNavigationIndicatorContainer
+        val targetWidth = kotlin.math.min(
+            resources.getDimensionPixelSize(R.dimen.main_bottom_indicator_width),
+            (itemView.width - 16.dpToPx()).coerceAtLeast(42.dpToPx())
+        )
+        indicator.layoutParams = indicator.layoutParams.apply {
+            width = targetWidth
+        }
+        val baseX = bottomNav.x + menuView.x + itemView.x
+        val targetX = baseX + (itemView.width - targetWidth) / 2f
+        
+        if (!animate || !indicator.isLaidOut) {
+            indicator.x = targetX
+            playBottomNavigationIndicatorAnimation(animate = false)
+            return
+        }
+        
+        val startX = indicator.x
+        bottomIndicatorAnimator.cancel()
+        bottomIndicatorAnimator.removeAllUpdateListeners()
+        bottomIndicatorAnimator.setFloatValues(startX, targetX)
+        bottomIndicatorAnimator.addUpdateListener { animator ->
+            indicator.x = animator.animatedValue as Float
+        }
+        bottomIndicatorAnimator.start()
+        playBottomNavigationIndicatorAnimation(animate = true)
+    }
+
+    /**
+     * Play bottom navigation indicator animation
+     */
+    private fun playBottomNavigationIndicatorAnimation(animate: Boolean) {
+        if (AppConfig.bottomBarLayoutMode != "floating") return
+        if (AppConfig.isEInkMode) return
+        
+        val indicator = binding.bottomNavigationIndicatorContainer
+        indicator.removeCallbacks(hideBottomIndicatorRunnable)
+        indicator.animate().cancel()
+        indicator.visibility = View.VISIBLE
+        
+        if (!animate) {
+            indicator.alpha = 1f
+            indicator.scaleX = 1f
+            indicator.scaleY = 1f
+        } else {
+            indicator.alpha = 0.94f
+            indicator.scaleX = 0.90f
+            indicator.scaleY = 1.08f
+            indicator.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(280L)
+                .setInterpolator(android.view.animation.OvershootInterpolator(0.78f))
+                .start()
+            
+            // Animate the glass container
+            binding.bottomNavigationGlass.animate()
+                .scaleX(1.01f)
+                .scaleY(1.02f)
+                .setDuration(120L)
+                .withEndAction {
+                    binding.bottomNavigationGlass.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(220L)
+                        .setInterpolator(bottomGlassPulseInterpolator)
+                        .start()
+                }
+                .start()
+        }
+        indicator.postDelayed(hideBottomIndicatorRunnable, 780L)
+    }
+
+    /**
+     * Find bottom navigation item view by item ID
+     */
+    private fun findBottomNavigationItemView(menuView: ViewGroup, itemId: Int): View? {
+        for (index in 0 until menuView.childCount) {
+            val child = menuView.getChildAt(index)
+            if (child.id == itemId && child.visibility == View.VISIBLE) {
+                return child
+            }
+        }
+        var visibleIndex = 0
+        for (index in 0 until menuView.childCount) {
+            val child = menuView.getChildAt(index)
+            if (child.visibility == View.VISIBLE) {
+                if (visibleIndex == pagePosition) return child
+                visibleIndex++
+            }
+        }
+        return null
+    }
+
+    /**
+     * Get bottom navigation item ID based on position
+     */
+    private fun getBottomNavigationItemId(position: Int): Int {
+        return when (realPositions[position]) {
+            idBookshelf -> R.id.menu_bookshelf
+            idExplore -> R.id.menu_discovery
+            idRss -> R.id.menu_rss
+            else -> R.id.menu_my_config
+        }
+    }
+
+    /**
+     * Extension function to convert dp to pixels
+     */
+    private fun Int.dpToPx(): Int {
+        return (this * resources.displayMetrics.density).toInt()
     }
 
     override fun openImportUi(type:Int, source: String) {

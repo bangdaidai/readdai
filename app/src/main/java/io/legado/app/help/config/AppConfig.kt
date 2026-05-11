@@ -970,17 +970,6 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             )
         }
 
-    var bottomBarSidebarGravity: String
-        get() = appCtx.getPrefString(PreferKey.bottomBarSidebarGravity, "start")
-            ?.takeIf { it in setOf("start", "end") }
-            ?: "start"
-        set(value) {
-            appCtx.putPrefString(
-                PreferKey.bottomBarSidebarGravity,
-                value.takeIf { it in setOf("start", "end") } ?: "start"
-            )
-        }
-
     var syncThemePackages: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.syncThemePackages, false)
         set(value) = appCtx.putPrefBoolean(PreferKey.syncThemePackages, value)

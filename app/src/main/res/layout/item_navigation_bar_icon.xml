@@ -7,8 +7,7 @@
     android:paddingStart="14dp"
     android:paddingTop="8dp"
     android:paddingEnd="14dp"
-    android:paddingBottom="8dp"
-    android:background="@drawable/bg_book_info_intro_panel">
+    android:paddingBottom="8dp">
 
     <TextView
         android:id="@+id/textName"
@@ -26,7 +25,9 @@
         android:padding="8dp"
         android:scaleType="centerInside"
         android:contentDescription="@string/navigation_icon_normal"
-        android:background="@drawable/bg_bookshelf_tag_item" />
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackgroundBorderless" />
 
     <ImageView
         android:id="@+id/iconSelected"
@@ -36,40 +37,8 @@
         android:padding="8dp"
         android:scaleType="centerInside"
         android:contentDescription="@string/navigation_icon_selected"
-        android:background="@drawable/bg_bookshelf_tag_item" />
-
-    <Button
-        android:id="@+id/btnSelectNormal"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:text="@string/navigation_icon_select_file"
-        android:textSize="12sp" />
-
-    <Button
-        android:id="@+id/btnClearNormal"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/clear"
-        android:textSize="12sp" />
-
-    <Button
-        android:id="@+id/btnSelectSelected"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:text="@string/navigation_icon_select_file"
-        android:textSize="12sp" />
-
-    <Button
-        android:id="@+id/btnClearSelected"
-        style="@style/Widget.MaterialComponents.Button.TextButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/clear"
-        android:textSize="12sp" />
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackgroundBorderless" />
 
 </LinearLayout>

@@ -81,6 +81,31 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
 
+        // Name input
+        val entry = currentEntry
+        if (entry != null) {
+            binding.editTextName.setText(entry.config.name)
+            binding.editTextName.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: android.text.Editable?) {
+                    val newName = s?.toString()?.trim()
+                    if (!newName.isNullOrBlank() && currentEntry != null) {
+                        lifecycleScope.launch {
+                            kotlin.runCatching {
+                                withContext(Dispatchers.IO) {
+                                    val updatedConfig = currentEntry!!.config.copy(name = newName)
+                                    NavigationBarIconConfig.addOrUpdate(updatedConfig, currentEntry)
+                                }
+                            }.onSuccess {
+                                loadCurrentEntry()
+                            }
+                        }
+                    }
+                }
+            })
+        }
+
         // Layout mode selector
         binding.textLayoutMode.text = getLayoutModeLabel(AppConfig.bottomBarLayoutMode)
         binding.cardLayoutMode.setOnClickListener {
@@ -284,7 +309,8 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
             binding.iconNormal.setImageDrawable(normalDrawable)
             binding.iconSelected.setImageDrawable(selectedDrawable)
 
-            binding.btnSelectNormal.setOnClickListener {
+            // Click on icon to select image directly
+            binding.iconNormal.setOnClickListener {
                 pendingIconRequest = IconRequest(entry, item, false, 0)
                 selectIcon.launch {
                     mode = HandleFileContract.IMAGE
@@ -292,7 +318,7 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
                 }
             }
 
-            binding.btnSelectSelected.setOnClickListener {
+            binding.iconSelected.setOnClickListener {
                 pendingIconRequest = IconRequest(entry, item, true, 0)
                 selectIcon.launch {
                     mode = HandleFileContract.IMAGE
@@ -300,7 +326,8 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
                 }
             }
 
-            binding.btnClearNormal.setOnClickListener {
+            // Long press to clear icon
+            binding.iconNormal.setOnLongClickListener {
                 lifecycleScope.launch {
                     kotlin.runCatching {
                         withContext(Dispatchers.IO) {
@@ -312,9 +339,10 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
                         adapter.notifyDataSetChanged()
                     }
                 }
+                true
             }
 
-            binding.btnClearSelected.setOnClickListener {
+            binding.iconSelected.setOnLongClickListener {
                 lifecycleScope.launch {
                     kotlin.runCatching {
                         withContext(Dispatchers.IO) {
@@ -326,6 +354,7 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
                         adapter.notifyDataSetChanged()
                     }
                 }
+                true
             }
         }
     }
