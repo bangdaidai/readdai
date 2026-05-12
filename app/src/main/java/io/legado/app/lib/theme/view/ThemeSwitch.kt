@@ -9,7 +9,11 @@ import io.legado.app.utils.applyTint
 /**
  * @author Aidan Follestad (afollestad)
  */
-class ThemeSwitch(context: Context, attrs: AttributeSet) : SwitchCompat(context, attrs) {
+class ThemeSwitch @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = androidx.appcompat.R.attr.switchStyle
+) : SwitchCompat(context, attrs, defStyleAttr) {
 
     private var isUserAction = false
 
