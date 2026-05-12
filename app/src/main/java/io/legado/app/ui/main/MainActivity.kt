@@ -53,6 +53,7 @@ import io.legado.app.ui.main.my.MyFragment
 import io.legado.app.ui.main.rss.RssFragment
 import io.legado.app.ui.widget.dialog.TextDialog
 import io.legado.app.ui.widget.text.BadgeView
+import io.legado.app.utils.dpToPx
 import io.legado.app.utils.isCreated
 import io.legado.app.utils.navigationBarHeight
 import io.legado.app.utils.observeEvent
@@ -360,10 +361,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 backgroundView.visibility = View.VISIBLE
                 // Create a capsule-shaped background with theme color
                 val bgColor = getBottomBackgroundColor()
-                val cornerRadius = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_corner_radius)
+                val capsuleCornerRadius = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_corner_radius)
                 val capsuleDrawable = android.graphics.drawable.GradientDrawable().apply {
                     shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-                    cornerRadius = cornerRadius.toFloat()
+                    cornerRadius = capsuleCornerRadius.toFloat()
                     setColor(bgColor)
                 }
                 backgroundView.background = capsuleDrawable
@@ -727,11 +728,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 val item = menu.getItem(index)
                 val drawable = item.icon
                 val defaultRes = when (item.itemId) {
-                    R.id.menu_bookshelf -> R.drawable.ic_bottom_bookshelf
+                    R.id.menu_bookshelf -> R.drawable.ic_bottom_books
                     R.id.menu_discovery -> R.drawable.ic_bottom_explore
-                    R.id.menu_ai_read -> R.drawable.ic_bottom_ai_e
+                    R.id.menu_ai_read -> R.drawable.ic_bottom_ai_read
                     R.id.menu_rss -> R.drawable.ic_bottom_rss_feed
-                    R.id.menu_my_config -> R.drawable.ic_bottom_my_config
+                    R.id.menu_my_config -> R.drawable.ic_bottom_person
                     else -> 0
                 }
                 drawable != null && defaultRes != 0 && 
@@ -740,9 +741,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         
         if (!hasCustomIconsClassic) {
-            // Restore theme tint if using default icons
-            binding.bottomNavigationView.restoreThemeIconTint()
-            binding.bottomNavigationViewFloating.restoreThemeIconTint()
+            // Theme tint is already applied in ThemeBottomNavigationView init
+            binding.bottomNavigationView.itemIconTintList = null
+            binding.bottomNavigationViewFloating.itemIconTintList = null
         } else {
             // Clear tint for custom icons
             binding.bottomNavigationView.itemIconTintList = null

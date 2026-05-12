@@ -271,7 +271,7 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             }
             
-            val tintSwitch = io.legado.app.lib.theme.view.ThemeSwitch(this@NavigationBarManageActivity).apply {
+            val tintSwitch = io.legado.app.lib.theme.view.ThemeSwitch(context, null).apply {
                 tag = "enable_tint"
                 isChecked = editingEntry?.config?.enableTint ?: true
             }
