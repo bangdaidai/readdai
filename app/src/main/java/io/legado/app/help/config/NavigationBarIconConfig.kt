@@ -193,7 +193,8 @@ object NavigationBarIconConfig {
         val normalized = source.copy(
             name = name,
             updatedAt = System.currentTimeMillis(),
-            icons = source.icons.toMutableMap()
+            icons = source.icons.toMutableMap(),
+            enableTint = source.enableTint
         )
         File(dir, packageFileName).writeText(GSON.toJson(normalized))
         clearRuntimeCache()
@@ -347,27 +348,30 @@ object NavigationBarIconConfig {
         val normalPath = iconPath(entry, item.key, STATE_NORMAL)
         val selectedPath = iconPath(entry, item.key, STATE_SELECTED)
         
-        // 加载原始图标
-        val normalOriginal = loadDrawable(context, normalPath)
-        val selectedOriginal = loadDrawable(context, selectedPath) ?: normalOriginal
-        
         // 根据enableTint决定是否应用着色
-        val normal = if (entry.config.enableTint || normalPath == null) {
-            // 启用着色或使用默认图标时，应用颜色
-            normalOriginal ?: defaultDrawable(context, item.defaultIconRes, defaultColor)
+        val normal = if (entry.config.enableTint) {
+            // 启用着色时：对图标应用主题色
+            loadDrawable(context, normalPath)?.let { original ->
+                // 自定义图标：创建新的副本并着色
+                applyTintToCopy(original, defaultColor)
+            } ?: defaultDrawable(context, item.defaultIconRes, defaultColor)
         } else {
-            // 禁用着色时，保持图标原色（如果自定义图标存在则使用原色，否则使用默认图标但不着色）
-            normalOriginal ?: ContextCompat.getDrawable(context, item.defaultIconRes)!!
+            // 禁用着色时：保持图标原色
+            loadDrawable(context, normalPath) ?: ContextCompat.getDrawable(context, item.defaultIconRes)!!
         }
         
-        val selected = if (entry.config.enableTint || selectedPath == null) {
-            // 启用着色时使用选中颜色
-            selectedOriginal ?: loadDrawable(context, normalPath)
-                ?: defaultDrawable(context, item.defaultIconRes, selectedColor)
+        val selected = if (entry.config.enableTint) {
+            // 启用着色时：对图标应用强调色
+            loadDrawable(context, selectedPath)?.let { original ->
+                // 自定义图标：创建新的副本并着色
+                applyTintToCopy(original, selectedColor)
+            } ?: loadDrawable(context, normalPath)?.let { original ->
+                // 如果没有选中状态图标，使用normal状态图标并着色为selectedColor
+                applyTintToCopy(original, selectedColor)
+            } ?: defaultDrawable(context, item.defaultIconRes, selectedColor)
         } else {
-            // 禁用着色时，保持图标原色（如果自定义图标存在则使用原色，否则使用默认图标但不着色）
-            selectedOriginal ?: loadDrawable(context, normalPath)
-                ?: ContextCompat.getDrawable(context, item.defaultIconRes)!!
+            // 禁用着色时：保持图标原色
+            loadDrawable(context, selectedPath) ?: loadDrawable(context, normalPath) ?: ContextCompat.getDrawable(context, item.defaultIconRes)!!
         }
         
         return StateListDrawable().apply {
@@ -375,6 +379,20 @@ object NavigationBarIconConfig {
             addState(intArrayOf(android.R.attr.state_selected), selected)
             addState(intArrayOf(), normal)
         }
+    }
+
+    private fun applyTintToCopy(drawable: Drawable, color: Int): Drawable {
+        // 对于 BitmapDrawable，从原始 bitmap 创建新的 drawable 并着色
+        if (drawable is BitmapDrawable) {
+            val newDrawable = BitmapDrawable(drawable.bitmap)
+            DrawableCompat.setTint(newDrawable, color)
+            return newDrawable
+        }
+        // 对于其他类型的 Drawable，使用 constantState 创建副本
+        val constantState = drawable.constantState
+        val newDrawable = constantState?.newDrawable()?.mutate() ?: drawable.mutate()
+        DrawableCompat.setTint(newDrawable, color)
+        return newDrawable
     }
 
     private fun iconPath(entry: Entry, itemKey: String, state: String): String? {

@@ -244,9 +244,9 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
             setPadding(16.dp, 16.dp, 16.dp, 16.dp)
             
             // Add name input
-            val nameInput = TextView(this@NavigationBarManageActivity).apply {
+            val nameInput = android.widget.EditText(this@NavigationBarManageActivity).apply {
                 tag = "name"
-                text = editingEntry?.config?.name ?: ""
+                setText(editingEntry?.config?.name ?: "")
                 hint = getString(R.string.navigation_bar_name)
                 setBackgroundResource(R.drawable.bg_book_info_intro_panel)
                 setPadding(16.dp, 12.dp, 16.dp, 12.dp)
@@ -360,8 +360,14 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
 
     private fun saveEditingPackage() {
         val config = pendingConfig ?: return
-        val name = editingDialog?.findViewWithTag<TextView>("name")?.text?.toString()?.trim().orEmpty()
-        val enableTint = editingDialog?.findViewWithTag<io.legado.app.lib.theme.view.ThemeSwitch>("enable_tint")?.isChecked ?: true
+        val name = editingDialog?.findViewWithTag<android.widget.EditText>("name")?.text?.toString()?.trim().orEmpty()
+        val enableTint = editingDialog?.findViewWithTag<View>("enable_tint")?.let { view ->
+            if (view is io.legado.app.lib.theme.view.ThemeSwitch) {
+                view.isChecked
+            } else {
+                true // Default to enabled if view type doesn't match
+            }
+        } ?: true
         lifecycleScope.launch {
             kotlin.runCatching {
                 withContext(Dispatchers.IO) {

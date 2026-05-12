@@ -961,6 +961,9 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         binding.inputLayout.setCardBackgroundColor(backgroundCardColor)
         binding.inputLayout.strokeWidth = 1.dpToPx()
         binding.inputLayout.strokeColor = dividerColor
+        // 关键修复：强制刷新以应用边框色变化
+        binding.inputLayout.invalidate()
+        binding.inputLayout.requestLayout()
         
         // 更新快捷操作栏按钮的背景色和边框色
         val chipViews = listOf(
