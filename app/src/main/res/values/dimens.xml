@@ -89,7 +89,6 @@
     <dimen name="main_search_button_size">48dp</dimen>
     <dimen name="main_search_button_elevation">14dp</dimen>
     <dimen name="main_search_button_icon_size">22dp</dimen>
-    <dimen name="main_content_bottom_bar_padding">90dp</dimen>
     <dimen name="main_sidebar_panel_padding_horizontal">18dp</dimen>
     <dimen name="main_sidebar_panel_padding_vertical">18dp</dimen>
     <dimen name="main_sidebar_header_padding_top">28dp</dimen>
