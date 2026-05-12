@@ -736,7 +736,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     else -> 0
                 }
                 drawable != null && defaultRes != 0 && 
-                    !drawable.constantState?.equals(ContextCompat.getDrawable(this, defaultRes)?.constantState) ?: false
+                    !(drawable.constantState?.equals(ContextCompat.getDrawable(this, defaultRes)?.constantState) ?: false)
             }
         }
         

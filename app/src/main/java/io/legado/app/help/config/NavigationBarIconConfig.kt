@@ -403,8 +403,8 @@ object NavigationBarIconConfig {
         val file = File(path)
         val cacheKey = "${file.absolutePath}|${file.lastModified()}|${file.length()}"
         val bitmap = synchronized(iconBitmapCache) {
-            iconBitmapCache[cacheKey]?.takeIf { !it.isRecycled } ?: BitmapFactory.decodeFile(path)?.also {
-                iconBitmapCache[cacheKey] = it
+            iconBitmapCache.get(cacheKey)?.takeIf { !it.isRecycled } ?: BitmapFactory.decodeFile(path)?.also {
+                iconBitmapCache.put(cacheKey, it)
             }
         } ?: return null
         return BitmapDrawable(context.resources, bitmap)
@@ -413,9 +413,7 @@ object NavigationBarIconConfig {
     private fun clearRuntimeCache() {
         currentDayEntryCache = null
         currentNightEntryCache = null
-        synchronized(iconBitmapCache) {
-            iconBitmapCache.clear()
-        }
+        iconBitmapCache.evictAll()
     }
 
     private fun decodeIconBitmap(context: Context, uri: Uri, targetSize: Int): Bitmap? {
