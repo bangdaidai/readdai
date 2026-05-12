@@ -137,9 +137,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private val currentBottomNav: io.legado.app.lib.theme.view.ThemeBottomNavigationVIew
         get() = if (AppConfig.bottomBarLayoutMode == "floating") {
-            binding.bottomNavigationViewFloating
+            binding.bottomNavigationFloating
         } else {
-            binding.bottomNavigationView
+            binding.bottomNavigationClassic
         }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -299,7 +299,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         
         // Initialize indicator position after layout
-        bottomNavigationFloating.doOnLayout {
+        bottomNavigationFloating.doOnPreDraw {
             updateBottomNavigationIndicator(animate = false)
         }
         
@@ -355,30 +355,30 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 shellOverlay.background = createSolidBottomShellDrawable(cornerRadius, oval = false)
                 
                 // Set bottom navigation to transparent (shell overlay provides the background)
-                binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
-                
-                // Show indicator in solid mode with theme color
-                binding.bottomNavigationIndicatorContainer.apply {
-                    visibility = View.VISIBLE
-                    alpha = 1f
-                    scaleX = 1f
-                    scaleY = 1f
-                }
-                binding.bottomNavigationIndicatorOverlay.background = createSolidBottomIndicatorDrawable()
-                
-                // Initialize indicator position
-                updateBottomNavigationIndicator(animate = false)
-            }
-            "frosted", "glass" -> {
-                // Frosted/Glass mode: use LiquidGlassView with real blur effect and shell overlay
-                binding.bottomNavigationIndicatorContainer.isVisible = true
-                binding.bottomNavigationIndicatorContainer.alpha = 0f
-                binding.bottomNavigationIndicatorContainer.scaleX = 0.82f
-                binding.bottomNavigationIndicatorContainer.scaleY = 0.82f
-                shellOverlay.isVisible = true
-                binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
-                liquidGlassView.visibility = View.VISIBLE
-                binding.bottomNavigationIndicatorGlassView.visibility = View.VISIBLE
+        binding.bottomNavigationFloating.setBackgroundColor(Color.TRANSPARENT)
+        
+        // Show indicator in solid mode with theme color
+        binding.bottomNavigationIndicatorContainer.apply {
+            visibility = View.VISIBLE
+            alpha = 1f
+            scaleX = 1f
+            scaleY = 1f
+        }
+        binding.bottomNavigationIndicatorOverlay.background = createSolidBottomIndicatorDrawable()
+        
+        // Initialize indicator position
+        updateBottomNavigationIndicator(animate = false)
+    }
+    "frosted", "glass" -> {
+        // Frosted/Glass mode: use LiquidGlassView with real blur effect and shell overlay
+        binding.bottomNavigationIndicatorContainer.visibility = View.VISIBLE
+        binding.bottomNavigationIndicatorContainer.alpha = 0f
+        binding.bottomNavigationIndicatorContainer.scaleX = 0.82f
+        binding.bottomNavigationIndicatorContainer.scaleY = 0.82f
+        shellOverlay.visibility = View.VISIBLE
+        binding.bottomNavigationFloating.setBackgroundColor(Color.TRANSPARENT)
+        liquidGlassView.visibility = View.VISIBLE
+        binding.bottomNavigationIndicatorGlassView.visibility = View.VISIBLE
                 
                 // Ensure clipToOutline works for capsule shape
                 binding.bottomNavigationGlass.outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
@@ -607,14 +607,14 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun applyBottomNavigationIcons() = binding.run {
         val hasCustom = NavigationBarIconConfig.applyTo(
-            bottomNavigationViewFloating.menu,
+            bottomNavigationFloating.menu,
             this@MainActivity,
             AppConfig.isNightTheme
         )
         if (hasCustom) {
-            bottomNavigationViewFloating.itemIconTintList = null
+            bottomNavigationFloating.itemIconTintList = null
         } else {
-            bottomNavigationViewFloating.restoreThemeIconTint()
+            bottomNavigationFloating.restoreThemeIconTint()
         }
     }
 
@@ -635,7 +635,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         // Update layout mode and indicator position
         upBottomMenu()
-        binding.bottomNavigationFloating.doOnLayout {
+        binding.bottomNavigationFloating.doOnPreDraw {
             updateBottomNavigationIndicator(animate = false)
         }
     }
@@ -839,7 +839,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             binding.viewPagerMain.setPadding(0, 0, 0, resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height) + 20.dpToPx())
             
             // Initialize indicator position after layout (like achieve project)
-            binding.bottomNavigationFloating.doOnLayout {
+            binding.bottomNavigationFloating.doOnPreDraw {
                 updateBottomNavigationIndicator(animate = false)
             }
         } else {
@@ -1104,7 +1104,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         if (AppConfig.bottomBarLayoutMode != "floating") return
         if (AppConfig.isEInkMode) return
         
-        val bottomNav = binding.bottomNavigationViewFloating
+        val bottomNav = binding.bottomNavigationFloating
         val menuView = bottomNav.getChildAt(0) as? ViewGroup ?: return
         val itemId = getBottomNavigationItemId(pagePosition)
         val itemView = findBottomNavigationItemView(menuView, itemId) ?: return
