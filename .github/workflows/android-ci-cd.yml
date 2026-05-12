@@ -26,6 +26,8 @@ env:
   # ✅ 覆盖 Kotlin Daemon 内存配置
   ORG_GRADLE_PROJECT_kotlin_daemon_jvmargs: "-Xmx1536m -XX:MaxMetaspaceSize=512m"
   GRADLE_BUILD_CACHE: true
+  # ⚠️ 云端构建禁用 Configuration Cache（与 providers.exec() 不兼容）
+  ORG_GRADLE_UNSAFE_CONFIGURATION_CACHE: false
 
 jobs:
   # 代码检查和测试
