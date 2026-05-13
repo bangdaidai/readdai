@@ -243,13 +243,14 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
             orientation = LinearLayout.VERTICAL
             setPadding(16.dp, 16.dp, 16.dp, 16.dp)
             
-            // Add name input
-            val nameInput = TextView(this@NavigationBarManageActivity).apply {
+            // Add name input - use EditText for editable name
+            val nameInput = android.widget.EditText(this@NavigationBarManageActivity).apply {
                 tag = "name"
-                text = editingEntry?.config?.name ?: ""
+                setText(editingEntry?.config?.name ?: "")
                 hint = getString(R.string.navigation_bar_name)
                 setBackgroundResource(R.drawable.bg_book_info_intro_panel)
                 setPadding(16.dp, 12.dp, 16.dp, 12.dp)
+                textSize = 14f
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                     bottomMargin = 16.dp
                 }
@@ -360,7 +361,7 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
 
     private fun saveEditingPackage() {
         val config = pendingConfig ?: return
-        val name = editingDialog?.findViewWithTag<TextView>("name")?.text?.toString()?.trim().orEmpty()
+        val name = editingDialog?.findViewWithTag<android.widget.EditText>("name")?.text?.toString()?.trim().orEmpty()
         val enableTint = editingDialog?.findViewWithTag<io.legado.app.lib.theme.view.ThemeSwitch>("enable_tint")?.isChecked ?: true
         lifecycleScope.launch {
             kotlin.runCatching {
@@ -395,8 +396,10 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
     private fun showActions(entry: NavigationBarIconConfig.Entry) {
         val actions = buildList {
             add(NavAction.APPLY)
+            // Allow editing for all configs (default config can be edited to become custom)
+            add(NavAction.EDIT)
+            // Only allow delete for non-default configs
             if (entry.dirName != NavigationBarIconConfig.DEFAULT_DIR_NAME) {
-                add(NavAction.EDIT)
                 add(NavAction.DELETE)
             }
         }

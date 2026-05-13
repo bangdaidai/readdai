@@ -47,6 +47,23 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
         ViewCompat.setOnApplyWindowInsetsListener(this, null)
     }
 
+    fun createThemeColorStateList(): ColorStateList {
+        val bgColor = context.bottomBackground
+        val selectedColor = ThemeStore.accentColor(context)
+        val textIsDark = ColorUtils.isColorLight(bgColor)
+        val textColor = context.getSecondaryTextColor(textIsDark)
+        return Selector.colorBuild()
+            .setDefaultColor(textColor)
+            .setSelectedColor(selectedColor)
+            .create()
+    }
+
+    fun restoreThemeIconTint() {
+        val colorStateList = createThemeColorStateList()
+        itemIconTintList = colorStateList
+        itemTextColor = colorStateList
+    }
+
     fun addBadgeView(index: Int): BadgeView {
         //获取底部菜单view
         val menuView = getChildAt(0) as ViewGroup

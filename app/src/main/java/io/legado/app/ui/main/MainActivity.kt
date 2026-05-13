@@ -156,16 +156,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     }
 
     /**
-     * Get the current ViewPager based on layout mode
-     */
-    private val currentPageViewPager: io.legado.app.ui.widget.LockableViewPager
-        get() = if (AppConfig.bottomBarLayoutMode == "floating") {
-            binding.viewPagerMainFloating
-        } else {
-            binding.viewPagerMain
-        }
-
-    /**
      * Get the current BottomNavigationView based on layout mode
      */
     private val currentBottomNav: io.legado.app.lib.theme.view.ThemeBottomNavigationVIew
@@ -219,17 +209,17 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             //设置回调
             viewModel.setActivityCallback(this@MainActivity)
             //自动更新书源
-            currentPageViewPager.postDelayed(1000) {
+            binding.viewPagerMain.postDelayed(1000) {
                 viewModel.ruleSubsUp()
             }
             //自动更新书籍
             val isAutoRefreshedBook = savedInstanceState?.getBoolean("isAutoRefreshedBook") ?: false
             if (AppConfig.autoRefreshBook && !isAutoRefreshedBook) {
-                currentPageViewPager.postDelayed(2000) {
+                binding.viewPagerMain.postDelayed(2000) {
                     viewModel.upAllBookToc()
                 }
             }
-            currentPageViewPager.postDelayed(3000) {
+            binding.viewPagerMain.postDelayed(3000) {
                 viewModel.postLoad()
             }
         }
@@ -240,7 +230,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         // 确保底部导航栏的选中状态与当前页面一致
         resetBottomNavSelection()
         
-        // Update floating mode if needed - EXACT match with archive's refreshBottomNavigationConfig
+        // Apply layout mode and update floating mode if needed - match archive
+        applyBottomLayoutMode()
         if (AppConfig.bottomBarLayoutMode == "floating") {
             scheduleLiquidGlassSetup()
             binding.bottomNavigationViewFloating.doOnLayout {
@@ -269,20 +260,20 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     override fun onNavigationItemSelected(item: MenuItem): Boolean = binding.run {
         when (item.itemId) {
             R.id.menu_bookshelf ->
-                currentPageViewPager.setCurrentItem(0, false)
+                viewPagerMain.setCurrentItem(0, false)
 
             R.id.menu_discovery ->
-                currentPageViewPager.setCurrentItem(realPositions.indexOf(idExplore), false)
+                viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
 
             R.id.menu_ai_read -> {
                 startActivity(Intent(this@MainActivity, AiChatActivity::class.java))
             }
 
             R.id.menu_rss ->
-                currentPageViewPager.setCurrentItem(realPositions.indexOf(idRss), false)
+                viewPagerMain.setCurrentItem(realPositions.indexOf(idRss), false)
 
             R.id.menu_my_config ->
-                currentPageViewPager.setCurrentItem(realPositions.indexOf(idMy), false)
+                viewPagerMain.setCurrentItem(realPositions.indexOf(idMy), false)
         }
         return true
     }
@@ -308,12 +299,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     }
 
     private fun initView() = binding.run {
-        // Initialize ViewPager based on mode
-        val currentViewPager = if (AppConfig.bottomBarLayoutMode == "floating") viewPagerMainFloating else viewPagerMain
-        currentViewPager.setEdgeEffectColor(primaryColor)
-        currentViewPager.offscreenPageLimit = 3
-        currentViewPager.adapter = adapter
-        currentViewPager.addOnPageChangeListener(PageChangeCallback())
+        // Initialize ViewPager - use single ViewPager like archive
+        viewPagerMain.setEdgeEffectColor(primaryColor)
+        viewPagerMain.offscreenPageLimit = 3
+        viewPagerMain.adapter = adapter
+        viewPagerMain.addOnPageChangeListener(PageChangeCallback())
         
         // Initialize both BottomNavigationViews
         bottomNavigationView.setOnNavigationItemSelectedListener(this@MainActivity)
@@ -321,11 +311,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         bottomNavigationViewFloating.setOnNavigationItemSelectedListener(this@MainActivity)
         bottomNavigationViewFloating.setOnNavigationItemReselectedListener(this@MainActivity)
         
-        // Apply styles based on mode
+        // Apply layout mode - match archive implementation
+        applyBottomLayoutMode()
+        
+        // Schedule LiquidGlass setup if in floating mode - CRITICAL for proper initialization
         if (AppConfig.bottomBarLayoutMode == "floating") {
-            updateBottomBarStyle()
-            
-            // Schedule LiquidGlass setup - CRITICAL for proper initialization
             scheduleLiquidGlassSetup()
             
             // Wait for content container to be laid out before setting up LiquidGlass - match archive
@@ -341,9 +331,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             }
             
             // Handle window insets for floating mode - match archive implementation
-            floatingLayout.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
+            bottomNavigationGlass.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
                 val height = windowInsets.navigationBarHeight
-                view.bottomPadding = height + 14f.dpToPx().toInt()
+                // Add padding to account for system navigation bar + extra spacing (10dp margin effect)
+                view.bottomPadding = height + resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
                 windowInsets.inset(0, 0, 0, height)
             }
         } else {
@@ -357,6 +348,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun refreshBottomNavigationConfig() {
         upBottomMenu()
+        applyBottomLayoutMode()
         if (AppConfig.bottomBarLayoutMode == "floating") {
             scheduleLiquidGlassSetup()
             binding.bottomNavigationViewFloating.doOnLayout {
@@ -367,13 +359,78 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     }
     
     /**
+     * Apply bottom layout mode - match archive implementation
+     */
+    private fun applyBottomLayoutMode() = binding.run {
+        val floatingMode = AppConfig.bottomBarLayoutMode == "floating"
+        
+        // Enable/disable swipe based on mode
+        viewPagerMain.swipeEnabled = !floatingMode
+        
+        // Clear any previous padding from content container to ensure content extends to bottom
+        contentContainer.setPadding(
+            contentContainer.paddingLeft,
+            contentContainer.paddingTop,
+            contentContainer.paddingRight,
+            0 // Clear bottom padding in both modes
+        )
+        
+        // Show/hide bottom navigation views
+        bottomNavigationView.isVisible = !floatingMode
+        bottomNavigationGlass.isVisible = floatingMode
+        
+        if (floatingMode) {
+            // Floating mode: setup LiquidGlass and indicator
+            bottomIndicatorAnimator.cancel()
+            bottomNavigationIndicatorContainer.isVisible = false
+            updateBottomBarStyle()
+            applyBottomNavigationIcons() // Apply icons for floating mode
+        } else {
+            // Classic mode: hide floating elements
+            bottomIndicatorAnimator.cancel()
+            bottomNavigationIndicatorContainer.isVisible = false
+            applyClassicModeStyle()
+            applyBottomNavigationIcons() // Apply icons for classic mode
+        }
+    }
+    
+    /**
+     * Apply bottom navigation icons - match archive implementation
+     */
+    private fun applyBottomNavigationIcons() = binding.run {
+        // Apply to classic mode bottom navigation
+        val hasCustomClassic = NavigationBarIconConfig.applyTo(
+            bottomNavigationView.menu,
+            this@MainActivity,
+            AppConfig.isNightTheme
+        )
+        if (hasCustomClassic) {
+            bottomNavigationView.itemIconTintList = null
+        } else {
+            bottomNavigationView.restoreThemeIconTint()
+        }
+        
+        // Apply to floating mode bottom navigation
+        val hasCustomFloating = NavigationBarIconConfig.applyTo(
+            bottomNavigationViewFloating.menu,
+            this@MainActivity,
+            AppConfig.isNightTheme
+        )
+        if (hasCustomFloating) {
+            bottomNavigationViewFloating.itemIconTintList = null
+        } else {
+            bottomNavigationViewFloating.restoreThemeIconTint()
+        }
+    }
+    
+    /**
      * Schedule LiquidGlass setup with optional delay - EXACT match with archive
      */
     private fun scheduleLiquidGlassSetup(delayMillis: Long = 0L) {
         val action = Runnable {
             if (!isFinishing && AppConfig.bottomBarLayoutMode == "floating") {
                 // Double-check mechanism - match archive implementation
-                if (!liquidGlassReady || !binding.contentContainer.isLaidOut || !binding.floatingLayout.isLaidOut) {
+                if (!liquidGlassReady || !binding.contentContainer.isLaidOut || !binding.bottomNavigationGlass.isLaidOut) {
                     binding.contentContainer.doOnPreDraw {
                         liquidGlassReady = true
                         scheduleLiquidGlassSetup(delayMillis = 32L)
@@ -384,9 +441,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             }
         }
         if (delayMillis > 0L) {
-            binding.floatingLayout.postDelayed(action, delayMillis)
+            binding.root.postDelayed(action, delayMillis)
         } else {
-            binding.floatingLayout.post(action)
+            binding.root.post(action)
         }
     }
 
@@ -965,23 +1022,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val showDiscovery = AppConfig.showDiscovery
         val showRss = AppConfig.showRSS
         
-        // Switch between classic and floating layout
-        if (AppConfig.bottomBarLayoutMode == "floating") {
-            binding.classicLayout.visibility = View.GONE
-            binding.floatingLayout.visibility = View.VISIBLE
-            binding.bottomNavigationView.visibility = View.GONE
-            binding.bottomNavigationViewFloating.visibility = View.VISIBLE
-            binding.viewPagerMain.visibility = View.GONE
-            binding.viewPagerMainFloating.visibility = View.VISIBLE
-        } else {
-            binding.classicLayout.visibility = View.VISIBLE
-            binding.floatingLayout.visibility = View.GONE
-            binding.bottomNavigationView.visibility = View.VISIBLE
-            binding.bottomNavigationViewFloating.visibility = View.GONE
-            binding.viewPagerMain.visibility = View.VISIBLE
-            binding.viewPagerMainFloating.visibility = View.GONE
-        }
-        
+        // Update menu items for both bottom navigation views
         binding.bottomNavigationView.menu.let { menu ->
             menu.findItem(R.id.menu_discovery).isVisible = showDiscovery
             menu.findItem(R.id.menu_ai_read).isVisible = true
