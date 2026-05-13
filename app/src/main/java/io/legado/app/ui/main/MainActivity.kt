@@ -18,6 +18,7 @@ import androidx.core.view.get
 import androidx.core.view.postDelayed
 import androidx.core.view.doOnLayout
 import androidx.core.view.doOnPreDraw
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
@@ -171,7 +172,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         upHomePage()
         onBackPressedDispatcher.addCallback(this) {
             if (pagePosition != 0) {
-                currentPageViewPager.currentItem = 0
+                binding.viewPagerMain.currentItem = 0
                 return@addCallback
             }
             (fragmentMap[getFragmentId(0)] as? BookshelfFragment2)?.let {
@@ -1006,7 +1007,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 }
                 upBottomMenu()
                 if (it) {
-                    currentPageViewPager.setCurrentItem(bottomMenuCount - 1, false)
+                    binding.viewPagerMain.setCurrentItem(bottomMenuCount - 1, false)
                 }
             }
         }
@@ -1063,14 +1064,14 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         when (AppConfig.defaultHomePage) {
             "bookshelf" -> {}
             "explore" -> if (AppConfig.showDiscovery) {
-                currentPageViewPager.setCurrentItem(realPositions.indexOf(idExplore), false)
+                binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
             }
 
             "rss" -> if (AppConfig.showRSS) {
-                currentPageViewPager.setCurrentItem(realPositions.indexOf(idRss), false)
+                binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idRss), false)
             }
 
-            "my" -> currentPageViewPager.setCurrentItem(realPositions.indexOf(idMy), false)
+            "my" -> binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idMy), false)
         }
     }
 
