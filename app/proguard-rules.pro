@@ -227,3 +227,11 @@ cn.hutool.core.util.**{*;}
     <methods>;
 }
 -dontwarn okhttp3.internal.**
+
+# LiquidGlass - 防止混淆导致空指针异常
+-keep class com.qmdeve.liquidglass.** { *; }
+-keepclassmembers class com.qmdeve.liquidglass.** {
+    <fields>;
+    <methods>;
+}
+-dontwarn com.qmdeve.liquidglass.**

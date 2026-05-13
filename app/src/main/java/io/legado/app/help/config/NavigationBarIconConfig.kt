@@ -468,17 +468,48 @@ object NavigationBarIconConfig {
         val selectedColor = ThemeStore.accentColor(context)
         
         // Load custom icons if available
-        val normal = loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
-            ?: defaultDrawable(context, item.defaultIconRes, if (entry.config.enableTint) defaultColor else null)
-        val selected = loadDrawable(context, iconPath(entry, item.key, STATE_SELECTED))
+        val normalDrawable = loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
+        val selectedDrawable = loadDrawable(context, iconPath(entry, item.key, STATE_SELECTED))
             ?: loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
-            ?: defaultDrawable(context, item.defaultIconRes, if (entry.config.enableTint) selectedColor else null)
+        
+        // Apply tint to custom icons if enableTint is true
+        val normal = if (normalDrawable != null && entry.config.enableTint) {
+            applyTintToDrawable(normalDrawable.mutate(), defaultColor)
+        } else {
+            normalDrawable ?: createDefaultIconDrawable(context, item.defaultIconRes, defaultColor, entry.config.enableTint)
+        }
+        
+        val selected = if (selectedDrawable != null && entry.config.enableTint) {
+            applyTintToDrawable(selectedDrawable.mutate(), selectedColor)
+        } else {
+            selectedDrawable ?: createDefaultIconDrawable(context, item.defaultIconRes, selectedColor, entry.config.enableTint)
+        }
         
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_checked), selected)
             addState(intArrayOf(android.R.attr.state_selected), selected)
             addState(intArrayOf(), normal)
         }
+    }
+    
+    /**
+     * Create default icon drawable with proper state handling
+     * For Vector Drawables, we need to create separate instances for each state
+     */
+    private fun createDefaultIconDrawable(
+        context: Context,
+        @DrawableRes resId: Int,
+        color: Int,
+        enableTint: Boolean
+    ): Drawable {
+        if (!enableTint) {
+            // If tint is disabled, return the original drawable without tint
+            return ContextCompat.getDrawable(context, resId)!!
+        }
+        // Create a new instance and apply tint
+        val drawable = ContextCompat.getDrawable(context, resId)!!.mutate()
+        DrawableCompat.setTint(drawable, color)
+        return drawable
     }
 
     private fun iconPath(entry: Entry, itemKey: String, state: String): String? {
@@ -490,19 +521,22 @@ object NavigationBarIconConfig {
 
     private fun iconKey(itemKey: String, state: String): String = "${itemKey}_$state"
 
-    private fun defaultDrawable(context: Context, @DrawableRes resId: Int, color: Int?): Drawable {
-        val drawable = ContextCompat.getDrawable(context, resId)!!.mutate()
-        // Only apply tint if color is not null (enableTint is true)
-        if (color != null) {
-            DrawableCompat.setTint(drawable, color)
-        }
-        return drawable
-    }
-
     private fun defaultIconColor(context: Context): Int {
         val bgColor = context.bottomBackground
         val textIsDark = ColorUtils.isColorLight(bgColor)
         return context.getSecondaryTextColor(textIsDark)
+    }
+
+    /**
+     * Apply tint to a drawable (supports both VectorDrawable and BitmapDrawable)
+     * For PNG icons, this allows users to upload white/monochrome icons that can be tinted
+     */
+    private fun applyTintToDrawable(drawable: Drawable, color: Int): Drawable {
+        // Create a mutable copy to avoid affecting the original
+        val tintedDrawable = drawable.mutate()
+        // Apply tint using DrawableCompat for compatibility
+        DrawableCompat.setTint(tintedDrawable, color)
+        return tintedDrawable
     }
 
     private fun loadDrawable(context: Context, path: String?): Drawable? {

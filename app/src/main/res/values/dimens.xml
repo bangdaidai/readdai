@@ -52,7 +52,7 @@
 
     <!-- UI action radius -->
     <dimen name="ui_action_radius">9dp</dimen>
-    <dimen name="ui_panel_radius">12dp</dimen>
+    <dimen name="ui_panel_radius">10dp</dimen>
 
     <!-- Main content bottom bar padding -->
     <dimen name="main_content_bottom_bar_padding">90dp</dimen>
@@ -80,7 +80,7 @@
     <dimen name="main_bottom_indicator_width">52dp</dimen>
     <dimen name="main_bottom_indicator_height">40dp</dimen>
     <dimen name="main_bottom_indicator_margin_start">6dp</dimen>
-    <dimen name="main_bottom_indicator_corner_radius">20dp</dimen>
+    <dimen name="main_bottom_indicator_corner_radius">9dp</dimen>
 
     <!-- Main floating bottom navigation (achieve compatible) -->
     <dimen name="main_bottom_controls_horizontal_padding">20dp</dimen>

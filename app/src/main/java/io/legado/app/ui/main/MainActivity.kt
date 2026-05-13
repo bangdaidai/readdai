@@ -154,6 +154,12 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             @Suppress("DEPRECATION")
             window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
         }
+        // Apply immersive status bar effect - match archive implementation
+        setStatusBarColorAuto(
+            io.legado.app.lib.theme.ThemeStore.statusBarColor(this, AppConfig.isTransparentStatusBar),
+            AppConfig.isTransparentStatusBar,
+            fullScreen
+        )
     }
 
     /**
@@ -235,7 +241,14 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         applyBottomLayoutMode()
         if (AppConfig.bottomBarLayoutMode == "floating") {
             scheduleLiquidGlassSetup()
-            binding.bottomNavigationViewFloating.doOnLayout {
+            // Wait for layout to complete before updating indicator position
+            binding.root.doOnLayout {
+                val initialItemId = getBottomNavigationItemId(pagePosition)
+                updateFloatingIndicatorPosition(initialItemId)
+            }
+        } else {
+            // For classic mode, also update indicator position after layout
+            binding.root.doOnLayout {
                 val initialItemId = getBottomNavigationItemId(pagePosition)
                 updateFloatingIndicatorPosition(initialItemId)
             }
@@ -334,8 +347,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // Handle window insets for floating mode - match archive implementation
             bottomNavigationGlass.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
                 val height = windowInsets.navigationBarHeight
-                // Add padding to account for system navigation bar + extra spacing (10dp margin effect)
-                view.bottomPadding = height + resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
+                // Only add system navigation bar height, the extra spacing is handled by layout margin
+                view.bottomPadding = height
                 windowInsets.inset(0, 0, 0, height)
             }
         } else {
@@ -431,14 +444,25 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val action = Runnable {
             if (!isFinishing && AppConfig.bottomBarLayoutMode == "floating") {
                 // Double-check mechanism - match archive implementation
-                if (!liquidGlassReady || !binding.contentContainer.isLaidOut || !binding.bottomNavigationGlass.isLaidOut) {
-                    binding.contentContainer.doOnPreDraw {
+                val contentContainer = binding.contentContainer
+                val bottomNavGlass = binding.bottomNavigationGlass
+                
+                if (!liquidGlassReady || contentContainer == null || !contentContainer.isLaidOut || 
+                    bottomNavGlass == null || !bottomNavGlass.isLaidOut) {
+                    contentContainer?.doOnPreDraw {
                         liquidGlassReady = true
                         scheduleLiquidGlassSetup(delayMillis = 32L)
                     }
                     return@Runnable
                 }
-                updateBottomBarStyle()
+                
+                try {
+                    updateBottomBarStyle()
+                } catch (e: Exception) {
+                    // If setup fails, retry after a short delay
+                    e.printStackTrace()
+                    scheduleLiquidGlassSetup(delayMillis = 100L)
+                }
             }
         }
         if (delayMillis > 0L) {
@@ -501,11 +525,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 
                 // Setup shell overlays with gradient drawable - match archive implementation
                 val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false)
+                shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
                 val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
-                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true)
+                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
                 
                 liquidGlassView?.let { glass ->
                     setupLiquidGlassView(glass)
@@ -637,8 +661,47 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Setup LiquidGlassView with archive-style parameters
      */
     private fun setupLiquidGlassView(liquidGlassView: LiquidGlassView) {
-        // Bind to content container for blur effect - CRITICAL for glass effect
-        liquidGlassView.bind(binding.contentContainer)
+        // Safety check - ensure liquidGlassView itself is valid
+        if (liquidGlassView == null) {
+            return
+        }
+        
+        // Safety check - ensure contentContainer is available
+        val contentContainer = binding.contentContainer
+        if (contentContainer == null || !contentContainer.isLaidOut) {
+            // Retry after layout
+            contentContainer?.doOnPreDraw {
+                // Double check liquidGlassView is still valid
+                if (liquidGlassView != null) {
+                    setupLiquidGlassView(liquidGlassView)
+                }
+            }
+            return
+        }
+        
+        try {
+            // Bind to content container for blur effect - CRITICAL for glass effect
+            // Add extra safety check before calling bind
+            if (liquidGlassView.windowToken != null) {
+                liquidGlassView.bind(contentContainer)
+            } else {
+                // If windowToken is null, wait and retry
+                liquidGlassView.post {
+                    if (liquidGlassView.windowToken != null) {
+                        try {
+                            liquidGlassView.bind(contentContainer)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+                return
+            }
+        } catch (e: Exception) {
+            // If bind fails, log and skip configuration
+            e.printStackTrace()
+            return
+        }
         
         val effectMode = AppConfig.bottomBarEffectMode
         val isFrosted = effectMode == "frosted"
@@ -711,8 +774,47 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Setup indicator LiquidGlassView with adjusted parameters
      */
     private fun setupIndicatorLiquidGlassView(liquidGlassView: LiquidGlassView) {
-        // Bind to content container for blur effect - CRITICAL for glass effect
-        liquidGlassView.bind(binding.contentContainer)
+        // Safety check - ensure liquidGlassView itself is valid
+        if (liquidGlassView == null) {
+            return
+        }
+        
+        // Safety check - ensure contentContainer is available
+        val contentContainer = binding.contentContainer
+        if (contentContainer == null || !contentContainer.isLaidOut) {
+            // Retry after layout
+            contentContainer?.doOnPreDraw {
+                // Double check liquidGlassView is still valid
+                if (liquidGlassView != null) {
+                    setupIndicatorLiquidGlassView(liquidGlassView)
+                }
+            }
+            return
+        }
+        
+        try {
+            // Bind to content container for blur effect - CRITICAL for glass effect
+            // Add extra safety check before calling bind
+            if (liquidGlassView.windowToken != null) {
+                liquidGlassView.bind(contentContainer)
+            } else {
+                // If windowToken is null, wait and retry
+                liquidGlassView.post {
+                    if (liquidGlassView.windowToken != null) {
+                        try {
+                            liquidGlassView.bind(contentContainer)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+                return
+            }
+        } catch (e: Exception) {
+            // If bind fails, log and skip configuration
+            e.printStackTrace()
+            return
+        }
         
         val effectMode = AppConfig.bottomBarEffectMode
         val isFrosted = effectMode == "frosted"
@@ -820,6 +922,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     private fun createLiquidGlassShellDrawable(
         glassLevel: Float,
         cornerRadius: Float,
+        oval: Boolean,
         selected: Boolean
     ): android.graphics.drawable.GradientDrawable {
         val baseColor = getBottomBackgroundColor()
@@ -842,8 +945,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 ColorUtils.withAlpha(surfaceColor, endAlpha + selectedBoost)
             )
         ).apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            setCornerRadius(cornerRadius)
+            shape = if (oval) android.graphics.drawable.GradientDrawable.OVAL else android.graphics.drawable.GradientDrawable.RECTANGLE
+            if (!oval) {
+                setCornerRadius(cornerRadius)
+            }
             setStroke(1f.dpToPx().toInt(), ColorUtils.withAlpha(surfaceColor, strokeAlpha))
         }
     }
