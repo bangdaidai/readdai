@@ -474,33 +474,36 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // CRITICAL: Check if we should cancel this task
             if (shouldCancelLiquidGlassTasks) return@Runnable
             
-            if (!isFinishing && AppConfig.bottomBarLayoutMode == "floating") {
-                // Double-check mechanism - match archive implementation
-                val contentContainer = binding.contentContainer
-                val bottomNavGlass = binding.bottomNavigationGlass
-                
-                if (!liquidGlassReady || contentContainer == null || !contentContainer.isLaidOut || 
-                    bottomNavGlass == null || !bottomNavGlass.isLaidOut) {
-                    contentContainer?.doOnPreDraw {
-                        liquidGlassReady = true
-                        scheduleLiquidGlassSetup(delayMillis = 32L)
+            try {
+                if (!isFinishing && !isDestroyed && AppConfig.bottomBarLayoutMode == "floating") {
+                    // Double-check mechanism - match archive implementation
+                    val contentContainer = binding.contentContainer
+                    val bottomNavGlass = binding.bottomNavigationGlass
+                    
+                    if (!liquidGlassReady || contentContainer == null || !contentContainer.isLaidOut || 
+                        bottomNavGlass == null || !bottomNavGlass.isLaidOut) {
+                        contentContainer?.doOnPreDraw {
+                            liquidGlassReady = true
+                            scheduleLiquidGlassSetup(delayMillis = 32L)
+                        }
+                        return@Runnable
                     }
-                    return@Runnable
-                }
-                
-                try {
+                    
                     updateBottomBarStyle()
-                } catch (e: Exception) {
-                    // If setup fails, retry after a short delay
-                    e.printStackTrace()
-                    scheduleLiquidGlassSetup(delayMillis = 100L)
                 }
+            } catch (e: Exception) {
+                // If setup fails, don't retry infinitely - just log it
+                e.printStackTrace()
             }
         }
-        if (delayMillis > 0L) {
-            binding.root.postDelayed(action, delayMillis)
-        } else {
-            binding.root.post(action)
+        try {
+            if (delayMillis > 0L) {
+                binding.root.postDelayed(action, delayMillis)
+            } else {
+                binding.root.post(action)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -516,61 +519,77 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val shellOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_shell_overlay)
         val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
         
-        when (AppConfig.bottomBarEffectMode) {
-            "solid" -> {
-                // Solid mode: hide liquid glass, show solid background with capsule shape - match archive
+        try {
+            when (AppConfig.bottomBarEffectMode) {
+                "solid" -> {
+                    // Solid mode: hide liquid glass, show solid background with capsule shape - match archive
+                    liquidGlassView?.visibility = View.GONE
+                    indicatorGlassView?.visibility = View.GONE  // Also hide indicator glass
+                    shellOverlay?.visibility = View.VISIBLE  // Show shell overlay for border
+                    
+                    // Use factory method to create drawable - match archive implementation
+                    val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
+                    shellOverlay?.background = createSolidBottomShellDrawable(cornerRadius)
+                    
+                    // Setup indicator overlay
+                    val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
+                    indicatorOverlay?.background = createSolidBottomIndicatorDrawable()
+                    
+                    // Hide background view - NOT used in archive, shell_overlay handles everything
+                    backgroundView?.visibility = View.GONE
+                    
+                    // BottomNavigationView must be transparent
+                    binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
+                }
+                "frosted", "glass" -> {
+                    // Frosted/Glass mode: use LiquidGlassView with real blur effect - match archive
+                    liquidGlassView?.visibility = View.VISIBLE
+                    indicatorGlassView?.visibility = View.VISIBLE  // Show indicator glass
+                    shellOverlay?.visibility = View.VISIBLE  // Show shell overlay for border
+                    backgroundView?.visibility = View.VISIBLE  // Keep background visible for LiquidGlassView to work on
+                    
+                    // BottomNavigationView must be transparent - match archive
+                    binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
+                    
+                    // Calculate glass level for shell overlay - match archive
+                    val isFrosted = AppConfig.bottomBarEffectMode == "frosted"
+                    val glassLevel = if (isFrosted) {
+                        AppConfig.frostedGlassLevel / 100f
+                    } else {
+                        AppConfig.liquidGlassLevel / 100f
+                    }
+                    
+                    // Setup shell overlays with gradient drawable - match archive implementation
+                    val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
+                    shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
+                    
+                    val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
+                    val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+                    indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true, true)
+                    
+                    liquidGlassView?.let { glass ->
+                        setupLiquidGlassView(glass)
+                    }
+                    
+                    // Setup indicator LiquidGlassView with adjusted parameters
+                    indicatorGlassView?.let { indicatorGlass ->
+                        setupIndicatorLiquidGlassView(indicatorGlass)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // If LiquidGlassView causes exceptions, fall back to solid mode
+            try {
                 liquidGlassView?.visibility = View.GONE
-                indicatorGlassView?.visibility = View.GONE  // Also hide indicator glass
-                shellOverlay?.visibility = View.VISIBLE  // Show shell overlay for border
-                
-                // Use factory method to create drawable - match archive implementation
-                val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                shellOverlay?.background = createSolidBottomShellDrawable(cornerRadius)
-                
-                // Setup indicator overlay
-                val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                indicatorOverlay?.background = createSolidBottomIndicatorDrawable()
-                
-                // Hide background view - NOT used in archive, shell_overlay handles everything
+                indicatorGlassView?.visibility = View.GONE
+                shellOverlay?.visibility = View.VISIBLE
                 backgroundView?.visibility = View.GONE
                 
-                // BottomNavigationView must be transparent
-                binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
-            }
-            "frosted", "glass" -> {
-                // Frosted/Glass mode: use LiquidGlassView with real blur effect - match archive
-                liquidGlassView?.visibility = View.VISIBLE
-                indicatorGlassView?.visibility = View.VISIBLE  // Show indicator glass
-                shellOverlay?.visibility = View.VISIBLE  // Show shell overlay for border
-                backgroundView?.visibility = View.VISIBLE  // Keep background visible for LiquidGlassView to work on
-                
-                // BottomNavigationView must be transparent - match archive
-                binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
-                
-                // Calculate glass level for shell overlay - match archive
-                val isFrosted = AppConfig.bottomBarEffectMode == "frosted"
-                val glassLevel = if (isFrosted) {
-                    AppConfig.frostedGlassLevel / 100f
-                } else {
-                    AppConfig.liquidGlassLevel / 100f
-                }
-                
-                // Setup shell overlays with gradient drawable - match archive implementation
                 val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
-                
-                val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
-                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true, true)
-                
-                liquidGlassView?.let { glass ->
-                    setupLiquidGlassView(glass)
-                }
-                
-                // Setup indicator LiquidGlassView with adjusted parameters
-                indicatorGlassView?.let { indicatorGlass ->
-                    setupIndicatorLiquidGlassView(indicatorGlass)
-                }
+                shellOverlay?.background = createSolidBottomShellDrawable(cornerRadius)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
         }
     }
@@ -714,7 +733,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun setupLiquidGlassView(liquidGlassView: LiquidGlassView) {
         // Safety check - ensure liquidGlassView itself is valid
-        if (liquidGlassView == null) {
+        if (liquidGlassView == null || isFinishing || isDestroyed) {
             return
         }
         
@@ -724,7 +743,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // Retry after layout
             contentContainer?.doOnPreDraw {
                 // Double check liquidGlassView is still valid
-                if (liquidGlassView != null) {
+                if (liquidGlassView != null && !isFinishing && !isDestroyed) {
                     setupLiquidGlassView(liquidGlassView)
                 }
             }
@@ -739,7 +758,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             } else {
                 // If windowToken is null, wait and retry
                 liquidGlassView.post {
-                    if (liquidGlassView.windowToken != null) {
+                    if (liquidGlassView.windowToken != null && !isFinishing && !isDestroyed) {
                         try {
                             liquidGlassView.bind(contentContainer)
                         } catch (e: Exception) {
@@ -859,7 +878,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun setupIndicatorLiquidGlassView(liquidGlassView: LiquidGlassView) {
         // Safety check - ensure liquidGlassView itself is valid
-        if (liquidGlassView == null) {
+        if (liquidGlassView == null || isFinishing || isDestroyed) {
             return
         }
         
@@ -869,7 +888,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // Retry after layout
             contentContainer?.doOnPreDraw {
                 // Double check liquidGlassView is still valid
-                if (liquidGlassView != null) {
+                if (liquidGlassView != null && !isFinishing && !isDestroyed) {
                     setupIndicatorLiquidGlassView(liquidGlassView)
                 }
             }
@@ -884,7 +903,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             } else {
                 // If windowToken is null, wait and retry
                 liquidGlassView.post {
-                    if (liquidGlassView.windowToken != null) {
+                    if (liquidGlassView.windowToken != null && !isFinishing && !isDestroyed) {
                         try {
                             liquidGlassView.bind(contentContainer)
                         } catch (e: Exception) {
