@@ -532,6 +532,10 @@ object NavigationBarIconConfig {
      * For PNG icons, this allows users to upload white/monochrome icons that can be tinted
      */
     private fun applyTintToDrawable(drawable: Drawable, color: Int): Drawable {
+        // Skip if color is transparent or white (which would cause issues)
+        if (color == Color.TRANSPARENT || color == Color.WHITE) {
+            return drawable
+        }
         // Create a mutable copy to avoid affecting the original
         val tintedDrawable = drawable.mutate()
         // Apply tint using DrawableCompat for compatibility
@@ -548,7 +552,10 @@ object NavigationBarIconConfig {
                 iconBitmapCache[cacheKey] = it
             }
         } ?: return null
-        return BitmapDrawable(context.resources, bitmap)
+        // Always create a fresh BitmapDrawable with its own state
+        return BitmapDrawable(context.resources, bitmap).also {
+            it.mutate()
+        }
     }
 
     private fun clearRuntimeCache() {
