@@ -753,7 +753,36 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
     }
 
+    /**
+     * Clean up LiquidGlassView to prevent NPEs in internal LiquidGlass runnables
+     */
+    private fun cleanupLiquidGlassView(liquidGlassView: LiquidGlassView?) {
+        liquidGlassView ?: return
+        try {
+            // Try to unbind the view (if supported)
+            liquidGlassView::class.java.getDeclaredMethod("unbind").let { method ->
+                method.isAccessible = true
+                method.invoke(liquidGlassView)
+            }
+        } catch (e: Exception) {
+            // Ignore unbind errors if method doesn't exist
+        }
+        try {
+            // Cancel any pending animations or tasks
+            liquidGlassView.clearAnimation()
+            // Remove all callbacks from the view
+            liquidGlassView.removeCallbacks(null)
+            // Set visibility to GONE to stop drawing
+            liquidGlassView.visibility = View.GONE
+        } catch (e: Exception) {
+            // Ignore cleanup errors
+        }
+    }
+
     override fun onDestroy() {
+        // Clean up LiquidGlassViews first to prevent NPEs in their internal tasks
+        cleanupLiquidGlassView(binding.bottomNavigationGlassView)
+        cleanupLiquidGlassView(binding.bottomNavigationIndicatorGlassView)
         super.onDestroy()
         Coroutine.async {
             BookHelp.clearInvalidCache()
@@ -843,7 +872,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 updateBottomNavigationIndicator(animate = false)
             }
         } else {
-            // Classic mode: show classic nav, hide glass capsule
+            // Classic mode: show classic nav, hide glass capsule and clean up LiquidGlassViews
+            cleanupLiquidGlassView(binding.bottomNavigationGlassView)
+            cleanupLiquidGlassView(binding.bottomNavigationIndicatorGlassView)
+            boundLiquidGlassViewIds.clear()
             binding.bottomNavigationClassic.visibility = View.VISIBLE
             binding.bottomNavigationGlass.visibility = View.GONE
             
