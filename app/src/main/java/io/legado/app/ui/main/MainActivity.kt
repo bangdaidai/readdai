@@ -640,14 +640,19 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Apply classic mode style - reference dai411 project
      */
     private fun applyClassicModeStyle() = binding.run {
-        // Classic mode should use theme's bottom navigation bar color
-        val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
-        bottomNavigationView.setBackgroundColor(navBgColor)
-        bottomNavigationView.alpha = 1.0f
-        
         // Apply e-ink border if needed
         if (AppConfig.isEInkMode) {
             bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
+            bottomNavigationView.alpha = 1.0f
+        } else if (AppConfig.immNavigationBar) {
+            // Immersive mode: transparent background
+            bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
+            bottomNavigationView.alpha = 1.0f
+        } else {
+            // Classic mode: use theme's bottom navigation bar color
+            val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
+            bottomNavigationView.setBackgroundColor(navBgColor)
+            bottomNavigationView.alpha = 1.0f
         }
         
         // Apply immersive navigation bar padding
