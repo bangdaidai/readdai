@@ -16,7 +16,6 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.annotation.Keep
 import androidx.annotation.StringRes
-import androidx.collection.LruCache
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import io.legado.app.R
@@ -57,15 +56,27 @@ object NavigationBarIconConfig {
     private const val activeNightKey = "navigationBarPackageNight"
     private const val legacyMigratedDayKey = "navigationBarLegacyMigratedDay"
     private const val legacyMigratedNightKey = "navigationBarLegacyMigratedNight"
-    private const val maxIconBitmapCacheSize = 64
+    private const val maxIconBitmapCacheSize = 24
 
     private var currentDayEntryCache: CachedEntry? = null
     private var currentNightEntryCache: CachedEntry? = null
-    // Use LruCache for better memory management
-    private val iconBitmapCache = androidx.collection.LruCache<String, Bitmap>(maxIconBitmapCacheSize)
+    private val iconBitmapCache = object : LinkedHashMap<String, Bitmap>(maxIconBitmapCacheSize, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>): Boolean {
+            return size > maxIconBitmapCacheSize
+        }
+    }
 
     val rootDir: File
         get() = appCtx.externalFiles.getFile("navigationBarPackages")
+
+    private val legacyRootDir: File
+        get() = appCtx.externalFiles.getFile("navigationIcons")
+
+    private val tempDir: File
+        get() = appCtx.externalFiles.getFile("navigationBarTemp").apply { mkdirs() }
+
+    private val remoteCacheDir: File
+        get() = rootDir.getFile("remote_cache").apply { mkdirs() }
 
     data class NavItem(
         val key: String,
@@ -79,8 +90,8 @@ object NavigationBarIconConfig {
         var name: String,
         var isNightMode: Boolean,
         var updatedAt: Long = System.currentTimeMillis(),
-        var icons: MutableMap<String, String> = linkedMapOf(),
-        var enableTint: Boolean = true
+        var enableTint: Boolean = true,
+        var icons: MutableMap<String, String> = linkedMapOf()
     )
 
     data class Entry(
@@ -122,15 +133,32 @@ object NavigationBarIconConfig {
     }
 
     suspend fun loadEntries(isNight: Boolean, includeRemote: Boolean): List<Entry> {
+        migrateLegacyIconsIfNeeded(isNight)
         val local = loadLocal(isNight).associateBy { it.dirName }
+        val remote = if (includeRemote && AppConfig.syncThemePackages) {
+            loadRemoteOrCache(isNight).associateBy { it.dirName }
+        } else {
+            emptyMap()
+        }
         val entries = linkedMapOf<String, Entry>()
         entries[DEFAULT_DIR_NAME] = defaultEntry(isNight)
-        local.forEach { (key, entry) ->
-            entries[key] = entry.copy(source = Source.LOCAL)
+        (local.keys + remote.keys).forEach { key ->
+            val localEntry = local[key]
+            val remoteEntry = remote[key]
+            entries[key] = when {
+                localEntry != null && remoteEntry != null -> localEntry.copy(
+                    source = Source.BOTH,
+                    remoteUpdatedAt = remoteEntry.remoteUpdatedAt
+                )
+                localEntry != null -> localEntry
+                remoteEntry != null -> remoteEntry
+                else -> return@forEach
+            }
         }
         return entries.values.sortedWith(
             compareBy<Entry> { it.dirName != DEFAULT_DIR_NAME }
-                .thenByDescending { it.config.updatedAt }
+                .thenBy { it.source == Source.REMOTE }
+                .thenByDescending { if (it.source == Source.REMOTE) it.remoteUpdatedAt else it.config.updatedAt }
                 .thenBy { it.config.name }
                 .thenBy { it.dirName }
         )
@@ -206,7 +234,49 @@ object NavigationBarIconConfig {
         resetActiveIfNeeded(entry)
     }
 
+    suspend fun delete(entry: Entry) {
+        if (entry.dirName == DEFAULT_DIR_NAME) return
+        when (entry.source) {
+            Source.REMOTE -> deleteRemote(entry)
+            Source.BOTH -> {
+                val remoteResult = runCatching { deleteRemote(entry) }
+                deleteLocal(entry)
+                remoteResult.getOrThrow()
+            }
+            Source.LOCAL -> deleteLocal(entry)
+            Source.BUILTIN -> return
+        }
+        resetActiveIfNeeded(entry)
+    }
 
+    suspend fun exportZip(entry: Entry): File {
+        val localEntry = if (entry.source == Source.REMOTE) download(entry) else entry
+        val dir = localEntry.localDir ?: localDir(localEntry.config.isNightMode, localEntry.dirName)
+        val zipFile = tempDir.getFile("${localEntry.dirName}.zip")
+        if (zipFile.exists()) zipFile.delete()
+        ZipUtils.zipFile(dir, zipFile)
+        return zipFile
+    }
+
+    fun importZip(zipFile: File): Entry {
+        return importZipInternal(zipFile)
+    }
+
+    suspend fun upload(entry: Entry) {
+        if (entry.dirName == DEFAULT_DIR_NAME) return
+        AppWebDav.uploadNavigationBarPackage(entry.config.isNightMode, entry.dirName, exportZip(entry))
+    }
+
+    suspend fun download(entry: Entry): Entry {
+        val zipFile = tempDir.getFile("${entry.dirName}.zip")
+        AppWebDav.downloadNavigationBarPackage(entry.config.isNightMode, entry.dirName, zipFile)
+        return importZipInternal(zipFile, entry.remoteUpdatedAt).copy(source = Source.BOTH, remoteUpdatedAt = entry.remoteUpdatedAt)
+    }
+
+    suspend fun deleteRemote(entry: Entry) {
+        if (entry.dirName == DEFAULT_DIR_NAME) return
+        AppWebDav.deleteNavigationBarPackage(entry.config.isNightMode, entry.dirName)
+    }
 
     fun saveIconToPackage(
         context: Context,
@@ -294,8 +364,62 @@ object NavigationBarIconConfig {
             .orEmpty()
     }
 
-    private val tempDir: File
-        get() = appCtx.externalFiles.getFile("navigationBarTemp").apply { mkdirs() }
+    private suspend fun loadRemote(isNight: Boolean): List<Entry> {
+        return AppWebDav.listNavigationBarPackages(isNight).mapNotNull { file ->
+            val name = file.displayName.removeSuffix(".zip")
+            Entry(
+                Config(name = name, isNightMode = isNight, updatedAt = file.lastModify),
+                Source.REMOTE,
+                name.normalizeFileName(),
+                remoteUpdatedAt = file.lastModify
+            )
+        }
+    }
+
+    private suspend fun loadRemoteOrCache(isNight: Boolean): List<Entry> {
+        return runCatching {
+            loadRemote(isNight).also { writeRemoteCache(isNight, it) }
+        }.getOrElse {
+            readRemoteCache(isNight)
+        }
+    }
+
+    private fun remoteCacheFile(isNight: Boolean): File {
+        return remoteCacheDir.getFile(if (isNight) "night.json" else "day.json")
+    }
+
+    private fun readRemoteCache(isNight: Boolean): List<Entry> {
+        val file = remoteCacheFile(isNight)
+        if (!file.exists()) return emptyList()
+        return GSON.fromJsonArray<RemoteCache>(file.readText()).getOrDefault(emptyList())
+            .filter { it.isNightMode == isNight }
+            .mapNotNull { cache ->
+                val dirName = cache.dirName.ifBlank { cache.name.normalizeFileName() }
+                    .ifBlank { return@mapNotNull null }
+                Entry(
+                    Config(
+                        name = cache.name.ifBlank { dirName },
+                        isNightMode = cache.isNightMode,
+                        updatedAt = cache.updatedAt
+                    ),
+                    Source.REMOTE,
+                    dirName,
+                    remoteUpdatedAt = cache.updatedAt
+                )
+            }
+    }
+
+    private fun writeRemoteCache(isNight: Boolean, entries: List<Entry>) {
+        val cache = entries.map {
+            RemoteCache(
+                name = it.config.name,
+                dirName = it.dirName,
+                isNightMode = it.config.isNightMode,
+                updatedAt = it.remoteUpdatedAt.takeIf { time -> time > 0L } ?: it.config.updatedAt
+            )
+        }
+        remoteCacheFile(isNight).writeText(GSON.toJson(cache))
+    }
 
     private fun readEntry(dir: File): Entry? {
         val config = readConfig(dir) ?: return null
@@ -308,7 +432,7 @@ object NavigationBarIconConfig {
         return GSON.fromJsonObject<Config>(file.readText()).getOrNull()?.let(::normalizeConfig)
     }
 
-    private fun importZipInternal(zipFile: File): Entry {
+    private fun importZipInternal(zipFile: File, remoteUpdatedAt: Long = 0L): Entry {
         val unzipDir = tempDir.getFile("import_${System.currentTimeMillis()}").apply {
             if (exists()) FileUtils.delete(this, deleteRootDir = true)
             mkdirs()
@@ -321,7 +445,9 @@ object NavigationBarIconConfig {
             if (config.name.normalizeFileName() == DEFAULT_DIR_NAME) {
                 config.name = "${config.name}_${appCtx.getString(R.string.navigation_bar_import_suffix)}"
             }
-            config.updatedAt = System.currentTimeMillis()
+            if (remoteUpdatedAt == 0L) {
+                config.updatedAt = System.currentTimeMillis()
+            }
             val dirName = config.name.normalizeFileName().ifBlank { "navigation_${System.currentTimeMillis()}" }
             val targetDir = localDir(config.isNightMode, dirName)
             if (targetDir.exists()) {
@@ -331,44 +457,22 @@ object NavigationBarIconConfig {
             packageFile.parentFile?.copyRecursively(targetDir, overwrite = true)
             File(targetDir, packageFileName).writeText(GSON.toJson(config))
             clearRuntimeCache()
-            Entry(config, Source.LOCAL, dirName, localDir = targetDir)
+            Entry(config, Source.LOCAL, dirName, localDir = targetDir, remoteUpdatedAt = remoteUpdatedAt)
         } finally {
             FileUtils.delete(unzipDir, deleteRootDir = true)
         }
     }
 
-    fun importZip(zipFile: File): Entry {
-        return importZipInternal(zipFile)
-    }
-
     private fun createMenuDrawable(context: Context, entry: Entry, item: NavItem): Drawable {
         val defaultColor = defaultIconColor(context)
         val selectedColor = ThemeStore.accentColor(context)
-        val normalPath = iconPath(entry, item.key, STATE_NORMAL)
-        val selectedPath = iconPath(entry, item.key, STATE_SELECTED)
         
-        // 加载原始图标
-        val normalOriginal = loadDrawable(context, normalPath)
-        val selectedOriginal = loadDrawable(context, selectedPath) ?: normalOriginal
-        
-        // 根据enableTint决定是否应用着色
-        val normal = if (entry.config.enableTint || normalPath == null) {
-            // 启用着色或使用默认图标时，应用颜色
-            normalOriginal ?: defaultDrawable(context, item.defaultIconRes, defaultColor)
-        } else {
-            // 禁用着色时，保持图标原色（如果自定义图标存在则使用原色，否则使用默认图标但不着色）
-            normalOriginal ?: ContextCompat.getDrawable(context, item.defaultIconRes)!!
-        }
-        
-        val selected = if (entry.config.enableTint || selectedPath == null) {
-            // 启用着色时使用选中颜色
-            selectedOriginal ?: loadDrawable(context, normalPath)
-                ?: defaultDrawable(context, item.defaultIconRes, selectedColor)
-        } else {
-            // 禁用着色时，保持图标原色（如果自定义图标存在则使用原色，否则使用默认图标但不着色）
-            selectedOriginal ?: loadDrawable(context, normalPath)
-                ?: ContextCompat.getDrawable(context, item.defaultIconRes)!!
-        }
+        // Load custom icons if available
+        val normal = loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
+            ?: defaultDrawable(context, item.defaultIconRes, if (entry.config.enableTint) defaultColor else null)
+        val selected = loadDrawable(context, iconPath(entry, item.key, STATE_SELECTED))
+            ?: loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
+            ?: defaultDrawable(context, item.defaultIconRes, if (entry.config.enableTint) selectedColor else null)
         
         return StateListDrawable().apply {
             addState(intArrayOf(android.R.attr.state_checked), selected)
@@ -386,9 +490,12 @@ object NavigationBarIconConfig {
 
     private fun iconKey(itemKey: String, state: String): String = "${itemKey}_$state"
 
-    private fun defaultDrawable(context: Context, @DrawableRes resId: Int, color: Int): Drawable {
+    private fun defaultDrawable(context: Context, @DrawableRes resId: Int, color: Int?): Drawable {
         val drawable = ContextCompat.getDrawable(context, resId)!!.mutate()
-        DrawableCompat.setTint(drawable, color)
+        // Only apply tint if color is not null (enableTint is true)
+        if (color != null) {
+            DrawableCompat.setTint(drawable, color)
+        }
         return drawable
     }
 
@@ -510,5 +617,50 @@ object NavigationBarIconConfig {
         }
     }
 
+    private fun legacyMigratedKey(isNight: Boolean): String {
+        return if (isNight) legacyMigratedNightKey else legacyMigratedDayKey
+    }
 
+    private fun migrateLegacyIconsIfNeeded(isNight: Boolean) {
+        val migratedKey = legacyMigratedKey(isNight)
+        if (appCtx.getPrefBoolean(migratedKey, false)) return
+        if (!legacyRootDir.exists()) {
+            appCtx.putPrefBoolean(migratedKey, true)
+            return
+        }
+        val mode = if (isNight) MODE_NIGHT else MODE_DAY
+        val hasLegacy = items.any { item ->
+            File(legacyRootDir, "${mode}_${item.key}_$STATE_NORMAL.png").exists() ||
+                File(legacyRootDir, "${mode}_${item.key}_$STATE_SELECTED.png").exists()
+        }
+        if (!hasLegacy) {
+            appCtx.putPrefBoolean(migratedKey, true)
+            return
+        }
+        val customName = appCtx.getString(R.string.navigation_bar_custom_name)
+        if (readEntry(localDir(isNight, customName.normalizeFileName())) != null) {
+            appCtx.putPrefBoolean(migratedKey, true)
+            return
+        }
+        val dir = localDir(isNight, customName.normalizeFileName()).apply { mkdirs() }
+        val icons = linkedMapOf<String, String>()
+        items.forEach { item ->
+            arrayOf(STATE_NORMAL, STATE_SELECTED).forEach { state ->
+                val source = File(legacyRootDir, "${mode}_${item.key}_$state.png")
+                if (source.exists()) {
+                    val name = "${item.key}_$state.png"
+                    source.copyTo(File(dir, name), overwrite = true)
+                    icons[iconKey(item.key, state)] = name
+                }
+            }
+        }
+        addOrUpdate(
+            Config(
+                name = customName,
+                isNightMode = isNight,
+                icons = icons
+            )
+        )
+        appCtx.putPrefBoolean(migratedKey, true)
+    }
 }

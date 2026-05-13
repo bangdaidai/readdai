@@ -36,6 +36,8 @@
         android:id="@+id/floating_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:visibility="gone">
 
         <FrameLayout
@@ -48,7 +50,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
-                android:paddingBottom="76dp"
                 tools:ignore="SpeakableTextPresentCheck" />
 
         </FrameLayout>
@@ -58,10 +59,9 @@
             android:id="@+id/bottom_navigation_glass"
             android:layout_width="match_parent"
             android:layout_height="@dimen/main_bottom_bar_height"
-            android:layout_marginStart="20dp"
-            android:layout_marginEnd="20dp"
-            android:layout_marginBottom="10dp"
-            android:clipToOutline="true"
+            android:layout_marginStart="@dimen/main_bottom_controls_horizontal_padding"
+            android:layout_marginEnd="@dimen/main_bottom_controls_horizontal_padding"
+            android:layout_marginBottom="@dimen/main_bottom_controls_bottom_padding"
             android:elevation="@dimen/main_bottom_bar_elevation"
             app:layout_constraintBottom_toBottomOf="parent">
 

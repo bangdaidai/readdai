@@ -273,6 +273,9 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val isTransparentStatusBar: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.transparentStatusBar, true)
 
+    val isMainTransparentStatusBar: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.mainTransparentStatusBar, false)
+
     val immNavigationBar: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.immNavigationBar, true)
 

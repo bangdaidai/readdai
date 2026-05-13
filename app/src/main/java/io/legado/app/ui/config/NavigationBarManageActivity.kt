@@ -432,12 +432,19 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
 
     private fun nextPackageName(): String {
         val base = getString(R.string.navigation_bar_custom_name)
+        // Get all used names from current list and also check existing configs
         val usedNames = adapter.items.map { it.config.name }.toSet()
+        
+        // Try base name first
         if (base !in usedNames) return base
+        
+        // Try numbered variants
         for (index in 2..999) {
             val name = "$base $index"
             if (name !in usedNames) return name
         }
+        
+        // Fallback with timestamp
         return "$base ${System.currentTimeMillis()}"
     }
 
