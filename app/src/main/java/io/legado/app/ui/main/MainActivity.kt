@@ -678,8 +678,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
             bottomNavigationView.alpha = 1.0f
         } else if (AppConfig.immNavigationBar) {
-            // Immersive mode: transparent background
-            bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
+            // Immersive mode: use page background color to blend in
+            val bgColor = io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
+            bottomNavigationView.setBackgroundColor(bgColor)
             bottomNavigationView.alpha = 1.0f
         } else {
             // Classic mode: use theme's bottom navigation bar color
