@@ -317,8 +317,10 @@ object NavigationBarIconConfig {
     fun applyTo(menu: Menu, context: Context, isNight: Boolean): Boolean {
         val entry = currentEntry(isNight)
         val hasCustom = entry.dirName != DEFAULT_DIR_NAME && entry.config.icons.isNotEmpty()
-        items.forEach { item ->
-            menu.findItem(item.menuId)?.icon = createMenuDrawable(context, entry, item)
+        if (hasCustom) {
+            items.forEach { item ->
+                menu.findItem(item.menuId)?.icon = createMenuDrawable(context, entry, item)
+            }
         }
         return hasCustom
     }
