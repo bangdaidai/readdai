@@ -342,6 +342,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         
         // Schedule LiquidGlass setup if in floating mode - CRITICAL for proper initialization
         if (AppConfig.bottomBarLayoutMode == "floating") {
+            // Hide indicator initially to prevent square artifacts
+            val indicatorContainer = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_container)
+            indicatorContainer?.visibility = View.INVISIBLE
+            
             scheduleLiquidGlassSetup()
             
             // Wait for content container to be laid out before setting up LiquidGlass - match archive
@@ -358,7 +362,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     // Use postDelayed to ensure all child views are measured
                     binding.root.postDelayed({
                         updateFloatingIndicatorPosition(initialItemId)
-                    }, 100L)
+                        // Show indicator after position and style are fully set up
+                        indicatorContainer?.visibility = View.VISIBLE
+                    }, 150L)
                 }
             }
             
@@ -421,9 +427,20 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // Floating mode: setup LiquidGlass and indicator
             shouldCancelLiquidGlassTasks = false
             bottomIndicatorAnimator.cancel()
+            
+            // Hide indicator initially while setting up
             bottomNavigationIndicatorContainer.isVisible = false
             updateBottomBarStyle()
             applyBottomNavigationIcons() // Apply icons for floating mode
+            
+            // Show indicator after a delay to ensure everything is set up properly
+            bottomNavigationViewFloating.doOnPreDraw {
+                val initialItemId = getBottomNavigationItemId(pagePosition)
+                binding.root.postDelayed({
+                    updateFloatingIndicatorPosition(initialItemId)
+                    bottomNavigationIndicatorContainer.isVisible = true
+                }, 150L)
+            }
         } else {
             // Classic mode: hide floating elements and cancel any pending LiquidGlass tasks
             shouldCancelLiquidGlassTasks = true
@@ -760,6 +777,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Apply the parameters to LiquidGlassView after it's fully initialized
      */
     private fun applyLiquidGlassParameters(liquidGlassView: LiquidGlassView) {
+        // IMPORTANT: Set corner radius FIRST to prevent square artifacts
+        liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_bar_corner_radius))
+        
         val effectMode = AppConfig.bottomBarEffectMode
         val isFrosted = effectMode == "frosted"
         val glassLevel = if (isFrosted) {
@@ -803,7 +823,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         
         // Configure LiquidGlassView
-        liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_bar_corner_radius))
         liquidGlassView.setRefractionHeight(refractionHeight)
         liquidGlassView.setRefractionOffset(refractionOffset)
         liquidGlassView.setDispersion(dispersion)
@@ -875,6 +894,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Apply the parameters to indicator LiquidGlassView after it's fully initialized
      */
     private fun applyIndicatorLiquidGlassParameters(liquidGlassView: LiquidGlassView) {
+        // IMPORTANT: Set corner radius FIRST to prevent square artifacts
+        liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_indicator_corner_radius))
+        
         val effectMode = AppConfig.bottomBarEffectMode
         val isFrosted = effectMode == "frosted"
         val glassLevel = if (isFrosted) {
@@ -918,7 +940,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         
         // Configure LiquidGlassView
-        liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_indicator_corner_radius))
         liquidGlassView.setRefractionHeight(refractionHeight)
         liquidGlassView.setRefractionOffset(refractionOffset)
         liquidGlassView.setDispersion(dispersion)
