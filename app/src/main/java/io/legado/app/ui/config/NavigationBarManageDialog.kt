@@ -20,7 +20,7 @@ import io.legado.app.help.config.NavigationBarIconConfig
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.file.HandleFileContract
-import io.legado.app.utils.UiCorner
+import io.legado.app.lib.theme.UiCorner
 import io.legado.app.utils.postEvent
 import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.Dispatchers

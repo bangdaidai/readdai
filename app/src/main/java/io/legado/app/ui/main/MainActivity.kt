@@ -430,9 +430,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomIndicatorAnimator.cancel()
             bottomNavigationIndicatorContainer.isVisible = false
             
-            // Remove any pending callbacks to prevent NPE when switching modes
-            binding.root.removeCallbacksAndMessages(null)
-            
             applyClassicModeStyle()
             applyBottomNavigationIcons() // Apply icons for classic mode
         }
@@ -1126,7 +1123,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         super.onDestroy()
         // Cancel all pending LiquidGlass tasks to prevent NPE
         shouldCancelLiquidGlassTasks = true
-        binding.root.removeCallbacksAndMessages(null)
         bottomIndicatorAnimator.cancel()
         
         Coroutine.async {
