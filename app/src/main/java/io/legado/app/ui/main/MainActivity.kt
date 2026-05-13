@@ -751,6 +751,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             return
         }
         
+        // IMPORTANT: Set ALL parameters FIRST, before bind()
+        applyAllLiquidGlassParameters(liquidGlassView)
+        
         // Bind to content container for blur effect - CRITICAL for glass effect
         if (liquidGlassView.windowToken != null) {
             liquidGlassView.bind(contentContainer)
@@ -759,24 +762,15 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             liquidGlassView.post {
                 if (liquidGlassView.windowToken != null && !isFinishing && !isDestroyed) {
                     liquidGlassView.bind(contentContainer)
-                    applyLiquidGlassParameters(liquidGlassView)
                 }
-            }
-            return
-        }
-        
-        // Wait for the view to be ready before applying parameters
-        liquidGlassView.post {
-            if (!isFinishing && !isDestroyed) {
-                applyLiquidGlassParameters(liquidGlassView)
             }
         }
     }
     
     /**
-     * Apply the parameters to LiquidGlassView after it's fully initialized
+     * Apply ALL parameters to LiquidGlassView - before bind()
      */
-    private fun applyLiquidGlassParameters(liquidGlassView: LiquidGlassView) {
+    private fun applyAllLiquidGlassParameters(liquidGlassView: LiquidGlassView) {
         // IMPORTANT: Set corner radius FIRST to prevent square artifacts
         liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_bar_corner_radius))
         
@@ -841,9 +835,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         liquidGlassView.setTouchEffectEnabled(true)
         liquidGlassView.isClickable = false
         liquidGlassView.isFocusable = false
-        
-        // Force refresh the view
-        liquidGlassView.invalidate()
     }
     
     /**
@@ -868,6 +859,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             return
         }
         
+        // IMPORTANT: Set ALL parameters FIRST, before bind()
+        applyAllIndicatorLiquidGlassParameters(liquidGlassView)
+        
         // Bind to content container for blur effect - CRITICAL for glass effect
         if (liquidGlassView.windowToken != null) {
             liquidGlassView.bind(contentContainer)
@@ -876,24 +870,15 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             liquidGlassView.post {
                 if (liquidGlassView.windowToken != null && !isFinishing && !isDestroyed) {
                     liquidGlassView.bind(contentContainer)
-                    applyIndicatorLiquidGlassParameters(liquidGlassView)
                 }
-            }
-            return
-        }
-        
-        // Wait for the view to be ready before applying parameters
-        liquidGlassView.post {
-            if (!isFinishing && !isDestroyed) {
-                applyIndicatorLiquidGlassParameters(liquidGlassView)
             }
         }
     }
     
     /**
-     * Apply the parameters to indicator LiquidGlassView after it's fully initialized
+     * Apply ALL parameters to indicator LiquidGlassView - before bind()
      */
-    private fun applyIndicatorLiquidGlassParameters(liquidGlassView: LiquidGlassView) {
+    private fun applyAllIndicatorLiquidGlassParameters(liquidGlassView: LiquidGlassView) {
         // IMPORTANT: Set corner radius FIRST to prevent square artifacts
         liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_indicator_corner_radius))
         
@@ -958,9 +943,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         liquidGlassView.setTouchEffectEnabled(true)
         liquidGlassView.isClickable = false
         liquidGlassView.isFocusable = false
-        
-        // Force refresh the view
-        liquidGlassView.invalidate()
     }
     
     private fun Float.dpToPx(): Float {
