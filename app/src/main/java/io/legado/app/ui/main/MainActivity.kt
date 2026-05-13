@@ -578,19 +578,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 }
             }
         } catch (e: Exception) {
+            // Just catch and log the exception to prevent crash
             e.printStackTrace()
-            // If LiquidGlassView causes exceptions, fall back to solid mode
-            try {
-                liquidGlassView?.visibility = View.GONE
-                indicatorGlassView?.visibility = View.GONE
-                shellOverlay?.visibility = View.VISIBLE
-                backgroundView?.visibility = View.GONE
-                
-                val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                shellOverlay?.background = createSolidBottomShellDrawable(cornerRadius)
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-            }
         }
     }
     
