@@ -468,6 +468,7 @@ object NavigationBarIconConfig {
     private fun createMenuDrawable(context: Context, entry: Entry, item: NavItem): Drawable {
         val defaultColor = defaultIconColor(context)
         val selectedColor = ThemeStore.accentColor(context)
+        val enableTint = entry.config.enableTint
         
         // Load custom icons if available
         val normalCustom = loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
@@ -476,15 +477,31 @@ object NavigationBarIconConfig {
         
         // Apply tint to custom icons or use default vector icons with tint
         val normal = if (normalCustom != null) {
-            applyTintToDrawable(normalCustom.mutate(), defaultColor)
+            if (enableTint) {
+                applyTintToDrawable(normalCustom.mutate(), defaultColor)
+            } else {
+                normalCustom.mutate()
+            }
         } else {
-            defaultDrawable(context, item.defaultIconRes, defaultColor)
+            if (enableTint) {
+                defaultDrawable(context, item.defaultIconRes, defaultColor)
+            } else {
+                ContextCompat.getDrawable(context, item.defaultIconRes)!!.mutate()
+            }
         }
         
         val selected = if (selectedCustom != null) {
-            applyTintToDrawable(selectedCustom.mutate(), selectedColor)
+            if (enableTint) {
+                applyTintToDrawable(selectedCustom.mutate(), selectedColor)
+            } else {
+                selectedCustom.mutate()
+            }
         } else {
-            defaultDrawable(context, item.defaultIconRes, selectedColor)
+            if (enableTint) {
+                defaultDrawable(context, item.defaultIconRes, selectedColor)
+            } else {
+                ContextCompat.getDrawable(context, item.defaultIconRes)!!.mutate()
+            }
         }
         
         return StateListDrawable().apply {

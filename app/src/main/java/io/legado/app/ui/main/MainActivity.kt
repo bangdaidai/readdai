@@ -440,7 +440,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun applyBottomNavigationIcons() = binding.run {
         // Always apply icons (custom or default)
-        NavigationBarIconConfig.applyTo(
+        val hasCustomIcons = NavigationBarIconConfig.applyTo(
             bottomNavigationView.menu,
             this@MainActivity,
             AppConfig.isNightTheme
@@ -451,11 +451,19 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             AppConfig.isNightTheme
         )
         
-        // Always restore theme icon tint to ensure consistent coloring
-        // The StateListDrawable from createMenuDrawable already has correct colors,
-        // but we keep the tint list for safety
-        bottomNavigationView.restoreThemeIconTint()
-        bottomNavigationViewFloating.restoreThemeIconTint()
+        // Check if tint is enabled in the current config
+        val currentEntry = NavigationBarIconConfig.currentEntry(AppConfig.isNightTheme)
+        val enableTint = currentEntry.config.enableTint
+        
+        // Apply tint only if enabled
+        if (enableTint) {
+            bottomNavigationView.restoreThemeIconTint()
+            bottomNavigationViewFloating.restoreThemeIconTint()
+        } else {
+            // Disable automatic tint when tint is not enabled
+            bottomNavigationView.itemIconTintList = null
+            bottomNavigationViewFloating.itemIconTintList = null
+        }
     }
     
     /**
@@ -1257,7 +1265,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             menu.findItem(R.id.menu_rss).isVisible = showRss
         }
         
-        // Apply icons and tint - always restore tint to ensure consistent coloring
+        // Apply icons and tint
         NavigationBarIconConfig.applyTo(
             binding.bottomNavigationView.menu,
             this,
@@ -1269,9 +1277,19 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             AppConfig.isNightTheme
         )
         
-        // Always restore theme icon tint
-        binding.bottomNavigationView.restoreThemeIconTint()
-        binding.bottomNavigationViewFloating.restoreThemeIconTint()
+        // Check if tint is enabled in the current config
+        val currentEntry = NavigationBarIconConfig.currentEntry(AppConfig.isNightTheme)
+        val enableTint = currentEntry.config.enableTint
+        
+        // Apply tint only if enabled
+        if (enableTint) {
+            binding.bottomNavigationView.restoreThemeIconTint()
+            binding.bottomNavigationViewFloating.restoreThemeIconTint()
+        } else {
+            // Disable automatic tint when tint is not enabled
+            binding.bottomNavigationView.itemIconTintList = null
+            binding.bottomNavigationViewFloating.itemIconTintList = null
+        }
         
         var index = 0
         realPositions[index] = idBookshelf
