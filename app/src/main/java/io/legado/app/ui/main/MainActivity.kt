@@ -747,71 +747,103 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             return
         }
         
-        val effectMode = AppConfig.bottomBarEffectMode
-        val isFrosted = effectMode == "frosted"
-        val glassLevel = if (isFrosted) {
-            AppConfig.frostedGlassLevel / 100f
-        } else {
-            AppConfig.liquidGlassLevel / 100f
+        try {
+            val effectMode = AppConfig.bottomBarEffectMode
+            val isFrosted = effectMode == "frosted"
+            val glassLevel = if (isFrosted) {
+                AppConfig.frostedGlassLevel / 100f
+            } else {
+                AppConfig.liquidGlassLevel / 100f
+            }
+            
+            // Calculate blur radius - frosted has stronger blur
+            val blurRadius = if (isFrosted) {
+                (10f + glassLevel * 24f).dpToPx()
+            } else {
+                (5f + glassLevel * 14f).dpToPx()
+            }
+            
+            // Calculate tint alpha - frosted is more opaque
+            val tintAlpha = if (isFrosted) {
+                0.12f + glassLevel * 0.18f
+            } else {
+                0.05f + glassLevel * 0.10f
+            }
+            
+            // Calculate dispersion - frosted has less dispersion
+            val dispersion = if (isFrosted) {
+                (0.18f + glassLevel * 0.16f).coerceAtMost(0.42f)
+            } else {
+                0.46f + glassLevel * 0.32f
+            }
+            
+            // Calculate refraction parameters
+            val refractionHeight = if (isFrosted) {
+                (12f + glassLevel * 10f).dpToPx()
+            } else {
+                (18f + glassLevel * 14f).dpToPx()
+            }
+            
+            val refractionOffset = if (isFrosted) {
+                (36f + glassLevel * 18f).dpToPx()
+            } else {
+                (72f + glassLevel * 34f).dpToPx()
+            }
+            
+            // Configure LiquidGlassView - wrap all calls in try-catch
+            try {
+                liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_bar_corner_radius))
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setRefractionHeight(refractionHeight)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setRefractionOffset(refractionOffset)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setDispersion(dispersion)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setBlurRadius(blurRadius)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTintAlpha(tintAlpha)
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Use archive's fixed tint color (not theme-dependent)
+            try {
+                liquidGlassView.setTintColorRed(0.70f)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTintColorGreen(0.79f)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTintColorBlue(0.86f)
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            try {
+                liquidGlassView.setDraggableEnabled(false)
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Do NOT use clipToOutline - let shell_overlay drawable handle the rounded corners
+            try {
+                liquidGlassView.setElasticEnabled(true)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTouchEffectEnabled(true)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.isClickable = false
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.isFocusable = false
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Force refresh the view
+            liquidGlassView.invalidate()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        
-        // Calculate blur radius - frosted has stronger blur
-        val blurRadius = if (isFrosted) {
-            (10f + glassLevel * 24f).dpToPx()
-        } else {
-            (5f + glassLevel * 14f).dpToPx()
-        }
-        
-        // Calculate tint alpha - frosted is more opaque
-        val tintAlpha = if (isFrosted) {
-            0.12f + glassLevel * 0.18f
-        } else {
-            0.05f + glassLevel * 0.10f
-        }
-        
-        // Calculate dispersion - frosted has less dispersion
-        val dispersion = if (isFrosted) {
-            (0.18f + glassLevel * 0.16f).coerceAtMost(0.42f)
-        } else {
-            0.46f + glassLevel * 0.32f
-        }
-        
-        // Calculate refraction parameters
-        val refractionHeight = if (isFrosted) {
-            (12f + glassLevel * 10f).dpToPx()
-        } else {
-            (18f + glassLevel * 14f).dpToPx()
-        }
-        
-        val refractionOffset = if (isFrosted) {
-            (36f + glassLevel * 18f).dpToPx()
-        } else {
-            (72f + glassLevel * 34f).dpToPx()
-        }
-        
-        // Configure LiquidGlassView - EXACT match with archive project
-        liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_bar_corner_radius))
-        liquidGlassView.setRefractionHeight(refractionHeight)
-        liquidGlassView.setRefractionOffset(refractionOffset)
-        liquidGlassView.setDispersion(dispersion)
-        liquidGlassView.setBlurRadius(blurRadius)
-        liquidGlassView.setTintAlpha(tintAlpha)
-        
-        // Use archive's fixed tint color (not theme-dependent)
-        liquidGlassView.setTintColorRed(0.70f)
-        liquidGlassView.setTintColorGreen(0.79f)
-        liquidGlassView.setTintColorBlue(0.86f)
-        
-        liquidGlassView.setDraggableEnabled(false)
-        
-        // Do NOT use clipToOutline - let shell_overlay drawable handle the rounded corners
-        liquidGlassView.setElasticEnabled(true)
-        liquidGlassView.setTouchEffectEnabled(true)
-        liquidGlassView.isClickable = false
-        liquidGlassView.isFocusable = false
-        
-        // Force refresh the view
-        liquidGlassView.invalidate()
     }
     
     /**
@@ -860,71 +892,103 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             return
         }
         
-        val effectMode = AppConfig.bottomBarEffectMode
-        val isFrosted = effectMode == "frosted"
-        val glassLevel = if (isFrosted) {
-            AppConfig.frostedGlassLevel / 100f
-        } else {
-            AppConfig.liquidGlassLevel / 100f
+        try {
+            val effectMode = AppConfig.bottomBarEffectMode
+            val isFrosted = effectMode == "frosted"
+            val glassLevel = if (isFrosted) {
+                AppConfig.frostedGlassLevel / 100f
+            } else {
+                AppConfig.liquidGlassLevel / 100f
+            }
+            
+            // Calculate blur radius - frosted has stronger blur
+            val blurRadius = if (isFrosted) {
+                (10f + glassLevel * 24f).dpToPx()
+            } else {
+                (5f + glassLevel * 14f).dpToPx()
+            }
+            
+            // Calculate tint alpha - indicator needs much more transparency so icons remain visible
+            val tintAlpha = if (isFrosted) {
+                (0.05f + glassLevel * 0.08f).coerceAtMost(0.15f)
+            } else {
+                (0.02f + glassLevel * 0.05f).coerceAtMost(0.10f)
+            }
+            
+            // Calculate dispersion - frosted has less dispersion
+            val dispersion = if (isFrosted) {
+                (0.18f + glassLevel * 0.16f).coerceAtMost(0.42f)
+            } else {
+                0.46f + glassLevel * 0.32f
+            }
+            
+            // Calculate refraction parameters for indicator - use smaller values
+            val refractionHeight = if (isFrosted) {
+                ((12f + glassLevel * 10f) * 0.9f).dpToPx().coerceAtLeast(16f.dpToPx().toFloat())
+            } else {
+                ((18f + glassLevel * 14f) * 0.9f).dpToPx().coerceAtLeast(16f.dpToPx().toFloat())
+            }
+            
+            val refractionOffset = if (isFrosted) {
+                ((36f + glassLevel * 18f) * 0.72f).dpToPx().coerceAtLeast(46f.dpToPx().toFloat())
+            } else {
+                ((72f + glassLevel * 34f) * 0.72f).dpToPx().coerceAtLeast(46f.dpToPx().toFloat())
+            }
+            
+            // Configure LiquidGlassView - wrap all calls in try-catch
+            try {
+                liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_indicator_corner_radius))
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setRefractionHeight(refractionHeight)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setRefractionOffset(refractionOffset)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setDispersion(dispersion)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setBlurRadius((blurRadius * 0.78f).coerceAtLeast(5f.dpToPx().toFloat()))
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTintAlpha(tintAlpha)
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Use archive's fixed tint color (not theme-dependent)
+            try {
+                liquidGlassView.setTintColorRed(0.70f)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTintColorGreen(0.79f)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTintColorBlue(0.86f)
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            try {
+                liquidGlassView.setDraggableEnabled(false)
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Do NOT use clipToOutline - let indicator_overlay drawable handle the rounded corners
+            try {
+                liquidGlassView.setElasticEnabled(true)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.setTouchEffectEnabled(true)
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.isClickable = false
+            } catch (e: Exception) { e.printStackTrace() }
+            try {
+                liquidGlassView.isFocusable = false
+            } catch (e: Exception) { e.printStackTrace() }
+            
+            // Force refresh the view
+            liquidGlassView.invalidate()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        
-        // Calculate blur radius - frosted has stronger blur
-        val blurRadius = if (isFrosted) {
-            (10f + glassLevel * 24f).dpToPx()
-        } else {
-            (5f + glassLevel * 14f).dpToPx()
-        }
-        
-        // Calculate tint alpha - indicator needs much more transparency so icons remain visible
-        val tintAlpha = if (isFrosted) {
-            (0.05f + glassLevel * 0.08f).coerceAtMost(0.15f)
-        } else {
-            (0.02f + glassLevel * 0.05f).coerceAtMost(0.10f)
-        }
-        
-        // Calculate dispersion - frosted has less dispersion
-        val dispersion = if (isFrosted) {
-            (0.18f + glassLevel * 0.16f).coerceAtMost(0.42f)
-        } else {
-            0.46f + glassLevel * 0.32f
-        }
-        
-        // Calculate refraction parameters for indicator - use smaller values
-        val refractionHeight = if (isFrosted) {
-            ((12f + glassLevel * 10f) * 0.9f).dpToPx().coerceAtLeast(16f.dpToPx().toFloat())
-        } else {
-            ((18f + glassLevel * 14f) * 0.9f).dpToPx().coerceAtLeast(16f.dpToPx().toFloat())
-        }
-        
-        val refractionOffset = if (isFrosted) {
-            ((36f + glassLevel * 18f) * 0.72f).dpToPx().coerceAtLeast(46f.dpToPx().toFloat())
-        } else {
-            ((72f + glassLevel * 34f) * 0.72f).dpToPx().coerceAtLeast(46f.dpToPx().toFloat())
-        }
-        
-        // Configure LiquidGlassView - EXACT match with archive project
-        liquidGlassView.setCornerRadius(resources.getDimension(R.dimen.main_bottom_indicator_corner_radius))
-        liquidGlassView.setRefractionHeight(refractionHeight)
-        liquidGlassView.setRefractionOffset(refractionOffset)
-        liquidGlassView.setDispersion(dispersion)
-        liquidGlassView.setBlurRadius((blurRadius * 0.78f).coerceAtLeast(5f.dpToPx().toFloat()))
-        liquidGlassView.setTintAlpha(tintAlpha)
-        
-        // Use archive's fixed tint color (not theme-dependent)
-        liquidGlassView.setTintColorRed(0.70f)
-        liquidGlassView.setTintColorGreen(0.79f)
-        liquidGlassView.setTintColorBlue(0.86f)
-        
-        liquidGlassView.setDraggableEnabled(false)
-        
-        // Do NOT use clipToOutline - let indicator_overlay drawable handle the rounded corners
-        liquidGlassView.setElasticEnabled(true)
-        liquidGlassView.setTouchEffectEnabled(true)
-        liquidGlassView.isClickable = false
-        liquidGlassView.isFocusable = false
-        
-        // Force refresh the view
-        liquidGlassView.invalidate()
     }
     
     private fun Float.dpToPx(): Float {
