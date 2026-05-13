@@ -529,7 +529,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                indicatorOverlay?.background = null
+                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true, true)
                 
                 liquidGlassView?.let { glass ->
                     setupLiquidGlassView(glass)
@@ -831,11 +832,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             (5f + glassLevel * 14f).dpToPx()
         }
         
-        // Calculate tint alpha - frosted is more opaque, but indicator needs slightly more transparency
+        // Calculate tint alpha - indicator needs much more transparency so icons remain visible
         val tintAlpha = if (isFrosted) {
-            (0.12f + glassLevel * 0.18f + 0.05f).coerceAtMost(0.28f)  // Slightly more transparent
+            (0.05f + glassLevel * 0.08f).coerceAtMost(0.15f)
         } else {
-            (0.05f + glassLevel * 0.10f + 0.05f).coerceAtMost(0.20f)  // Slightly more transparent
+            (0.02f + glassLevel * 0.05f).coerceAtMost(0.10f)
         }
         
         // Calculate dispersion - frosted has less dispersion
