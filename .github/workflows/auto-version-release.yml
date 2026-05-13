@@ -131,11 +131,16 @@ jobs:
         run: |
           if [ ! -z "$KEYSTORE_BASE64" ]; then
             echo "Setting up signing keys..."
-            echo $KEYSTORE_BASE64 | base64 --decode > $GITHUB_WORKSPACE/app/release.keystore
-            echo "RELEASE_STORE_FILE=./release.keystore" >> gradle.properties
+            # 使用固定的密钥文件路径，确保签名一致性
+            mkdir -p $GITHUB_WORKSPACE/keystore
+            echo $KEYSTORE_BASE64 | base64 --decode > $GITHUB_WORKSPACE/keystore/release.keystore
+            echo "RELEASE_STORE_FILE=./keystore/release.keystore" >> gradle.properties
             echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
             echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
             echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+            echo "✅ Keystore setup completed at ./keystore/release.keystore"
+          else
+            echo "⚠️ No keystore configured, using debug signing"
           fi
 
       - name: Build Release APK

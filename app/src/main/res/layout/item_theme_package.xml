@@ -8,10 +8,11 @@
     android:background="@drawable/bg_book_info_intro_panel"
     android:padding="12dp">
 
+    <!-- Icon Preview -->
     <androidx.cardview.widget.CardView
         android:id="@+id/card_preview"
-        android:layout_width="74dp"
-        android:layout_height="74dp"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
         app:cardCornerRadius="@dimen/ui_panel_radius"
         app:cardElevation="0dp"
         app:cardPreventCornerOverlap="false"
@@ -26,102 +27,80 @@
             android:layout_height="match_parent"
             android:contentDescription="@string/background_image"
             android:scaleType="centerInside"
-            android:padding="12dp" />
+            android:padding="4dp" />
 
     </androidx.cardview.widget.CardView>
 
-    <LinearLayout
-        android:id="@+id/lay_info"
+    <!-- Name -->
+    <TextView
+        android:id="@+id/tv_name"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="12dp"
-        android:orientation="vertical"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="6dp"
+        android:ellipsize="end"
+        android:singleLine="true"
+        android:textSize="14sp"
+        android:textStyle="bold"
         app:layout_constraintTop_toTopOf="@id/card_preview"
         app:layout_constraintBottom_toBottomOf="@id/card_preview"
         app:layout_constraintLeft_toRightOf="@id/card_preview"
-        app:layout_constraintRight_toRightOf="parent">
+        app:layout_constraintRight_toLeftOf="@id/btn_apply" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+    <!-- Apply Button -->
+    <TextView
+        android:id="@+id/btn_apply"
+        android:layout_width="wrap_content"
+        android:layout_height="26dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:minWidth="38dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:singleLine="true"
+        android:text="@string/theme_apply"
+        android:textSize="11sp"
+        android:textColor="?attr/colorAccent"
+        app:layout_constraintTop_toTopOf="@id/card_preview"
+        app:layout_constraintBottom_toBottomOf="@id/card_preview"
+        app:layout_constraintRight_toLeftOf="@id/btn_edit" />
 
-            <TextView
-                android:id="@+id/tv_name"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:singleLine="true"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+    <!-- Edit Button -->
+    <TextView
+        android:id="@+id/btn_edit"
+        android:layout_width="wrap_content"
+        android:layout_height="26dp"
+        android:layout_marginStart="4dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:minWidth="38dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:singleLine="true"
+        android:text="@string/edit"
+        android:textSize="11sp"
+        android:textColor="?attr/colorAccent"
+        app:layout_constraintTop_toTopOf="@id/card_preview"
+        app:layout_constraintBottom_toBottomOf="@id/card_preview"
+        app:layout_constraintRight_toLeftOf="@id/btn_delete" />
 
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:overScrollMode="never"
-            android:scrollbars="none">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="end"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/btn_apply"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:background="@drawable/bg_book_info_action_secondary"
-                    android:gravity="center"
-                    android:minWidth="56dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:singleLine="true"
-                    android:text="@string/theme_apply"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/btn_edit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_book_info_action_secondary"
-                    android:gravity="center"
-                    android:minWidth="56dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:singleLine="true"
-                    android:text="@string/edit"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:id="@+id/btn_delete"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_book_info_action_secondary"
-                    android:gravity="center"
-                    android:minWidth="56dp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:singleLine="true"
-                    android:text="@string/delete"
-                    android:textSize="13sp" />
-
-            </LinearLayout>
-
-        </HorizontalScrollView>
-
-    </LinearLayout>
+    <!-- Delete Button -->
+    <TextView
+        android:id="@+id/btn_delete"
+        android:layout_width="wrap_content"
+        android:layout_height="26dp"
+        android:layout_marginStart="4dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:minWidth="38dp"
+        android:paddingStart="6dp"
+        android:paddingEnd="6dp"
+        android:singleLine="true"
+        android:text="@string/delete"
+        android:textSize="11sp"
+        android:textColor="@android:color/holo_red_dark"
+        app:layout_constraintTop_toTopOf="@id/card_preview"
+        app:layout_constraintBottom_toBottomOf="@id/card_preview"
+        app:layout_constraintRight_toRightOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -16,7 +17,10 @@ import io.legado.app.databinding.DialogNavigationBarManageBinding
 import io.legado.app.databinding.ItemNavigationBarIconBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.NavigationBarIconConfig
+import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.file.HandleFileContract
+import io.legado.app.utils.UiCorner
 import io.legado.app.utils.postEvent
 import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +82,19 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        // Apply theme background color to match other dialogs
+        binding.root.setBackgroundColor(ThemeStore.backgroundColor(requireContext()))
+        
+        // Apply card background to global settings items
+        val cardBackground = UiCorner.opaqueRounded(
+            ContextCompat.getColor(requireContext(), R.color.background_card),
+            UiCorner.panelRadius(requireContext())
+        )
+        binding.cardLayoutMode.background = cardBackground
+        binding.cardEffectMode.background = cardBackground
+        binding.seekBarContainer.background = cardBackground
+        
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
 
@@ -297,6 +314,14 @@ class NavigationBarManageDialog : BottomSheetDialogFragment() {
 
         fun bind(item: NavigationBarIconConfig.NavItem) {
             val entry = currentEntry ?: return
+            
+            // Apply card background to each icon item
+            val cardBackground = UiCorner.opaqueRounded(
+                ContextCompat.getColor(binding.root.context, R.color.background_card),
+                UiCorner.panelRadius(binding.root.context)
+            )
+            binding.root.background = cardBackground
+            
             binding.textName.setText(item.titleRes)
 
             val normalDrawable = NavigationBarIconConfig.previewDrawable(

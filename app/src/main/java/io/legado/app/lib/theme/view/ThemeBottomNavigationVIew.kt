@@ -13,7 +13,7 @@ import io.legado.app.databinding.ViewNavigationBadgeBinding
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.bottomBackground
-import io.legado.app.lib.theme.getSecondaryTextColor
+import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.transparentNavBar
 import io.legado.app.ui.widget.text.BadgeView
 import io.legado.app.utils.ColorUtils
@@ -33,7 +33,7 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             elevation = context.elevation
         }
         val textIsDark = ColorUtils.isColorLight(bgColor)
-        val textColor = context.getSecondaryTextColor(textIsDark)
+        val textColor = context.getPrimaryTextColor(textIsDark)
         val colorStateList = Selector.colorBuild()
             .setDefaultColor(textColor)
             .setSelectedColor(ThemeStore.accentColor(context))
@@ -51,7 +51,7 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
         val bgColor = context.bottomBackground
         val selectedColor = ThemeStore.accentColor(context)
         val textIsDark = ColorUtils.isColorLight(bgColor)
-        val textColor = context.getSecondaryTextColor(textIsDark)
+        val textColor = context.getPrimaryTextColor(textIsDark)
         return Selector.colorBuild()
             .setDefaultColor(textColor)
             .setSelectedColor(selectedColor)

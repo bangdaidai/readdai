@@ -23,7 +23,7 @@ import io.legado.app.constant.PreferKey
 import io.legado.app.help.AppWebDav
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.bottomBackground
-import io.legado.app.lib.theme.getSecondaryTextColor
+import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.FileUtils
 import io.legado.app.utils.GSON
@@ -470,21 +470,21 @@ object NavigationBarIconConfig {
         val selectedColor = ThemeStore.accentColor(context)
         
         // Load custom icons if available
-        val normalDrawable = loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
-        val selectedDrawable = loadDrawable(context, iconPath(entry, item.key, STATE_SELECTED))
+        val normalCustom = loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
+        val selectedCustom = loadDrawable(context, iconPath(entry, item.key, STATE_SELECTED))
             ?: loadDrawable(context, iconPath(entry, item.key, STATE_NORMAL))
         
-        // Apply tint to custom icons if enableTint is true
-        val normal = if (normalDrawable != null && entry.config.enableTint) {
-            applyTintToDrawable(normalDrawable.mutate(), defaultColor)
+        // Apply tint to custom icons or use default vector icons with tint
+        val normal = if (normalCustom != null) {
+            applyTintToDrawable(normalCustom.mutate(), defaultColor)
         } else {
-            normalDrawable ?: createDefaultIconDrawable(context, item.defaultIconRes, defaultColor, entry.config.enableTint)
+            defaultDrawable(context, item.defaultIconRes, defaultColor)
         }
         
-        val selected = if (selectedDrawable != null && entry.config.enableTint) {
-            applyTintToDrawable(selectedDrawable.mutate(), selectedColor)
+        val selected = if (selectedCustom != null) {
+            applyTintToDrawable(selectedCustom.mutate(), selectedColor)
         } else {
-            selectedDrawable ?: createDefaultIconDrawable(context, item.defaultIconRes, selectedColor, entry.config.enableTint)
+            defaultDrawable(context, item.defaultIconRes, selectedColor)
         }
         
         return StateListDrawable().apply {
@@ -495,23 +495,28 @@ object NavigationBarIconConfig {
     }
     
     /**
-     * Create default icon drawable with proper state handling
-     * For Vector Drawables, we need to create separate instances for each state
+     * Create default vector drawable with tint applied
      */
-    private fun createDefaultIconDrawable(
-        context: Context,
-        @DrawableRes resId: Int,
-        color: Int,
-        enableTint: Boolean
-    ): Drawable {
-        if (!enableTint) {
-            // If tint is disabled, return the original drawable without tint
-            return ContextCompat.getDrawable(context, resId)!!
-        }
-        // Create a new instance and apply tint
+    private fun defaultDrawable(context: Context, @DrawableRes resId: Int, color: Int): Drawable {
         val drawable = ContextCompat.getDrawable(context, resId)!!.mutate()
         DrawableCompat.setTint(drawable, color)
         return drawable
+    }
+    
+    /**
+     * Apply tint to a drawable (supports both VectorDrawable and BitmapDrawable)
+     * For PNG icons, this allows users to upload white/monochrome icons that can be tinted
+     */
+    private fun applyTintToDrawable(drawable: Drawable, color: Int): Drawable {
+        // Skip if color is transparent
+        if (color == Color.TRANSPARENT) {
+            return drawable
+        }
+        // Create a mutable copy to avoid affecting the original
+        val tintedDrawable = drawable.mutate()
+        // Apply tint using DrawableCompat for compatibility
+        DrawableCompat.setTint(tintedDrawable, color)
+        return tintedDrawable
     }
 
     private fun iconPath(entry: Entry, itemKey: String, state: String): String? {
@@ -526,23 +531,7 @@ object NavigationBarIconConfig {
     private fun defaultIconColor(context: Context): Int {
         val bgColor = context.bottomBackground
         val textIsDark = ColorUtils.isColorLight(bgColor)
-        return context.getSecondaryTextColor(textIsDark)
-    }
-
-    /**
-     * Apply tint to a drawable (supports both VectorDrawable and BitmapDrawable)
-     * For PNG icons, this allows users to upload white/monochrome icons that can be tinted
-     */
-    private fun applyTintToDrawable(drawable: Drawable, color: Int): Drawable {
-        // Skip if color is transparent or white (which would cause issues)
-        if (color == Color.TRANSPARENT || color == Color.WHITE) {
-            return drawable
-        }
-        // Create a mutable copy to avoid affecting the original
-        val tintedDrawable = drawable.mutate()
-        // Apply tint using DrawableCompat for compatibility
-        DrawableCompat.setTint(tintedDrawable, color)
-        return tintedDrawable
+        return context.getPrimaryTextColor(textIsDark)
     }
 
     private fun loadDrawable(context: Context, path: String?): Drawable? {

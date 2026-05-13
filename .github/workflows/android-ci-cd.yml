@@ -106,11 +106,16 @@ jobs:
         run: |
           if [ ! -z "$KEYSTORE_BASE64" ]; then
             echo "Setting up signing keys..."
-            echo $KEYSTORE_BASE64 | base64 --decode > $GITHUB_WORKSPACE/app/release.keystore
-            echo "RELEASE_STORE_FILE=./release.keystore" >> gradle.properties
+            # 使用固定的密钥文件路径，确保签名一致性
+            mkdir -p $GITHUB_WORKSPACE/keystore
+            echo $KEYSTORE_BASE64 | base64 --decode > $GITHUB_WORKSPACE/keystore/release.keystore
+            echo "RELEASE_STORE_FILE=./keystore/release.keystore" >> gradle.properties
             echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
             echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
             echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+            echo "✅ Keystore setup completed at ./keystore/release.keystore"
+          else
+            echo "⚠️ No keystore configured, using debug signing"
           fi
 
       - name: Build Release APK
@@ -122,15 +127,6 @@ jobs:
           find app/build/outputs -name "*.apk" -type f || echo "No APK found"
           ls -la app/build/outputs/apk/app/release/ 2>/dev/null || echo "Release directory not found"
 
-      - name: Build Release AAB (Google Play)
-        run: ./gradlew bundleAppRelease --no-daemon
-
-      - name: Check AAB output
-        run: |
-          echo "Checking for AAB files..."
-          find app/build/outputs -name "*.aab" -type f || echo "No AAB found"
-          ls -la app/build/outputs/bundle/appRelease/ 2>/dev/null || echo "AAB directory not found"
-
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
@@ -138,16 +134,6 @@ jobs:
           path: |
             app/build/outputs/apk/app/release/*.apk
             app/build/outputs/apk/**/*.apk
-          retention-days: 90
-          if-no-files-found: warn
-
-      - name: Upload Release AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-aab
-          path: |
-            app/build/outputs/bundle/appRelease/*.aab
-            app/build/outputs/bundle/**/*.aab
           retention-days: 90
           if-no-files-found: warn
 
