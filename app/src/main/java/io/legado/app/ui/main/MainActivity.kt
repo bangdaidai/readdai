@@ -530,7 +530,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
                 val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
-                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
+                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true, true)
                 
                 liquidGlassView?.let { glass ->
                     setupLiquidGlassView(glass)
@@ -911,8 +911,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+            shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(io.legado.app.lib.theme.ThemeStore.accentColor(this@MainActivity))
         }
     }
