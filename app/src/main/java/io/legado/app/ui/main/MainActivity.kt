@@ -396,12 +396,15 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 contentContainer.paddingRight,
                 totalPadding
             )
-            // 确保经典模式的 bottomNavigationView 背景完全透明
+            // 确保经典模式的 bottomNavigationView 完全隐藏
             bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
-            bottomNavigationView.alpha = 0f
+            bottomNavigationView.visibility = View.GONE
+            bottomNavigationView.elevation = 0f
             // 确保 backgroundView 也是隐藏的
             val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
             backgroundView?.visibility = View.GONE
+            // 确保 bottom_navigation_glass 的背景完全透明
+            bottomNavigationGlass.setBackgroundColor(Color.TRANSPARENT)
         } else {
             // Classic mode: clear bottom padding
             contentContainer.setPadding(
@@ -410,12 +413,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 contentContainer.paddingRight,
                 0
             )
-            // 恢复经典模式 bottomNavigationView 的 alpha
-            bottomNavigationView.alpha = 1f
+            // 恢复经典模式 bottomNavigationView 的显示
+            bottomNavigationView.visibility = View.VISIBLE
         }
         
-        // Show/hide bottom navigation views
-        bottomNavigationView.isVisible = !floatingMode
+        // Show/hide bottom navigation views (注意：不要在这里设置 bottomNavigationView 的 isVisible，我们上面已经设置了)
         bottomNavigationGlass.isVisible = floatingMode
         
         if (floatingMode) {
@@ -786,8 +788,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // In immersive mode, no elevation is needed as it blends with the background
             bottomNavigationView.elevation = 0f
         } else {
-            // Classic mode: use theme's bottom navigation bar color and apply full theme
-            bottomNavigationView.applyTheme()
+            // Classic mode: use theme's bottom navigation bar color (不依赖 applyTheme 中的 transparentNavBar 检查)
+            val bgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
+            bottomNavigationView.setBackgroundColor(bgColor)
+            bottomNavigationView.alpha = 1.0f
             // Ensure we use the correct elevation from dimens
             bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }

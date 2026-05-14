@@ -78,6 +78,7 @@
             android:layout_height="@dimen/main_bottom_indicator_height"
             android:layout_gravity="start|center_vertical"
             android:layout_marginStart="@dimen/main_bottom_indicator_margin_start"
+            android:background="@color/transparent"
             android:clickable="false"
             android:focusable="false">
 
