@@ -117,6 +117,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     // Track if we should cancel pending LiquidGlass tasks
     private var shouldCancelLiquidGlassTasks = false
     
+    // Track if LiquidGlass setup is in progress to avoid concurrent updates
+    private var isLiquidGlassSetupInProgress = false
+    
     // Bottom navigation indicator animator - match archive implementation
     private val bottomIndicatorAnimator by lazy {
         ValueAnimator().apply {
@@ -385,26 +388,23 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.swipeEnabled = !floatingMode
         
         if (floatingMode) {
-            // Floating mode: add bottom padding to prevent content from being obscured by floating capsule
+            // Floating mode: add bottom padding so content isn't hidden behind the capsule
             val barHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height)
-            val bottomMargin = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
-            val totalPadding = barHeight + bottomMargin
-            
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
                 contentContainer.paddingRight,
-                totalPadding
+                barHeight
             )
-            // 确保经典模式的 bottomNavigationView 完全隐藏（背景透明，移除阴影）
+            // Ensure classic mode bottomNavigationView is fully hidden (background transparent, remove shadow)
             bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
             bottomNavigationView.alpha = 0f
             bottomNavigationView.visibility = View.GONE
             bottomNavigationView.elevation = 0f
-            // 确保 backgroundView 也是隐藏的
+            // Ensure backgroundView is also hidden
             val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
             backgroundView?.visibility = View.GONE
-            // 确保 bottom_navigation_glass 的背景完全透明
+            // Ensure bottom_navigation_glass background is transparent
             bottomNavigationGlass.setBackgroundColor(Color.TRANSPARENT)
         } else {
             // Classic mode: clear bottom padding
@@ -486,8 +486,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Schedule LiquidGlass setup with optional delay - EXACT match with archive
      */
     private fun scheduleLiquidGlassSetup(delayMillis: Long = 0L) {
+        if (shouldCancelLiquidGlassTasks) return
         val action = {
-            if (!isFinishing) {
+            if (!isFinishing && !shouldCancelLiquidGlassTasks) {
                 setupLiquidGlass()
             }
         }
@@ -502,14 +503,22 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Setup LiquidGlass - EXACT match with archive implementation
      */
     private fun setupLiquidGlass() {
+        if (shouldCancelLiquidGlassTasks) return
+        if (isLiquidGlassSetupInProgress) return
+        isLiquidGlassSetupInProgress = true
+        
         // Only apply in floating mode
-        if (AppConfig.bottomBarLayoutMode != "floating") return
+        if (AppConfig.bottomBarLayoutMode != "floating") {
+            isLiquidGlassSetupInProgress = false
+            return
+        }
         
         // Check if views are ready before proceeding
         val liquidGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_glass_view)
         val indicatorGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_indicator_glass_view)
         
         if (liquidGlassView == null || indicatorGlassView == null) {
+            isLiquidGlassSetupInProgress = false
             return
         }
         
@@ -570,6 +579,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                         liquidGlassReady = true
                         scheduleLiquidGlassSetup(delayMillis = 32L)
                     }
+                    isLiquidGlassSetupInProgress = false
                     return
                 }
                 
@@ -647,6 +657,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 )
             }
         }
+        isLiquidGlassSetupInProgress = false
     }
     
     /**
@@ -789,10 +800,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomNavigationView.elevation = 0f
         } else {
             // Classic mode: use theme's bottom navigation bar color with elevation
-            val bgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(bgColor)
-            bottomNavigationView.alpha = 1.0f
-            bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
+            bottomNavigationView.applyTheme()
         }
         
         // Force invalidate to ensure background is redrawn
