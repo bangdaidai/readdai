@@ -32,11 +32,13 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             setBackgroundColor(bgColor)
             elevation = context.elevation
         }
-        val textIsDark = ColorUtils.isColorLight(bgColor)
-        val textColor = context.getPrimaryTextColor(textIsDark)
+        // Unselected: use title bar text icon color
+        // Selected: use accent color
+        val unselectedColor = ThemeStore.titleBarTextIconColor(context)
+        val selectedColor = ThemeStore.accentColor(context)
         val colorStateList = Selector.colorBuild()
-            .setDefaultColor(textColor)
-            .setSelectedColor(ThemeStore.accentColor(context))
+            .setDefaultColor(unselectedColor)
+            .setSelectedColor(selectedColor)
             .create()
         itemIconTintList = colorStateList
         itemTextColor = colorStateList
@@ -48,12 +50,12 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     }
 
     fun createThemeColorStateList(): ColorStateList {
-        val bgColor = context.bottomBackground
+        // Unselected: use title bar text icon color
+        // Selected: use accent color
+        val unselectedColor = ThemeStore.titleBarTextIconColor(context)
         val selectedColor = ThemeStore.accentColor(context)
-        val textIsDark = ColorUtils.isColorLight(bgColor)
-        val textColor = context.getPrimaryTextColor(textIsDark)
         return Selector.colorBuild()
-            .setDefaultColor(textColor)
+            .setDefaultColor(unselectedColor)
             .setSelectedColor(selectedColor)
             .create()
     }
