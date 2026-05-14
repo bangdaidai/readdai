@@ -624,7 +624,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 }
                 
                 // Setup indicator LiquidGlassView with adjusted parameters - match archive
-                val bottomIndicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+                val bottomIndicatorSize = resources.getDimension(R.dimen.main_bottom_indicator_height)
+                val bottomIndicatorCornerRadius = bottomIndicatorSize / 2f // 用一半高度作为圆角，变成圆形
                 indicatorGlassView?.let { indicatorGlass ->
                     setupLiquidGlassView(
                         liquidGlassView = indicatorGlass,
