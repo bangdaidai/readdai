@@ -601,9 +601,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                // 让指示器使用胶囊形状，使用指示器高度的一半作为圆角半径
-                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_height) / 2
-                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
+                // 让指示器使用圆形
+                val indicatorCornerRadius = 0f // 参数不生效，因为我们设置 oval = true
+                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true, true)
                 
                 // Setup main bottom navigation LiquidGlassView - match archive
                 val bottomBarCornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
@@ -870,9 +870,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            // 使用更大的圆角使指示器呈现胶囊形状
-            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_height) / 2
+            shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(primaryColor)
         }
     }
