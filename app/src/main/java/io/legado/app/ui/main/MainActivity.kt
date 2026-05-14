@@ -385,16 +385,15 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.swipeEnabled = !floatingMode
         
         if (floatingMode) {
-            // Floating mode: add bottom padding to prevent content from being obscured by floating capsule
-            val barHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height)
-            val bottomMargin = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
-            val totalPadding = barHeight + bottomMargin
+            // Floating mode: content should extend to bottom, capsule floats on top
+            // Only add minimal padding to account for system navigation bar
+            val navBarHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
             
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
                 contentContainer.paddingRight,
-                totalPadding
+                navBarHeight
             )
         } else {
             // Classic mode: clear bottom padding
@@ -538,7 +537,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 liquidGlassView?.visibility = View.VISIBLE
                 indicatorGlassView?.visibility = View.VISIBLE
                 shellOverlay?.visibility = View.VISIBLE
-                backgroundView?.visibility = View.VISIBLE
+                // Hide background view in glass mode - we want transparency to show content behind
+                backgroundView?.visibility = View.GONE
                 
                 // BottomNavigationView must be transparent - match archive
                 binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
@@ -861,7 +861,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
             shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+            // 使用更大的圆角使指示器呈现胶囊形状
+            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_height) / 2
             setColor(primaryColor)
         }
     }
