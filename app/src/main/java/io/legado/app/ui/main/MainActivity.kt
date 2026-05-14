@@ -385,16 +385,23 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.swipeEnabled = !floatingMode
         
         if (floatingMode) {
-            // Floating mode: content should extend to bottom, capsule floats on top
-            // Only add minimal padding to account for system navigation bar
-            val navBarHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
+            // Floating mode: add bottom padding to prevent content from being obscured by floating capsule
+            val barHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height)
+            val bottomMargin = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
+            val totalPadding = barHeight + bottomMargin
             
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
                 contentContainer.paddingRight,
-                navBarHeight
+                totalPadding
             )
+            // 确保经典模式的 bottomNavigationView 背景完全透明
+            bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
+            bottomNavigationView.alpha = 0f
+            // 确保 backgroundView 也是隐藏的
+            val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
+            backgroundView?.visibility = View.GONE
         } else {
             // Classic mode: clear bottom padding
             contentContainer.setPadding(
@@ -403,6 +410,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 contentContainer.paddingRight,
                 0
             )
+            // 恢复经典模式 bottomNavigationView 的 alpha
+            bottomNavigationView.alpha = 1f
         }
         
         // Show/hide bottom navigation views
@@ -592,7 +601,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+                // 让指示器使用胶囊形状，使用指示器高度的一半作为圆角半径
+                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_height) / 2
                 indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
                 
                 // Setup main bottom navigation LiquidGlassView - match archive
