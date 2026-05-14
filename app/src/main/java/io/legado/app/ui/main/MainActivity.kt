@@ -390,14 +390,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         if (floatingMode) {
             // Floating mode: add bottom padding so content isn't hidden behind the capsule
             val barHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height)
-            val bottomMargin = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
-            val totalPadding = barHeight + bottomMargin
-            
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
                 contentContainer.paddingRight,
-                totalPadding
+                barHeight
             )
             // Ensure classic mode bottomNavigationView is fully hidden (background transparent, remove shadow)
             bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
