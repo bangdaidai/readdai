@@ -396,6 +396,12 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 contentContainer.paddingRight,
                 totalPadding
             )
+            // 确保经典模式的 bottomNavigationView 背景完全透明
+            bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
+            bottomNavigationView.alpha = 0f
+            // 确保 backgroundView 也是隐藏的
+            val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
+            backgroundView?.visibility = View.GONE
         } else {
             // Classic mode: clear bottom padding
             contentContainer.setPadding(
@@ -404,6 +410,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 contentContainer.paddingRight,
                 0
             )
+            // 恢复经典模式 bottomNavigationView 的 alpha
+            bottomNavigationView.alpha = 1f
         }
         
         // Show/hide bottom navigation views
@@ -538,7 +546,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 liquidGlassView?.visibility = View.VISIBLE
                 indicatorGlassView?.visibility = View.VISIBLE
                 shellOverlay?.visibility = View.VISIBLE
-                backgroundView?.visibility = View.VISIBLE
+                // Hide background view in glass mode - we want transparency to show content behind
+                backgroundView?.visibility = View.GONE
                 
                 // BottomNavigationView must be transparent - match archive
                 binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
@@ -592,8 +601,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
-                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
+                // 让指示器使用圆形
+                val indicatorCornerRadius = 0f // 参数不生效，因为我们设置 oval = true
+                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true, true)
                 
                 // Setup main bottom navigation LiquidGlassView - match archive
                 val bottomBarCornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
@@ -776,11 +786,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // In immersive mode, no elevation is needed as it blends with the background
             bottomNavigationView.elevation = 0f
         } else {
-            // Classic mode: use theme's bottom navigation bar color
-            val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(navBgColor)
-            bottomNavigationView.alpha = 1.0f
-            // Apply default elevation for shadow effect
+            // Classic mode: use theme's bottom navigation bar color and apply full theme
+            bottomNavigationView.applyTheme()
+            // Ensure we use the correct elevation from dimens
             bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
         
@@ -862,8 +870,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+            shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(primaryColor)
         }
     }
@@ -1059,6 +1066,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         observeEvent<String>(EventBus.RECREATE) {
             recreate()
+        }
+        observeEvent<String>(EventBus.THEME_CHANGED) {
+            // 主题变化时，重新应用底部导航栏样式
+            refreshBottomNavigationConfig()
         }
         observeEvent<Boolean>(EventBus.NOTIFY_MAIN) {
             binding.apply {
