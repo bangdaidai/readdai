@@ -388,12 +388,18 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.swipeEnabled = !floatingMode
         
         if (floatingMode) {
-            // Floating mode: use bottom bar height + system navigation bar height for padding
-            // This allows content to scroll up to show under the floating capsule
+            // Floating mode: add bottom padding to prevent content from being obscured by floating capsule
             val barHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height)
             val bottomMargin = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
+            val totalPadding = barHeight + bottomMargin
             
-            // Ensure classic mode bottomNavigationView is fully hidden
+            contentContainer.setPadding(
+                contentContainer.paddingLeft,
+                contentContainer.paddingTop,
+                contentContainer.paddingRight,
+                totalPadding
+            )
+            // Ensure classic mode bottomNavigationView is fully hidden (background transparent, remove shadow)
             bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
             bottomNavigationView.alpha = 0f
             bottomNavigationView.visibility = View.GONE
@@ -561,8 +567,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 
                 liquidGlassView.visibility = View.VISIBLE
                 indicatorGlassView.visibility = View.VISIBLE
-                // Hide shell overlay in frosted/glass mode for true transparent effect
-                shellOverlay.visibility = View.GONE
+                shellOverlay.visibility = View.VISIBLE
+                // Remove shellOverlay background in frosted/glass mode to avoid bottom bar effect
                 shellOverlay.background = null
                 // Hide background view in glass mode - we want transparency to show content behind
                 backgroundView.visibility = View.GONE
@@ -615,7 +621,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     (72f + glassLevel * 34f).dpToPx()
                 }
                 
-                // Note: shell overlay is hidden in frosted/glass mode for true transparent effect
+                // Setup shell overlays with gradient drawable - match archive implementation
+                val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
+                shellOverlay.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
                 // 让指示器使用圆形
@@ -793,17 +801,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
             bottomNavigationView.alpha = 1.0f
             bottomNavigationView.elevation = 0f
-        } else if (AppConfig.immNavigationBar) {
-            // Immersive mode: transparent background, no shadow
-            bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
-            bottomNavigationView.alpha = 1.0f
-            bottomNavigationView.elevation = 0f
         } else {
-            // Classic mode without immersive: use theme's bottom navigation bar color with elevation
-            val bgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(bgColor)
-            bottomNavigationView.alpha = 1.0f
-            bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
+            // Classic mode: use theme's bottom navigation bar color with elevation
+            bottomNavigationView.applyTheme()
         }
         
         // Force invalidate to ensure background is redrawn
