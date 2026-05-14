@@ -771,8 +771,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
             bottomNavigationView.setBackgroundColor(navBgColor)
             bottomNavigationView.alpha = 1.0f
-            // Apply elevation based on theme settings for shadow effect
-            bottomNavigationView.elevation = this@MainActivity.elevation
+            // Apply default elevation for shadow effect
+            bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
         
         // CRITICAL: Always re-apply immersive navigation bar padding to ensure it works correctly
