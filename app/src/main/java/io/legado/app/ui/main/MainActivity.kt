@@ -503,8 +503,14 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         // Only apply in floating mode
         if (AppConfig.bottomBarLayoutMode != "floating") return
         
+        // Check if views are ready before proceeding
         val liquidGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_glass_view)
         val indicatorGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_indicator_glass_view)
+        
+        if (liquidGlassView == null || indicatorGlassView == null) {
+            return
+        }
+        
         val shellOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_shell_overlay)
         val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
         val indicatorContainer = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_container)
@@ -781,19 +787,12 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
             bottomNavigationView.alpha = 1.0f
             bottomNavigationView.elevation = 0f
-        } else if (AppConfig.immNavigationBar) {
-            // Immersive mode: use page background color to blend in
-            val bgColor = io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(bgColor)
-            bottomNavigationView.alpha = 1.0f
-            // In immersive mode, no elevation is needed as it blends with the background
-            bottomNavigationView.elevation = 0f
         } else {
-            // Classic mode: use theme's bottom navigation bar color (不依赖 applyTheme 中的 transparentNavBar 检查)
+            // Classic mode: use theme's bottom navigation bar color and apply elevation
             val bgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
             bottomNavigationView.setBackgroundColor(bgColor)
             bottomNavigationView.alpha = 1.0f
-            // Ensure we use the correct elevation from dimens
+            // Apply elevation for shadow effect
             bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
         
@@ -826,6 +825,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         elasticEnabled: Boolean,
         touchEffectEnabled: Boolean,
     ) {
+        if (liquidGlassView == null) return
+        
         if (boundLiquidGlassViewIds.add(liquidGlassView.id)) {
             liquidGlassView.bind(binding.contentContainer)
         }
