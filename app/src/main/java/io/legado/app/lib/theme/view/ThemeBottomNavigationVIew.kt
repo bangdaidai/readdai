@@ -24,6 +24,15 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     BottomNavigationView(context, attrs) {
 
     init {
+        applyTheme()
+        // 禁用水平平移效果并设置透明背景，减少点击效果的明显程度
+        isItemHorizontalTranslationEnabled = false
+        itemBackground = Color.TRANSPARENT.toDrawable()
+
+        ViewCompat.setOnApplyWindowInsetsListener(this, null)
+    }
+
+    fun applyTheme() {
         val transparentNavBar = context.transparentNavBar
         val bgColor = context.bottomBackground
         if (transparentNavBar) {
@@ -42,11 +51,6 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             .create()
         itemIconTintList = colorStateList
         itemTextColor = colorStateList
-        // 禁用水平平移效果并设置透明背景，减少点击效果的明显程度
-        isItemHorizontalTranslationEnabled = false
-        itemBackground = Color.TRANSPARENT.toDrawable()
-
-        ViewCompat.setOnApplyWindowInsetsListener(this, null)
     }
 
     fun createThemeColorStateList(): ColorStateList {

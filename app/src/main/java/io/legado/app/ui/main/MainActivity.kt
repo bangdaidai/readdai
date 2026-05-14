@@ -776,11 +776,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // In immersive mode, no elevation is needed as it blends with the background
             bottomNavigationView.elevation = 0f
         } else {
-            // Classic mode: use theme's bottom navigation bar color
-            val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(navBgColor)
-            bottomNavigationView.alpha = 1.0f
-            // Apply default elevation for shadow effect
+            // Classic mode: use theme's bottom navigation bar color and apply full theme
+            bottomNavigationView.applyTheme()
+            // Ensure we use the correct elevation from dimens
             bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
         
@@ -1059,6 +1057,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         observeEvent<String>(EventBus.RECREATE) {
             recreate()
+        }
+        observeEvent<String>(EventBus.THEME_CHANGED) {
+            // 主题变化时，重新应用底部导航栏样式
+            refreshBottomNavigationConfig()
         }
         observeEvent<Boolean>(EventBus.NOTIFY_MAIN) {
             binding.apply {
