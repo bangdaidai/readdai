@@ -396,8 +396,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 contentContainer.paddingRight,
                 totalPadding
             )
-            // 确保经典模式的 bottomNavigationView 完全隐藏
+            // 确保经典模式的 bottomNavigationView 完全隐藏（背景透明，移除阴影）
             bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
+            bottomNavigationView.alpha = 0f
             bottomNavigationView.visibility = View.GONE
             bottomNavigationView.elevation = 0f
             // 确保 backgroundView 也是隐藏的
@@ -415,6 +416,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             )
             // 恢复经典模式 bottomNavigationView 的显示
             bottomNavigationView.visibility = View.VISIBLE
+            bottomNavigationView.alpha = 1f
         }
         
         // Show/hide bottom navigation views (注意：不要在这里设置 bottomNavigationView 的 isVisible，我们上面已经设置了)
