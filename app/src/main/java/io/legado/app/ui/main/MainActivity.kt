@@ -349,14 +349,25 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Refresh bottom navigation config - EXACT match with archive
      */
     private fun refreshBottomNavigationConfig() {
+        // Always apply layout mode first to ensure correct visibility and padding
+        applyBottomLayoutMode()
+        
+        // Check icon config signature
         val signature = NavigationBarIconConfig.currentSignature(AppConfig.isNightTheme)
         if (bottomNavigationConfigSignature == signature) {
+            // Icon config unchanged, but still need to update LiquidGlass for floating mode
+            if (AppConfig.bottomBarLayoutMode == "floating") {
+                scheduleLiquidGlassSetup()
+                binding.bottomNavigationViewFloating.doOnLayout {
+                    val initialItemId = getBottomNavigationItemId(pagePosition)
+                    updateFloatingIndicatorPosition(initialItemId)
+                }
+            }
             return
         }
         bottomNavigationConfigSignature = signature
         NavigationBarIconConfig.applyCurrentBottomConfig(AppConfig.isNightTheme)
         applyBottomNavigationIcons()
-        applyBottomLayoutMode()
         scheduleLiquidGlassSetup()
         binding.bottomNavigationViewFloating.doOnLayout {
             val initialItemId = getBottomNavigationItemId(pagePosition)
@@ -374,12 +385,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.swipeEnabled = !floatingMode
         
         if (floatingMode) {
-            // Floating mode: add bottom padding to prevent content from being obscured by floating bar
-            // Calculate total height: bar height + bottom margin + navigation bar height
+            // Floating mode: add bottom padding to prevent content from being obscured by floating capsule
             val barHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height)
             val bottomMargin = resources.getDimensionPixelSize(R.dimen.main_bottom_controls_bottom_padding)
-            val navBarHeight = this@MainActivity.navigationBarHeight
-            val totalPadding = barHeight + bottomMargin + navBarHeight
+            val totalPadding = barHeight + bottomMargin
             
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
@@ -388,7 +397,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 totalPadding
             )
         } else {
-            // Classic mode: clear bottom padding, let the classic bottom nav handle spacing
+            // Classic mode: clear bottom padding
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
@@ -774,6 +783,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // Apply default elevation for shadow effect
             bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
+        
+        // Force invalidate to ensure background is redrawn
+        bottomNavigationView.invalidate()
         
         // CRITICAL: Always re-apply immersive navigation bar padding to ensure it works correctly
         // This must be called every time classic mode is applied, not just once in initView
