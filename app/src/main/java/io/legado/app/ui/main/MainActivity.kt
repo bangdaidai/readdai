@@ -554,6 +554,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 liquidGlassView.visibility = View.VISIBLE
                 indicatorGlassView.visibility = View.VISIBLE
                 shellOverlay.visibility = View.VISIBLE
+                // Remove shellOverlay background in frosted/glass mode to avoid bottom bar effect
+                shellOverlay.background = null
                 // Hide background view in glass mode - we want transparency to show content behind
                 backgroundView.visibility = View.GONE
                 
@@ -783,14 +785,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
             bottomNavigationView.alpha = 1.0f
             bottomNavigationView.elevation = 0f
-        } else if (AppConfig.immNavigationBar) {
-            // Immersive mode: use page background color, no elevation
-            val bgColor = io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(bgColor)
-            bottomNavigationView.alpha = 1.0f
-            bottomNavigationView.elevation = 0f
         } else {
-            // Non-immersive mode: use theme's bottom navigation bar color with elevation
+            // Classic mode: use theme's bottom navigation bar color with elevation
             val bgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
             bottomNavigationView.setBackgroundColor(bgColor)
             bottomNavigationView.alpha = 1.0f
