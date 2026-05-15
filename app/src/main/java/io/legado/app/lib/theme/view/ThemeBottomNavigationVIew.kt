@@ -13,6 +13,7 @@ import io.legado.app.databinding.ViewNavigationBadgeBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.transparentNavBar
@@ -49,11 +50,9 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             return
         }
         if (AppConfig.immNavigationBar) {
-            // 沉浸式模式使用主题背景色，达到沉浸式效果
             setBackgroundColor(context.backgroundColor)
             elevation = 0f
         } else {
-            // 非沉浸式模式使用bottomBackground
             val bgColor = context.bottomBackground
             if (context.transparentNavBar) {
                 setBackgroundColor(Color.TRANSPARENT)
@@ -62,8 +61,6 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
                 elevation = context.elevation
             }
         }
-        // Unselected: use title bar text icon color
-        // Selected: use accent color
         val unselectedColor = ThemeStore.titleBarTextIconColor(context)
         val selectedColor = ThemeStore.accentColor(context)
         val colorStateList = Selector.colorBuild()
@@ -75,8 +72,6 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     }
 
     fun createThemeColorStateList(): ColorStateList {
-        // Unselected: use title bar text icon color
-        // Selected: use accent color
         val unselectedColor = ThemeStore.titleBarTextIconColor(context)
         val selectedColor = ThemeStore.accentColor(context)
         return Selector.colorBuild()
@@ -92,9 +87,7 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     }
 
     fun addBadgeView(index: Int): BadgeView {
-        //获取底部菜单view
         val menuView = getChildAt(0) as ViewGroup
-        //获取第index个itemView
         val itemView = menuView.getChildAt(index) as ViewGroup
         if (itemView.layoutParams is FrameLayout.LayoutParams) {
             (itemView.layoutParams as FrameLayout.LayoutParams).apply {
