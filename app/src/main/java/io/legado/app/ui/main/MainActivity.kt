@@ -117,9 +117,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     // Track if we should cancel pending LiquidGlass tasks
     private var shouldCancelLiquidGlassTasks = false
     
-    // Track if LiquidGlass setup is in progress to avoid concurrent updates
-    private var isLiquidGlassSetupInProgress = false
-    
     // Bottom navigation indicator animator - match archive implementation
     private val bottomIndicatorAnimator by lazy {
         ValueAnimator().apply {
@@ -388,46 +385,41 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.swipeEnabled = !floatingMode
         
         if (floatingMode) {
-            // Floating mode: clear bottom padding，让页面内容延伸到屏幕底部
+            // Floating mode: NO bottom padding - capsule floats above content, content can scroll under it
+            // Reference: archive project implementation and memory specification
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
                 contentContainer.paddingRight,
-                0
+                0  // No bottom padding in floating mode
             )
-            // Ensure classic mode bottomNavigationView is fully hidden (background transparent, remove shadow)
-            bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
-            bottomNavigationView.alpha = 0f
-            bottomNavigationView.visibility = View.GONE
-            bottomNavigationView.elevation = 0f
-            // Ensure backgroundView is also hidden
-            val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
-            backgroundView?.visibility = View.GONE
-            // Ensure bottom_navigation_glass background is transparent
-            bottomNavigationGlass.setBackgroundColor(Color.TRANSPARENT)
         } else {
-            // Classic mode: clear bottom padding
+            // Classic mode: clear bottom padding (will be handled by window insets)
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
                 contentContainer.paddingRight,
                 0
             )
-            // 恢复经典模式 bottomNavigationView 的显示
-            bottomNavigationView.visibility = View.VISIBLE
-            bottomNavigationView.alpha = 1f
         }
         
-        // Show/hide bottom navigation views (注意：不要在这里设置 bottomNavigationView 的 isVisible，我们上面已经设置了)
-        bottomNavigationGlass.isVisible = floatingMode
+        // Show/hide bottom navigation views
+        if (floatingMode) {
+            // Floating mode: completely hide classic bottom navigation
+            bottomNavigationView.visibility = View.GONE
+            bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
+            bottomNavigationView.elevation = 0f
+            bottomNavigationGlass.visibility = View.VISIBLE
+        } else {
+            // Classic mode: show classic bottom navigation, hide floating
+            bottomNavigationView.visibility = View.VISIBLE
+            bottomNavigationGlass.visibility = View.GONE
+        }
         
         if (floatingMode) {
             // Floating mode: setup LiquidGlass and indicator
             shouldCancelLiquidGlassTasks = false
             bottomIndicatorAnimator.cancel()
-            
-            // CRITICAL: Set transparent background for floating mode
-            bottomNavigationViewFloating.setTransparentBackground(true)
             
             // Hide indicator initially while setting up
             bottomNavigationIndicatorContainer.isVisible = false
@@ -447,9 +439,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             shouldCancelLiquidGlassTasks = true
             bottomIndicatorAnimator.cancel()
             bottomNavigationIndicatorContainer.isVisible = false
-            
-            // CRITICAL: Ensure classic mode uses themed background
-            bottomNavigationView.setTransparentBackground(false)
             
             applyClassicModeStyle()
             applyBottomNavigationIcons() // Apply icons for classic mode
@@ -491,9 +480,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Schedule LiquidGlass setup with optional delay - EXACT match with archive
      */
     private fun scheduleLiquidGlassSetup(delayMillis: Long = 0L) {
-        if (shouldCancelLiquidGlassTasks) return
         val action = {
-            if (!isFinishing && !shouldCancelLiquidGlassTasks) {
+            if (!isFinishing) {
                 setupLiquidGlass()
             }
         }
@@ -508,25 +496,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Setup LiquidGlass - EXACT match with archive implementation
      */
     private fun setupLiquidGlass() {
-        if (shouldCancelLiquidGlassTasks) return
-        if (isLiquidGlassSetupInProgress) return
-        isLiquidGlassSetupInProgress = true
-        
         // Only apply in floating mode
-        if (AppConfig.bottomBarLayoutMode != "floating") {
-            isLiquidGlassSetupInProgress = false
-            return
-        }
+        if (AppConfig.bottomBarLayoutMode != "floating") return
         
-        // Check if views are ready before proceeding
         val liquidGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_glass_view)
         val indicatorGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_indicator_glass_view)
-        
-        if (liquidGlassView == null || indicatorGlassView == null) {
-            isLiquidGlassSetupInProgress = false
-            return
-        }
-        
         val shellOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_shell_overlay)
         val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
         val indicatorContainer = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_container)
@@ -534,24 +508,24 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         when (AppConfig.bottomBarEffectMode) {
             "solid" -> {
                 // Solid mode: hide liquid glass, show solid background with capsule shape - match archive
-                liquidGlassView.visibility = View.GONE
-                indicatorGlassView.visibility = View.GONE
-                shellOverlay.visibility = View.VISIBLE
-                indicatorContainer.isVisible = true
-                indicatorContainer.alpha = 1f
-                indicatorContainer.scaleX = 1f
-                indicatorContainer.scaleY = 1f
+                liquidGlassView?.visibility = View.GONE
+                indicatorGlassView?.visibility = View.GONE
+                shellOverlay?.visibility = View.VISIBLE
+                indicatorContainer?.isVisible = true
+                indicatorContainer?.alpha = 1f
+                indicatorContainer?.scaleX = 1f
+                indicatorContainer?.scaleY = 1f
                 
                 // Use factory method to create drawable - match archive implementation
                 val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                shellOverlay.background = createSolidBottomShellDrawable(cornerRadius)
+                shellOverlay?.background = createSolidBottomShellDrawable(cornerRadius)
                 
                 // Setup indicator overlay
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                indicatorOverlay.background = createSolidBottomIndicatorDrawable()
+                indicatorOverlay?.background = createSolidBottomIndicatorDrawable()
                 
                 // Hide background view - NOT used in archive, shell_overlay handles everything
-                backgroundView.visibility = View.GONE
+                backgroundView?.visibility = View.GONE
                 
                 // BottomNavigationView must be transparent
                 binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
@@ -562,18 +536,16 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             }
             "frosted", "glass" -> {
                 // Frosted/Glass mode: use LiquidGlassView with real blur effect - match archive
-                indicatorContainer.isVisible = true
-                indicatorContainer.alpha = 0f
-                indicatorContainer.scaleX = 0.82f
-                indicatorContainer.scaleY = 0.82f
+                indicatorContainer?.isVisible = true
+                indicatorContainer?.alpha = 0f
+                indicatorContainer?.scaleX = 0.82f
+                indicatorContainer?.scaleY = 0.82f
                 
-                liquidGlassView.visibility = View.VISIBLE
-                indicatorGlassView.visibility = View.VISIBLE
-                shellOverlay.visibility = View.VISIBLE
-                // Remove shellOverlay background in frosted/glass mode to avoid bottom bar effect
-                shellOverlay.background = null
-                // Hide background view in glass mode - we want transparency to show content behind
-                backgroundView.visibility = View.GONE
+                liquidGlassView?.visibility = View.VISIBLE
+                indicatorGlassView?.visibility = View.VISIBLE
+                shellOverlay?.visibility = View.VISIBLE
+                // CRITICAL: Hide background view to allow LiquidGlassView to show content behind - match archive
+                backgroundView?.visibility = View.GONE
                 
                 // BottomNavigationView must be transparent - match archive
                 binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
@@ -584,7 +556,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                         liquidGlassReady = true
                         scheduleLiquidGlassSetup(delayMillis = 32L)
                     }
-                    isLiquidGlassSetupInProgress = false
                     return
                 }
                 
@@ -625,44 +596,45 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 
                 // Setup shell overlays with gradient drawable - match archive implementation
                 val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                shellOverlay.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
+                shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
                 
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                // 让指示器使用圆形
-                val indicatorCornerRadius = 0f // 参数不生效，因为我们设置 oval = true
-                indicatorOverlay.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, true, true)
+                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
                 
                 // Setup main bottom navigation LiquidGlassView - match archive
                 val bottomBarCornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                setupLiquidGlassView(
-                    liquidGlassView = liquidGlassView,
-                    cornerRadius = bottomBarCornerRadius,
-                    refractionHeight = refractionHeight,
-                    refractionOffset = refractionOffset,
-                    blurRadius = blurRadius,
-                    dispersion = dispersion,
-                    tintAlpha = tintAlpha,
-                    elasticEnabled = true,
-                    touchEffectEnabled = true
-                )
+                liquidGlassView?.let { glass ->
+                    setupLiquidGlassView(
+                        liquidGlassView = glass,
+                        cornerRadius = bottomBarCornerRadius,
+                        refractionHeight = refractionHeight,
+                        refractionOffset = refractionOffset,
+                        blurRadius = blurRadius,
+                        dispersion = dispersion,
+                        tintAlpha = tintAlpha,
+                        elasticEnabled = true,
+                        touchEffectEnabled = true
+                    )
+                }
                 
                 // Setup indicator LiquidGlassView with adjusted parameters - match archive
-                val bottomIndicatorSize = resources.getDimension(R.dimen.main_bottom_indicator_height)
-                val bottomIndicatorCornerRadius = bottomIndicatorSize / 2f // 用一半高度作为圆角，变成圆形
-                setupLiquidGlassView(
-                    liquidGlassView = indicatorGlassView,
-                    cornerRadius = bottomIndicatorCornerRadius,
-                    refractionHeight = (refractionHeight * 0.9f).coerceAtLeast(16f.dpToPx()),
-                    refractionOffset = (refractionOffset * 0.72f).coerceAtLeast(46f.dpToPx()),
-                    blurRadius = (blurRadius * 0.78f).coerceAtLeast(5f.dpToPx()),
-                    dispersion = (dispersion + 0.08f).coerceAtMost(1f),
-                    tintAlpha = (tintAlpha + 0.05f).coerceAtMost(0.28f),
-                    elasticEnabled = true,
-                    touchEffectEnabled = true
-                )
+                val bottomIndicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+                indicatorGlassView?.let { indicatorGlass ->
+                    setupLiquidGlassView(
+                        liquidGlassView = indicatorGlass,
+                        cornerRadius = bottomIndicatorCornerRadius,
+                        refractionHeight = (refractionHeight * 0.9f).coerceAtLeast(16f.dpToPx()),
+                        refractionOffset = (refractionOffset * 0.72f).coerceAtLeast(46f.dpToPx()),
+                        blurRadius = (blurRadius * 0.78f).coerceAtLeast(5f.dpToPx()),
+                        dispersion = (dispersion + 0.08f).coerceAtMost(1f),
+                        tintAlpha = (tintAlpha + 0.05f).coerceAtMost(0.28f),
+                        elasticEnabled = true,
+                        touchEffectEnabled = true
+                    )
+                }
             }
         }
-        isLiquidGlassSetupInProgress = false
     }
     
     /**
@@ -798,29 +770,40 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Apply classic mode style - reference dai411 project
      */
     private fun applyClassicModeStyle() = binding.run {
+        // Hide floating layout in classic mode
+        bottomNavigationGlass.visibility = View.GONE
+        
+        // Show classic bottom navigation
+        bottomNavigationView.visibility = View.VISIBLE
+        
         // Apply e-ink border if needed
         if (AppConfig.isEInkMode) {
             bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
             bottomNavigationView.alpha = 1.0f
             bottomNavigationView.elevation = 0f
+        } else if (AppConfig.immNavigationBar) {
+            // Immersive mode: use page background color to blend in, NO shadow
+            val bgColor = io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
+            bottomNavigationView.setBackgroundColor(bgColor)
+            bottomNavigationView.alpha = 1.0f
+            // In immersive mode, no elevation is needed as it blends with the background
+            bottomNavigationView.elevation = 0f
         } else {
-            // Classic mode: use theme's bottom navigation bar color with elevation
-            bottomNavigationView.applyTheme()
+            // Classic mode: use theme's bottom navigation bar color WITH shadow
+            val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
+            bottomNavigationView.setBackgroundColor(navBgColor)
+            bottomNavigationView.alpha = 1.0f
+            // Apply default elevation for shadow effect
+            bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
         
         // Force invalidate to ensure background is redrawn
         bottomNavigationView.invalidate()
         
-        // CRITICAL: Always re-apply immersive navigation bar padding to ensure it works correctly
-        // This must be called every time classic mode is applied, not just once in initView
-        bottomNavigationView.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
-            val height = windowInsets.navigationBarHeight
-            view.bottomPadding = height
-            windowInsets.inset(0, 0, 0, height)
-        }
-        
-        // Force request apply window insets to ensure the listener is triggered
-        bottomNavigationView.requestApplyInsets()
+        // CRITICAL: Remove window insets listener in classic mode to prevent content obstruction
+        // dai411 project does not use window insets for bottom navigation
+        bottomNavigationView.setOnApplyWindowInsetsListenerCompat(null)
+        bottomNavigationView.setPadding(0, 0, 0, 0)
     }
     
     /**
@@ -837,7 +820,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         elasticEnabled: Boolean,
         touchEffectEnabled: Boolean,
     ) {
-        if (liquidGlassView == null) return
+        // CRITICAL: Check if liquidGlassView is valid before using it
+        if (!liquidGlassView.isLaidOut || liquidGlassView.width == 0 || liquidGlassView.height == 0) {
+            return
+        }
         
         if (boundLiquidGlassViewIds.add(liquidGlassView.id)) {
             liquidGlassView.bind(binding.contentContainer)
@@ -888,7 +874,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.OVAL
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
             setColor(primaryColor)
         }
     }
@@ -1084,10 +1071,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         observeEvent<String>(EventBus.RECREATE) {
             recreate()
-        }
-        observeEvent<String>(EventBus.THEME_CHANGED) {
-            // 主题变化时，重新应用底部导航栏样式
-            refreshBottomNavigationConfig()
         }
         observeEvent<Boolean>(EventBus.NOTIFY_MAIN) {
             binding.apply {

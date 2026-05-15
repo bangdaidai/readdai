@@ -10,10 +10,8 @@ import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import io.legado.app.databinding.ViewNavigationBadgeBinding
-import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.ThemeStore
-import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.transparentNavBar
@@ -25,42 +23,17 @@ import androidx.core.graphics.drawable.toDrawable
 class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     BottomNavigationView(context, attrs) {
 
-    private var transparentBackground = false
-
     init {
-        applyTheme()
-        isItemHorizontalTranslationEnabled = false
-        itemBackground = Color.TRANSPARENT.toDrawable()
-
-        ViewCompat.setOnApplyWindowInsetsListener(this, null)
-    }
-
-    fun setTransparentBackground(transparent: Boolean) {
-        transparentBackground = transparent
-        if (transparent) {
+        val transparentNavBar = context.transparentNavBar
+        val bgColor = context.bottomBackground
+        if (transparentNavBar) {
             setBackgroundColor(Color.TRANSPARENT)
         } else {
-            applyTheme()
+            setBackgroundColor(bgColor)
+            elevation = context.elevation
         }
-    }
-
-    fun applyTheme() {
-        if (transparentBackground) {
-            setBackgroundColor(Color.TRANSPARENT)
-            return
-        }
-        if (AppConfig.immNavigationBar) {
-            setBackgroundColor(context.backgroundColor)
-            elevation = 0f
-        } else {
-            val bgColor = context.bottomBackground
-            if (context.transparentNavBar) {
-                setBackgroundColor(Color.TRANSPARENT)
-            } else {
-                setBackgroundColor(bgColor)
-                elevation = context.elevation
-            }
-        }
+        // Unselected: use title bar text icon color
+        // Selected: use accent color
         val unselectedColor = ThemeStore.titleBarTextIconColor(context)
         val selectedColor = ThemeStore.accentColor(context)
         val colorStateList = Selector.colorBuild()
@@ -69,9 +42,16 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             .create()
         itemIconTintList = colorStateList
         itemTextColor = colorStateList
+        // 禁用水平平移效果并设置透明背景，减少点击效果的明显程度
+        isItemHorizontalTranslationEnabled = false
+        itemBackground = Color.TRANSPARENT.toDrawable()
+
+        ViewCompat.setOnApplyWindowInsetsListener(this, null)
     }
 
     fun createThemeColorStateList(): ColorStateList {
+        // Unselected: use title bar text icon color
+        // Selected: use accent color
         val unselectedColor = ThemeStore.titleBarTextIconColor(context)
         val selectedColor = ThemeStore.accentColor(context)
         return Selector.colorBuild()
@@ -87,7 +67,9 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     }
 
     fun addBadgeView(index: Int): BadgeView {
+        //获取底部菜单view
         val menuView = getChildAt(0) as ViewGroup
+        //获取第index个itemView
         val itemView = menuView.getChildAt(index) as ViewGroup
         if (itemView.layoutParams is FrameLayout.LayoutParams) {
             (itemView.layoutParams as FrameLayout.LayoutParams).apply {

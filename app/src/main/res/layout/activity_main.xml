@@ -43,7 +43,6 @@
         android:clipChildren="false"
         android:clipToPadding="false"
         android:elevation="@dimen/main_bottom_bar_elevation"
-        android:background="@android:color/transparent"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -78,7 +77,6 @@
             android:layout_height="@dimen/main_bottom_indicator_height"
             android:layout_gravity="start|center_vertical"
             android:layout_marginStart="@dimen/main_bottom_indicator_margin_start"
-            android:background="@color/transparent"
             android:clickable="false"
             android:focusable="false">
 
