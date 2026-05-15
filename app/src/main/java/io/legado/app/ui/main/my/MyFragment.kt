@@ -90,8 +90,8 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-        ): View? {
-            val view = super.onCreateView(inflater, container, savedInstanceState)
+        ): View {
+            val view = super.onCreateView(inflater, container, savedInstanceState)!!
             // Apply bottom padding to prevent content from being hidden under floating capsule
             listView?.let { lv ->
                 lv.clipToPadding = false
