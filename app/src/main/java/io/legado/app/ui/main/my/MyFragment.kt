@@ -3,9 +3,11 @@ package io.legado.app.ui.main.my
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import androidx.preference.Preference
 import io.legado.app.R
 import io.legado.app.base.BaseFragment
@@ -41,6 +43,7 @@ import io.legado.app.utils.observeEventSticky
 import io.legado.app.utils.openUrl
 import io.legado.app.utils.putPrefBoolean
 import io.legado.app.utils.sendToClip
+import io.legado.app.utils.applyMainBottomBarPadding
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.showHelp
 import io.legado.app.utils.startActivity
@@ -82,6 +85,21 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
      */
     class MyPreferenceFragment : PreferenceFragment(),
         SharedPreferences.OnSharedPreferenceChangeListener {
+
+        override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+        ): View? {
+            val view = super.onCreateView(inflater, container, savedInstanceState)
+            // Apply bottom padding to prevent content from being hidden under floating capsule
+            listView?.let { lv ->
+                lv.clipToPadding = false
+                lv.applyMainBottomBarPadding()
+                lv.setEdgeEffectColor(io.legado.app.lib.theme.ThemeStore.primaryColor(requireContext()))
+            }
+            return view
+        }
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             putPrefBoolean(PreferKey.webService, WebService.isRun)

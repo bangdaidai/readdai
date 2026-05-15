@@ -28,6 +28,7 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.main.MainViewModel
+import io.legado.app.utils.applyMainBottomBarPadding
 import io.legado.app.utils.cnCompare
 import io.legado.app.utils.flowWithLifecycleAndDatabaseChangeFirst
 import io.legado.app.utils.observeEvent
@@ -110,6 +111,8 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
 
     private fun initRecyclerView() {
         binding.rvBookshelf.setEdgeEffectColor(primaryColor)
+        binding.rvBookshelf.clipToPadding = true
+        binding.rvBookshelf.applyMainBottomBarPadding()
         upFastScrollerBar()
         binding.refreshLayout.setColorSchemeColors(accentColor)
         binding.refreshLayout.setOnRefreshListener {

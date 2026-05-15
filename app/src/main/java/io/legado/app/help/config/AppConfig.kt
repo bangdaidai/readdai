@@ -277,7 +277,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         get() = appCtx.getPrefBoolean(PreferKey.mainTransparentStatusBar, false)
 
     val immNavigationBar: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.immNavigationBar, true)
+        get() = appCtx.getPrefBoolean(PreferKey.immNavigationBar, false)
 
     val screenOrientation: String?
         get() = appCtx.getPrefString(PreferKey.screenOrientation)
