@@ -39,7 +39,6 @@
         android:layout_height="@dimen/main_bottom_bar_height"
         android:layout_marginStart="@dimen/main_bottom_controls_horizontal_padding"
         android:layout_marginEnd="@dimen/main_bottom_controls_horizontal_padding"
-        android:layout_marginBottom="@dimen/main_bottom_controls_bottom_padding"
         android:clipChildren="false"
         android:clipToPadding="false"
         android:elevation="@dimen/main_bottom_bar_elevation"

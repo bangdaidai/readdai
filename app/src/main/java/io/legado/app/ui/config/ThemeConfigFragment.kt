@@ -146,13 +146,14 @@ class ThemeConfigFragment : PreferenceFragment(),
         when (key) {
             PreferKey.launcherIcon -> LauncherIconHelp.changeIcon(getPrefString(key))
             PreferKey.transparentStatusBar -> recreateActivities()
-            PreferKey.immNavigationBar -> recreateActivities()
+            PreferKey.immNavigationBar -> postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
             PreferKey.cPrimary,
             PreferKey.cAccent,
             PreferKey.cBackground,
             PreferKey.cBBackground,
             PreferKey.cBackgroundCard,
             PreferKey.cTitleBarTextIcon,
+            PreferKey.cBottomNavIconUnselected,
             PreferKey.cTextPrimary,
             PreferKey.cTextSecondary,
             PreferKey.tNavBar-> {
@@ -165,6 +166,7 @@ class ThemeConfigFragment : PreferenceFragment(),
             PreferKey.cNBBackground,
             PreferKey.cNBackgroundCard,
             PreferKey.cNTitleBarTextIcon,
+            PreferKey.cNBottomNavIconUnselected,
             PreferKey.cNTextPrimary,
             PreferKey.cNTextSecondary,
             PreferKey.tNavBarN -> {

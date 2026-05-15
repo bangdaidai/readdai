@@ -350,6 +350,19 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
 
         @CheckResult
         @ColorInt
+        fun bottomNavIconUnselectedColor(context: Context): Int {
+            return prefs(context).getInt(
+                if (context.resources.configuration.isNightMode) {
+                    "colorBottomNavIconUnselectedNight"
+                } else {
+                    "colorBottomNavIconUnselected"
+                },
+                titleBarTextIconColor(context)
+            )
+        }
+
+        @CheckResult
+        @ColorInt
         fun backgroundColor(context: Context = appCtx): Int {
             return prefs(context).getInt(
                 ThemeStorePrefKeys.KEY_BACKGROUND_COLOR,

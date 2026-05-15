@@ -32,9 +32,9 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             setBackgroundColor(bgColor)
             elevation = context.elevation
         }
-        // Unselected: use title bar text icon color
+        // Unselected: use bottom navigation icon unselected color
         // Selected: use accent color
-        val unselectedColor = ThemeStore.titleBarTextIconColor(context)
+        val unselectedColor = ThemeStore.bottomNavIconUnselectedColor(context)
         val selectedColor = ThemeStore.accentColor(context)
         val colorStateList = Selector.colorBuild()
             .setDefaultColor(unselectedColor)
@@ -50,9 +50,9 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     }
 
     fun createThemeColorStateList(): ColorStateList {
-        // Unselected: use title bar text icon color
+        // Unselected: use bottom navigation icon unselected color
         // Selected: use accent color
-        val unselectedColor = ThemeStore.titleBarTextIconColor(context)
+        val unselectedColor = ThemeStore.bottomNavIconUnselectedColor(context)
         val selectedColor = ThemeStore.accentColor(context)
         return Selector.colorBuild()
             .setDefaultColor(unselectedColor)

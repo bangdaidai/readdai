@@ -362,6 +362,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     val initialItemId = getBottomNavigationItemId(pagePosition)
                     updateFloatingIndicatorPosition(initialItemId)
                 }
+            } else {
+                // Classic mode: re-apply style to handle immNavigationBar changes
+                applyClassicModeStyle()
             }
             return
         }
@@ -613,8 +616,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                         blurRadius = blurRadius,
                         dispersion = dispersion,
                         tintAlpha = tintAlpha,
-                        elasticEnabled = true,
-                        touchEffectEnabled = true
+                        elasticEnabled = false,
+                        touchEffectEnabled = false
                     )
                 }
                 
@@ -629,8 +632,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                         blurRadius = (blurRadius * 0.78f).coerceAtLeast(5f.dpToPx()),
                         dispersion = (dispersion + 0.08f).coerceAtMost(1f),
                         tintAlpha = (tintAlpha + 0.05f).coerceAtMost(0.28f),
-                        elasticEnabled = true,
-                        touchEffectEnabled = true
+                        elasticEnabled = false,
+                        touchEffectEnabled = false
                     )
                 }
             }
@@ -874,8 +877,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+            shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(primaryColor)
         }
     }

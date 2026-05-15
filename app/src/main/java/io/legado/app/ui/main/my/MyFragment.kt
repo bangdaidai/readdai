@@ -86,19 +86,12 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
     class MyPreferenceFragment : PreferenceFragment(),
         SharedPreferences.OnSharedPreferenceChangeListener {
 
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ): View {
-            val view = super.onCreateView(inflater, container, savedInstanceState)!!
+        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+            super.onViewCreated(view, savedInstanceState)
             // Apply bottom padding to prevent content from being hidden under floating capsule
-            listView?.let { lv ->
-                lv.clipToPadding = false
-                lv.applyMainBottomBarPadding()
-                lv.setEdgeEffectColor(io.legado.app.lib.theme.ThemeStore.primaryColor(requireContext()))
-            }
-            return view
+            listView.clipToPadding = false
+            listView.applyMainBottomBarPadding()
+            listView.setEdgeEffectColor(io.legado.app.lib.theme.ThemeStore.primaryColor(requireContext()))
         }
 
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {

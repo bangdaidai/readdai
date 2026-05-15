@@ -293,6 +293,7 @@ object ThemeConfig {
                 context.putPrefInt(PreferKey.cNBBackground, bBackground)
                 context.putPrefInt(PreferKey.cNBackgroundCard, bCard)
                 context.putPrefInt(PreferKey.cNTitleBarTextIcon, titleBarTextIcon)
+                context.putPrefInt(PreferKey.cNBottomNavIconUnselected, bottomNavIconUnselected)
                 context.putPrefInt(PreferKey.cNTextPrimary, textPrimary)
                 context.putPrefInt(PreferKey.cNTextSecondary, textSecondary)
                 context.putPrefInt(PreferKey.cNTextOther, textOther)
@@ -307,6 +308,7 @@ object ThemeConfig {
                 context.putPrefInt(PreferKey.cBBackground, bBackground)
                 context.putPrefInt(PreferKey.cBackgroundCard, bCard)
                 context.putPrefInt(PreferKey.cTitleBarTextIcon, titleBarTextIcon)
+                context.putPrefInt(PreferKey.cBottomNavIconUnselected, bottomNavIconUnselected)
                 context.putPrefInt(PreferKey.cTextPrimary, textPrimary)
                 context.putPrefInt(PreferKey.cTextSecondary, textSecondary)
                 context.putPrefInt(PreferKey.cTextOther, textOther)
@@ -352,6 +354,8 @@ object ThemeConfig {
             context.getPrefInt(PreferKey.cDivider, context.getCompatColor(R.color.divider))
         val titleBarTextIcon =
             context.getPrefInt(PreferKey.cTitleBarTextIcon, context.getCompatColor(R.color.white))
+        val bottomNavIconUnselected =
+            context.getPrefInt(PreferKey.cBottomNavIconUnselected, titleBarTextIcon)
         val textPrimary =
             context.getPrefInt(PreferKey.cTextPrimary, context.getCompatColor(R.color.primaryText))
         val textSecondary = context.getPrefInt(PreferKey.cTextSecondary, context.getCompatColor(R.color.secondaryText))
@@ -370,6 +374,7 @@ object ThemeConfig {
             backgroundCard = "#${bCard.hexString}",
             dividerColor = "#${divider.hexString}",
             titleBarTextIconColor = "#${titleBarTextIcon.hexString}",
+            bottomNavIconUnselectedColor = "#${bottomNavIconUnselected.hexString}",
             textPrimaryColor = "#${textPrimary.hexString}",
             textSecondaryColor = "#${textSecondary.hexString}",
             textOtherColor = "#${textOther.hexString}",
@@ -405,6 +410,8 @@ object ThemeConfig {
             context.getPrefInt(PreferKey.cNDivider, context.getCompatColor(R.color.divider))
         val titleBarTextIcon =
             context.getPrefInt(PreferKey.cNTitleBarTextIcon, context.getCompatColor(R.color.white))
+        val bottomNavIconUnselected =
+            context.getPrefInt(PreferKey.cNBottomNavIconUnselected, titleBarTextIcon)
         val textPrimary =
             context.getPrefInt(PreferKey.cNTextPrimary, context.getCompatColor(R.color.primaryText))
         val textSecondary = context.getPrefInt(PreferKey.cNTextSecondary, context.getCompatColor(R.color.secondaryText))
@@ -422,6 +429,7 @@ object ThemeConfig {
             backgroundCard = "#${bCard.hexString}",
             dividerColor = "#${divider.hexString}",
             titleBarTextIconColor = "#${titleBarTextIcon.hexString}",
+            bottomNavIconUnselectedColor = "#${bottomNavIconUnselected.hexString}",
             textPrimaryColor = "#${textPrimary.hexString}",
             textSecondaryColor = "#${textSecondary.hexString}",
             textOtherColor = "#${textOther.hexString}",
@@ -649,6 +657,7 @@ object ThemeConfig {
         var backgroundCard: String,
         var dividerColor: String,
         var titleBarTextIconColor: String,
+        var bottomNavIconUnselectedColor: String,
         var textPrimaryColor: String,
         var textSecondaryColor: String,
         var textOtherColor: String,

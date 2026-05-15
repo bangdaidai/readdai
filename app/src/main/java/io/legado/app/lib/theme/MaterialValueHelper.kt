@@ -89,6 +89,9 @@ val Context.textMenuColor: Int
 val Context.textOtherColor: Int
     get() = io.legado.app.help.config.ThemeConfig.getTextColorOther(this)
 
+val Context.bottomNavIconUnselectedColor: Int
+    get() = ThemeStore.bottomNavIconUnselectedColor(this)
+
 val Context.primaryDisabledTextColor: Int
     get() = getPrimaryDisabledTextColor(isDarkTheme)
 
