@@ -243,6 +243,7 @@ object ThemeConfig {
             val bBackground = config.bottomBackground.toColorInt()
             val bCard = config.backgroundCard.toColorInt()
             val titleBarTextIcon = config.titleBarTextIconColor.toColorInt()
+            val bottomNavIconUnselected = config.bottomNavIconUnselectedColor.toColorInt()
             val textPrimary = config.textPrimaryColor.toColorInt()
             val textSecondary = config.textSecondaryColor.toColorInt()
             val textOther = config.textOtherColor.toColorInt()

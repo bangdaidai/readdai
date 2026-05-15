@@ -127,11 +127,6 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
             }
         }
 
-        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-            super.onViewCreated(view, savedInstanceState)
-            listView.setEdgeEffectColor(primaryColor)
-        }
-
         override fun onResume() {
             super.onResume()
             preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(this)
