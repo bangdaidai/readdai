@@ -388,13 +388,12 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.swipeEnabled = !floatingMode
         
         if (floatingMode) {
-            // Floating mode: add bottom padding so content isn't hidden behind the capsule
-            val barHeight = resources.getDimensionPixelSize(R.dimen.main_bottom_bar_height)
+            // Floating mode: clear bottom padding，让页面内容延伸到屏幕底部
             contentContainer.setPadding(
                 contentContainer.paddingLeft,
                 contentContainer.paddingTop,
                 contentContainer.paddingRight,
-                barHeight
+                0
             )
             // Ensure classic mode bottomNavigationView is fully hidden (background transparent, remove shadow)
             bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
