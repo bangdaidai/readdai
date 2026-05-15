@@ -427,6 +427,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             shouldCancelLiquidGlassTasks = false
             bottomIndicatorAnimator.cancel()
             
+            // CRITICAL: Set transparent background for floating mode
+            bottomNavigationViewFloating.setTransparentBackground(true)
+            
             // Hide indicator initially while setting up
             bottomNavigationIndicatorContainer.isVisible = false
             setupLiquidGlass()
@@ -445,6 +448,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             shouldCancelLiquidGlassTasks = true
             bottomIndicatorAnimator.cancel()
             bottomNavigationIndicatorContainer.isVisible = false
+            
+            // CRITICAL: Ensure classic mode uses themed background
+            bottomNavigationView.setTransparentBackground(false)
             
             applyClassicModeStyle()
             applyBottomNavigationIcons() // Apply icons for classic mode

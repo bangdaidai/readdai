@@ -10,6 +10,7 @@ import android.widget.FrameLayout
 import androidx.core.view.ViewCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import io.legado.app.databinding.ViewNavigationBadgeBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.bottomBackground
@@ -23,23 +24,41 @@ import androidx.core.graphics.drawable.toDrawable
 class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
     BottomNavigationView(context, attrs) {
 
+    private var transparentBackground = false
+
     init {
         applyTheme()
-        // 禁用水平平移效果并设置透明背景，减少点击效果的明显程度
         isItemHorizontalTranslationEnabled = false
         itemBackground = Color.TRANSPARENT.toDrawable()
 
         ViewCompat.setOnApplyWindowInsetsListener(this, null)
     }
 
-    fun applyTheme() {
-        val transparentNavBar = context.transparentNavBar
-        val bgColor = context.bottomBackground
-        if (transparentNavBar) {
+    fun setTransparentBackground(transparent: Boolean) {
+        transparentBackground = transparent
+        if (transparent) {
             setBackgroundColor(Color.TRANSPARENT)
         } else {
+            applyTheme()
+        }
+    }
+
+    fun applyTheme() {
+        if (transparentBackground) {
+            setBackgroundColor(Color.TRANSPARENT)
+            return
+        }
+        val bgColor = context.bottomBackground
+        if (AppConfig.immNavigationBar) {
             setBackgroundColor(bgColor)
             elevation = context.elevation
+        } else {
+            if (context.transparentNavBar) {
+                setBackgroundColor(Color.TRANSPARENT)
+            } else {
+                setBackgroundColor(bgColor)
+                elevation = context.elevation
+            }
         }
         // Unselected: use title bar text icon color
         // Selected: use accent color
