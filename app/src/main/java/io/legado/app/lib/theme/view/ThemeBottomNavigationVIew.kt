@@ -48,11 +48,13 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             setBackgroundColor(Color.TRANSPARENT)
             return
         }
-        val bgColor = context.bottomBackground
         if (AppConfig.immNavigationBar) {
-            setBackgroundColor(bgColor)
-            elevation = context.elevation
+            // 沉浸式模式使用主题背景色，达到沉浸式效果
+            setBackgroundColor(context.backgroundColor)
+            elevation = 0f
         } else {
+            // 非沉浸式模式使用bottomBackground
+            val bgColor = context.bottomBackground
             if (context.transparentNavBar) {
                 setBackgroundColor(Color.TRANSPARENT)
             } else {
