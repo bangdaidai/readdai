@@ -357,7 +357,7 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
                 } else {
                     "colorBottomNavIconUnselected"
                 },
-                titleBarTextIconColor(context)
+                ThemeUtils.resolveColor(context, android.R.attr.textColorSecondary)
             )
         }
 

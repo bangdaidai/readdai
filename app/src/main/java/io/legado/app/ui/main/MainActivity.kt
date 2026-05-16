@@ -410,6 +410,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         if (floatingMode) {
             // Floating mode: completely hide classic bottom navigation
             bottomNavigationView.visibility = View.GONE
+            bottomNavigationView.setBackgroundResource(0)
+            bottomNavigationView.backgroundTintList = null
             bottomNavigationView.setBackgroundColor(Color.TRANSPARENT)
             bottomNavigationView.elevation = 0f
             bottomNavigationGlass.visibility = View.VISIBLE
@@ -776,21 +778,23 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         bottomNavigationGlass.visibility = View.GONE
         bottomNavigationView.visibility = View.VISIBLE
 
-        if (AppConfig.isEInkMode) {
-            bottomNavigationView.backgroundTintList = null
-            bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
-            bottomNavigationView.alpha = 1.0f
-            bottomNavigationView.elevation = 0f
-        } else if (AppConfig.immNavigationBar) {
-            val bgColor = io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
-            bottomNavigationView.backgroundTintList = android.content.res.ColorStateList.valueOf(bgColor)
-            bottomNavigationView.alpha = 1.0f
-            bottomNavigationView.elevation = 0f
+        val bgDrawable = if (AppConfig.isEInkMode) {
+            context.getDrawable(R.drawable.bg_eink_border_top)
         } else {
-            val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
-            bottomNavigationView.backgroundTintList = android.content.res.ColorStateList.valueOf(navBgColor)
-            bottomNavigationView.alpha = 1.0f
-            bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
+            val bgColor = if (AppConfig.immNavigationBar) {
+                io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
+            } else {
+                io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
+            }
+            android.graphics.drawable.ColorDrawable(bgColor)
+        }
+
+        bottomNavigationView.background = bgDrawable
+        bottomNavigationView.alpha = 1.0f
+        bottomNavigationView.elevation = if (AppConfig.isEInkMode || AppConfig.immNavigationBar) {
+            0f
+        } else {
+            resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
 
         bottomNavigationView.invalidate()
@@ -871,8 +875,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
+            shape = android.graphics.drawable.GradientDrawable.OVAL
             setColor(primaryColor)
         }
     }

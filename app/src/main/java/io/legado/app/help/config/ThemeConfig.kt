@@ -356,7 +356,7 @@ object ThemeConfig {
         val titleBarTextIcon =
             context.getPrefInt(PreferKey.cTitleBarTextIcon, context.getCompatColor(R.color.white))
         val bottomNavIconUnselected =
-            context.getPrefInt(PreferKey.cBottomNavIconUnselected, titleBarTextIcon)
+            context.getPrefInt(PreferKey.cBottomNavIconUnselected, textSecondary)
         val textPrimary =
             context.getPrefInt(PreferKey.cTextPrimary, context.getCompatColor(R.color.primaryText))
         val textSecondary = context.getPrefInt(PreferKey.cTextSecondary, context.getCompatColor(R.color.secondaryText))
@@ -412,7 +412,7 @@ object ThemeConfig {
         val titleBarTextIcon =
             context.getPrefInt(PreferKey.cNTitleBarTextIcon, context.getCompatColor(R.color.white))
         val bottomNavIconUnselected =
-            context.getPrefInt(PreferKey.cNBottomNavIconUnselected, titleBarTextIcon)
+            context.getPrefInt(PreferKey.cNBottomNavIconUnselected, textSecondary)
         val textPrimary =
             context.getPrefInt(PreferKey.cNTextPrimary, context.getCompatColor(R.color.primaryText))
         val textSecondary = context.getPrefInt(PreferKey.cNTextSecondary, context.getCompatColor(R.color.secondaryText))
