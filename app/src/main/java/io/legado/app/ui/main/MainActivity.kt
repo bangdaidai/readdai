@@ -774,32 +774,33 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     /**
      * Apply classic mode style - reference dai411 project
      */
-    private fun applyClassicModeStyle() = binding.run {
-        bottomNavigationGlass.visibility = View.GONE
-        bottomNavigationView.visibility = View.VISIBLE
+    private fun applyClassicModeStyle() {
+        val bottomNav = binding.bottomNavigationView
+        bottomNav.visibility = View.VISIBLE
+        binding.bottomNavigationGlass.visibility = View.GONE
 
         val bgDrawable = if (AppConfig.isEInkMode) {
-            context.getDrawable(R.drawable.bg_eink_border_top)
+            getDrawable(R.drawable.bg_eink_border_top)
         } else {
             val bgColor = if (AppConfig.immNavigationBar) {
-                io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
+                io.legado.app.lib.theme.ThemeStore.backgroundColor(this)
             } else {
-                io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
+                io.legado.app.lib.theme.ThemeStore.bottomBackground(this)
             }
             android.graphics.drawable.ColorDrawable(bgColor)
         }
 
-        bottomNavigationView.background = bgDrawable
-        bottomNavigationView.alpha = 1.0f
-        bottomNavigationView.elevation = if (AppConfig.isEInkMode || AppConfig.immNavigationBar) {
+        bottomNav.background = bgDrawable
+        bottomNav.alpha = 1.0f
+        bottomNav.elevation = if (AppConfig.isEInkMode || AppConfig.immNavigationBar) {
             0f
         } else {
             resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
 
-        bottomNavigationView.invalidate()
-        bottomNavigationView.setOnApplyWindowInsetsListenerCompat(null)
-        bottomNavigationView.setPadding(0, 0, 0, 0)
+        bottomNav.invalidate()
+        bottomNav.setOnApplyWindowInsetsListenerCompat(null)
+        bottomNav.setPadding(0, 0, 0, 0)
     }
     
     /**
