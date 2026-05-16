@@ -1945,6 +1945,7 @@ class ChatAdapter(
             holder.contentText.movementMethod = android.text.method.LinkMovementMethod.getInstance()
 
             // 设置自定义选择操作模式回调，添加"搜索书籍"选项
+            val activityRef = this@AiChatActivity
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     // 清除默认的"剪切"、"复制"等选项
@@ -1966,18 +1967,15 @@ class ChatAdapter(
                         holder.contentText.selectionEnd
                     ) ?: ""
                     
-                    // 提前获取外部类引用，避免在 when 表达式中被解析为 label
-                    val activity = this@AiChatActivity
-                    
                     return when (item.itemId) {
                         android.R.id.copy -> {
                             // 追问：以选中的文本作为引用继续提问
                             if (selectedText.isNotBlank()) {
-                                activity.selectedQuote = selectedText.trim()
-                                activity.binding.editText.setText("")
-                                activity.binding.editText.requestFocus()
+                                activityRef.selectedQuote = selectedText.trim()
+                                activityRef.binding.editText.setText("")
+                                activityRef.binding.editText.requestFocus()
                                 // 滚动到底部
-                                activity.binding.recyclerView.scrollToPosition(messages.size - 1)
+                                activityRef.binding.recyclerView.scrollToPosition(messages.size - 1)
                             }
                             mode.finish()
                             true
