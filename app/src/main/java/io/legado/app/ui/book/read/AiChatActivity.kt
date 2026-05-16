@@ -147,7 +147,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     private fun updateAdapter() {
-        adapter = ChatAdapter(this, messages,
+        adapter = ChatAdapter(this, this, messages,
             onItemLongClick = { message, isLongClick ->
                 if (isLongClick) {
                     showMessageOptions(message)
@@ -1839,6 +1839,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
  */
 class ChatAdapter(
     private val context: Context,
+    private val activity: AiChatActivity, // 添加 Activity 引用
     private val messages: List<ChatMessageItem>,
     private val onItemLongClick: (ChatMessageItem, Boolean) -> Unit,
     private val onCopyClick: ((String) -> Unit)? = null,
@@ -1945,7 +1946,6 @@ class ChatAdapter(
             holder.contentText.movementMethod = android.text.method.LinkMovementMethod.getInstance()
 
             // 设置自定义选择操作模式回调，添加"搜索书籍"选项
-            val activityRef = this@AiChatActivity
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     // 清除默认的"剪切"、"复制"等选项
@@ -1971,11 +1971,11 @@ class ChatAdapter(
                         android.R.id.copy -> {
                             // 追问：以选中的文本作为引用继续提问
                             if (selectedText.isNotBlank()) {
-                                activityRef.selectedQuote = selectedText.trim()
-                                activityRef.binding.editText.setText("")
-                                activityRef.binding.editText.requestFocus()
+                                activity.selectedQuote = selectedText.trim()
+                                activity.binding.editText.setText("")
+                                activity.binding.editText.requestFocus()
                                 // 滚动到底部
-                                activityRef.binding.recyclerView.scrollToPosition(messages.size - 1)
+                                activity.binding.recyclerView.scrollToPosition(messages.size - 1)
                             }
                             mode.finish()
                             true
