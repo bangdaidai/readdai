@@ -182,6 +182,11 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
         return this
     }
 
+    override fun bottomNavIconUnselectedColor(@ColorInt color: Int): ThemeStore {
+        mEditor.putInt(ThemeStorePrefKeys.KEY_BOTTOM_NAV_ICON_UNSELECTED, color)
+        return this
+    }
+
     override fun transparentNavBar(transparent: Boolean): ThemeStore {
         mEditor.putBoolean(ThemeStorePrefKeys.KEY_TRANSPARENT_NAV_BAR, transparent)
         return this
@@ -353,9 +358,9 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
         fun bottomNavIconUnselectedColor(context: Context): Int {
             return prefs(context).getInt(
                 if (context.resources.configuration.isNightMode) {
-                    "colorBottomNavIconUnselectedNight"
+                    ThemeStorePrefKeys.KEY_BOTTOM_NAV_ICON_UNSELECTED_NIGHT
                 } else {
-                    "colorBottomNavIconUnselected"
+                    ThemeStorePrefKeys.KEY_BOTTOM_NAV_ICON_UNSELECTED
                 },
                 context.getCompatColor(R.color.bottomNavIconUnselected)
             )
