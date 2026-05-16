@@ -30,7 +30,7 @@
                 android:layout_marginBottom="8dp"
                 android:text="全局设置"
                 android:textColor="?attr/primaryTextColor"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <LinearLayout
@@ -45,7 +45,7 @@
                     android:layout_marginEnd="12dp"
                     android:text="@string/bottom_bar_layout_mode"
                     android:textColor="?attr/secondaryTextColor"
-                    android:textSize="13sp" />
+                    android:textSize="14sp" />
 
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/toggle_layout_mode"
@@ -92,7 +92,7 @@
                     android:layout_marginEnd="12dp"
                     android:text="@string/bottom_bar_effect_mode"
                     android:textColor="?attr/secondaryTextColor"
-                    android:textSize="13sp" />
+                    android:textSize="14sp" />
 
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/toggle_effect_mode"
@@ -150,7 +150,7 @@
                     android:layout_marginEnd="12dp"
                     android:text="@string/bottom_bar_opacity"
                     android:textColor="?attr/secondaryTextColor"
-                    android:textSize="13sp" />
+                    android:textSize="14sp" />
 
                 <androidx.appcompat.widget.AppCompatSeekBar
                     android:id="@+id/seekbar_opacity"
@@ -186,19 +186,19 @@
                     android:layout_weight="1"
                     android:text="图标套装"
                     android:textColor="?attr/primaryTextColor"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/btn_add"
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:background="@drawable/bg_book_info_action_secondary"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
                     android:gravity="center"
+                    android:padding="8dp"
                     android:text="@string/theme_add"
-                    android:textColor="@color/primaryText"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:textColor="?attr/colorAccent"
+                    android:textSize="14sp" />
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView

@@ -610,14 +610,6 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     (24f + glassLevel * 16f).dpToPx()
                 }
                 
-                // Setup shell overlays with gradient drawable - match archive implementation
-                val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
-                shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
-                
-                val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
-                val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
-                indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
-                
                 // Setup main bottom navigation LiquidGlassView - match archive
                 val bottomBarCornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
                 liquidGlassView?.let { glass ->
@@ -1105,6 +1097,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         observeEvent<Boolean>(EventBus.NAVIGATION_BAR_CHANGED) {
             refreshBottomNavigationConfig()
+        }
+        observeEvent<String>(EventBus.THEME_CHANGED) {
+            // Refresh bottom navigation icon tint when theme changes
+            binding.bottomNavigationView.restoreThemeIconTint()
+            binding.bottomNavigationViewFloating.restoreThemeIconTint()
         }
         observeEvent<String>(PreferKey.threadCount) {
             viewModel.upPool()

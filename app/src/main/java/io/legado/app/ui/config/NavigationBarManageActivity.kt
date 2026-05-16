@@ -504,10 +504,6 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
         inner class Holder(private val itemBinding: ItemThemePackageBinding) : RecyclerView.ViewHolder(itemBinding.root) {
 
             fun bind(entry: NavigationBarIconConfig.Entry) = itemBinding.run {
-                root.background = UiCorner.opaqueRounded(
-                    ContextCompat.getColor(this@NavigationBarManageActivity, R.color.background_card),
-                    UiCorner.panelRadius(this@NavigationBarManageActivity)
-                )
                 tvName.text = entry.config.name
                 
                 // 设置预览图 - 显示第一个图标作为预览

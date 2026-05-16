@@ -140,7 +140,7 @@
             app:iconSpaceReserved="false" />
 
         <io.legado.app.lib.prefs.ColorPreference
-            android:defaultValue="@color/primaryText"
+            android:defaultValue="@color/bottomNavIconUnselected"
             android:key="colorBottomNavIconUnselected"
             android:summary="@string/day_bottom_nav_icon_unselected_color"
             android:title="@string/bottom_nav_icon_unselected_color"
@@ -275,7 +275,7 @@
             app:iconSpaceReserved="false" />
 
         <io.legado.app.lib.prefs.ColorPreference
-            android:defaultValue="@color/primaryText"
+            android:defaultValue="@color/bottomNavIconUnselected"
             android:key="colorBottomNavIconUnselectedNight"
             android:summary="@string/night_bottom_nav_icon_unselected_color"
             android:title="@string/bottom_nav_icon_unselected_color"

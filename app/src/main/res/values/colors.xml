@@ -53,6 +53,7 @@
     <color name="textPrimary">#de000000</color>
     <color name="textSecondary">#8a000000</color>
     <color name="iconColor">#8a000000</color>
+    <color name="bottomNavIconUnselected">#8a000000</color>
     <color name="tv_text_summary">#8A2C2C2C</color>
     <color name="tv_text_book_detail">#dfdfdf</color>
     <color name="menu_color_default">#383838</color>

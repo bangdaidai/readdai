@@ -5,8 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_marginTop="6dp"
     android:layout_marginBottom="6dp"
-    android:background="@drawable/bg_book_info_intro_panel"
-    android:padding="12dp">
+    android:padding="0dp">
 
     <!-- Icon Preview -->
     <androidx.cardview.widget.CardView
@@ -40,8 +39,7 @@
         android:layout_marginEnd="6dp"
         android:ellipsize="end"
         android:singleLine="true"
-        android:textSize="14sp"
-        android:textStyle="bold"
+        android:textSize="16sp"
         app:layout_constraintTop_toTopOf="@id/card_preview"
         app:layout_constraintBottom_toBottomOf="@id/card_preview"
         app:layout_constraintLeft_toRightOf="@id/card_preview"
@@ -59,7 +57,7 @@
         android:paddingEnd="6dp"
         android:singleLine="true"
         android:text="@string/theme_apply"
-        android:textSize="11sp"
+        android:textSize="14sp"
         android:textColor="?attr/colorAccent"
         app:layout_constraintTop_toTopOf="@id/card_preview"
         app:layout_constraintBottom_toBottomOf="@id/card_preview"
@@ -78,7 +76,7 @@
         android:paddingEnd="6dp"
         android:singleLine="true"
         android:text="@string/edit"
-        android:textSize="11sp"
+        android:textSize="14sp"
         android:textColor="?attr/colorAccent"
         app:layout_constraintTop_toTopOf="@id/card_preview"
         app:layout_constraintBottom_toBottomOf="@id/card_preview"
@@ -97,7 +95,7 @@
         android:paddingEnd="6dp"
         android:singleLine="true"
         android:text="@string/delete"
-        android:textSize="11sp"
+        android:textSize="14sp"
         android:textColor="@android:color/holo_red_dark"
         app:layout_constraintTop_toTopOf="@id/card_preview"
         app:layout_constraintBottom_toBottomOf="@id/card_preview"

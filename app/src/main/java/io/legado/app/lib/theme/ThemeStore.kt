@@ -357,7 +357,7 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
                 } else {
                     "colorBottomNavIconUnselected"
                 },
-                titleBarTextIconColor(context)
+                context.getCompatColor(R.color.bottomNavIconUnselected)
             )
         }
 
