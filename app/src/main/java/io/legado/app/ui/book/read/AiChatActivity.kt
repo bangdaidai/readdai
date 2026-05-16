@@ -1966,15 +1966,18 @@ class ChatAdapter(
                         holder.contentText.selectionEnd
                     ) ?: ""
                     
+                    // 提前获取外部类引用，避免在 when 表达式中被解析为 label
+                    val activity = this@AiChatActivity
+                    
                     return when (item.itemId) {
                         android.R.id.copy -> {
                             // 追问：以选中的文本作为引用继续提问
                             if (selectedText.isNotBlank()) {
-                                this@AiChatActivity.selectedQuote = selectedText.trim()
-                                this@AiChatActivity.binding.editText.setText("")
-                                this@AiChatActivity.binding.editText.requestFocus()
+                                activity.selectedQuote = selectedText.trim()
+                                activity.binding.editText.setText("")
+                                activity.binding.editText.requestFocus()
                                 // 滚动到底部
-                                this@AiChatActivity.binding.recyclerView.scrollToPosition(messages.size - 1)
+                                activity.binding.recyclerView.scrollToPosition(messages.size - 1)
                             }
                             mode.finish()
                             true
