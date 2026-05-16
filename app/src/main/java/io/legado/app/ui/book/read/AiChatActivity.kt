@@ -1845,7 +1845,9 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
      * 处理追问操作（供 ChatAdapter 调用）
      */
     fun handleFollowUpQuestion(selectedText: String) {
+        // 设置引用文本
         selectedQuote = selectedText.trim()
+        // 清空输入框并获取焦点
         binding.editText.setText("")
         binding.editText.requestFocus()
         // 滚动到底部
