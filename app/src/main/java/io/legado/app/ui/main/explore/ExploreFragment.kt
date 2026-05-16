@@ -221,6 +221,32 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         binding.rvFind.isGone = modern
         binding.tvEmptyMsg.isGone = modern
         searchView?.isGone = modern
+        
+        // ✅ 关键修复：动态更新 SwipeRefreshLayout 的顶部约束
+        val constraintLayout = binding.root as androidx.constraintlayout.widget.ConstraintLayout
+        val constraintSet = androidx.constraintlayout.widget.ConstraintSet()
+        constraintSet.clone(constraintLayout)
+        
+        if (modern) {
+            // 现代模式：约束到 title_bar_modern
+            constraintSet.connect(
+                R.id.swipe_refresh_layout,
+                androidx.constraintlayout.widget.ConstraintSet.TOP,
+                R.id.title_bar_modern,
+                androidx.constraintlayout.widget.ConstraintSet.BOTTOM
+            )
+        } else {
+            // 经典模式：约束到 title_bar
+            constraintSet.connect(
+                R.id.swipe_refresh_layout,
+                androidx.constraintlayout.widget.ConstraintSet.TOP,
+                R.id.title_bar,
+                androidx.constraintlayout.widget.ConstraintSet.BOTTOM
+            )
+        }
+        
+        constraintSet.applyTo(constraintLayout)
+        
         if (!loadData) {
             activity?.invalidateOptionsMenu()
             updateDiscoverModeToggleButtonState()

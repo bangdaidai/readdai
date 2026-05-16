@@ -1967,19 +1967,17 @@ class ChatAdapter(
             // ✅ 关键修复：启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
 
-            // ✅ 关键修复：使用 ArrowKeyMovementMethod 而不是 LinkMovementMethod
-            // LinkMovementMethod 会拦截触摸事件，影响长按选择功能
-            // ArrowKeyMovementMethod 支持链接点击且不干扰文本选择
-            holder.contentText.movementMethod = android.text.method.ArrowKeyMovementMethod.getInstance()
+            // ✅ 关键修复：不使用 MovementMethod，避免拦截触摸事件影响文本选择
+            // 如果需要支持链接点击，可以在 MarkdownUtils 中处理
+            holder.contentText.movementMethod = null
 
-            // 设置自定义选择操作模式回调，添加“搜索书籍”选项
+            // 设置自定义选择操作模式回调，添加"搜索书籍"选项
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     // ✅ 不清除默认菜单，直接添加自定义选项
-                    // 添加“搜书”选项（排在前面）
-                    menu.add(0, 1001, 0, "搜书")
-                    // 添加“追问”选项（排在后面）
-                    menu.add(0, 1002, 1, "追问")
+                    // 使用负的 order 值让自定义选项排在前面
+                    menu.add(0, 1001, -100, "搜书")
+                    menu.add(0, 1002, -99, "追问")
                     return true
                 }
             
@@ -2214,57 +2212,72 @@ class ChatAdapter(
                 }
             }
 
-            // 长文本折叠功能（超过 300 字符）
-            if (message.content.length > 300) {
-                holder.btnExpandCollapse.visibility = View.VISIBLE
-
-                if (message.isExpanded) {
-                    holder.contentText.maxLines = Int.MAX_VALUE
-                    holder.btnExpandCollapse.rotation = 180f
-                } else {
-                    holder.contentText.maxLines = 10
-                    holder.btnExpandCollapse.rotation = 0f
-                }
-
-                holder.btnExpandCollapse.setOnClickListener {
-                    message.isExpanded = !message.isExpanded
-                    // ✅ 关键修复：直接修改 TextView 属性，不使用 notifyItemChanged，避免影响文本选择功能
-                    if (message.isExpanded) {
-                        holder.contentText.maxLines = Int.MAX_VALUE
-                        holder.btnExpandCollapse.rotation = 180f
-                    } else {
-                        holder.contentText.maxLines = 10
-                        holder.btnExpandCollapse.rotation = 0f
-                    }
-                    // ✅ 重新启用文本选择，确保 maxLines 改变后仍能长按选中
-                    holder.contentText.setTextIsSelectable(true)
-                    holder.contentText.movementMethod = android.text.method.ArrowKeyMovementMethod.getInstance()
-                }
-            }
-
-            // 显示操作按钮（AI工作时隐藏）
-            holder.layoutAiActions.visibility = if (isAiWorking) View.GONE else View.VISIBLE
-                        
-            // 复制按钮：AI工作时隐藏
-            holder.btnCopy.visibility = if (isAiWorking) View.GONE else View.VISIBLE
+            // ❌ 已禁用：长文本折叠功能（全部展开）
+            // if (message.content.length > 300) {
+            //     holder.btnExpandCollapse.visibility = View.VISIBLE
+            //
+            //     // ✅ 关键修复：无论展开还是折叠，都启用文本选择
+            //     holder.contentText.setTextIsSelectable(true)
+            //     holder.contentText.movementMethod = null
+            //
+            //     if (message.isExpanded) {
+            //         holder.contentText.maxLines = Int.MAX_VALUE
+            //         holder.btnExpandCollapse.rotation = 180f
+            //     } else {
+            //         holder.contentText.maxLines = 10
+            //         holder.btnExpandCollapse.rotation = 0f
+            //     }
+            //
+            //     holder.btnExpandCollapse.setOnClickListener {
+            //         message.isExpanded = !message.isExpanded
+            //         // ✅ 关键修复：直接修改 TextView 属性，不使用 notifyItemChanged，避免影响文本选择功能
+            //         if (message.isExpanded) {
+            //             holder.contentText.maxLines = Int.MAX_VALUE
+            //             holder.btnExpandCollapse.rotation = 180f
+            //         } else {
+            //             holder.contentText.maxLines = 10
+            //             holder.btnExpandCollapse.rotation = 0f
+            //         }
+            //         // ✅ 确保文本选择始终启用
+            //         holder.contentText.setTextIsSelectable(true)
+            //         holder.contentText.movementMethod = null
+            //         // ✅ 强制刷新布局
+            //         holder.contentText.requestLayout()
+            //     }
+            // }
             
-            // 展开/折叠按钮：只在长文本时显示
-            if (message.content.length <= 300) {
-                holder.btnExpandCollapse.visibility = View.GONE
-            }
+            // ✅ 全部展开，不限制行数
+            holder.contentText.maxLines = Int.MAX_VALUE
 
-            // 只有最后一条 AI 消息显示“重新生成”按钮（AI工作时隐藏）
-            val isLastAiMessage = position == messages.lastIndex &&
-                                  messages.indexOfLast { it.role == "ai" } == position
-            holder.btnRegenerate.visibility = if (isLastAiMessage && !isAiWorking) View.VISIBLE else View.GONE
+            // ❌ 已禁用：显示操作按钮
+            // holder.layoutAiActions.visibility = if (isAiWorking) View.GONE else View.VISIBLE
+            holder.layoutAiActions.visibility = View.GONE
+                        
+            // ❌ 已禁用：复制按钮
+            // holder.btnCopy.visibility = if (isAiWorking) View.GONE else View.VISIBLE
+            holder.btnCopy.visibility = View.GONE
+            
+            // ❌ 已禁用：展开/折叠按钮
+            // if (message.content.length <= 300) {
+            //     holder.btnExpandCollapse.visibility = View.GONE
+            // }
+            holder.btnExpandCollapse.visibility = View.GONE
 
-            holder.btnCopy.setOnClickListener {
-                onCopyClick?.invoke(message.content)
-            }
+            // ❌ 已禁用：只有最后一条 AI 消息显示“重新生成”按钮
+            // val isLastAiMessage = position == messages.lastIndex &&
+            //                       messages.indexOfLast { it.role == "ai" } == position
+            // holder.btnRegenerate.visibility = if (isLastAiMessage && !isAiWorking) View.VISIBLE else View.GONE
+            holder.btnRegenerate.visibility = View.GONE
 
-            holder.btnRegenerate.setOnClickListener {
-                onRegenerateClick?.invoke()
-            }
+            // ❌ 已禁用：复制按钮点击事件
+            // holder.btnCopy.setOnClickListener {
+            //     onCopyClick?.invoke(message.content)
+            // }
+
+            // ❌ 已禁用：重新生成按钮点击事件
+            // holder.btnRegenerate.setOnClickListener {
+            //     onRegenerateClick?.invoke()
+            // }
 
         } else {
             // 用户消息：先重置所有视图状态，防止复用问题
@@ -2358,10 +2371,11 @@ class ChatAdapter(
             holder.contentText.layoutParams = contentParams
         }
 
-        holder.itemView.setOnLongClickListener {
-            onItemLongClick(message, true)
-            true
-        }
+        // ❌ 已禁用：itemView 的长按监听器会拦截 TextView 的文本选择功能
+        // holder.itemView.setOnLongClickListener {
+        //     onItemLongClick(message, true)
+        //     true
+        // }
     }
 
     override fun getItemCount() = messages.size

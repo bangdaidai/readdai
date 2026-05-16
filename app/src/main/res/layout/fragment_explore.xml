@@ -12,7 +12,8 @@
         app:attachToActivity="false"
         app:contentLayout="@layout/view_search"
         app:layout_constraintTop_toTopOf="parent"
-        app:title="@string/discovery" />
+        app:title="@string/discovery"
+        android:fitsSystemWindows="true" />
 
     <io.legado.app.ui.widget.TitleBar
         android:id="@+id/title_bar_modern"
@@ -22,7 +23,8 @@
         app:contentLayout="@layout/view_discover_modern"
         app:layout_constraintTop_toTopOf="parent"
         app:title="@string/discovery"
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:fitsSystemWindows="true" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh_layout"

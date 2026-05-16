@@ -90,7 +90,25 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         binding.btnTestConnection.setTextColor(accentColor)
         binding.btnSave.setTextColor(accentColor)
 
-        // 协议切换时更新URL提示
+        // Apply theme accent color to toggle groups (segmented buttons)
+        val accentColorStateList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf()
+            ),
+            intArrayOf(
+                accentColor,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
+        
+        // Protocol toggle group
+        binding.toggleProtocol.checkedButton?.let { button ->
+            if (button is MaterialButton) {
+                button.backgroundTintList = accentColorStateList
+                button.strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+            }
+        }
         binding.toggleProtocol.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 val hint = when (checkedId) {
@@ -99,6 +117,59 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
                     else -> "例如: https://api.openai.com/v1 或 https://api.longcat.chat/openai/v1/chat/completions"
                 }
                 binding.tilApiUrl.helperText = hint
+                
+                // Update checked button color
+                binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
+            }
+        }
+        
+        // Reasoning toggle group
+        binding.toggleReasoning.checkedButton?.let { button ->
+            if (button is MaterialButton) {
+                button.backgroundTintList = accentColorStateList
+                button.strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+            }
+        }
+        binding.toggleReasoning.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
+            }
+        }
+        
+        // Apply theme accent color to TextInputLayout focused border
+        val boxStrokeColorStateList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_focused),
+                intArrayOf(android.R.attr.state_hovered),
+                intArrayOf()
+            ),
+            intArrayOf(
+                accentColor,
+                accentColor,
+                android.graphics.Color.parseColor("#80808080") // Default/unfocused color
+            )
+        )
+        
+        // Name input
+        binding.etName.parent?.let {
+            if (it is com.google.android.material.textfield.TextInputLayout) {
+                it.boxStrokeColorStateList = boxStrokeColorStateList
+            }
+        }
+        
+        // API URL input
+        binding.tilApiUrl.boxStrokeColorStateList = boxStrokeColorStateList
+        
+        // Model input
+        binding.etModel.parent?.let {
+            if (it is com.google.android.material.textfield.TextInputLayout) {
+                it.boxStrokeColorStateList = boxStrokeColorStateList
             }
         }
     }
@@ -282,6 +353,46 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
             holder.etLabel.setText(key.label ?: "")
             holder.etKey.setText(key.key)
             holder.switchEnabled.isChecked = key.enabled
+
+            // Apply theme accent color to switch
+            val accentColorStateList = android.content.res.ColorStateList(
+                arrayOf(
+                    intArrayOf(android.R.attr.state_checked),
+                    intArrayOf(-android.R.attr.state_checked)
+                ),
+                intArrayOf(
+                    accentColor,
+                    android.graphics.Color.parseColor("#80808080") // Unchecked track color
+                )
+            )
+            holder.switchEnabled.trackTintList = accentColorStateList
+            holder.switchEnabled.thumbTintList = android.content.res.ColorStateList.valueOf(accentColor)
+
+            // Apply theme accent color to TextInputLayout focused border
+            val boxStrokeColorStateList = android.content.res.ColorStateList(
+                arrayOf(
+                    intArrayOf(android.R.attr.state_focused),
+                    intArrayOf(android.R.attr.state_hovered),
+                    intArrayOf()
+                ),
+                intArrayOf(
+                    accentColor,
+                    accentColor,
+                    android.graphics.Color.parseColor("#80808080")
+                )
+            )
+            
+            holder.etLabel.parent?.let {
+                if (it is com.google.android.material.textfield.TextInputLayout) {
+                    it.boxStrokeColorStateList = boxStrokeColorStateList
+                }
+            }
+            
+            holder.etKey.parent?.let {
+                if (it is com.google.android.material.textfield.TextInputLayout) {
+                    it.boxStrokeColorStateList = boxStrokeColorStateList
+                }
+            }
 
             // Apply theme accent color to delete button
             if (holder.btnDelete is android.widget.Button) {

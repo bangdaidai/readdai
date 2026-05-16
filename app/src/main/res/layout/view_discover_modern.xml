@@ -7,7 +7,8 @@
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="0dp"
-    android:paddingEnd="8dp">
+    android:paddingEnd="8dp"
+    android:background="?attr/colorPrimary">
 
     <LinearLayout
         android:id="@+id/ll_discover_source_select"
