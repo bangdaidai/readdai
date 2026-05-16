@@ -141,6 +141,16 @@
 
         <io.legado.app.lib.prefs.ColorPreference
             android:defaultValue="@color/primaryText"
+            android:key="colorBottomNavIconUnselected"
+            android:summary="@string/day_bottom_nav_icon_unselected_color"
+            android:title="@string/bottom_nav_icon_unselected_color"
+            app:allowDividerAbove="false"
+            app:allowDividerBelow="false"
+            app:cpv_dialogType="preset"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.ColorPreference
+            android:defaultValue="@color/primaryText"
             android:key="colorTextPrimary"
             android:summary="@string/day_text_primary_color"
             android:title="@string/text_primary_color"
@@ -259,6 +269,16 @@
             android:key="colorTitleBarTextIconNight"
             android:summary="@string/night_title_bar_text_icon_color"
             android:title="@string/title_bar_text_icon_color"
+            app:allowDividerAbove="false"
+            app:allowDividerBelow="false"
+            app:cpv_dialogType="preset"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.ColorPreference
+            android:defaultValue="@color/primaryText"
+            android:key="colorBottomNavIconUnselectedNight"
+            android:summary="@string/night_bottom_nav_icon_unselected_color"
+            android:title="@string/bottom_nav_icon_unselected_color"
             app:allowDividerAbove="false"
             app:allowDividerBelow="false"
             app:cpv_dialogType="preset"

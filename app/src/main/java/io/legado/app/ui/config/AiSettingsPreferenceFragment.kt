@@ -20,6 +20,7 @@ import io.legado.app.help.ai.AiApiClient
 import io.legado.app.help.ai.AiAssistantConfigManager
 import io.legado.app.help.ai.AiDao
 import io.legado.app.help.ai.AiDatabase
+import io.legado.app.help.ai.AiModelConfig
 import io.legado.app.help.ai.AiPromptEntity
 import io.legado.app.help.ai.AiProviderEntity
 import io.legado.app.help.ai.AiServiceOptions
@@ -174,11 +175,11 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             val items = providers.map { provider ->
                 val modelCount = aiDao.getModelsByProvider(provider.identifier).size
                 val defaultMark = if (provider.isDefault) " ✓" else ""
-                val modelInfo = if (modelCount > 0) " ($modelCount个模型)" else ""
+                val modelInfo = if (modelCount > 0) " ($modelCount models)" else ""
                 "${provider.title}$defaultMark$modelInfo"
             }.toTypedArray()
 
-            AlertDialog(requireContext())
+            AlertDialog.Builder(requireContext())
                 .setTitle("服务商管理")
                 .setItems(items) { _, which ->
                     showProviderOptionsDialog(providers[which])
@@ -194,7 +195,7 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
     private fun showProviderOptionsDialog(provider: AiProviderEntity) {
         val options = arrayOf("设为默认", "编辑", "管理模型", "测试连接", "获取模型列表", "删除")
 
-        AlertDialog(requireContext())
+        AlertDialog.Builder(requireContext())
             .setTitle(provider.title)
             .setItems(options) { _, which ->
                 when (which) {
@@ -224,7 +225,7 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             val models = aiDao.getModelsByProvider(provider.identifier)
             
             if (models.isEmpty()) {
-                AlertDialog(requireContext())
+                AlertDialog.Builder(requireContext())
                     .setTitle("${provider.title} - 模型管理")
                     .setMessage("暂无模型配置\n\n请点击“获取模型列表”添加模型")
                     .setPositiveButton("获取模型列表") { _, _ ->
@@ -241,7 +242,7 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
                 "${model.modelId}${if (isCurrent) " ✓" else ""}"
             }.toTypedArray()
             
-            AlertDialog(requireContext())
+            AlertDialog.Builder(requireContext())
                 .setTitle("${provider.title} - 模型管理 (${models.size})")
                 .setItems(items) { _, which ->
                     val model = models[which]
@@ -262,7 +263,7 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             add("删除")
         }.toTypedArray()
         
-        AlertDialog(requireContext())
+        AlertDialog.Builder(requireContext())
             .setTitle(model.modelId)
             .setItems(options) { _, which ->
                 when (which) {
@@ -292,9 +293,9 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
      * 确认删除模型
      */
     private fun confirmRemoveModel(provider: AiProviderEntity, model: AiModelConfig) {
-        AlertDialog(requireContext())
+        AlertDialog.Builder(requireContext())
             .setTitle("删除模型")
-            .setMessage("确定要删除模型 "${model.modelId}" 吗？")
+            .setMessage("确定要删除模型 \"${model.modelId}\" 吗？")
             .setPositiveButton("删除") { _, _ ->
                 lifecycleScope.launch {
                     aiDao.deleteModel(model.id)
