@@ -272,9 +272,10 @@
 
             <!-- 分割线 -->
             <View
+                android:id="@+id/view_divider"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="?attr/dividerColor" />
+                android:background="@color/divider" />
 
             <!-- 书评内容 -->
             <io.legado.app.ui.widget.text.SummaryTextView
