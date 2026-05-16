@@ -167,6 +167,16 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
         return this
     }
 
+    fun bottomNavIconUnselected(color: Int): ThemeStore {
+        val key = if (mContext.resources.configuration.isNightMode) {
+            ThemeStorePrefKeys.KEY_BOTTOM_NAV_ICON_UNSELECTED_NIGHT
+        } else {
+            ThemeStorePrefKeys.KEY_BOTTOM_NAV_ICON_UNSELECTED
+        }
+        mEditor.putInt(key, color)
+        return this
+    }
+
     override fun backgroundCard(@ColorInt color: Int): ThemeStore {
         mEditor.putInt(ThemeStorePrefKeys.KEY_BACKGROUND_CARD, color)
         return this
@@ -353,9 +363,9 @@ private constructor(private val mContext: Context) : ThemeStoreInterface {
         fun bottomNavIconUnselectedColor(context: Context): Int {
             return prefs(context).getInt(
                 if (context.resources.configuration.isNightMode) {
-                    "colorBottomNavIconUnselectedNight"
+                    ThemeStorePrefKeys.KEY_BOTTOM_NAV_ICON_UNSELECTED_NIGHT
                 } else {
-                    "colorBottomNavIconUnselected"
+                    ThemeStorePrefKeys.KEY_BOTTOM_NAV_ICON_UNSELECTED
                 },
                 ThemeUtils.resolveColor(context, android.R.attr.textColorSecondary)
             )

@@ -496,6 +496,7 @@ object ThemeConfig {
                 val transparentNavBar =
                     getPrefBoolean(PreferKey.tNavBarN, false)
                 val textOther = getPrefInt(PreferKey.cNTextOther, getCompatColor(R.color.primaryText))
+                val bottomNavIconUnselected = getPrefInt(PreferKey.cNBottomNavIconUnselected, textSecondary)
                 themeEditor
                     .primaryColor(primary)
                     .accentColor(accent)
@@ -508,6 +509,7 @@ object ThemeConfig {
                     .textColorSecondary(textSecondary)
                     .textColorOther(textOther)
                     .transparentNavBar(transparentNavBar)
+                    .bottomNavIconUnselected(bottomNavIconUnselected)
                     .apply()
                 // 更新颜色资源
                 updateColorResources(this, textPrimary, textSecondary, textSecondary, textSecondary)
@@ -539,6 +541,7 @@ object ThemeConfig {
                 val transparentNavBar =
                     getPrefBoolean(PreferKey.tNavBar, false)
                 val textOther = getPrefInt(PreferKey.cTextOther, getCompatColor(R.color.primaryText))
+                val bottomNavIconUnselected = getPrefInt(PreferKey.cBottomNavIconUnselected, textSecondary)
                 themeEditor
                     .primaryColor(primary)
                     .accentColor(accent)
@@ -551,6 +554,7 @@ object ThemeConfig {
                     .textColorSecondary(textSecondary)
                     .textColorOther(textOther)
                     .transparentNavBar(transparentNavBar)
+                    .bottomNavIconUnselected(bottomNavIconUnselected)
                     .apply()
                 // 更新颜色资源
                 updateColorResources(this, textPrimary, textSecondary, textSecondary, textSecondary)

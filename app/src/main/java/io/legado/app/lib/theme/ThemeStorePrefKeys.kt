@@ -25,6 +25,8 @@ object ThemeStorePrefKeys {
 
     const val KEY_BACKGROUND_COLOR = "backgroundColor"
     const val KEY_BOTTOM_BACKGROUND = "bottomBackground"
+    const val KEY_BOTTOM_NAV_ICON_UNSELECTED = "colorBottomNavIconUnselected"
+    const val KEY_BOTTOM_NAV_ICON_UNSELECTED_NIGHT = "colorBottomNavIconUnselectedNight"
     const val KEY_BACKGROUND_CARD = "backgroundCard"
     const val KEY_DIVIDER = "dividerColor"
     const val KEY_COLOR_SURFACE = "colorSurface"
