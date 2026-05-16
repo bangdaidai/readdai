@@ -1596,6 +1596,7 @@
     <!-- Navigation Bar Management -->
     <string name="navigation_bar_manage">Bottom Bar Config</string>
     <string name="navigation_bar_manage_summary">Manage bottom navigation bar appearance and icons</string>
+    <string name="navigation_bar_package_summary">Manage multiple bottom bar configuration schemes</string>
     <string name="navigation_bar_edit">Edit Bottom Bar</string>
     <string name="navigation_bar_name">Name</string>
     <string name="navigation_bar_custom_name">Custom</string>
