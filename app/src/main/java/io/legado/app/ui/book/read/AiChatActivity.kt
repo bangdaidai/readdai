@@ -1832,6 +1832,17 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         }
         startActivity(intent)
     }
+
+    /**
+     * 处理追问操作（供 ChatAdapter 调用）
+     */
+    fun handleFollowUpQuestion(selectedText: String) {
+        selectedQuote = selectedText.trim()
+        binding.editText.setText("")
+        binding.editText.requestFocus()
+        // 滚动到底部
+        binding.recyclerView.scrollToPosition(messages.size - 1)
+    }
 }
 
 /**
@@ -1971,11 +1982,7 @@ class ChatAdapter(
                         android.R.id.copy -> {
                             // 追问：以选中的文本作为引用继续提问
                             if (selectedText.isNotBlank()) {
-                                activity.selectedQuote = selectedText.trim()
-                                activity.binding.editText.setText("")
-                                activity.binding.editText.requestFocus()
-                                // 滚动到底部
-                                activity.binding.recyclerView.scrollToPosition(messages.size - 1)
+                                activity.handleFollowUpQuestion(selectedText)
                             }
                             mode.finish()
                             true
