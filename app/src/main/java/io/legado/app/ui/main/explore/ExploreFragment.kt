@@ -42,8 +42,10 @@ import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.applyUiTitleTypeface
+import io.legado.app.lib.theme.elevation
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
+import io.legado.app.lib.theme.transparentNavBar
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.ui.book.explore.ExploreShowAdapter
 import io.legado.app.ui.book.explore.ExploreShowActivity
@@ -248,6 +250,28 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             bindDiscoverSourceSelector()
             updateDiscoverLoginButtonState()
             updateDiscoverModeToggleButtonState()
+            val toolbarHeight = resources.getDimensionPixelSize(android.R.dimen.app_bar_height)
+            binding.llDiscoverSourceRow.layoutParams.height = toolbarHeight
+            binding.llDiscoverSourceRow.requestLayout()
+            if (context?.transparentNavBar == true) {
+                binding.llModernDiscovery.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                binding.llDiscoverSourceRow.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                binding.llDiscoverSourceRow.elevation = 0f
+            } else {
+                binding.llModernDiscovery.setBackgroundColor(primaryColor)
+                binding.llDiscoverSourceRow.setBackgroundColor(primaryColor)
+                binding.llDiscoverSourceRow.elevation = context?.elevation ?: 0f
+            }
+            binding.llModernDiscovery.setOnApplyWindowInsetsListenerCompat { _, windowInsets ->
+                val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
+                binding.llModernDiscovery.setPadding(
+                    binding.llModernDiscovery.paddingLeft,
+                    insets.top,
+                    binding.llModernDiscovery.paddingRight,
+                    binding.llModernDiscovery.paddingBottom
+                )
+                windowInsets
+            }
         }
         observeDiscoverSources()
         observeDiscoverBookshelf()

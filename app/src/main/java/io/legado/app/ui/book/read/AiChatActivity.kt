@@ -481,14 +481,15 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
             // 更新最后一条AI消息
             val lastMsg = messages.lastOrNull()
-            if (lastMsg?.role == "ai" && lastMsg.content.isEmpty()) {
-                messages[messages.size - 1] = ChatMessageItem(
+            val lastAiIndex = messages.indexOfLast { it.role == "ai" }
+            if (lastMsg?.role == "ai" && lastMsg.content.isEmpty() && lastAiIndex >= 0) {
+                messages[lastAiIndex] = ChatMessageItem(
                     "ai",
                     "[请求已取消]",
                     reasoningContent = lastMsg.reasoningContent,
                     toolSteps = lastMsg.toolSteps
                 )
-                adapter.notifyItemChanged(messages.size - 1)
+                adapter.notifyItemChanged(lastAiIndex)
             }
 
             setRequestState(false)
@@ -1080,23 +1081,28 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     is ChatResult.Chunk -> {
                         val lastMsg = this@AiChatActivity.messages.lastOrNull()
                         if (lastMsg?.role == "ai") {
-                            val newContent = if (lastMsg.content.isEmpty()) {
-                                result.content
-                            } else {
-                                lastMsg.content + result.content
+                            val lastAiIndex = this@AiChatActivity.messages.indexOfLast { it.role == "ai" }
+                            if (lastAiIndex >= 0) {
+                                val newContent = if (lastMsg.content.isEmpty()) {
+                                    result.content
+                                } else {
+                                    lastMsg.content + result.content
+                                }
+                                this@AiChatActivity.messages[lastAiIndex] =
+                                    ChatMessageItem(
+                                        "ai",
+                                        newContent,
+                                        reasoningContent = lastMsg.reasoningContent,
+                                        toolSteps = lastMsg.toolSteps
+                                    )
+                                adapter.notifyItemChanged(lastAiIndex)
+                                binding.recyclerView.scrollToPosition(lastAiIndex)
                             }
-                            this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
-                                ChatMessageItem(
-                                    "ai",
-                                    newContent,
-                                    reasoningContent = lastMsg.reasoningContent,
-                                    toolSteps = lastMsg.toolSteps
-                                )
                         } else {
                             this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content))
+                            adapter.notifyItemInserted(this@AiChatActivity.messages.size - 1)
+                            binding.recyclerView.scrollToPosition(this@AiChatActivity.messages.size - 1)
                         }
-                        adapter.notifyItemChanged(this@AiChatActivity.messages.size - 1)
-                        binding.recyclerView.scrollToPosition(this@AiChatActivity.messages.size - 1)
                     }
                     is ChatResult.ReasoningChunk -> {
                         // 推理过程暂不显示
@@ -1177,9 +1183,8 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                     }
                     is ChatResult.Success -> {
                         // ✅ 关键修复：在更大的作用域定义 existingMsg，供后续保存历史使用
-                        val existingMsg = if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
-                            this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
-                        } else null
+                        val existingMsg = this@AiChatActivity.messages.lastOrNull { it.role == "ai" }
+                        val lastAiIndex = this@AiChatActivity.messages.indexOfLast { it.role == "ai" }
                         
                         // 🔍 调试日志：检查 UI 层 messages 的状态
                         io.legado.app.help.ai.AiLogManager.log(
@@ -1215,8 +1220,8 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             )
                         }
                         
-                        if (existingMsg != null) {
-                            this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
+                        if (existingMsg != null && lastAiIndex >= 0) {
+                            this@AiChatActivity.messages[lastAiIndex] =
                                 ChatMessageItem(
                                     "ai",
                                     result.content,
@@ -1285,14 +1290,15 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                         }
                     }
                     is ChatResult.Error -> {
-                        if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
-                            val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
-                            this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
+                        val lastAiMsg = this@AiChatActivity.messages.lastOrNull { it.role == "ai" }
+                        val lastAiIndex = this@AiChatActivity.messages.indexOfLast { it.role == "ai" }
+                        if (lastAiMsg != null && lastAiIndex >= 0) {
+                            this@AiChatActivity.messages[lastAiIndex] =
                                 ChatMessageItem(
                                     "ai",
                                     "错误：${result.message}",
-                                    reasoningContent = existingMsg.reasoningContent,
-                                    toolSteps = existingMsg.toolSteps
+                                    reasoningContent = lastAiMsg.reasoningContent,
+                                    toolSteps = lastAiMsg.toolSteps
                                 )
                         } else {
                             this@AiChatActivity.messages.add(ChatMessageItem("ai", "错误：${result.message}"))
@@ -1446,7 +1452,8 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                                 }
 
                                 // 每收到50个字符保存一次进度
-                                if (messages[streamingPosition].content.length % 50 == 0) {
+                                if (streamingPosition >= 0 && streamingPosition < messages.size &&
+                                    messages[streamingPosition].content.length % 50 == 0) {
                                     saveStreamingProgress()
                                 }
                             }
@@ -1525,30 +1532,33 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                         }
                         is ChatResult.Success -> {
                 // AI回复完成，更新最后一条消息
-                if (this@AiChatActivity.messages.lastOrNull()?.role == "ai") {
-                    val existingMsg = this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1]
-                    
-                    // 关键：合并现有的 toolSteps 和新的 toolSteps
-                    val mergedToolSteps = if (result.toolSteps.isNotEmpty()) {
-                        result.toolSteps
-                    } else {
-                        existingMsg.toolSteps
-                    }
-                    
-                    io.legado.app.help.ai.AiLogManager.log(
-                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
-                        "AiChat",
-                        "Success事件: content长度=${result.content.length}, toolSteps数=${mergedToolSteps.size}"
-                    )
-                    
-                    this@AiChatActivity.messages[this@AiChatActivity.messages.size - 1] =
-                        ChatMessageItem(
-                            "ai",
-                            result.content,
-                            reasoningContent = existingMsg.reasoningContent,
-                            toolSteps = mergedToolSteps,
-                            isExpanded = true  // 确保默认展开
+                val lastAiMsg = this@AiChatActivity.messages.lastOrNull { it.role == "ai" }
+                if (lastAiMsg != null) {
+                    // 找到最后一条AI消息的位置
+                    val lastAiIndex = this@AiChatActivity.messages.indexOfLast { it.role == "ai" }
+                    if (lastAiIndex >= 0) {
+                        // 关键：合并现有的 toolSteps 和新的 toolSteps
+                        val mergedToolSteps = if (result.toolSteps.isNotEmpty()) {
+                            result.toolSteps
+                        } else {
+                            lastAiMsg.toolSteps
+                        }
+
+                        io.legado.app.help.ai.AiLogManager.log(
+                            io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
+                            "AiChat",
+                            "Success事件: content长度=${result.content.length}, toolSteps数=${mergedToolSteps.size}"
                         )
+
+                        this@AiChatActivity.messages[lastAiIndex] =
+                            ChatMessageItem(
+                                "ai",
+                                result.content,
+                                reasoningContent = lastAiMsg.reasoningContent,
+                                toolSteps = mergedToolSteps,
+                                isExpanded = true  // 确保默认展开
+                            )
+                    }
                 } else {
                     this@AiChatActivity.messages.add(ChatMessageItem("ai", result.content, isExpanded = true))
                 }
@@ -1614,14 +1624,16 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                                 "AiChat",
                                 "LangChain4j错误: ${result.message}"
                             )
-                            val existingMsg = messages[streamingPosition]
-                            messages[streamingPosition] = ChatMessageItem(
-                                "ai",
-                                "抱歉，处理请求时出错: ${result.message}",
-                                reasoningContent = existingMsg.reasoningContent,
-                                toolSteps = existingMsg.toolSteps
-                            )
-                            adapter.notifyItemChanged(streamingPosition)
+                            val existingMsg = messages.getOrNull(streamingPosition)
+                            if (existingMsg != null) {
+                                messages[streamingPosition] = ChatMessageItem(
+                                    "ai",
+                                    "抱歉，处理请求时出错: ${result.message}",
+                                    reasoningContent = existingMsg.reasoningContent,
+                                    toolSteps = existingMsg.toolSteps
+                                )
+                                adapter.notifyItemChanged(streamingPosition)
+                            }
 
                             // 清除流式位置
                             streamingPosition = -1
@@ -1926,6 +1938,71 @@ class ChatAdapter(
             // 渲染 Markdown
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
 
+            // 启用文本选择功能，允许用户选中AI回复中的书名等文本
+            holder.contentText.setTextIsSelectable(true)
+
+            // 确保链接可以被点击（setTextIsSelectable 后需要手动设置 MovementMethod）
+            holder.contentText.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+
+            // 设置自定义选择操作模式回调，添加"搜索书籍"选项
+            holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    // 清除默认的"剪切"、"复制"等选项
+                    menu.clear()
+                    // 添加"追问"选项
+                    menu.add(0, android.R.id.copy, 0, "追问")
+                    // 添加"搜索书籍"选项
+                    menu.add(0, android.R.id.textAssist, 1, "在书院搜索")
+                    return true
+                }
+
+                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    return false
+                }
+
+                override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
+                    val selectedText = holder.contentText.text?.substring(
+                        holder.contentText.selectionStart,
+                        holder.contentText.selectionEnd
+                    ) ?: ""
+
+                    return when (item.itemId) {
+                        android.R.id.copy -> {
+                            // 追问：以选中的文本作为引用继续提问
+                            if (selectedText.isNotBlank()) {
+                                selectedQuote = selectedText.trim()
+                                binding.editText.setText("")
+                                binding.editText.requestFocus()
+                                // 滚动到底部
+                                binding.recyclerView.scrollToPosition(messages.size - 1)
+                            }
+                            mode.finish()
+                            true
+                        }
+                        android.R.id.textAssist -> {
+                            // 在书院中搜索选中的文本
+                            if (selectedText.isNotBlank()) {
+                                val intent = android.content.Intent(
+                                    context,
+                                    io.legado.app.ui.book.search.SearchActivity::class.java
+                                ).apply {
+                                    putExtra("key", selectedText.trim())
+                                    putExtra("searchScope", "book")
+                                }
+                                context.startActivity(intent)
+                            }
+                            mode.finish()
+                            true
+                        }
+                        else -> false
+                    }
+                }
+
+                override fun onDestroyActionMode(mode: android.view.ActionMode) {
+                    // 可选：清理操作
+                }
+            }
+
             // 流式输出时显示光标动画
             val isStreaming = position == getStreamingPosition()
             
@@ -1933,13 +2010,14 @@ class ChatAdapter(
             // 1. 流式中 → AI在工作
             // 2. 有工具步骤且没有最终内容 → AI在工作
             // 3. 有未完成（PENDING/RUNNING）的工具步骤 → AI在工作
-            val hasUnfinishedTools = message.toolSteps.any { 
+            val hasUnfinishedTools = message.toolSteps.any {
                 it.status == ToolStepStatus.PENDING ||
                 it.status == ToolStepStatus.RUNNING
             }
             val isAiWorking = isStreaming || hasUnfinishedTools || (message.toolSteps.isNotEmpty() && message.content.isEmpty())
-            
-            if (isStreaming && message.content.isEmpty()) {
+
+            // 光标在AI工作中（流式输出或工具执行中）且没有内容时显示
+            if (isAiWorking && message.content.isEmpty()) {
                 holder.tvCursor.visibility = View.VISIBLE
                 holder.tvCursor.startAnimation(
                     android.view.animation.AnimationUtils.loadAnimation(
@@ -2170,6 +2248,40 @@ class ChatAdapter(
 
             // 用户消息：设置内容和样式
             holder.contentText.text = message.content
+
+            // 启用文本选择功能
+            holder.contentText.setTextIsSelectable(true)
+
+            // 设置自定义选择操作模式回调
+            holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    menu.clear()
+                    menu.add(0, android.R.id.copy, 0, android.R.string.copy)
+                    return true
+                }
+
+                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    return false
+                }
+
+                override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
+                    return when (item.itemId) {
+                        android.R.id.copy -> {
+                            val selectedText = holder.contentText.text?.substring(
+                                holder.contentText.selectionStart,
+                                holder.contentText.selectionEnd
+                            ) ?: ""
+                            copyToClipboard(selectedText)
+                            mode.finish()
+                            true
+                        }
+                        else -> false
+                    }
+                }
+
+                override fun onDestroyActionMode(mode: android.view.ActionMode) {
+                }
+            }
 
             // 使用主题强调色作为气泡背景（半透明）
             val accentColor = ThemeStore.accentColor(context)

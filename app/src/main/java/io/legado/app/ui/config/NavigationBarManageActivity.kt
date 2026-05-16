@@ -380,17 +380,17 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
     }
 
     private fun applyPackage(entry: NavigationBarIconConfig.Entry) {
-        lifecycleScope.launch {
-            kotlin.runCatching {
-                withContext(Dispatchers.IO) { entry }
-            }.onSuccess {
-                NavigationBarIconConfig.apply(it)
-                postEvent(EventBus.NAVIGATION_BAR_CHANGED, it.config.isNightMode)
-                loadPackages()
-            }.onFailure {
-                toastOnUi(it.localizedMessage)
-            }
+        val isNight = entry.config.isNightMode
+        val dirName = entry.dirName
+        try {
+            NavigationBarIconConfig.apply(entry)
+        } catch (e: Exception) {
+            toastOnUi("应用失败: ${e.message}")
+            return
         }
+        postEvent(EventBus.NAVIGATION_BAR_CHANGED, isNight)
+        loadPackages()
+        toastOnUi("已应用: $dirName")
     }
 
     private fun showActions(entry: NavigationBarIconConfig.Entry) {

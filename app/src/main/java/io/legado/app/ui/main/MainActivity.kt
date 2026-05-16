@@ -4,6 +4,8 @@ package io.legado.app.ui.main
 
 import android.content.Intent
 import android.graphics.Color
+import android.graphics.PorterDuff
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.text.format.DateUtils
 import android.view.MenuItem
@@ -276,6 +278,9 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
 
             R.id.menu_ai_read -> {
                 startActivity(Intent(this@MainActivity, AiChatActivity::class.java))
+                // 取消选中状态，这样下次点击可以正常触发
+                bottomNavigationView.menu.findItem(R.id.menu_ai_read)?.isChecked = false
+                bottomNavigationViewFloating.menu.findItem(R.id.menu_ai_read)?.isChecked = false
             }
 
             R.id.menu_rss ->
@@ -772,7 +777,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     }
     
     /**
-     * Apply classic mode style - reference dai411 project
+     * Apply classic mode style - based on dai411 original implementation
+     * Uses transparentNavBar to control whether bottom bar blends into page background
      */
     private fun applyClassicModeStyle() {
         val bottomNav = binding.bottomNavigationView
@@ -782,25 +788,28 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val bgDrawable = if (AppConfig.isEInkMode) {
             getDrawable(R.drawable.bg_eink_border_top)
         } else {
-            val bgColor = if (AppConfig.immNavigationBar) {
+            val bgColor = if (transparentNavBar) {
                 io.legado.app.lib.theme.ThemeStore.backgroundColor(this)
             } else {
                 io.legado.app.lib.theme.ThemeStore.bottomBackground(this)
             }
-            android.graphics.drawable.ColorDrawable(bgColor)
+            NoTintColorDrawable(bgColor)
         }
 
         bottomNav.background = bgDrawable
         bottomNav.alpha = 1.0f
-        bottomNav.elevation = if (AppConfig.isEInkMode || AppConfig.immNavigationBar) {
+        bottomNav.elevation = if (AppConfig.isEInkMode || transparentNavBar) {
             0f
         } else {
             resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
+    }
 
-        bottomNav.invalidate()
-        bottomNav.setOnApplyWindowInsetsListenerCompat(null)
-        bottomNav.setPadding(0, 0, 0, 0)
+    private class NoTintColorDrawable(color: Int) : ColorDrawable(color) {
+        override fun setTintList(tint: android.content.res.ColorStateList?) {
+        }
+        override fun setTintMode(tint: PorterDuff.Mode?) {
+        }
     }
     
     /**

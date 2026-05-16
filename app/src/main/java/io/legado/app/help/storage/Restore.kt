@@ -436,6 +436,34 @@ object Restore {
                                 }
                             }
                         }
+                        // Tavily API Key需要解密
+                        "aiTavilyApiKey" -> {
+                            kotlin.runCatching {
+                                aes.decryptStr(value.toString())
+                            }.getOrNull()?.let {
+                                edit.putString(key, it)
+                            } ?: let {
+                                if (appCtx.getPrefString("aiTavilyApiKey")
+                                        .isNullOrBlank()
+                                ) {
+                                    edit.putString(key, value.toString())
+                                }
+                            }
+                        }
+                        // MCP服务器配置需要解密
+                        "aiMcpServers" -> {
+                            kotlin.runCatching {
+                                aes.decryptStr(value.toString())
+                            }.getOrNull()?.let {
+                                edit.putString(key, it)
+                            } ?: let {
+                                if (appCtx.getPrefString("aiMcpServers")
+                                        .isNullOrBlank()
+                                ) {
+                                    edit.putString(key, value.toString())
+                                }
+                            }
+                        }
 
                         else -> when (value) {
                             is Int -> edit.putInt(key, value)
