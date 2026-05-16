@@ -46,6 +46,7 @@ import io.legado.app.lib.theme.elevation
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.transparentNavBar
+import io.legado.app.utils.setOnApplyWindowInsetsListenerCompat
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.ui.book.explore.ExploreShowAdapter
 import io.legado.app.ui.book.explore.ExploreShowActivity
@@ -262,7 +263,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 binding.llDiscoverSourceRow.setBackgroundColor(primaryColor)
                 binding.llDiscoverSourceRow.elevation = context?.elevation ?: 0f
             }
-            io.legado.app.utils.setOnApplyWindowInsetsListenerCompat(binding.llModernDiscovery) { _, windowInsets ->
+            binding.llModernDiscovery.setOnApplyWindowInsetsListenerCompat { _, windowInsets ->
                 val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
                 binding.llModernDiscovery.setPadding(
                     binding.llModernDiscovery.paddingLeft,

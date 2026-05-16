@@ -1965,7 +1965,7 @@ class ChatAdapter(
                         holder.contentText.selectionStart,
                         holder.contentText.selectionEnd
                     ) ?: ""
-
+                    
                     return when (item.itemId) {
                         android.R.id.copy -> {
                             // 追问：以选中的文本作为引用继续提问

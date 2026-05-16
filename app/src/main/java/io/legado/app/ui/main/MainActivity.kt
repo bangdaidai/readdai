@@ -45,6 +45,7 @@ import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.storage.Backup
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
+import io.legado.app.lib.theme.transparentNavBar
 import io.legado.app.service.BaseReadAloudService
 import io.legado.app.ui.about.CrashLogsDialog
 import io.legado.app.ui.association.ImportBookSourceDialog
@@ -788,7 +789,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val bgDrawable = if (AppConfig.isEInkMode) {
             getDrawable(R.drawable.bg_eink_border_top)
         } else {
-            val bgColor = if (AppConfig.transparentNavBar) {
+            val bgColor = if (this.transparentNavBar) {
                 io.legado.app.lib.theme.ThemeStore.backgroundColor(this)
             } else {
                 io.legado.app.lib.theme.ThemeStore.bottomBackground(this)
@@ -798,7 +799,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
 
         bottomNav.background = bgDrawable
         bottomNav.alpha = 1.0f
-        bottomNav.elevation = if (AppConfig.isEInkMode || AppConfig.transparentNavBar) {
+        bottomNav.elevation = if (AppConfig.isEInkMode || this.transparentNavBar) {
             0f
         } else {
             resources.getDimension(R.dimen.main_bottom_bar_elevation)
