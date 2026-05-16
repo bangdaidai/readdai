@@ -232,24 +232,6 @@ object Backup {
                                 encryptBase64(value.toString())
                             }.getOrDefault(value.toString()))
                         }
-                        // 向量模型API Key需要加密
-                        PreferKey.aiVectorApiKey -> {
-                            edit.putString(key, aes.runCatching {
-                                encryptBase64(value.toString())
-                            }.getOrDefault(value.toString()))
-                        }
-                        // Tavily API Key需要加密
-                        "aiTavilyApiKey" -> {
-                            edit.putString(key, aes.runCatching {
-                                encryptBase64(value.toString())
-                            }.getOrDefault(value.toString()))
-                        }
-                        // MCP服务器配置需要加密
-                        "aiMcpServers" -> {
-                            edit.putString(key, aes.runCatching {
-                                encryptBase64(value.toString())
-                            }.getOrDefault(value.toString()))
-                        }
 
                         else -> when (value) {
                             is Int -> edit.putInt(key, value)

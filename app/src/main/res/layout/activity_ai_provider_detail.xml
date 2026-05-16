@@ -140,7 +140,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="获取"
-                    android:textColor="?attr/colorAccent"
                     android:textSize="13sp"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
@@ -244,7 +243,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="+ 添加"
-                    android:textColor="?attr/colorAccent"
                     android:textSize="13sp"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
@@ -256,15 +254,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="24dp" />
-
-            <!-- 分隔线 -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1px"
-                android:background="?attr/colorOnSurface"
-                android:alpha="0.12"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="8dp" />
 
             <!-- 底部按钮 -->
             <LinearLayout
@@ -279,7 +269,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="测试连接"
-                    android:textColor="?attr/colorAccent"
                     android:textSize="14sp"
                     android:minWidth="0dp"
                     android:minHeight="0dp"
@@ -292,7 +281,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:text="保存"
-                    android:textColor="?attr/colorAccent"
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:minWidth="0dp"

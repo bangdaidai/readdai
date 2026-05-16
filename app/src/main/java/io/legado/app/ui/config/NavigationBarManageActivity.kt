@@ -86,8 +86,9 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
         // Setup global settings
         setupGlobalSettings()
         
-        // Setup add button
+        // Setup add button with theme accent color
         btnAdd.text = getString(R.string.theme_add)
+        btnAdd.setTextColor(accentColor)
         btnAdd.setOnClickListener {
             showAddDialog()
         }
@@ -523,6 +524,11 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
                 
                 btnApply.text = getString(if (entry.dirName == activeDirName) R.string.theme_applied_state else R.string.theme_apply)
                 btnEdit.text = getString(R.string.edit)
+                
+                // Apply theme accent color to buttons
+                btnApply.setTextColor(accentColor)
+                btnEdit.setTextColor(accentColor)
+                btnDelete.setTextColor(accentColor)
                 
                 // 默认套装不能删除
                 btnDelete.visibility = if (entry.dirName == NavigationBarIconConfig.DEFAULT_DIR_NAME) View.GONE else View.VISIBLE

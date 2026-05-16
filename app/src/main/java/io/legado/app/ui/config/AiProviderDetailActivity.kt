@@ -20,6 +20,7 @@ import io.legado.app.help.ai.AiApiKey
 import io.legado.app.help.ai.AiDao
 import io.legado.app.help.ai.AiDatabase
 import io.legado.app.help.ai.AiProviderEntity
+import io.legado.app.lib.theme.accentColor
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -82,6 +83,12 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         binding.btnAddKey.setOnClickListener { addApiKey() }
         binding.btnTestConnection.setOnClickListener { testConnection() }
         binding.btnSave.setOnClickListener { saveProvider() }
+
+        // Apply theme accent color to buttons
+        binding.btnFetchModels.setTextColor(accentColor)
+        binding.btnAddKey.setTextColor(accentColor)
+        binding.btnTestConnection.setTextColor(accentColor)
+        binding.btnSave.setTextColor(accentColor)
 
         // 协议切换时更新URL提示
         binding.toggleProtocol.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -275,6 +282,11 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
             holder.etLabel.setText(key.label ?: "")
             holder.etKey.setText(key.key)
             holder.switchEnabled.isChecked = key.enabled
+
+            // Apply theme accent color to delete button
+            if (holder.btnDelete is android.widget.Button) {
+                (holder.btnDelete as android.widget.Button).setTextColor(accentColor)
+            }
 
             val textWatcher = object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}

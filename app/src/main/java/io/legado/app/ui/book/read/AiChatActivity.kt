@@ -1511,30 +1511,34 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                         }
                         is ChatResult.ToolStart -> {
                             // 工具开始执行
-                            val aiMsg = this@AiChatActivity.messages.getOrNull(streamingPosition)
-                            if (aiMsg != null) {
-                                val updatedSteps = aiMsg.toolSteps.toMutableList()
-                                val existingIndex = updatedSteps.indexOfFirst { it.name == result.name }
-                                if (existingIndex >= 0) {
-                                    updatedSteps[existingIndex] = updatedSteps[existingIndex].copy(status = ToolStepStatus.RUNNING)
-                                    this@AiChatActivity.messages[streamingPosition] = aiMsg.copy(toolSteps = updatedSteps)
-                                    adapter.notifyItemChanged(streamingPosition)
+                            if (streamingPosition >= 0 && streamingPosition < messages.size) {
+                                val aiMsg = this@AiChatActivity.messages.getOrNull(streamingPosition)
+                                if (aiMsg != null) {
+                                    val updatedSteps = aiMsg.toolSteps.toMutableList()
+                                    val existingIndex = updatedSteps.indexOfFirst { it.name == result.name }
+                                    if (existingIndex >= 0) {
+                                        updatedSteps[existingIndex] = updatedSteps[existingIndex].copy(status = ToolStepStatus.RUNNING)
+                                        this@AiChatActivity.messages[streamingPosition] = aiMsg.copy(toolSteps = updatedSteps)
+                                        adapter.notifyItemChanged(streamingPosition)
+                                    }
                                 }
                             }
                         }
                         is ChatResult.ToolResult -> {
                             // 工具执行完成
-                            val aiMsg = this@AiChatActivity.messages.getOrNull(streamingPosition)
-                            if (aiMsg != null) {
-                                val updatedSteps = aiMsg.toolSteps.toMutableList()
-                                val existingIndex = updatedSteps.indexOfFirst { it.name == result.name }
-                                if (existingIndex >= 0) {
-                                    updatedSteps[existingIndex] = updatedSteps[existingIndex].copy(
-                                        status = ToolStepStatus.SUCCESS,
-                                        output = result.result
-                                    )
-                                    this@AiChatActivity.messages[streamingPosition] = aiMsg.copy(toolSteps = updatedSteps)
-                                    adapter.notifyItemChanged(streamingPosition)
+                            if (streamingPosition >= 0 && streamingPosition < messages.size) {
+                                val aiMsg = this@AiChatActivity.messages.getOrNull(streamingPosition)
+                                if (aiMsg != null) {
+                                    val updatedSteps = aiMsg.toolSteps.toMutableList()
+                                    val existingIndex = updatedSteps.indexOfFirst { it.name == result.name }
+                                    if (existingIndex >= 0) {
+                                        updatedSteps[existingIndex] = updatedSteps[existingIndex].copy(
+                                            status = ToolStepStatus.SUCCESS,
+                                            output = result.result
+                                        )
+                                        this@AiChatActivity.messages[streamingPosition] = aiMsg.copy(toolSteps = updatedSteps)
+                                        adapter.notifyItemChanged(streamingPosition)
+                                    }
                                 }
                             }
                         }
@@ -1968,29 +1972,29 @@ class ChatAdapter(
             // ArrowKeyMovementMethod 支持链接点击且不干扰文本选择
             holder.contentText.movementMethod = android.text.method.ArrowKeyMovementMethod.getInstance()
 
-            // 设置自定义选择操作模式回调，添加"搜索书籍"选项
+            // 设置自定义选择操作模式回调，添加“搜索书籍”选项
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     // ✅ 不清除默认菜单，直接添加自定义选项
-                    // 添加"搜书"选项（排在前面）
-                    menu.add(0, android.R.id.textAssist, 0, "搜书")
-                    // 添加"追问"选项（排在后面）
-                    menu.add(0, android.R.id.copy, 1, "追问")
+                    // 添加“搜书”选项（排在前面）
+                    menu.add(0, 1001, 0, "搜书")
+                    // 添加“追问”选项（排在后面）
+                    menu.add(0, 1002, 1, "追问")
                     return true
                 }
-
+            
                 override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     return false
                 }
-
+            
                 override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
                     val selectedText = holder.contentText.text?.substring(
                         holder.contentText.selectionStart,
                         holder.contentText.selectionEnd
                     ) ?: ""
-                    
+                                
                     return when (item.itemId) {
-                        android.R.id.copy -> {
+                        1002 -> {
                             // 追问：以选中的文本作为引用继续提问
                             if (selectedText.isNotBlank()) {
                                 activity.handleFollowUpQuestion(selectedText)
@@ -1998,7 +2002,7 @@ class ChatAdapter(
                             mode.finish()
                             true
                         }
-                        android.R.id.textAssist -> {
+                        1001 -> {
                             // 在书院中搜索选中的文本
                             if (selectedText.isNotBlank()) {
                                 val intent = android.content.Intent(
@@ -2016,7 +2020,7 @@ class ChatAdapter(
                         else -> false
                     }
                 }
-
+            
                 override fun onDestroyActionMode(mode: android.view.ActionMode) {
                     // 可选：清理操作
                 }
@@ -2224,8 +2228,17 @@ class ChatAdapter(
 
                 holder.btnExpandCollapse.setOnClickListener {
                     message.isExpanded = !message.isExpanded
-                    // 关键：调用 notifyItemChanged 强制重新绑定数据，防止 RecyclerView 复用导致的布局污染
-                    notifyItemChanged(position)
+                    // ✅ 关键修复：直接修改 TextView 属性，不使用 notifyItemChanged，避免影响文本选择功能
+                    if (message.isExpanded) {
+                        holder.contentText.maxLines = Int.MAX_VALUE
+                        holder.btnExpandCollapse.rotation = 180f
+                    } else {
+                        holder.contentText.maxLines = 10
+                        holder.btnExpandCollapse.rotation = 0f
+                    }
+                    // ✅ 重新启用文本选择，确保 maxLines 改变后仍能长按选中
+                    holder.contentText.setTextIsSelectable(true)
+                    holder.contentText.movementMethod = android.text.method.ArrowKeyMovementMethod.getInstance()
                 }
             }
 

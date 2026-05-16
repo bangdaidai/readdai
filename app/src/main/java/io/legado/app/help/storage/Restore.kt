@@ -422,48 +422,6 @@ object Restore {
                                 }
                             }
                         }
-                        // 向量模型API Key需要解密
-                        PreferKey.aiVectorApiKey -> {
-                            kotlin.runCatching {
-                                aes.decryptStr(value.toString())
-                            }.getOrNull()?.let {
-                                edit.putString(key, it)
-                            } ?: let {
-                                if (appCtx.getPrefString(PreferKey.aiVectorApiKey)
-                                        .isNullOrBlank()
-                                ) {
-                                    edit.putString(key, value.toString())
-                                }
-                            }
-                        }
-                        // Tavily API Key需要解密
-                        "aiTavilyApiKey" -> {
-                            kotlin.runCatching {
-                                aes.decryptStr(value.toString())
-                            }.getOrNull()?.let {
-                                edit.putString(key, it)
-                            } ?: let {
-                                if (appCtx.getPrefString("aiTavilyApiKey")
-                                        .isNullOrBlank()
-                                ) {
-                                    edit.putString(key, value.toString())
-                                }
-                            }
-                        }
-                        // MCP服务器配置需要解密
-                        "aiMcpServers" -> {
-                            kotlin.runCatching {
-                                aes.decryptStr(value.toString())
-                            }.getOrNull()?.let {
-                                edit.putString(key, it)
-                            } ?: let {
-                                if (appCtx.getPrefString("aiMcpServers")
-                                        .isNullOrBlank()
-                                ) {
-                                    edit.putString(key, value.toString())
-                                }
-                            }
-                        }
 
                         else -> when (value) {
                             is Int -> edit.putInt(key, value)

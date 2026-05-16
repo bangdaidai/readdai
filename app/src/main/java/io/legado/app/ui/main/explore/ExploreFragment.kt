@@ -274,6 +274,8 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             bindDiscoverSourceSelector()
             updateDiscoverLoginButtonState()
             updateDiscoverModeToggleButtonState()
+            // Apply title bar text and icon colors from theme
+            applyModernTitleBarTheme()
             // TitleBar automatically handles status bar padding and theme colors
         }
         observeDiscoverSources()
@@ -1220,6 +1222,10 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             applyDiscoveryMode(loadData = true)
             discoveryModeLoaded = true
         }
+        // Refresh title bar theme colors
+        if (usingModernDiscovery && modernModeInitialized) {
+            applyModernTitleBarTheme()
+        }
         if (!usingModernDiscovery) {
             adapter.upResumed(true)
         }
@@ -1346,6 +1352,47 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 binding.rvFind.smoothScrollToPosition(0)
             }
         }
+    }
+
+    /**
+     * 应用现代发现页标题栏主题颜色
+     */
+    private fun applyModernTitleBarTheme() {
+        val textColor = io.legado.app.lib.theme.ThemeStore.titleBarTextIconColor(requireContext())
+        
+        android.util.Log.d("ExploreFragment", "applyModernTitleBarTheme: textColor=$textColor")
+        
+        // 设置标题文字颜色
+        tvDiscoverSourceSelect?.let {
+            android.util.Log.d("ExploreFragment", "tvDiscoverSourceSelect found, applying color")
+            it.setTextColor(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "tvDiscoverSourceSelect is null!")
+        
+        // 设置图标颜色
+        llDiscoverSourceSelect?.findViewById<androidx.appcompat.widget.AppCompatImageView>(R.id.iv_discover_source_arrow)?.let {
+            android.util.Log.d("ExploreFragment", "iv_discover_source_arrow found, applying color")
+            it.setColorFilter(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "iv_discover_source_arrow is null!")
+        
+        btnDiscoverSourceSearch?.let {
+            android.util.Log.d("ExploreFragment", "btnDiscoverSourceSearch found, applying color")
+            it.setColorFilter(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverSourceSearch is null!")
+        
+        btnDiscoverTagFilter?.let {
+            android.util.Log.d("ExploreFragment", "btnDiscoverTagFilter found, applying color")
+            it.setColorFilter(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverTagFilter is null!")
+        
+        btnDiscoverSourceLogin?.let {
+            android.util.Log.d("ExploreFragment", "btnDiscoverSourceLogin found, applying color")
+            it.setColorFilter(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverSourceLogin is null!")
+        
+        btnDiscoverModeToggle?.let {
+            android.util.Log.d("ExploreFragment", "btnDiscoverModeToggle found, applying color")
+            it.setColorFilter(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverModeToggle is null!")
     }
 
 }

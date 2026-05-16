@@ -83,7 +83,7 @@
     <dimen name="main_bottom_indicator_corner_radius">20dp</dimen>
 
     <!-- Main floating bottom navigation (achieve compatible) -->
-    <dimen name="main_bottom_controls_horizontal_padding">20dp</dimen>
+    <dimen name="main_bottom_controls_horizontal_padding">16dp</dimen>
     <dimen name="main_bottom_controls_bottom_padding">10dp</dimen>
     <dimen name="main_bottom_bar_gap">10dp</dimen>
     <dimen name="main_search_button_size">48dp</dimen>
