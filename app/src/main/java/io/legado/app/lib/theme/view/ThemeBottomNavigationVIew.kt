@@ -27,9 +27,9 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
         val transparentNavBar = context.transparentNavBar
         val bgColor = context.bottomBackground
         if (transparentNavBar) {
-            setBackgroundColor(Color.TRANSPARENT)
+            backgroundTintList = ColorStateList.valueOf(Color.TRANSPARENT)
         } else {
-            setBackgroundColor(bgColor)
+            backgroundTintList = ColorStateList.valueOf(bgColor)
             elevation = context.elevation
         }
         // Unselected: use bottom navigation icon unselected color
@@ -42,9 +42,13 @@ class ThemeBottomNavigationVIew(context: Context, attrs: AttributeSet) :
             .create()
         itemIconTintList = colorStateList
         itemTextColor = colorStateList
-        // 禁用水平平移效果并设置透明背景，减少点击效果的明显程度
+        // 禁用所有点击动画效果
         isItemHorizontalTranslationEnabled = false
         itemBackground = Color.TRANSPARENT.toDrawable()
+        // Disable label visibility to prevent any text animation
+        labelVisibilityMode = com.google.android.material.bottomnavigation.LabelVisibilityMode.LABEL_VISIBILITY_UNLABELED
+        // Disable ripple effect completely
+        itemRippleColor = null
 
         ViewCompat.setOnApplyWindowInsetsListener(this, null)
     }

@@ -484,7 +484,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun scheduleLiquidGlassSetup(delayMillis: Long = 0L) {
         val action = {
-            if (!isFinishing) {
+            if (!isFinishing && !isDestroyed) {
                 setupLiquidGlass()
             }
         }
@@ -572,29 +572,29 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 
                 val frostedMode = isFrosted
                 val blurRadius = if (frostedMode) {
-                    (10f + glassLevel * 24f).dpToPx()
+                    (14f + glassLevel * 28f).dpToPx()
                 } else {
-                    (5f + glassLevel * 14f).dpToPx()
+                    (8f + glassLevel * 18f).dpToPx()
                 }
                 val tintAlpha = if (frostedMode) {
-                    0.12f + glassLevel * 0.18f
+                    0.16f + glassLevel * 0.22f
                 } else {
-                    0.05f + glassLevel * 0.10f
+                    0.08f + glassLevel * 0.14f
                 }
                 val dispersion = if (frostedMode) {
-                    (0.18f + glassLevel * 0.16f).coerceAtMost(0.42f)
+                    (0.12f + glassLevel * 0.10f).coerceAtMost(0.28f)
                 } else {
-                    0.46f + glassLevel * 0.32f
+                    (0.28f + glassLevel * 0.18f).coerceAtMost(0.52f)
                 }
                 val refractionHeight = if (frostedMode) {
-                    (12f + glassLevel * 10f).dpToPx()
+                    (6f + glassLevel * 6f).dpToPx()
                 } else {
-                    (18f + glassLevel * 14f).dpToPx()
+                    (8f + glassLevel * 8f).dpToPx()
                 }
                 val refractionOffset = if (frostedMode) {
-                    (36f + glassLevel * 18f).dpToPx()
+                    (16f + glassLevel * 10f).dpToPx()
                 } else {
-                    (72f + glassLevel * 34f).dpToPx()
+                    (24f + glassLevel * 16f).dpToPx()
                 }
                 
                 // Setup shell overlays with gradient drawable - match archive implementation
@@ -627,11 +627,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     setupLiquidGlassView(
                         liquidGlassView = indicatorGlass,
                         cornerRadius = bottomIndicatorCornerRadius,
-                        refractionHeight = (refractionHeight * 0.9f).coerceAtLeast(16f.dpToPx()),
-                        refractionOffset = (refractionOffset * 0.72f).coerceAtLeast(46f.dpToPx()),
-                        blurRadius = (blurRadius * 0.78f).coerceAtLeast(5f.dpToPx()),
-                        dispersion = (dispersion + 0.08f).coerceAtMost(1f),
-                        tintAlpha = (tintAlpha + 0.05f).coerceAtMost(0.28f),
+                        refractionHeight = (refractionHeight * 0.8f).coerceAtLeast(8f.dpToPx()),
+                        refractionOffset = (refractionOffset * 0.6f).coerceAtLeast(12f.dpToPx()),
+                        blurRadius = (blurRadius * 0.85f).coerceAtLeast(6f.dpToPx()),
+                        dispersion = (dispersion + 0.06f).coerceAtMost(0.6f),
+                        tintAlpha = (tintAlpha + 0.04f).coerceAtMost(0.32f),
                         elasticEnabled = false,
                         touchEffectEnabled = false
                     )
@@ -773,38 +773,27 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Apply classic mode style - reference dai411 project
      */
     private fun applyClassicModeStyle() = binding.run {
-        // Hide floating layout in classic mode
         bottomNavigationGlass.visibility = View.GONE
-        
-        // Show classic bottom navigation
         bottomNavigationView.visibility = View.VISIBLE
-        
-        // Apply e-ink border if needed
+
         if (AppConfig.isEInkMode) {
+            bottomNavigationView.backgroundTintList = null
             bottomNavigationView.setBackgroundResource(R.drawable.bg_eink_border_top)
             bottomNavigationView.alpha = 1.0f
             bottomNavigationView.elevation = 0f
         } else if (AppConfig.immNavigationBar) {
-            // Immersive mode: use page background color to blend in, NO shadow
             val bgColor = io.legado.app.lib.theme.ThemeStore.backgroundColor(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(bgColor)
+            bottomNavigationView.backgroundTintList = android.content.res.ColorStateList.valueOf(bgColor)
             bottomNavigationView.alpha = 1.0f
-            // In immersive mode, no elevation is needed as it blends with the background
             bottomNavigationView.elevation = 0f
         } else {
-            // Classic mode: use theme's bottom navigation bar color WITH shadow
             val navBgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this@MainActivity)
-            bottomNavigationView.setBackgroundColor(navBgColor)
+            bottomNavigationView.backgroundTintList = android.content.res.ColorStateList.valueOf(navBgColor)
             bottomNavigationView.alpha = 1.0f
-            // Apply default elevation for shadow effect
             bottomNavigationView.elevation = resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
-        
-        // Force invalidate to ensure background is redrawn
+
         bottomNavigationView.invalidate()
-        
-        // CRITICAL: Remove window insets listener in classic mode to prevent content obstruction
-        // dai411 project does not use window insets for bottom navigation
         bottomNavigationView.setOnApplyWindowInsetsListenerCompat(null)
         bottomNavigationView.setPadding(0, 0, 0, 0)
     }
@@ -823,29 +812,34 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         elasticEnabled: Boolean,
         touchEffectEnabled: Boolean,
     ) {
-        // CRITICAL: Check if liquidGlassView is valid before using it
         if (!liquidGlassView.isLaidOut || liquidGlassView.width == 0 || liquidGlassView.height == 0) {
             return
         }
         
-        if (boundLiquidGlassViewIds.add(liquidGlassView.id)) {
-            liquidGlassView.bind(binding.contentContainer)
+        try {
+            if (boundLiquidGlassViewIds.add(liquidGlassView.id)) {
+                liquidGlassView.bind(binding.contentContainer)
+            }
+            liquidGlassView.setCornerRadius(cornerRadius)
+            liquidGlassView.setRefractionHeight(refractionHeight)
+            liquidGlassView.setRefractionOffset(refractionOffset)
+            liquidGlassView.setDispersion(dispersion)
+            liquidGlassView.setBlurRadius(blurRadius)
+            liquidGlassView.setTintAlpha(tintAlpha)
+            liquidGlassView.setTintColorRed(0.70f)
+            liquidGlassView.setTintColorGreen(0.79f)
+            liquidGlassView.setTintColorBlue(0.86f)
+            liquidGlassView.setDraggableEnabled(false)
+            liquidGlassView.setElasticEnabled(elasticEnabled)
+            liquidGlassView.setTouchEffectEnabled(touchEffectEnabled)
+            liquidGlassView.isClickable = false
+            liquidGlassView.isFocusable = false
+            liquidGlassView.invalidate()
+        } catch (e: NullPointerException) {
+            boundLiquidGlassViewIds.remove(liquidGlassView.id)
+        } catch (e: IllegalStateException) {
+            boundLiquidGlassViewIds.remove(liquidGlassView.id)
         }
-        liquidGlassView.setCornerRadius(cornerRadius)
-        liquidGlassView.setRefractionHeight(refractionHeight)
-        liquidGlassView.setRefractionOffset(refractionOffset)
-        liquidGlassView.setDispersion(dispersion)
-        liquidGlassView.setBlurRadius(blurRadius)
-        liquidGlassView.setTintAlpha(tintAlpha)
-        liquidGlassView.setTintColorRed(0.70f)
-        liquidGlassView.setTintColorGreen(0.79f)
-        liquidGlassView.setTintColorBlue(0.86f)
-        liquidGlassView.setDraggableEnabled(false)
-        liquidGlassView.setElasticEnabled(elasticEnabled)
-        liquidGlassView.setTouchEffectEnabled(touchEffectEnabled)
-        liquidGlassView.isClickable = false
-        liquidGlassView.isFocusable = false
-        liquidGlassView.invalidate()
     }
     
     private fun Float.dpToPx(): Float {
@@ -877,7 +871,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun createSolidBottomIndicatorDrawable(): android.graphics.drawable.GradientDrawable {
         return android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.OVAL
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
             setColor(primaryColor)
         }
     }

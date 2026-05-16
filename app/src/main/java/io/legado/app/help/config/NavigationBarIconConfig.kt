@@ -546,9 +546,8 @@ object NavigationBarIconConfig {
     private fun iconKey(itemKey: String, state: String): String = "${itemKey}_$state"
 
     private fun defaultIconColor(context: Context): Int {
-        val bgColor = context.bottomBackground
-        val textIsDark = ColorUtils.isColorLight(bgColor)
-        return context.getPrimaryTextColor(textIsDark)
+        // Use bottom navigation icon unselected color from theme
+        return ThemeStore.bottomNavIconUnselectedColor(context)
     }
 
     private fun loadDrawable(context: Context, path: String?): Drawable? {
