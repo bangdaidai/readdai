@@ -88,11 +88,6 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
         
         // Setup add button
         btnAdd.text = getString(R.string.theme_add)
-        btnAdd.background = UiCorner.actionSelector(
-            ContextCompat.getColor(this@NavigationBarManageActivity, R.color.background_card),
-            ContextCompat.getColor(this@NavigationBarManageActivity, R.color.background_menu),
-            UiCorner.actionRadius(this@NavigationBarManageActivity)
-        )
         btnAdd.setOnClickListener {
             showAddDialog()
         }
@@ -138,11 +133,13 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
                 else -> return@addOnButtonCheckedListener
             }
             AppConfig.bottomBarEffectMode = newMode
+            updateOpacitySeekBar()
             updateOpacityDisplay()
             postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
         }
         
         // Opacity - SeekBar
+        updateOpacitySeekBar()
         updateOpacityDisplay()
         seekbarOpacity.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
@@ -169,6 +166,15 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
             AppConfig.liquidGlassLevel
         }
         binding.tvOpacity.text = "$level%"
+    }
+
+    private fun updateOpacitySeekBar() {
+        val level = if (AppConfig.bottomBarEffectMode == "frosted") {
+            AppConfig.frostedGlassLevel
+        } else {
+            AppConfig.liquidGlassLevel
+        }
+        binding.seekbarOpacity.progress = level
     }
 
     private fun loadPackages() {
