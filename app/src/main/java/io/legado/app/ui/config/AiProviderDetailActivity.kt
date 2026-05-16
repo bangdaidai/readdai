@@ -102,12 +102,17 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
             )
         )
         
+        // 选中状态文字颜色：白色以便在强调色背景上清晰可见
+        val checkedTextColor = android.graphics.Color.WHITE
+        val uncheckedTextColor = accentColor
+        
         // Protocol toggle group
         binding.toggleProtocol.checkedButtonId.let { checkedId ->
             if (checkedId != -1) {
                 binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
                     backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                    setTextColor(checkedTextColor)
                 }
             }
         }
@@ -124,6 +129,21 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
                 binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
                     backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                    setTextColor(checkedTextColor)
+                }
+            }
+            // 重置所有按钮的文字颜色
+            binding.toggleProtocol.checkedButtonId.let { currentCheckedId ->
+                if (currentCheckedId != -1) {
+                    binding.toggleProtocol.findViewById<MaterialButton>(currentCheckedId)?.setTextColor(checkedTextColor)
+                }
+            }
+            // 未选中按钮恢复强调色文字
+            binding.toggleProtocol.checkedButtonId.let { currentCheckedId ->
+                for (buttonId in listOf(R.id.btn_openai, R.id.btn_claude, R.id.btn_gemini)) {
+                    if (buttonId != currentCheckedId) {
+                        binding.toggleProtocol.findViewById<MaterialButton>(buttonId)?.setTextColor(uncheckedTextColor)
+                    }
                 }
             }
         }
@@ -134,6 +154,7 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
                 binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
                     backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                    setTextColor(checkedTextColor)
                 }
             }
         }
@@ -142,6 +163,21 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
                 binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
                     backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                    setTextColor(checkedTextColor)
+                }
+            }
+            // 重置所有按钮的文字颜色
+            binding.toggleReasoning.checkedButtonId.let { currentCheckedId ->
+                if (currentCheckedId != -1) {
+                    binding.toggleReasoning.findViewById<MaterialButton>(currentCheckedId)?.setTextColor(checkedTextColor)
+                }
+            }
+            // 未选中按钮恢复强调色文字
+            binding.toggleReasoning.checkedButtonId.let { currentCheckedId ->
+                for (buttonId in listOf(R.id.btn_auto, R.id.btn_low, R.id.btn_medium, R.id.btn_high)) {
+                    if (buttonId != currentCheckedId) {
+                        binding.toggleReasoning.findViewById<MaterialButton>(buttonId)?.setTextColor(uncheckedTextColor)
+                    }
                 }
             }
         }
