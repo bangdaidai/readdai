@@ -103,10 +103,12 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         )
         
         // Protocol toggle group
-        binding.toggleProtocol.checkedButton?.let { button ->
-            if (button is MaterialButton) {
-                button.backgroundTintList = accentColorStateList
-                button.strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+        binding.toggleProtocol.checkedButtonId.let { checkedId ->
+            if (checkedId != -1) {
+                binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
             }
         }
         binding.toggleProtocol.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -127,10 +129,12 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         }
         
         // Reasoning toggle group
-        binding.toggleReasoning.checkedButton?.let { button ->
-            if (button is MaterialButton) {
-                button.backgroundTintList = accentColorStateList
-                button.strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+        binding.toggleReasoning.checkedButtonId.let { checkedId ->
+            if (checkedId != -1) {
+                binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
             }
         }
         binding.toggleReasoning.addOnButtonCheckedListener { _, checkedId, isChecked ->
@@ -159,17 +163,31 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         // Name input
         binding.etName.parent?.let {
             if (it is com.google.android.material.textfield.TextInputLayout) {
-                it.boxStrokeColorStateList = boxStrokeColorStateList
+                // ✅ 关键修复：使用兼容的方式设置边框颜色
+                try {
+                    it.boxStrokeColorStateList = boxStrokeColorStateList
+                } catch (e: Exception) {
+                    // Fallback for older Material Design versions
+                    it.boxStrokeColor = accentColor
+                }
             }
         }
         
         // API URL input
-        binding.tilApiUrl.boxStrokeColorStateList = boxStrokeColorStateList
+        try {
+            binding.tilApiUrl.boxStrokeColorStateList = boxStrokeColorStateList
+        } catch (e: Exception) {
+            binding.tilApiUrl.boxStrokeColor = accentColor
+        }
         
         // Model input
         binding.etModel.parent?.let {
             if (it is com.google.android.material.textfield.TextInputLayout) {
-                it.boxStrokeColorStateList = boxStrokeColorStateList
+                try {
+                    it.boxStrokeColorStateList = boxStrokeColorStateList
+                } catch (e: Exception) {
+                    it.boxStrokeColor = accentColor
+                }
             }
         }
     }
@@ -384,13 +402,21 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
             
             holder.etLabel.parent?.let {
                 if (it is com.google.android.material.textfield.TextInputLayout) {
-                    it.boxStrokeColorStateList = boxStrokeColorStateList
+                    try {
+                        it.boxStrokeColorStateList = boxStrokeColorStateList
+                    } catch (e: Exception) {
+                        it.boxStrokeColor = accentColor
+                    }
                 }
             }
             
             holder.etKey.parent?.let {
                 if (it is com.google.android.material.textfield.TextInputLayout) {
-                    it.boxStrokeColorStateList = boxStrokeColorStateList
+                    try {
+                        it.boxStrokeColorStateList = boxStrokeColorStateList
+                    } catch (e: Exception) {
+                        it.boxStrokeColor = accentColor
+                    }
                 }
             }
 
