@@ -91,31 +91,9 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         binding.btnSave.setTextColor(accentColor)
 
         // Apply theme accent color to toggle groups (segmented buttons)
-        val accentColorStateList = android.content.res.ColorStateList(
-            arrayOf(
-                intArrayOf(android.R.attr.state_checked),
-                intArrayOf()
-            ),
-            intArrayOf(
-                accentColor,
-                android.graphics.Color.TRANSPARENT
-            )
-        )
-        
-        // 选中状态文字颜色：白色以便在强调色背景上清晰可见
-        val checkedTextColor = android.graphics.Color.WHITE
-        val uncheckedTextColor = accentColor
+        // 选中时：强调色边框 + 强调色文字
         
         // Protocol toggle group
-        binding.toggleProtocol.checkedButtonId.let { checkedId ->
-            if (checkedId != -1) {
-                binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
-                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
-                    setTextColor(checkedTextColor)
-                }
-            }
-        }
         binding.toggleProtocol.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 val hint = when (checkedId) {
@@ -125,59 +103,19 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
                 }
                 binding.tilApiUrl.helperText = hint
                 
-                // Update checked button color
                 binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
-                    setTextColor(checkedTextColor)
-                }
-            }
-            // 重置所有按钮的文字颜色
-            binding.toggleProtocol.checkedButtonId.let { currentCheckedId ->
-                if (currentCheckedId != -1) {
-                    binding.toggleProtocol.findViewById<MaterialButton>(currentCheckedId)?.setTextColor(checkedTextColor)
-                }
-            }
-            // 未选中按钮恢复强调色文字
-            binding.toggleProtocol.checkedButtonId.let { currentCheckedId ->
-                for (buttonId in listOf(R.id.btn_openai, R.id.btn_claude, R.id.btn_gemini)) {
-                    if (buttonId != currentCheckedId) {
-                        binding.toggleProtocol.findViewById<MaterialButton>(buttonId)?.setTextColor(uncheckedTextColor)
-                    }
+                    setTextColor(accentColor)
                 }
             }
         }
         
         // Reasoning toggle group
-        binding.toggleReasoning.checkedButtonId.let { checkedId ->
-            if (checkedId != -1) {
-                binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
-                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
-                    setTextColor(checkedTextColor)
-                }
-            }
-        }
         binding.toggleReasoning.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
-                    setTextColor(checkedTextColor)
-                }
-            }
-            // 重置所有按钮的文字颜色
-            binding.toggleReasoning.checkedButtonId.let { currentCheckedId ->
-                if (currentCheckedId != -1) {
-                    binding.toggleReasoning.findViewById<MaterialButton>(currentCheckedId)?.setTextColor(checkedTextColor)
-                }
-            }
-            // 未选中按钮恢复强调色文字
-            binding.toggleReasoning.checkedButtonId.let { currentCheckedId ->
-                for (buttonId in listOf(R.id.btn_auto, R.id.btn_low, R.id.btn_medium, R.id.btn_high)) {
-                    if (buttonId != currentCheckedId) {
-                        binding.toggleReasoning.findViewById<MaterialButton>(buttonId)?.setTextColor(uncheckedTextColor)
-                    }
+                    setTextColor(accentColor)
                 }
             }
         }
