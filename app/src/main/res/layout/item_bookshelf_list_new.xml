@@ -224,12 +224,11 @@
             android:paddingTop="8dp"
             android:visibility="gone">
 
-            <!-- 虚线分隔 -->
+            <!-- 分割线 -->
             <View
                 android:layout_width="match_parent"
-                android:layout_height="0.5dp"
-                android:layerType="software"
-                android:background="@drawable/dashed_line" />
+                android:layout_height="1dp"
+                android:background="?attr/dividerColor" />
 
             <!-- 书评内容 -->
             <io.legado.app.ui.widget.text.SummaryTextView

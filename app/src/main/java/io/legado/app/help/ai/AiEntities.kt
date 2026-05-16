@@ -450,6 +450,23 @@ data class AiSkillEntity(
 }
 
 /**
+ * AI模型配置实体
+ * 参照archive项目设计，一个服务商可以有多个模型
+ */
+@Entity(tableName = "ai_models")
+data class AiModelConfig(
+    @PrimaryKey
+    val id: String,
+    val providerId: String,  // 关联的服务商ID
+    val modelId: String,     // 模型ID（如 gpt-4, claude-3-sonnet 等）
+    val displayName: String? = null,  // 显示名称（可选）
+    val enabled: Boolean = true,      // 是否启用
+    val sortOrder: Int = 0,           // 排序
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
+/**
  * AI提示词实体
  */
 @Entity(tableName = "ai_custom_prompts")

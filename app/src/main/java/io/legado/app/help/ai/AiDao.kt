@@ -14,6 +14,7 @@ import io.legado.app.help.ai.AiProviderEntity
 import io.legado.app.help.ai.AiPromptEntity
 import io.legado.app.help.ai.AiRecallCacheEntity
 import io.legado.app.help.ai.AiSkillEntity
+import io.legado.app.help.ai.AiModelConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -85,6 +86,28 @@ interface AiDao {
     @Query("UPDATE ai_skills SET sortOrder = :order WHERE id = :id")
     suspend fun updateSkillOrder(id: String, order: Int)
 
+    // 模型配置（参照archive项目设计）
+    @Query("SELECT * FROM ai_models WHERE providerId = :providerId ORDER BY sortOrder, createdAt")
+    suspend fun getModelsByProvider(providerId: String): List<AiModelConfig>
+
+    @Query("SELECT * FROM ai_models WHERE id = :id")
+    suspend fun getModel(id: String): AiModelConfig?
+
+    @Query("SELECT * FROM ai_models WHERE providerId = :providerId AND modelId = :modelId LIMIT 1")
+    suspend fun getModelByProviderAndId(providerId: String, modelId: String): AiModelConfig?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertModel(model: AiModelConfig)
+
+    @Query("DELETE FROM ai_models WHERE id = :id")
+    suspend fun deleteModel(id: String)
+
+    @Query("DELETE FROM ai_models WHERE providerId = :providerId")
+    suspend fun deleteModelsByProvider(providerId: String)
+
+    @Query("UPDATE ai_models SET enabled = :enabled WHERE id = :id")
+    suspend fun setModelEnabled(id: String, enabled: Boolean)
+
     // 前情提要缓存
     @Query("SELECT * FROM ai_recall_cache WHERE bookUrl = :bookUrl")
     suspend fun getRecallCache(bookUrl: String): AiRecallCacheEntity?
@@ -108,11 +131,12 @@ interface AiDao {
 @Database(
     entities = [
         AiProviderEntity::class,
+        AiModelConfig::class,
         AiPromptEntity::class,
         AiSkillEntity::class,
         AiRecallCacheEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AiDatabase : RoomDatabase() {

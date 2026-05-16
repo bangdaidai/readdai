@@ -107,76 +107,59 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
     }
 
     private fun setupGlobalSettings() = binding.run {
-        // Layout Mode
-        tvLayoutMode.text = layoutModeLabel(AppConfig.bottomBarLayoutMode)
-        layoutLayoutMode.setOnClickListener {
-            selector(
-                getString(R.string.bottom_bar_layout_mode),
-                listOf(getString(R.string.bottom_bar_layout_classic), getString(R.string.bottom_bar_layout_floating))
-            ) { _, index ->
-                val newMode = if (index == 0) "classic" else "floating"
-                AppConfig.bottomBarLayoutMode = newMode
-                tvLayoutMode.text = layoutModeLabel(newMode)
-                postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
+        // Layout Mode - Segmented Button
+        when (AppConfig.bottomBarLayoutMode) {
+            "classic" -> toggleLayoutMode.check(R.id.btn_layout_classic)
+            "floating" -> toggleLayoutMode.check(R.id.btn_layout_floating)
+        }
+        toggleLayoutMode.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val newMode = when (checkedId) {
+                R.id.btn_layout_classic -> "classic"
+                R.id.btn_layout_floating -> "floating"
+                else -> return@addOnButtonCheckedListener
             }
+            AppConfig.bottomBarLayoutMode = newMode
+            postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
         }
         
-        // Effect Mode
-        tvEffectMode.text = effectModeLabel(AppConfig.bottomBarEffectMode)
-        layoutEffectMode.setOnClickListener {
-            selector(
-                getString(R.string.bottom_bar_effect_mode),
-                listOf(
-                    getString(R.string.bottom_bar_effect_solid),
-                    getString(R.string.bottom_bar_effect_glass),
-                    getString(R.string.bottom_bar_effect_frosted)
-                )
-            ) { _, index ->
-                val newMode = when (index) {
-                    0 -> "solid"
-                    1 -> "glass"
-                    else -> "frosted"
-                }
-                AppConfig.bottomBarEffectMode = newMode
-                tvEffectMode.text = effectModeLabel(newMode)
-                postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
+        // Effect Mode - Segmented Button
+        when (AppConfig.bottomBarEffectMode) {
+            "solid" -> toggleEffectMode.check(R.id.btn_effect_solid)
+            "glass" -> toggleEffectMode.check(R.id.btn_effect_glass)
+            "frosted" -> toggleEffectMode.check(R.id.btn_effect_frosted)
+        }
+        toggleEffectMode.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val newMode = when (checkedId) {
+                R.id.btn_effect_solid -> "solid"
+                R.id.btn_effect_glass -> "glass"
+                R.id.btn_effect_frosted -> "frosted"
+                else -> return@addOnButtonCheckedListener
             }
+            AppConfig.bottomBarEffectMode = newMode
+            updateOpacityDisplay()
+            postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
         }
         
-        // Opacity
+        // Opacity - SeekBar
         updateOpacityDisplay()
-        layoutOpacity.setOnClickListener {
-            val currentLevel = if (AppConfig.bottomBarEffectMode == "frosted") {
-                AppConfig.frostedGlassLevel
-            } else {
-                AppConfig.liquidGlassLevel
+        seekbarOpacity.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    if (AppConfig.bottomBarEffectMode == "frosted") {
+                        AppConfig.frostedGlassLevel = progress
+                    } else {
+                        AppConfig.liquidGlassLevel = progress
+                    }
+                    updateOpacityDisplay()
+                }
             }
-            
-            android.app.AlertDialog.Builder(this@NavigationBarManageActivity)
-                .setTitle(getString(R.string.bottom_bar_opacity))
-                .setView(android.widget.SeekBar(this@NavigationBarManageActivity).apply {
-                    max = 100
-                    progress = currentLevel
-                    setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-                        override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                            if (fromUser) {
-                                if (AppConfig.bottomBarEffectMode == "frosted") {
-                                    AppConfig.frostedGlassLevel = progress
-                                } else {
-                                    AppConfig.liquidGlassLevel = progress
-                                }
-                                updateOpacityDisplay()
-                            }
-                        }
-                        override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
-                        override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {
-                            postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
-                        }
-                    })
-                })
-                .setPositiveButton(getString(R.string.apply), null)
-                .show()
-        }
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {
+                postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
+            }
+        })
     }
 
     private fun updateOpacityDisplay() {

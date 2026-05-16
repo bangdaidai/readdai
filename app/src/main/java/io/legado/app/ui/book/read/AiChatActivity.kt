@@ -783,10 +783,18 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 return@launch
             }
 
-            val sessionNames = sessions.map { it.id.take(8) }.toTypedArray()
+            // ✅ 关键修复：使用 ArrayAdapter 和 setAdapter 替代 setItems，确保样式一致
+            val sessionNames = sessions.map { 
+                val timestamp = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.getDefault())
+                    .format(java.util.Date(it.createdAt))
+                "${it.id.take(8)} - $timestamp"
+            }.toTypedArray()
+            
             AlertDialog.Builder(this@AiChatActivity)
                 .setTitle("历史记录")
-                .setItems(sessionNames) { _, which ->
+                .setAdapter(
+                    android.widget.ArrayAdapter(this@AiChatActivity, android.R.layout.simple_list_item_1, sessionNames)
+                ) { _, which ->
                     loadSession(sessions[which])
                 }
                 .setNegativeButton("取消", null)
@@ -1950,21 +1958,22 @@ class ChatAdapter(
             // 渲染 Markdown
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
 
-            // 启用文本选择功能，允许用户选中AI回复中的书名等文本
+            // ✅ 关键修复：启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
 
-            // 确保链接可以被点击（setTextIsSelectable 后需要手动设置 MovementMethod）
-            holder.contentText.movementMethod = android.text.method.LinkMovementMethod.getInstance()
+            // ✅ 关键修复：使用 ArrowKeyMovementMethod 而不是 LinkMovementMethod
+            // LinkMovementMethod 会拦截触摸事件，影响长按选择功能
+            // ArrowKeyMovementMethod 支持链接点击且不干扰文本选择
+            holder.contentText.movementMethod = android.text.method.ArrowKeyMovementMethod.getInstance()
 
             // 设置自定义选择操作模式回调，添加"搜索书籍"选项
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    // 清除默认的"剪切"、"复制"等选项
-                    menu.clear()
-                    // 添加"追问"选项
-                    menu.add(0, android.R.id.copy, 0, "追问")
-                    // 添加"搜索书籍"选项
-                    menu.add(0, android.R.id.textAssist, 1, "在书院搜索")
+                    // ✅ 不清除默认菜单，直接添加自定义选项
+                    // 添加"搜书"选项（排在前面）
+                    menu.add(0, android.R.id.textAssist, 0, "搜书")
+                    // 添加"追问"选项（排在后面）
+                    menu.add(0, android.R.id.copy, 1, "追问")
                     return true
                 }
 

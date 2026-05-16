@@ -10,7 +10,7 @@ import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import io.legado.app.lib.prefs.SwitchPreference
@@ -42,8 +42,7 @@ import io.legado.app.utils.startActivity
 import kotlinx.coroutines.launch
 import splitties.init.appCtx
 
-// 统一使用 Material Design 对话框样式
-typealias AlertDialog = com.google.android.material.dialog.MaterialAlertDialogBuilder
+
 
 /**
  * AI设置主页面 - PreferenceFragment风格
@@ -172,7 +171,12 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
     private fun showProviderManagerDialog() {
         lifecycleScope.launch {
             val providers = aiDao.getAllProviders()
-            val items = providers.map { "${it.title}${if (it.isDefault) " ✓" else ""}" }.toTypedArray()
+            val items = providers.map { provider ->
+                val modelCount = aiDao.getModelsByProvider(provider.identifier).size
+                val defaultMark = if (provider.isDefault) " ✓" else ""
+                val modelInfo = if (modelCount > 0) " ($modelCount个模型)" else ""
+                "${provider.title}$defaultMark$modelInfo"
+            }.toTypedArray()
 
             AlertDialog(requireContext())
                 .setTitle("服务商管理")
@@ -188,7 +192,7 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
     }
 
     private fun showProviderOptionsDialog(provider: AiProviderEntity) {
-        val options = arrayOf("设为默认", "编辑", "测试连接", "获取模型列表", "删除")
+        val options = arrayOf("设为默认", "编辑", "管理模型", "测试连接", "获取模型列表", "删除")
 
         AlertDialog(requireContext())
             .setTitle(provider.title)
@@ -196,9 +200,10 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
                 when (which) {
                     0 -> setAsDefault(provider)
                     1 -> editProvider(provider)
-                    2 -> testConnection(provider)
-                    3 -> fetchModels(provider)
-                    4 -> deleteProvider(provider)
+                    2 -> showManageModelsDialog(provider)
+                    3 -> testConnection(provider)
+                    4 -> fetchModels(provider)
+                    5 -> deleteProvider(provider)
                 }
             }
             .show()
@@ -209,6 +214,106 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             putExtra("identifier", provider.identifier)
         }
         startActivity(intent)
+    }
+    
+    /**
+     * 显示模型管理对话框（参照archive项目）
+     */
+    private fun showManageModelsDialog(provider: AiProviderEntity) {
+        lifecycleScope.launch {
+            val models = aiDao.getModelsByProvider(provider.identifier)
+            
+            if (models.isEmpty()) {
+                AlertDialog(requireContext())
+                    .setTitle("${provider.title} - 模型管理")
+                    .setMessage("暂无模型配置\n\n请点击“获取模型列表”添加模型")
+                    .setPositiveButton("获取模型列表") { _, _ ->
+                        fetchModels(provider)
+                    }
+                    .setNegativeButton("关闭", null)
+                    .show()
+                return@launch
+            }
+            
+            val currentModelId = provider.model
+            val items = models.map { model ->
+                val isCurrent = model.modelId == currentModelId
+                "${model.modelId}${if (isCurrent) " ✓" else ""}"
+            }.toTypedArray()
+            
+            AlertDialog(requireContext())
+                .setTitle("${provider.title} - 模型管理 (${models.size})")
+                .setItems(items) { _, which ->
+                    val model = models[which]
+                    showModelOptionsDialog(provider, model)
+                }
+                .setPositiveButton("关闭", null)
+                .show()
+        }
+    }
+    
+    /**
+     * 显示单个模型的操作选项
+     */
+    private fun showModelOptionsDialog(provider: AiProviderEntity, model: AiModelConfig) {
+        val isCurrent = model.modelId == provider.model
+        val options = buildList {
+            if (!isCurrent) add("设为当前模型")
+            add("删除")
+        }.toTypedArray()
+        
+        AlertDialog(requireContext())
+            .setTitle(model.modelId)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        if (!isCurrent) {
+                            // 设为当前模型
+                            lifecycleScope.launch {
+                                val updated = provider.copy(
+                                    model = model.modelId,
+                                    updatedAt = System.currentTimeMillis()
+                                )
+                                aiDao.insertProvider(updated)
+                                Toast.makeText(requireContext(), "已设置为当前模型", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    1 -> {
+                        // 删除模型
+                        confirmRemoveModel(provider, model)
+                    }
+                }
+            }
+            .show()
+    }
+    
+    /**
+     * 确认删除模型
+     */
+    private fun confirmRemoveModel(provider: AiProviderEntity, model: AiModelConfig) {
+        AlertDialog(requireContext())
+            .setTitle("删除模型")
+            .setMessage("确定要删除模型 "${model.modelId}" 吗？")
+            .setPositiveButton("删除") { _, _ ->
+                lifecycleScope.launch {
+                    aiDao.deleteModel(model.id)
+                    
+                    // 如果删除的是当前模型，清空当前模型设置
+                    if (model.modelId == provider.model) {
+                        val remainingModels = aiDao.getModelsByProvider(provider.identifier)
+                        val updated = provider.copy(
+                            model = remainingModels.firstOrNull()?.modelId ?: "",
+                            updatedAt = System.currentTimeMillis()
+                        )
+                        aiDao.insertProvider(updated)
+                    }
+                    
+                    Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun showAddProviderDialog() {
@@ -372,30 +477,91 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             .setNeutralButton("选择模型") { _, _ ->
                 showSelectModelDialog(provider, models)
             }
+            .setNegativeButton("添加全部") { _, _ ->
+                // 添加所有模型到配置
+                lifecycleScope.launch {
+                    appendFetchedModels(provider.identifier, models)
+                }
+            }
             .show()
     }
 
     private fun showSelectModelDialog(provider: AiProviderEntity, models: List<String>) {
+        val items = buildList {
+            add("添加全部模型")
+            addAll(models)
+        }
+        
         AlertDialog(requireContext())
-            .setTitle("选择模型")
-            .setItems(models.toTypedArray()) { _, which ->
-                val selectedModel = models[which]
-                lifecycleScope.launch {
-                    val updated = provider.copy(model = selectedModel, updatedAt = System.currentTimeMillis())
-                    aiDao.insertProvider(updated)
-                    Toast.makeText(requireContext(), "已设置为: $selectedModel", Toast.LENGTH_SHORT).show()
+            .setTitle("选择要添加的模型")
+            .setItems(items.toTypedArray()) { _, which ->
+                if (which == 0) {
+                    // 添加全部
+                    lifecycleScope.launch {
+                        appendFetchedModels(provider.identifier, models)
+                    }
+                } else {
+                    // 添加单个模型
+                    val selectedModelId = items[which]
+                    lifecycleScope.launch {
+                        appendFetchedModels(provider.identifier, listOf(selectedModelId))
+                    }
                 }
             }
             .setNegativeButton("取消", null)
             .show()
     }
+    
+    /**
+     * 添加获取到的模型到配置（参照archive项目）
+     */
+    private suspend fun appendFetchedModels(providerId: String, modelIds: List<String>) {
+        val oldModels = aiDao.getModelsByProvider(providerId)
+        val existingIds = oldModels.map { it.modelId }.toSet()
+        
+        val newModels = modelIds
+            .distinct()
+            .filterNot { it in existingIds }
+            .map { modelId ->
+                AiModelConfig(
+                    id = "model_${providerId}_${modelId}_${System.currentTimeMillis()}",
+                    providerId = providerId,
+                    modelId = modelId
+                )
+            }
+        
+        if (newModels.isEmpty()) {
+            Toast.makeText(requireContext(), "没有新模型可添加", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // 保存新模型
+        newModels.forEach { model ->
+            aiDao.insertModel(model)
+        }
+        
+        // 如果当前服务商没有选中模型，自动设置第一个
+        val currentProvider = aiDao.getProvider(providerId)
+        if (currentProvider != null && currentProvider.model.isBlank()) {
+            val updated = currentProvider.copy(
+                model = newModels.first().modelId,
+                updatedAt = System.currentTimeMillis()
+            )
+            aiDao.insertProvider(updated)
+        }
+        
+        Toast.makeText(requireContext(), "已添加 ${newModels.size} 个模型", Toast.LENGTH_SHORT).show()
+    }
 
     private fun deleteProvider(provider: AiProviderEntity) {
         AlertDialog(requireContext())
             .setTitle("删除")
-            .setMessage("确定要删除 ${provider.title} 吗？")
+            .setMessage("确定要删除 ${provider.title} 吗？\n这将同时删除该服务商下的所有模型配置。")
             .setPositiveButton("删除") { _, _ ->
                 lifecycleScope.launch {
+                    // 先删除关联的模型
+                    aiDao.deleteModelsByProvider(provider.identifier)
+                    // 再删除服务商
                     aiDao.deleteProvider(provider.identifier)
                     Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
                 }

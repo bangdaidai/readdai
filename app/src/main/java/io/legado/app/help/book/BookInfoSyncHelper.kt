@@ -322,7 +322,8 @@ object BookInfoSyncHelper {
                 for (memory in memories) {
                     val updatedReadingMemory = memory.copy(
                         intro = intro,
-                        userModifiedIntro = true
+                        userModifiedIntro = true,
+                        updateTime = System.currentTimeMillis()
                     )
                     appDb.readingMemoryDao.update(updatedReadingMemory)
                 }
@@ -333,7 +334,8 @@ object BookInfoSyncHelper {
             if (readingMemoryByUrl != null) {
                 val updatedReadingMemory = readingMemoryByUrl.copy(
                     intro = intro,
-                    userModifiedIntro = true
+                    userModifiedIntro = true,
+                    updateTime = System.currentTimeMillis()
                 )
                 appDb.readingMemoryDao.update(updatedReadingMemory)
             }

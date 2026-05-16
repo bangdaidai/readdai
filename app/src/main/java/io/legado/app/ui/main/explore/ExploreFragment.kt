@@ -110,6 +110,29 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     private val searchView: SearchView? by lazy {
         binding.titleBar.findViewById<SearchView?>(R.id.search_view)
     }
+    
+    // Modern mode title bar views
+    private val modernTitleBar: io.legado.app.ui.widget.TitleBar? by lazy {
+        binding.titleBarModern
+    }
+    private val tvDiscoverSourceSelect: TextView? by lazy {
+        modernTitleBar?.findViewById<TextView?>(R.id.tv_discover_source_select)
+    }
+    private val llDiscoverSourceSelect: LinearLayout? by lazy {
+        modernTitleBar?.findViewById<LinearLayout?>(R.id.ll_discover_source_select)
+    }
+    private val btnDiscoverSourceSearch: android.widget.ImageButton? by lazy {
+        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_source_search)
+    }
+    private val btnDiscoverTagFilter: android.widget.ImageButton? by lazy {
+        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_tag_filter)
+    }
+    private val btnDiscoverSourceLogin: android.widget.ImageButton? by lazy {
+        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_source_login)
+    }
+    private val btnDiscoverModeToggle: android.widget.ImageButton? by lazy {
+        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_mode_toggle)
+    }
     private val diffItemCallBack = ExploreDiffItemCallBack()
     private val groups = linkedSetOf<String>()
     private var exploreFlowJob: Job? = null
@@ -161,7 +184,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 upExploreData(searchView?.query?.toString())
             }
         }
-        binding.llDiscoverSourceRow.applyStatusBarPadding(withInitialPadding = true)
         binding.rvFind.clipToPadding = false
         binding.rvFind.applyMainBottomBarPadding()
         binding.rvDiscoverBooks.clipToPadding = false
@@ -194,6 +216,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         val modern = AppConfig.modernDiscoveryPage
         usingModernDiscovery = modern
         binding.titleBar.isGone = modern
+        binding.titleBarModern.isVisible = modern
         binding.llModernDiscovery.isVisible = modern
         binding.rvFind.isGone = modern
         binding.tvEmptyMsg.isGone = modern
@@ -251,28 +274,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             bindDiscoverSourceSelector()
             updateDiscoverLoginButtonState()
             updateDiscoverModeToggleButtonState()
-            val toolbarHeight = (56 * resources.displayMetrics.density).toInt()
-            binding.llDiscoverSourceRow.layoutParams.height = toolbarHeight
-            binding.llDiscoverSourceRow.requestLayout()
-            if (context?.transparentNavBar == true) {
-                binding.llModernDiscovery.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                binding.llDiscoverSourceRow.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                binding.llDiscoverSourceRow.elevation = 0f
-            } else {
-                binding.llModernDiscovery.setBackgroundColor(primaryColor)
-                binding.llDiscoverSourceRow.setBackgroundColor(primaryColor)
-                binding.llDiscoverSourceRow.elevation = context?.elevation ?: 0f
-            }
-            binding.llModernDiscovery.setOnApplyWindowInsetsListenerCompat { _, windowInsets ->
-                val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
-                binding.llModernDiscovery.setPadding(
-                    binding.llModernDiscovery.paddingLeft,
-                    insets.top,
-                    binding.llModernDiscovery.paddingRight,
-                    binding.llModernDiscovery.paddingBottom
-                )
-                windowInsets
-            }
+            // TitleBar automatically handles status bar padding and theme colors
         }
         observeDiscoverSources()
         observeDiscoverBookshelf()
@@ -349,25 +351,25 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     }
 
     private fun bindDiscoverSourceSelector() {
-        binding.tvDiscoverSourceSelect.applyUiTitleTypeface(requireContext())
+        tvDiscoverSourceSelect?.applyUiTitleTypeface(requireContext())
         val updateSourceNameWidth = View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
             updateDiscoverSourceNameWidth()
         }
-        binding.llDiscoverSourceRow.addOnLayoutChangeListener(updateSourceNameWidth)
-        binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
-        binding.llDiscoverSourceSelect.setOnClickListener {
+        modernTitleBar?.addOnLayoutChangeListener(updateSourceNameWidth)
+        modernTitleBar?.post(::updateDiscoverSourceNameWidth)
+        llDiscoverSourceSelect?.setOnClickListener {
             showDiscoverSourceMenu()
         }
-        binding.btnDiscoverSourceLogin.setOnClickListener {
+        btnDiscoverSourceLogin?.setOnClickListener {
             openSelectedSourceLogin()
         }
-        binding.btnDiscoverSourceSearch.setOnClickListener {
+        btnDiscoverSourceSearch?.setOnClickListener {
             openDiscoverSearch()
         }
-        binding.btnDiscoverTagFilter.setOnClickListener {
+        btnDiscoverTagFilter?.setOnClickListener {
             showDiscoverTagFilterMenu()
         }
-        binding.btnDiscoverModeToggle.setOnClickListener {
+        btnDiscoverModeToggle?.setOnClickListener {
             toggleDiscoveryMode()
         }
         updateDiscoverTagFilterButtonState()
@@ -376,16 +378,16 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     }
 
     private fun updateDiscoverSourceNameWidth() {
-        val rowWidth = binding.llDiscoverSourceRow.width
+        val rowWidth = modernTitleBar?.width ?: return
         if (rowWidth <= 0) return
         val actionsWidth = listOf(
-            binding.btnDiscoverSourceSearch,
-            binding.btnDiscoverTagFilter,
-            binding.btnDiscoverSourceLogin
-        ).filter { it.isVisible }.sumOf { it.measuredWidth.takeIf { width -> width > 0 } ?: it.layoutParams.width }
+            btnDiscoverSourceSearch,
+            btnDiscoverTagFilter,
+            btnDiscoverSourceLogin
+        ).filter { it?.isVisible == true }.sumOf { it?.measuredWidth?.takeIf { width -> width > 0 } ?: (it?.layoutParams?.width ?: 0) }
         val spacing = 36.dpToPx()
         val maxWidth = (rowWidth - actionsWidth - spacing).coerceIn(96.dpToPx(), 190.dpToPx())
-        binding.tvDiscoverSourceSelect.maxWidth = maxWidth
+        tvDiscoverSourceSelect?.maxWidth = maxWidth
     }
 
     private fun openSelectedSourceLogin() {
@@ -402,21 +404,21 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
 
     private fun updateDiscoverLoginButtonState() {
         val canLogin = selectedDiscoverSourcePart?.hasLoginUrl == true
-        binding.btnDiscoverSourceLogin.isEnabled = canLogin
-        binding.btnDiscoverSourceLogin.alpha = if (canLogin) 1f else 0.45f
+        btnDiscoverSourceLogin?.isEnabled = canLogin
+        btnDiscoverSourceLogin?.alpha = if (canLogin) 1f else 0.45f
     }
 
     private fun updateDiscoverSearchButtonState() {
         val canSearch = !selectedDiscoverSource?.searchUrl.isNullOrBlank()
-        binding.btnDiscoverSourceSearch.isVisible = canSearch
-        binding.btnDiscoverSourceSearch.isEnabled = canSearch
-        binding.btnDiscoverSourceSearch.alpha = if (canSearch) 1f else 0.45f
-        binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
+        btnDiscoverSourceSearch?.isVisible = canSearch
+        btnDiscoverSourceSearch?.isEnabled = canSearch
+        btnDiscoverSourceSearch?.alpha = if (canSearch) 1f else 0.45f
+        modernTitleBar?.post(::updateDiscoverSourceNameWidth)
     }
 
     private fun updateDiscoverModeToggleButtonState() {
         // Update button content description based on current mode
-        binding.btnDiscoverModeToggle.contentDescription = if (AppConfig.modernDiscoveryPage) {
+        btnDiscoverModeToggle?.contentDescription = if (AppConfig.modernDiscoveryPage) {
             getString(R.string.discovery_page_mode_legacy)
         } else {
             getString(R.string.discovery_page_mode_modern)
@@ -465,7 +467,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                         selectedDiscoverMajorGroup = null
                         clearDiscoverBooksToEmpty(getString(R.string.explore_empty))
                         renderDiscoverTags(emptyList(), -1)
-                        binding.tvDiscoverSourceSelect.text = getString(R.string.explore_empty)
+                        tvDiscoverSourceSelect?.text = getString(R.string.explore_empty)
                         updateDiscoverLoginButtonState()
                         updateDiscoverSearchButtonState()
                         updateDiscoverTagFilterButtonState()
@@ -577,8 +579,8 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     private fun updateDiscoverSourceTitle() {
         val name = selectedDiscoverSourcePart?.bookSourceName
             ?: getString(R.string.discovery)
-        binding.tvDiscoverSourceSelect.text = name
-        binding.llDiscoverSourceRow.post(::updateDiscoverSourceNameWidth)
+        tvDiscoverSourceSelect?.text = name
+        modernTitleBar?.post(::updateDiscoverSourceNameWidth)
     }
 
     private suspend fun loadDiscoverKindsAndDefault() {
@@ -830,9 +832,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
 
     private fun updateDiscoverTagFilterButtonState() {
         val enabled = discoverMajorGroups.size > 1
-        binding.btnDiscoverTagFilter.isVisible = enabled
-        binding.btnDiscoverTagFilter.isEnabled = enabled
-        binding.btnDiscoverTagFilter.alpha = if (enabled) 1f else 0.45f
+        btnDiscoverTagFilter?.isVisible = enabled
+        btnDiscoverTagFilter?.isEnabled = enabled
+        btnDiscoverTagFilter?.alpha = if (enabled) 1f else 0.45f
     }
 
     private fun showDiscoverTagFilterMenu() {
@@ -851,7 +853,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             }
         }
         tagFilterPopup = ModernActionPopup.show(
-            binding.btnDiscoverTagFilter,
+            btnDiscoverTagFilter ?: return,
             actions,
             tagFilterPopup
         )

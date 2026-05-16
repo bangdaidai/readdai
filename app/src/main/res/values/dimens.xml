@@ -55,7 +55,7 @@
     <dimen name="ui_panel_radius">10dp</dimen>
 
     <!-- Main content bottom bar padding -->
-    <dimen name="main_content_bottom_bar_padding">70dp</dimen>
+    <dimen name="main_content_bottom_bar_padding">90dp</dimen>
 
     <!-- Bookshelf title and tag bar dimensions -->
     <dimen name="bookshelf_action_button_size">34dp</dimen>
@@ -74,16 +74,16 @@
     <!-- Bottom navigation bar dimensions -->
     <dimen name="main_bottom_nav_icon_size">23dp</dimen>
     <dimen name="main_bottom_nav_horizontal_padding">6dp</dimen>
-    <dimen name="main_bottom_bar_height">60dp</dimen>
+    <dimen name="main_bottom_bar_height">56dp</dimen>
     <dimen name="main_bottom_bar_elevation">12dp</dimen>
-    <dimen name="main_bottom_bar_corner_radius">30dp</dimen>
-    <dimen name="main_bottom_indicator_width">40dp</dimen>
+    <dimen name="main_bottom_bar_corner_radius">28dp</dimen>
+    <dimen name="main_bottom_indicator_width">52dp</dimen>
     <dimen name="main_bottom_indicator_height">40dp</dimen>
     <dimen name="main_bottom_indicator_margin_start">6dp</dimen>
     <dimen name="main_bottom_indicator_corner_radius">20dp</dimen>
 
     <!-- Main floating bottom navigation (achieve compatible) -->
-    <dimen name="main_bottom_controls_horizontal_padding">16dp</dimen>
+    <dimen name="main_bottom_controls_horizontal_padding">20dp</dimen>
     <dimen name="main_bottom_controls_bottom_padding">10dp</dimen>
     <dimen name="main_bottom_bar_gap">10dp</dimen>
     <dimen name="main_search_button_size">48dp</dimen>

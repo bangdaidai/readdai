@@ -92,6 +92,9 @@ val Context.textOtherColor: Int
 val Context.bottomNavIconUnselectedColor: Int
     get() = ThemeStore.bottomNavIconUnselectedColor(this)
 
+val Context.dividerColor: Int
+    get() = ThemeStore.dividerColor(this)
+
 val Context.primaryDisabledTextColor: Int
     get() = getPrimaryDisabledTextColor(isDarkTheme)
 

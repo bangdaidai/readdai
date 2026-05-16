@@ -39,6 +39,7 @@
         android:layout_height="@dimen/main_bottom_bar_height"
         android:layout_marginStart="@dimen/main_bottom_controls_horizontal_padding"
         android:layout_marginEnd="@dimen/main_bottom_controls_horizontal_padding"
+        android:layout_marginBottom="@dimen/main_bottom_controls_bottom_padding"
         android:clipChildren="false"
         android:clipToPadding="false"
         android:elevation="@dimen/main_bottom_bar_elevation"
@@ -76,10 +77,6 @@
             android:layout_height="@dimen/main_bottom_indicator_height"
             android:layout_gravity="start|center_vertical"
             android:layout_marginStart="@dimen/main_bottom_indicator_margin_start"
-            android:layout_marginTop="3dp"
-            android:layout_marginBottom="3dp"
-            android:clipChildren="true"
-            android:clipToPadding="true"
             android:clickable="false"
             android:focusable="false">
 

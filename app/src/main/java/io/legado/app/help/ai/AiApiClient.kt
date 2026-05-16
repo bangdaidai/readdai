@@ -174,61 +174,100 @@ class AiApiClient(
 
     /**
      * 构建模型列表请求URL
+     * 参照archive项目的resolveModelsUrl实现，智能处理各种URL格式
      */
     private fun buildModelListUrl(provider: AiProviderEntity, apiKey: String): Pair<String, Map<String, String>> {
         val headers = mutableMapOf<String, String>()
-        val baseUrl = deriveBaseUrl(provider.apiUrl)
-
+        
         return when (provider.protocol) {
             "claude" -> {
                 // Claude API
                 headers["x-api-key"] = apiKey
                 headers["anthropic-version"] = "2023-06-01"
-                Pair("$baseUrl/models", headers)
+                Pair(resolveModelsUrl(provider.apiUrl, "/models"), headers)
             }
             "gemini" -> {
                 // Gemini API
                 headers["Authorization"] = "Bearer $apiKey"
-                Pair("$baseUrl/v1beta/models", headers)
+                Pair(resolveModelsUrl(provider.apiUrl, "/v1beta/models"), headers)
             }
             "moonshot" -> {
                 // Moonshot API
                 headers["Authorization"] = "Bearer $apiKey"
-                Pair("$baseUrl/v1/models", headers)
+                Pair(resolveModelsUrl(provider.apiUrl, "/v1/models"), headers)
             }
             "zhipu" -> {
                 // 智谱 API
                 headers["Authorization"] = "Bearer $apiKey"
-                Pair("$baseUrl/v4/models", headers)
+                Pair(resolveModelsUrl(provider.apiUrl, "/v4/models"), headers)
             }
             "ollama" -> {
                 // Ollama 本地API - 不需要认证
-                Pair("$baseUrl/api/tags", headers)
+                Pair(resolveModelsUrl(provider.apiUrl, "/api/tags"), headers)
             }
             "lmstudio" -> {
                 // LM Studio API
                 headers["Authorization"] = "Bearer $apiKey"
-                Pair("$baseUrl/models", headers)
+                Pair(resolveModelsUrl(provider.apiUrl, "/models"), headers)
             }
             else -> {
                 // OpenAI兼容格式
                 headers["Authorization"] = "Bearer $apiKey"
-                Pair("$baseUrl/v1/models", headers)
+                Pair(resolveModelsUrl(provider.apiUrl, "/v1/models"), headers)
             }
+        }
+    }
+    
+    /**
+     * 智能解析模型列表URL
+     * 参照archive项目的resolveModelsUrl实现
+     */
+    private fun resolveModelsUrl(baseUrl: String, defaultPath: String): String {
+        val normalized = baseUrl.trim().trimEnd('/')
+        return when {
+            // 已经以目标路径结尾，直接使用
+            normalized.endsWith(defaultPath) -> normalized
+            // 以 /chat/completions 结尾，替换为目标路径
+            normalized.endsWith("/chat/completions") -> normalized.removeSuffix("/chat/completions") + defaultPath
+            // 以 /v1 结尾，根据defaultPath决定是否移除/v1前缀
+            normalized.endsWith("/v1") -> {
+                if (defaultPath.startsWith("/v1/")) {
+                    // defaultPath 是 /v1/models，移除 /v1 前缀后变成 /models
+                    "$normalized${defaultPath.removePrefix("/v1")}"
+                } else {
+                    // defaultPath 不以 /v1 开头，直接拼接
+                    "$normalized$defaultPath"
+                }
+            }
+            // 其他情况，直接拼接
+            else -> "$normalized$defaultPath"
         }
     }
 
     /**
      * 构建聊天请求URL
+     * 参照archive项目的resolveChatUrl实现，智能处理各种URL格式
      */
     private fun buildChatUrl(provider: AiProviderEntity): String {
-        val baseUrl = deriveBaseUrl(provider.apiUrl)
         return when (provider.protocol) {
-            "claude" -> "$baseUrl/messages"
-            "gemini" -> "$baseUrl:generateContent"
-            "zhipu" -> "$baseUrl/chat/completions"
-            "ollama" -> "$baseUrl/api/chat"
-            else -> "$baseUrl/chat/completions"
+            "claude" -> resolveChatUrl(provider.apiUrl, "/messages")
+            "gemini" -> resolveChatUrl(provider.apiUrl, ":generateContent")
+            "zhipu" -> resolveChatUrl(provider.apiUrl, "/chat/completions")
+            "ollama" -> resolveChatUrl(provider.apiUrl, "/api/chat")
+            else -> resolveChatUrl(provider.apiUrl, "/chat/completions")
+        }
+    }
+    
+    /**
+     * 智能解析聊天URL
+     * 参照archive项目的resolveChatUrl实现
+     */
+    private fun resolveChatUrl(baseUrl: String, defaultPath: String): String {
+        val normalized = baseUrl.trim().trimEnd('/')
+        return when {
+            normalized.endsWith(defaultPath) -> normalized
+            normalized.endsWith("/v1") && defaultPath.startsWith("/") -> "$normalized$defaultPath"
+            else -> "$normalized$defaultPath"
         }
     }
 

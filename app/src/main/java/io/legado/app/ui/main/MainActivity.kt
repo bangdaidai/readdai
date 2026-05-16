@@ -310,6 +310,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     (fragmentMap[1] as? ExploreFragment)?.compressExplore()
                 }
             }
+            
+            R.id.menu_ai_read -> {
+                // ✅ 关键修复：重复点击 AI 按钮时，重新启动 AI 聊天页面
+                startActivity(Intent(this@MainActivity, AiChatActivity::class.java))
+            }
         }
     }
 
