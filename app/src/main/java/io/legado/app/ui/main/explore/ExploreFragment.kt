@@ -250,7 +250,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             bindDiscoverSourceSelector()
             updateDiscoverLoginButtonState()
             updateDiscoverModeToggleButtonState()
-            val toolbarHeight = resources.getDimensionPixelSize(android.R.dimen.app_bar_height)
+            val toolbarHeight = (56 * resources.displayMetrics.density).toInt()
             binding.llDiscoverSourceRow.layoutParams.height = toolbarHeight
             binding.llDiscoverSourceRow.requestLayout()
             if (context?.transparentNavBar == true) {
@@ -262,7 +262,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 binding.llDiscoverSourceRow.setBackgroundColor(primaryColor)
                 binding.llDiscoverSourceRow.elevation = context?.elevation ?: 0f
             }
-            binding.llModernDiscovery.setOnApplyWindowInsetsListenerCompat { _, windowInsets ->
+            io.legado.app.utils.setOnApplyWindowInsetsListenerCompat(binding.llModernDiscovery) { _, windowInsets ->
                 val insets = windowInsets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())
                 binding.llModernDiscovery.setPadding(
                     binding.llModernDiscovery.paddingLeft,

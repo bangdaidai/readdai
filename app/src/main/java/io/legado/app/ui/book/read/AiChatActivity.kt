@@ -1970,11 +1970,11 @@ class ChatAdapter(
                         android.R.id.copy -> {
                             // 追问：以选中的文本作为引用继续提问
                             if (selectedText.isNotBlank()) {
-                                selectedQuote = selectedText.trim()
-                                binding.editText.setText("")
-                                binding.editText.requestFocus()
+                                this@AiChatActivity.selectedQuote = selectedText.trim()
+                                this@AiChatActivity.binding.editText.setText("")
+                                this@AiChatActivity.binding.editText.requestFocus()
                                 // 滚动到底部
-                                binding.recyclerView.scrollToPosition(messages.size - 1)
+                                this@AiChatActivity.binding.recyclerView.scrollToPosition(messages.size - 1)
                             }
                             mode.finish()
                             true

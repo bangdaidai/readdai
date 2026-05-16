@@ -788,7 +788,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val bgDrawable = if (AppConfig.isEInkMode) {
             getDrawable(R.drawable.bg_eink_border_top)
         } else {
-            val bgColor = if (transparentNavBar) {
+            val bgColor = if (AppConfig.transparentNavBar) {
                 io.legado.app.lib.theme.ThemeStore.backgroundColor(this)
             } else {
                 io.legado.app.lib.theme.ThemeStore.bottomBackground(this)
@@ -798,7 +798,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
 
         bottomNav.background = bgDrawable
         bottomNav.alpha = 1.0f
-        bottomNav.elevation = if (AppConfig.isEInkMode || transparentNavBar) {
+        bottomNav.elevation = if (AppConfig.isEInkMode || AppConfig.transparentNavBar) {
             0f
         } else {
             resources.getDimension(R.dimen.main_bottom_bar_elevation)
