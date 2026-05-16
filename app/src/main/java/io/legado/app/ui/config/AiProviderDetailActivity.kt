@@ -147,47 +147,22 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         }
         
         // Apply theme accent color to TextInputLayout focused border
-        val boxStrokeColorStateList = android.content.res.ColorStateList(
-            arrayOf(
-                intArrayOf(android.R.attr.state_focused),
-                intArrayOf(android.R.attr.state_hovered),
-                intArrayOf()
-            ),
-            intArrayOf(
-                accentColor,
-                accentColor,
-                android.graphics.Color.parseColor("#80808080") // Default/unfocused color
-            )
-        )
+        // ✅ 关键修复：使用 boxStrokeColor 替代 boxStrokeColorStateList（兼容旧版本 Material Design）
         
         // Name input
         binding.etName.parent?.let {
             if (it is com.google.android.material.textfield.TextInputLayout) {
-                // ✅ 关键修复：使用兼容的方式设置边框颜色
-                try {
-                    it.boxStrokeColorStateList = boxStrokeColorStateList
-                } catch (e: Exception) {
-                    // Fallback for older Material Design versions
-                    it.boxStrokeColor = accentColor
-                }
+                it.boxStrokeColor = accentColor
             }
         }
         
         // API URL input
-        try {
-            binding.tilApiUrl.boxStrokeColorStateList = boxStrokeColorStateList
-        } catch (e: Exception) {
-            binding.tilApiUrl.boxStrokeColor = accentColor
-        }
+        binding.tilApiUrl.boxStrokeColor = accentColor
         
         // Model input
         binding.etModel.parent?.let {
             if (it is com.google.android.material.textfield.TextInputLayout) {
-                try {
-                    it.boxStrokeColorStateList = boxStrokeColorStateList
-                } catch (e: Exception) {
-                    it.boxStrokeColor = accentColor
-                }
+                it.boxStrokeColor = accentColor
             }
         }
     }
@@ -387,36 +362,17 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
             holder.switchEnabled.thumbTintList = android.content.res.ColorStateList.valueOf(accentColor)
 
             // Apply theme accent color to TextInputLayout focused border
-            val boxStrokeColorStateList = android.content.res.ColorStateList(
-                arrayOf(
-                    intArrayOf(android.R.attr.state_focused),
-                    intArrayOf(android.R.attr.state_hovered),
-                    intArrayOf()
-                ),
-                intArrayOf(
-                    accentColor,
-                    accentColor,
-                    android.graphics.Color.parseColor("#80808080")
-                )
-            )
+            // ✅ 关键修复：使用 boxStrokeColor 替代 boxStrokeColorStateList（兼容旧版本 Material Design）
             
             holder.etLabel.parent?.let {
                 if (it is com.google.android.material.textfield.TextInputLayout) {
-                    try {
-                        it.boxStrokeColorStateList = boxStrokeColorStateList
-                    } catch (e: Exception) {
-                        it.boxStrokeColor = accentColor
-                    }
+                    it.boxStrokeColor = accentColor
                 }
             }
             
             holder.etKey.parent?.let {
                 if (it is com.google.android.material.textfield.TextInputLayout) {
-                    try {
-                        it.boxStrokeColorStateList = boxStrokeColorStateList
-                    } catch (e: Exception) {
-                        it.boxStrokeColor = accentColor
-                    }
+                    it.boxStrokeColor = accentColor
                 }
             }
 
