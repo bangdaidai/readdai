@@ -77,6 +77,35 @@ object AiLogManager {
     }
     
     /**
+     * 记录新的一轮对话，自动插入分割线
+     */
+    @Synchronized
+    fun newConversation(title: String = "") {
+        try {
+            if (logFile == null) return
+            
+            val timestamp = dateFormat.format(Date())
+            val separator = buildString {
+                append("\n")
+                append("═".repeat(60))
+                append("\n")
+                append("  🗨️ 新对话轮次")
+                if (title.isNotEmpty()) append(" - $title")
+                append("\n")
+                append("  $timestamp")
+                append("\n")
+                append("═".repeat(60))
+                append("\n\n")
+            }
+            
+            logFile!!.appendText(separator)
+            LogUtils.d("AiChat", "=== 新对话轮次: $title ===")
+        } catch (e: Exception) {
+            LogUtils.e("AiLogManager", "插入分割线失败: ${e.message}")
+        }
+    }
+    
+    /**
      * 获取所有日志内容
      */
     fun getLogs(): String {

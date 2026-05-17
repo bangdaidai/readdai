@@ -1,6 +1,8 @@
 package io.legado.app.utils
 
 import android.content.Context
+import android.text.method.ArrowKeyMovementMethod
+import android.text.method.MovementMethod
 import android.widget.TextView
 import io.noties.markwon.Markwon
 import io.noties.markwon.SoftBreakAddsNewLinePlugin
@@ -33,9 +35,16 @@ object MarkdownUtils {
     
     /**
      * 在 TextView 中渲染 Markdown
+     * @param selectable 是否启用文本选择（默认启用）
      */
-    fun setMarkdown(textView: TextView, markdown: String) {
+    fun setMarkdown(textView: TextView, markdown: String, selectable: Boolean = true) {
         val context = textView.context
         getMarkwon(context).setMarkdown(textView, markdown)
+        
+        // ✅ 关键修复：Markwon 内部会设置 LinkMovementMethod，会破坏文本选择
+        // 需要在 setMarkdown 之后重新设置正确的 MovementMethod
+        if (selectable) {
+            textView.setTextIsSelectable(true)
+        }
     }
 }
