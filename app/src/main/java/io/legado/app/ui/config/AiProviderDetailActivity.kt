@@ -91,26 +91,9 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
         binding.btnSave.setTextColor(accentColor)
 
         // Apply theme accent color to toggle groups (segmented buttons)
-        val accentColorStateList = android.content.res.ColorStateList(
-            arrayOf(
-                intArrayOf(android.R.attr.state_checked),
-                intArrayOf()
-            ),
-            intArrayOf(
-                accentColor,
-                android.graphics.Color.TRANSPARENT
-            )
-        )
+        // 选中时：强调色边框 + 强调色文字
         
         // Protocol toggle group
-        binding.toggleProtocol.checkedButtonId.let { checkedId ->
-            if (checkedId != -1) {
-                binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
-                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
-                }
-            }
-        }
         binding.toggleProtocol.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 val hint = when (checkedId) {
@@ -120,28 +103,19 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
                 }
                 binding.tilApiUrl.helperText = hint
                 
-                // Update checked button color
                 binding.toggleProtocol.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                    setTextColor(accentColor)
                 }
             }
         }
         
         // Reasoning toggle group
-        binding.toggleReasoning.checkedButtonId.let { checkedId ->
-            if (checkedId != -1) {
-                binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
-                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
-                }
-            }
-        }
         binding.toggleReasoning.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 binding.toggleReasoning.findViewById<MaterialButton>(checkedId)?.apply {
-                    backgroundTintList = accentColorStateList
                     strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                    setTextColor(accentColor)
                 }
             }
         }
