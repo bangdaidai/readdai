@@ -1974,9 +1974,9 @@ class ChatAdapter(
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     // ✅ 不清除默认菜单，直接添加自定义选项
-                    // 使用负的 order 值让自定义选项排在前面
-                    menu.add(0, 1001, -100, "搜书")
-                    menu.add(0, 1002, -99, "追问")
+                    // 使用正数 order 值避免 MIUI 系统兼容性问题
+                    menu.add(android.view.Menu.NONE, 1001, 100, "搜书")
+                    menu.add(android.view.Menu.NONE, 1002, 101, "追问")
                     return true
                 }
             
@@ -2300,7 +2300,7 @@ class ChatAdapter(
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     menu.clear()
-                    menu.add(0, android.R.id.copy, 0, android.R.string.copy)
+                    menu.add(android.view.Menu.NONE, android.R.id.copy, 0, android.R.string.copy)
                     return true
                 }
 
