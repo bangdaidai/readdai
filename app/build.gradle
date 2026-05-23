@@ -1,6 +1,7 @@
 plugins {
     alias libs.plugins.android.application
     alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.compose
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.room
     alias libs.plugins.ksp
@@ -54,9 +55,6 @@ android {
         jvmToolchain {
             languageVersion.set(JavaLanguageVersion.of(17))
         }
-        composeCompiler {
-            kotlinCompilerExtensionVersion = "1.5.14"
-        }
     }
 
     // 🔐 签名配置：支持环境变量 + 降级 debug 签名
@@ -105,6 +103,10 @@ android {
         buildConfig = true
         viewBinding = true
         compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     buildTypes {
