@@ -178,7 +178,7 @@ jobs:
           path: artifacts/aab
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             artifacts/apk/*.apk
