@@ -274,4 +274,5 @@ object PreferKey {
     const val hiddenTextMenuItems = "hiddenTextMenuItems"
     const val hiddenProcessTextItems = "hiddenProcessTextItems"
     const val hiddenAiChatMenuItems = "hiddenAiChatMenuItems"
+    const val hiddenAiChatProcessTextItems = "hiddenAiChatProcessTextItems"
 }

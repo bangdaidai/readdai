@@ -7,22 +7,35 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemCheckBoxBinding
 
-class MenuItemAdapter(context: Context) : RecyclerAdapter<MenuItemAdapter.Item, ItemCheckBoxBinding>(context) {
+class MenuItemAdapter(context: Context) :
+    RecyclerAdapter<MenuItemAdapter.DisplayItem, ItemCheckBoxBinding>(context) {
 
-    data class Item(
+    data class DisplayItem(
         val id: Int,
-        val nameResId: Int
+        val name: String,
+        val isSystemItem: Boolean = false,
+        val systemItemKey: String? = null
     )
 
     private val checkedIds = mutableSetOf<Int>()
+    private val checkedSystemItemKeys = mutableSetOf<String>()
 
     fun setCheckedIds(ids: Set<Int>) {
         checkedIds.clear()
         checkedIds.addAll(ids)
     }
 
+    fun setCheckedSystemItemKeys(keys: Set<String>) {
+        checkedSystemItemKeys.clear()
+        checkedSystemItemKeys.addAll(keys)
+    }
+
     fun getCheckedIds(): Set<Int> {
         return checkedIds.toSet()
+    }
+
+    fun getCheckedSystemItemKeys(): Set<String> {
+        return checkedSystemItemKeys.toSet()
     }
 
     override fun getViewBinding(parent: ViewGroup): ItemCheckBoxBinding {
@@ -32,26 +45,37 @@ class MenuItemAdapter(context: Context) : RecyclerAdapter<MenuItemAdapter.Item, 
     override fun convert(
         holder: ItemViewHolder,
         binding: ItemCheckBoxBinding,
-        item: Item,
+        item: DisplayItem,
         payloads: MutableList<Any>
     ) {
         binding.apply {
-            checkBox.text = context.getString(item.nameResId)
-            checkBox.isChecked = item.id !in checkedIds
+            checkBox.text = item.name
+            checkBox.isChecked = if (item.isSystemItem) {
+                item.systemItemKey !in checkedSystemItemKeys
+            } else {
+                item.id !in checkedIds
+            }
         }
     }
 
     override fun registerListener(holder: ItemViewHolder, binding: ItemCheckBoxBinding) {
         holder.itemView.setOnClickListener {
             getItem(holder.layoutPosition)?.let { item ->
-                if (item.id in checkedIds) {
-                    checkedIds.remove(item.id)
+                if (item.isSystemItem) {
+                    if (item.systemItemKey in checkedSystemItemKeys) {
+                        checkedSystemItemKeys.remove(item.systemItemKey)
+                    } else {
+                        checkedSystemItemKeys.add(item.systemItemKey!!)
+                    }
                 } else {
-                    checkedIds.add(item.id)
+                    if (item.id in checkedIds) {
+                        checkedIds.remove(item.id)
+                    } else {
+                        checkedIds.add(item.id)
+                    }
                 }
                 notifyItemChanged(holder.layoutPosition)
             }
         }
     }
-
 }

@@ -14,9 +14,7 @@ import io.legado.app.utils.toastOnUi
 class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
 
     private val binding by viewBinding(DialogRecyclerViewBinding::bind)
-    private val adapter by lazy {
-        MenuItemAdapter(requireContext())
-    }
+    private val adapter by lazy { MenuItemAdapter(requireContext()) }
 
     override fun onStart() {
         super.onStart()
@@ -30,8 +28,8 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
         toolBar.setOnMenuItemClickListener {
             if (it.itemId == R.id.menu_reset) {
                 TextMenuConfig.resetToDefault(requireContext())
-                adapter.setCheckedIds(emptySet())
-                adapter.notifyDataSetChanged()
+                TextMenuConfig.resetProcessTextConfig(requireContext())
+                reloadMenuItems()
                 toastOnUi(getString(R.string.reset_to_default))
                 true
             } else {
@@ -42,16 +40,49 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        val menuItems = TextMenuConfig.getAllMenuItems().map {
-            MenuItemAdapter.Item(it.id, it.nameResId)
+        reloadMenuItems()
+    }
+
+    private fun reloadMenuItems() {
+        // 添加自定义菜单项
+        val customItems = TextMenuConfig.getAllMenuItems().map {
+            MenuItemAdapter.DisplayItem(it.id, requireContext().getString(it.nameResId))
         }
-        adapter.setItems(menuItems)
+
+        // 加载并添加系统菜单项（问小爱等）
+        val systemItems = mutableListOf<MenuItemAdapter.DisplayItem>()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            try {
+                val intent = android.content.Intent()
+                    .setAction(android.content.Intent.ACTION_PROCESS_TEXT)
+                    .setType("text/plain")
+                val resolveInfoList = requireContext().packageManager.queryIntentActivities(intent, 0)
+                resolveInfoList.forEach { resolveInfo ->
+                    val packageName = resolveInfo.activityInfo.packageName
+                    val className = resolveInfo.activityInfo.name
+                    val itemKey = TextMenuConfig.getProcessTextItemKey(packageName, className)
+                    systemItems.add(
+                        MenuItemAdapter.DisplayItem(
+                            id = itemKey.hashCode(),
+                            name = resolveInfo.loadLabel(requireContext().packageManager).toString(),
+                            isSystemItem = true,
+                            systemItemKey = itemKey
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                // 忽略
+            }
+        }
+
+        adapter.setItems(customItems + systemItems)
         adapter.setCheckedIds(TextMenuConfig.getHiddenMenuItemIds(requireContext()))
+        adapter.setCheckedSystemItemKeys(TextMenuConfig.getHiddenProcessTextItems(requireContext()))
     }
 
     override fun dismiss() {
         TextMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getCheckedIds())
+        TextMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getCheckedSystemItemKeys())
         super.dismiss()
     }
-
 }

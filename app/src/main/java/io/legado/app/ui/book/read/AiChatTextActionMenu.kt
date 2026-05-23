@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupWindow
 import androidx.annotation.RequiresApi
-import androidx.appcompat.view.menu.MenuBuilder
 import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
@@ -90,6 +89,11 @@ class AiChatTextActionMenu(
     private fun reloadMenuItems() {
         // 获取用户配置的隐藏菜单项
         val hiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(context)
+        val hiddenProcessTextItems = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            AiChatMenuConfig.getHiddenProcessTextItems(context)
+        } else {
+            emptySet()
+        }
 
         // 构建基础菜单项列表
         val baseMenuItems = AiChatMenuConfig.getAllMenuItems()
@@ -98,7 +102,7 @@ class AiChatTextActionMenu(
 
         // 添加系统菜单项（ACTION_PROCESS_TEXT 应用，如"问小爱"）
         val systemMenuItems = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            getSystemProcessTextItems()
+            getSystemProcessTextItems(hiddenProcessTextItems)
         } else {
             emptyList()
         }
@@ -123,22 +127,28 @@ class AiChatTextActionMenu(
      * 获取系统文本处理应用（如"问小爱"）
      */
     @RequiresApi(Build.VERSION_CODES.M)
-    private fun getSystemProcessTextItems(): List<MenuItem> {
+    private fun getSystemProcessTextItems(hiddenItems: Set<String>): List<MenuItem> {
         return try {
             val intent = Intent().apply {
                 action = Intent.ACTION_PROCESS_TEXT
                 type = "text/plain"
             }
             val resolveInfoList = context.packageManager.queryIntentActivities(intent, 0)
-            resolveInfoList.map { resolveInfo ->
+            resolveInfoList.mapNotNull { resolveInfo ->
+                val packageName = resolveInfo.activityInfo.packageName
+                val className = resolveInfo.activityInfo.name
+                val itemKey = AiChatMenuConfig.getProcessTextItemKey(packageName, className)
+                if (itemKey in hiddenItems) {
+                    return@mapNotNull null
+                }
                 MenuItem(
-                    id = resolveInfo.activityInfo.packageName.hashCode(),
+                    id = itemKey.hashCode(),
                     title = resolveInfo.loadLabel(context.packageManager).toString(),
                     intent = Intent().apply {
                         action = Intent.ACTION_PROCESS_TEXT
                         type = "text/plain"
                         putExtra(Intent.EXTRA_PROCESS_TEXT, callBack.selectedText)
-                        setClassName(resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name)
+                        setClassName(packageName, className)
                     }
                 )
             }
