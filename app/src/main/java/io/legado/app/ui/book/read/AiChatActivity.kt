@@ -49,6 +49,7 @@ import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
 import io.legado.app.utils.MarkdownUtils
 import io.legado.app.utils.dpToPx
+import io.legado.app.utils.sendToClip
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -1881,7 +1882,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     /**
      * 显示 AI 对话页面的文本操作菜单
      */
-    private fun showAiChatTextMenu(anchor: android.widget.TextView, selectedText: String) {
+    fun showAiChatTextMenu(anchor: android.widget.TextView, selectedText: String) {
         val menu = AiChatTextActionMenu(this, object : AiChatTextActionMenu.CallBack {
             override val selectedText: String get() = selectedText
 
