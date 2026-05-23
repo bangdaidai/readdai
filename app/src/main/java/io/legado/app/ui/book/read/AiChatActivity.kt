@@ -163,6 +163,18 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         )
         binding.recyclerView.adapter = adapter
     }
+    
+    // ✅ 添加新方法：仅更新 adapter 数据，不重新创建整个 adapter
+    private fun notifyAdapterChanged() {
+        adapter.notifyDataSetChanged()
+    }
+    
+    // ✅ 辅助函数：检查 RecyclerView 是否已经滚动到底部
+    private fun isRecyclerViewAtBottom(): Boolean {
+        val layoutManager = binding.recyclerView.layoutManager as? LinearLayoutManager ?: return true
+        val lastVisibleItemPosition = layoutManager.findLastVisibleItemPosition()
+        return lastVisibleItemPosition == messages.size - 1
+    }
 
     private fun initViews() {
         binding.titleBar.title = "AI阅读助手"
@@ -240,7 +252,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 createNewSession()
                 messages.clear()
                 streamingPosition = -1
-                updateAdapter()
+                adapter.notifyDataSetChanged()
                 updateEmptyState()
                 Toast.makeText(this, "已新建对话", Toast.LENGTH_SHORT).show()
                 true
@@ -854,8 +866,8 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         // 重置流式位置
         streamingPosition = -1
 
-        // 重新创建适配器以确保正确显示
-        updateAdapter()
+        // ✅ 关键修复：不重新创建 adapter，只通知数据集变化
+        adapter.notifyDataSetChanged()
 
         // 更新空状态
         updateEmptyState()
@@ -1011,14 +1023,14 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
             // 设置流式位置
             streamingPosition = this@AiChatActivity.messages.size - 1
-            updateAdapter()
+            // ✅ 关键修复：不重新创建 adapter，只通知插入了新项
+            adapter.notifyItemInserted(this@AiChatActivity.messages.size - 2)
+            adapter.notifyItemInserted(this@AiChatActivity.messages.size - 1)
 
             updateEmptyState()
 
-            // 滚动到底部
-            binding.recyclerView.post {
-                binding.recyclerView.smoothScrollToPosition(this@AiChatActivity.messages.size - 1)
-            }
+            // ✅ 滚动到底部（使用 scrollToPosition 而不是 smoothScrollToPosition，避免动画）
+            binding.recyclerView.scrollToPosition(this@AiChatActivity.messages.size - 1)
 
             // 构建变量 - 优先从 ReadingContextService 获取实时上下文
             val readingContext = ReadingContextService.getContext()
@@ -1359,6 +1371,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         // 删除最后一条 AI 消息（如果存在）
         if (messages.size > lastUserMessageIndex + 1 && messages[lastUserMessageIndex + 1].role == "ai") {
             messages.removeAt(lastUserMessageIndex + 1)
+            adapter.notifyItemRemoved(lastUserMessageIndex + 1)
         }
 
         // 重新发送用户消息
@@ -1392,14 +1405,14 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
         // 设置流式位置
         streamingPosition = messages.size - 1
-        updateAdapter()
+        // ✅ 关键修复：不重新创建 adapter，只通知插入了新项
+        adapter.notifyItemInserted(messages.size - 2)
+        adapter.notifyItemInserted(messages.size - 1)
 
         updateEmptyState()
 
-        // 滚动到底部
-        binding.recyclerView.post {
-            binding.recyclerView.smoothScrollToPosition(messages.size - 1)
-        }
+        // ✅ 滚动到底部（使用 scrollToPosition 而不是 smoothScrollToPosition，避免动画）
+        binding.recyclerView.scrollToPosition(messages.size - 1)
 
         binding.editText.setText("")
 
@@ -1460,9 +1473,11 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                                 )
                                 adapter.notifyItemChanged(streamingPosition)
 
-                                // 滚动到底部
-                                binding.recyclerView.post {
-                                    binding.recyclerView.smoothScrollToPosition(messages.size - 1)
+                                // ✅ 优化：只有用户当前在底部时才自动滚动
+                                if (isRecyclerViewAtBottom()) {
+                                    binding.recyclerView.post {
+                                        binding.recyclerView.scrollToPosition(messages.size - 1)
+                                    }
                                 }
 
                                 // 每收到50个字符保存一次进度
@@ -1655,7 +1670,6 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
 
                             // 清除流式位置
                             streamingPosition = -1
-                            updateAdapter()
 
                             // 关键：错误时必须重置请求状态，否则按钮会一直是正方形
                             setRequestState(false)
