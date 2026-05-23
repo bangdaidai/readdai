@@ -14,7 +14,9 @@ import io.legado.app.utils.toastOnUi
 class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
 
     private val binding by viewBinding(DialogRecyclerViewBinding::bind)
-    private val adapter by lazy { MenuItemAdapter(requireContext()) }
+    private val adapter by lazy {
+        MenuItemAdapter(requireContext()) { it.nameResId }
+    }
 
     override fun onStart() {
         super.onStart()
@@ -30,7 +32,7 @@ class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view)
                 AiChatMenuConfig.resetToDefault(requireContext())
                 adapter.setCheckedIds(emptySet())
                 adapter.notifyDataSetChanged()
-                toastOnUi(getString(R.string.reset_default))
+                toastOnUi(getString(R.string.reset_to_default))
                 true
             } else {
                 false
@@ -40,7 +42,9 @@ class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        val menuItems = AiChatMenuConfig.getAllMenuItems()
+        val menuItems = AiChatMenuConfig.getAllMenuItems().map {
+            MenuItemAdapter.MenuItemInfo(it.id, it.nameResId)
+        }
         adapter.setItems(menuItems)
         adapter.setCheckedIds(AiChatMenuConfig.getHiddenMenuItemIds(requireContext()))
     }

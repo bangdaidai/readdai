@@ -6,9 +6,16 @@ import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemCheckBoxBinding
-import io.legado.app.utils.viewbindingdelegate.viewBinding
 
-class MenuItemAdapter(context: Context) : RecyclerAdapter<MenuItemInfo, ItemCheckBoxBinding>(context) {
+class MenuItemAdapter(
+    private val context: Context,
+    private val getNameResId: (ITEM) -> Int
+) : RecyclerAdapter<MenuItemAdapter.MenuItemInfo, ItemCheckBoxBinding>(context) {
+
+    data class MenuItemInfo(
+        val id: Int,
+        val nameResId: Int
+    )
 
     private val checkedIds = mutableSetOf<Int>()
 
