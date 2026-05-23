@@ -138,6 +138,10 @@ abstract class BaseReadBookActivity :
         showDialogFragment<ClickActionConfigDialog>()
     }
 
+    fun showTextMenuConfig() {
+        showDialogFragment<TextMenuConfigDialog>()
+    }
+
     private fun showCustomPageKeyConfig() {
         PageKeyDialog(this).show()
     }

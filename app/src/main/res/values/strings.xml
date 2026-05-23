@@ -1641,4 +1641,15 @@
     <string name="navigation_bar_name_exists">A bottom bar theme with the same name already exists.</string>
     <string name="navigation_bar_config_missing">Bottom bar theme config is missing.</string>
     <string name="navigation_bar_import_suffix">Imported</string>
+
+    <!-- Text Menu Config -->
+    <string name="text_menu_config">文本菜单配置</string>
+    <string name="text_menu_config_desc">选择要在长按文本时显示的菜单项</string>
+    <string name="process_text_menu_config">系统文本处理应用</string>
+    <string name="process_text_menu_config_desc">选择要显示的系统文本处理应用（翻译、搜索等）</string>
+    <string name="no_process_text_apps">没有可用的文本处理应用</string>
+    <string name="reset_to_default">重置为默认</string>
+    <string name="ai_explain">解释这段</string>
+    <string name="ai_analyze">帮我分析</string>
+    <string name="protagonist">主角</string>
 </resources>

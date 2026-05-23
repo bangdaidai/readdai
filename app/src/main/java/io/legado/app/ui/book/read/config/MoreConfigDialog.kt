@@ -195,6 +195,9 @@ class MoreConfigDialog : BaseDialogFragment(0) {
                 "clickRegionalConfig" -> {
                     (activity as? ReadBookActivity)?.showClickRegionalConfig()
                 }
+                "textMenuConfig" -> {
+                    (activity as? ReadBookActivity)?.showTextMenuConfig()
+                }
 
                 PreferKey.pageTouchSlop -> {
                     NumberPickerDialog(requireContext())

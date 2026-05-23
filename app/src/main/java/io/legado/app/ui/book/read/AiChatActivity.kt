@@ -1990,23 +1990,33 @@ class ChatAdapter(
             // 设置自定义选择操作模式回调，添加"搜索书籍"选项
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    // ✅ 不清除默认菜单，直接添加自定义选项
-                    // 使用正数 order 值避免 MIUI 系统兼容性问题
-                    menu.add(android.view.Menu.NONE, 1001, 100, "搜书")
-                    menu.add(android.view.Menu.NONE, 1002, 101, "追问")
+                    // ✅ 获取用户配置的隐藏菜单项
+                    val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(context)
+
+                    // 添加未隐藏的菜单项
+                    if (R.id.menu_copy !in hiddenIds) {
+                        menu.add(android.view.Menu.NONE, R.id.menu_copy, 0, context.getString(android.R.string.copy))
+                    }
+                    if (R.id.menu_search_content !in hiddenIds) {
+                        menu.add(android.view.Menu.NONE, 1001, 100, "搜书")
+                    }
+                    if (R.id.menu_ai_chat !in hiddenIds) {
+                        menu.add(android.view.Menu.NONE, 1002, 101, "追问")
+                    }
+
                     return true
                 }
-            
+
                 override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     return false
                 }
-            
+
                 override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
                     val selectedText = holder.contentText.text?.substring(
                         holder.contentText.selectionStart,
                         holder.contentText.selectionEnd
                     ) ?: ""
-                                
+
                     return when (item.itemId) {
                         1002 -> {
                             // 追问：以选中的文本作为引用继续提问
@@ -2031,10 +2041,18 @@ class ChatAdapter(
                             mode.finish()
                             true
                         }
+                        R.id.menu_copy -> {
+                            // 复制到剪贴板
+                            if (selectedText.isNotBlank()) {
+                                context.sendToClip(selectedText)
+                            }
+                            mode.finish()
+                            true
+                        }
                         else -> false
                     }
                 }
-            
+
                 override fun onDestroyActionMode(mode: android.view.ActionMode) {
                     // 可选：清理操作
                 }

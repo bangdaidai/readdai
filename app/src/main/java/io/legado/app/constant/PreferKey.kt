@@ -269,4 +269,8 @@ object PreferKey {
     const val bottomBarLayoutMode = "bottomBarLayoutMode"
     const val bottomBarSidebarGravity = "bottomBarSidebarGravity"
     const val syncThemePackages = "syncThemePackages"
+
+    // 文本选择菜单配置
+    const val hiddenTextMenuItems = "hiddenTextMenuItems"
+    const val hiddenProcessTextItems = "hiddenProcessTextItems"
 }

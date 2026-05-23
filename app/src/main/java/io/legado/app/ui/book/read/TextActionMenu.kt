@@ -66,9 +66,26 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             onInitializeMenu(otherMenu)
         }
-        menuItems = myMenu.visibleItems + otherMenu.visibleItems
-        visibleMenuItems.addAll(menuItems.subList(0, 5))
-        moreMenuItems.addAll(menuItems.subList(5, menuItems.size))
+
+        // 合并自定义菜单和系统菜单
+        val allMenuItems = myMenu.visibleItems + otherMenu.visibleItems
+
+        // ✅ 从配置中获取隐藏的菜单项ID，过滤掉被隐藏的菜单项
+        val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(context)
+        menuItems = allMenuItems.filter { it.itemId !in hiddenIds }
+
+        // 清空旧数据
+        visibleMenuItems.clear()
+        moreMenuItems.clear()
+
+        // 将菜单项分为可见项（前5项）和更多项（第5项之后）
+        if (menuItems.size > 5) {
+            visibleMenuItems.addAll(menuItems.subList(0, 5))
+            moreMenuItems.addAll(menuItems.subList(5, menuItems.size))
+        } else {
+            visibleMenuItems.addAll(menuItems)
+        }
+
         binding.recyclerView.adapter = adapter
         binding.recyclerViewMore.adapter = adapter
         setOnDismissListener {
@@ -95,7 +112,41 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         upMenu()
     }
 
+    /**
+     * 重新加载菜单项，根据配置过滤被隐藏的菜单项
+     */
+    fun reloadMenuItems() {
+        val myMenu = MenuBuilder(context)
+        val otherMenu = MenuBuilder(context)
+        SupportMenuInflater(context).inflate(R.menu.content_select_action, myMenu)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            onInitializeMenu(otherMenu)
+        }
+
+        // 合并自定义菜单和系统菜单
+        val allMenuItems = myMenu.visibleItems + otherMenu.visibleItems
+
+        // ✅ 从配置中获取隐藏的菜单项ID，过滤掉被隐藏的菜单项
+        val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(context)
+        menuItems = allMenuItems.filter { it.itemId !in hiddenIds }
+
+        // 清空旧数据
+        visibleMenuItems.clear()
+        moreMenuItems.clear()
+
+        // 将菜单项分为可见项（前5项）和更多项（第5项之后）
+        if (menuItems.size > 5) {
+            visibleMenuItems.addAll(menuItems.subList(0, 5))
+            moreMenuItems.addAll(menuItems.subList(5, menuItems.size))
+        } else {
+            visibleMenuItems.addAll(menuItems)
+        }
+    }
+
     fun upMenu() {
+        // ✅ 重新加载菜单项，确保使用最新的配置
+        reloadMenuItems()
+
         if (expandTextMenu) {
             adapter.setItems(menuItems)
             binding.ivMenuMore.gone()
@@ -288,12 +339,19 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
     @RequiresApi(Build.VERSION_CODES.M)
     private fun onInitializeMenu(menu: Menu) {
         kotlin.runCatching {
+            val hiddenItems = TextMenuConfig.getHiddenProcessTextItems(context)
             var menuItemOrder = 100
             for (resolveInfo in getSupportedActivities()) {
-                menu.add(
-                    Menu.NONE, Menu.NONE,
-                    menuItemOrder++, resolveInfo.loadLabel(context.packageManager)
-                ).intent = createProcessTextIntentForResolveInfo(resolveInfo)
+                val packageName = resolveInfo.activityInfo.packageName
+                val className = resolveInfo.activityInfo.name
+                val itemKey = TextMenuConfig.getProcessTextItemKey(packageName, className)
+                // ✅ 检查是否被隐藏
+                if (itemKey !in hiddenItems) {
+                    menu.add(
+                        Menu.NONE, Menu.NONE,
+                        menuItemOrder++, resolveInfo.loadLabel(context.packageManager)
+                    ).intent = createProcessTextIntentForResolveInfo(resolveInfo)
+                }
             }
         }.onFailure {
             context.toastOnUi("获取文字操作菜单出错:${it.localizedMessage}")
