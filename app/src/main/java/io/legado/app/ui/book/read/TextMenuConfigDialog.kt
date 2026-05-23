@@ -10,6 +10,7 @@ import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.toastOnUi
+import io.legado.app.utils.visible
 
 class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
 
@@ -35,6 +36,19 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
             } else {
                 false
             }
+        }
+
+        // 显示保存和取消按钮
+        tvCancel.visible()
+        tvOk.visible()
+
+        tvCancel.setOnClickListener {
+            dismiss()
+        }
+
+        tvOk.setOnClickListener {
+            saveConfig()
+            dismiss()
         }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -80,9 +94,13 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
         adapter.setCheckedSystemItemKeys(TextMenuConfig.getHiddenProcessTextItems(requireContext()))
     }
 
-    override fun dismiss() {
+    private fun saveConfig() {
         TextMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getCheckedIds())
         TextMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getCheckedSystemItemKeys())
+    }
+
+    override fun dismiss() {
+        // 不在这里保存，让用户点击保存按钮才保存
         super.dismiss()
     }
 }
