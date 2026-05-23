@@ -1877,6 +1877,75 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         // 滚动到底部
         binding.recyclerView.scrollToPosition(messages.size - 1)
     }
+
+    /**
+     * 显示 AI 对话页面的文本操作菜单
+     */
+    private fun showAiChatTextMenu(anchor: android.widget.TextView, selectedText: String) {
+        val menu = AiChatTextActionMenu(this, object : AiChatTextActionMenu.CallBack {
+            override val selectedText: String get() = selectedText
+
+            override fun onMenuItemSelected(itemId: Int): Boolean {
+                return when (itemId) {
+                    R.id.menu_ai_chat -> {
+                        // 追问：以选中的文本作为引用继续提问
+                        if (selectedText.isNotBlank()) {
+                            handleFollowUpQuestion(selectedText)
+                        }
+                        true
+                    }
+                    R.id.menu_search_content -> {
+                        // 在书院中搜索选中的文本
+                        if (selectedText.isNotBlank()) {
+                            val intent = android.content.Intent(
+                                this@AiChatActivity,
+                                io.legado.app.ui.book.search.SearchActivity::class.java
+                            ).apply {
+                                putExtra("key", selectedText.trim())
+                                putExtra("searchScope", "book")
+                            }
+                            startActivity(intent)
+                        }
+                        true
+                    }
+                    R.id.menu_copy -> {
+                        // 复制到剪贴板
+                        if (selectedText.isNotBlank()) {
+                            sendToClip(selectedText)
+                        }
+                        true
+                    }
+                    else -> false
+                }
+            }
+
+            override fun onMenuActionFinally() {
+                // 可选：清理操作
+            }
+        })
+
+        val location = IntArray(2)
+        anchor.getLocationOnScreen(location)
+        val startX = location[0]
+        val startTopY = location[1]
+        val startBottomY = startTopY + anchor.height
+
+        // 获取选区位置
+        val layout = anchor.layout
+        if (layout != null) {
+            val startOffset = anchor.selectionStart
+            val endOffset = anchor.selectionEnd
+            val startLine = layout.getLineForOffset(startOffset)
+            val endLine = layout.getLineForOffset(endOffset)
+
+            val startY = location[1] + layout.getLineTop(startLine)
+            val endY = location[1] + layout.getLineBottom(endLine)
+
+            menu.show(anchor, startX, startY, startY, startX, endY)
+        } else {
+            menu.show(anchor, startX, startTopY, startBottomY, startX, startBottomY)
+        }
+    }
 }
 
 /**
@@ -1993,7 +2062,7 @@ class ChatAdapter(
                 val end = holder.contentText.selectionEnd
                 if (start >= 0 && end > start) {
                     val selectedText = holder.contentText.text?.substring(start, end) ?: ""
-                    showAiChatTextMenu(holder.contentText, selectedText)
+                    activity.showAiChatTextMenu(holder.contentText, selectedText)
                 }
                 true
             }
@@ -2069,75 +2138,6 @@ class ChatAdapter(
             contentParams.matchConstraintMaxWidth = maxWidth
             contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
             holder.contentText.layoutParams = contentParams
-        }
-    }
-
-    /**
-     * 显示 AI 对话页面的文本操作菜单
-     */
-    private fun showAiChatTextMenu(anchor: android.widget.TextView, selectedText: String) {
-        val menu = AiChatTextActionMenu(this, object : AiChatTextActionMenu.CallBack {
-            override val selectedText: String get() = selectedText
-
-            override fun onMenuItemSelected(itemId: Int): Boolean {
-                return when (itemId) {
-                    R.id.menu_ai_chat -> {
-                        // 追问：以选中的文本作为引用继续提问
-                        if (selectedText.isNotBlank()) {
-                            handleFollowUpQuestion(selectedText)
-                        }
-                        true
-                    }
-                    R.id.menu_search_content -> {
-                        // 在书院中搜索选中的文本
-                        if (selectedText.isNotBlank()) {
-                            val intent = android.content.Intent(
-                                this@AiChatActivity,
-                                io.legado.app.ui.book.search.SearchActivity::class.java
-                            ).apply {
-                                putExtra("key", selectedText.trim())
-                                putExtra("searchScope", "book")
-                            }
-                            startActivity(intent)
-                        }
-                        true
-                    }
-                    R.id.menu_copy -> {
-                        // 复制到剪贴板
-                        if (selectedText.isNotBlank()) {
-                            sendToClip(selectedText)
-                        }
-                        true
-                    }
-                    else -> false
-                }
-            }
-
-            override fun onMenuActionFinally() {
-                // 可选：清理操作
-            }
-        })
-
-        val location = IntArray(2)
-        anchor.getLocationOnScreen(location)
-        val startX = location[0]
-        val startTopY = location[1]
-        val startBottomY = startTopY + anchor.height
-
-        // 获取选区位置
-        val layout = anchor.layout
-        if (layout != null) {
-            val startOffset = anchor.selectionStart
-            val endOffset = anchor.selectionEnd
-            val startLine = layout.getLineForOffset(startOffset)
-            val endLine = layout.getLineForOffset(endOffset)
-
-            val startY = location[1] + layout.getLineTop(startLine)
-            val endY = location[1] + layout.getLineBottom(endLine)
-
-            menu.show(anchor, startX, startY, startY, endY, startX, endY)
-        } else {
-            menu.show(anchor, startX, startTopY, startBottomY, startTopY, startX, startBottomY)
         }
     }
 
