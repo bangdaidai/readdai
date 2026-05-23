@@ -17,6 +17,7 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemTextBinding
 import io.legado.app.databinding.PopupActionMenuBinding
+import io.legado.app.utils.sendToClip
 
 /**
  * AI 对话页面文本操作菜单
