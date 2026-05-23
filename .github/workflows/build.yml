@@ -1,7 +1,7 @@
 name: Build Signed Release APK
 on:
   push:
-    branches: [main]
+    branches: [main, trae/solo-agent-2k73BO]
   workflow_dispatch:
 
 jobs:
