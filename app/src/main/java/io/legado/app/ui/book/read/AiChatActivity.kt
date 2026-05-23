@@ -2057,6 +2057,24 @@ class ChatAdapter(
             // ✅ 关键修复：启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
 
+            // ✅ 禁用系统菜单，使用自定义菜单
+            holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    return false
+                }
+
+                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    return false
+                }
+
+                override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
+                    return false
+                }
+
+                override fun onDestroyActionMode(mode: android.view.ActionMode) {
+                }
+            }
+
             // ✅ 使用自定义文本选择监听器，显示自定义 PopupWindow 菜单
             holder.contentText.setOnLongClickListener {
                 val start = holder.contentText.selectionStart
