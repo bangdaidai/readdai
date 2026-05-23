@@ -1,7 +1,6 @@
 plugins {
     alias libs.plugins.android.application
     alias libs.plugins.kotlin.android
-    alias libs.plugins.kotlin.compose
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.room
     alias libs.plugins.ksp
@@ -102,11 +101,6 @@ android {
     buildFeatures {
         buildConfig = true
         viewBinding = true
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     buildTypes {
@@ -318,18 +312,6 @@ dependencies {
     implementation(platform(libs.soraEditor.bom))
     implementation(libs.soraEditor.core)
     implementation(libs.soraEditor.language.textmate)
-
-    // Compose
-    implementation(platform(libs.compose.bom))
-    implementation(libs.compose.ui)
-    implementation(libs.compose.ui.graphics)
-    implementation(libs.compose.ui.tooling.preview)
-    implementation(libs.compose.foundation)
-    implementation(libs.compose.material3)
-    implementation(libs.compose.material.icons)
-    implementation(libs.compose.material.icons.extended)
-    implementation(libs.compose.runtime)
-    debugImplementation(libs.compose.ui.tooling)
 
     // 内存检测（按需开启）
     // debugImplementation('com.squareup.leakcanary:leakcanary-android:2.12')
