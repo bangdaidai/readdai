@@ -1970,6 +1970,9 @@ class ChatAdapter(
             // 渲染 Markdown（已内置文本选择支持）
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
 
+            // ✅ 关键修复：启用文本选择功能（必须在设置 customSelectionActionModeCallback 之前调用）
+            holder.contentText.setTextIsSelectable(true)
+
             // 设置自定义选择操作模式回调，添加"搜索书籍"选项
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
