@@ -273,4 +273,5 @@ object PreferKey {
     // 文本选择菜单配置
     const val hiddenTextMenuItems = "hiddenTextMenuItems"
     const val hiddenProcessTextItems = "hiddenProcessTextItems"
+    const val hiddenAiChatMenuItems = "hiddenAiChatMenuItems"
 }

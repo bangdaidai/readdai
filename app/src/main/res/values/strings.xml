@@ -1652,4 +1652,8 @@
     <string name="ai_explain">解释这段</string>
     <string name="ai_analyze">帮我分析</string>
     <string name="protagonist">主角</string>
+    <string name="search_book">搜书</string>
+    <string name="follow_up_question">追问</string>
+    <string name="ai_chat_menu_config">AI对话菜单配置</string>
+    <string name="ai_chat_menu_config_desc">选择要在AI对话页面长按文本时显示的菜单项</string>
 </resources>

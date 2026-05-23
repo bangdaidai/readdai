@@ -107,6 +107,13 @@
         android:summary="清理AI对话缓存数据"
         app:iconSpaceReserved="false" />
 
+    <!-- AI 对话菜单配置 -->
+    <io.legado.app.lib.prefs.Preference
+        android:key="aiChatMenuConfig"
+        android:title="AI对话菜单配置"
+        android:summary="配置AI对话页面长按文本的菜单项"
+        app:iconSpaceReserved="false" />
+
     <!-- AI日志 -->
     <io.legado.app.lib.prefs.Preference
         android:key="ai_log_viewer"

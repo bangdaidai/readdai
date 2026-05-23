@@ -1984,79 +1984,90 @@ class ChatAdapter(
             // 渲染 Markdown（已内置文本选择支持）
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
 
-            // ✅ 关键修复：启用文本选择功能（必须在设置 customSelectionActionModeCallback 之前调用）
+            // ✅ 关键修复：启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
 
-            // 设置自定义选择操作模式回调，添加"搜索书籍"选项
-            holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
-                override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    // ✅ 获取用户配置的隐藏菜单项
-                    val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(context)
-
-                    // 添加未隐藏的菜单项
-                    if (R.id.menu_copy !in hiddenIds) {
-                        menu.add(android.view.Menu.NONE, R.id.menu_copy, 0, context.getString(android.R.string.copy))
-                    }
-                    if (R.id.menu_search_content !in hiddenIds) {
-                        menu.add(android.view.Menu.NONE, 1001, 100, "搜书")
-                    }
-                    if (R.id.menu_ai_chat !in hiddenIds) {
-                        menu.add(android.view.Menu.NONE, 1002, 101, "追问")
-                    }
-
-                    return true
+            // ✅ 使用自定义文本选择监听器，显示自定义 PopupWindow 菜单
+            holder.contentText.setOnLongClickListener {
+                val start = holder.contentText.selectionStart
+                val end = holder.contentText.selectionEnd
+                if (start >= 0 && end > start) {
+                    val selectedText = holder.contentText.text?.substring(start, end) ?: ""
+                    showAiChatTextMenu(holder.contentText, selectedText)
                 }
+                true
+            }
+        }
+    }
 
-                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    return false
-                }
+    /**
+     * 显示 AI 对话页面的文本操作菜单
+     */
+    private fun showAiChatTextMenu(anchor: android.widget.TextView, selectedText: String) {
+        val menu = AiChatTextActionMenu(this, object : AiChatTextActionMenu.CallBack {
+            override val selectedText: String get() = selectedText
 
-                override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
-                    val selectedText = holder.contentText.text?.substring(
-                        holder.contentText.selectionStart,
-                        holder.contentText.selectionEnd
-                    ) ?: ""
-
-                    return when (item.itemId) {
-                        1002 -> {
-                            // 追问：以选中的文本作为引用继续提问
-                            if (selectedText.isNotBlank()) {
-                                activity.handleFollowUpQuestion(selectedText)
-                            }
-                            mode.finish()
-                            true
+            override fun onMenuItemSelected(itemId: Int): Boolean {
+                return when (itemId) {
+                    R.id.menu_ai_chat -> {
+                        // 追问：以选中的文本作为引用继续提问
+                        if (selectedText.isNotBlank()) {
+                            handleFollowUpQuestion(selectedText)
                         }
-                        1001 -> {
-                            // 在书院中搜索选中的文本
-                            if (selectedText.isNotBlank()) {
-                                val intent = android.content.Intent(
-                                    context,
-                                    io.legado.app.ui.book.search.SearchActivity::class.java
-                                ).apply {
-                                    putExtra("key", selectedText.trim())
-                                    putExtra("searchScope", "book")
-                                }
-                                context.startActivity(intent)
-                            }
-                            mode.finish()
-                            true
-                        }
-                        R.id.menu_copy -> {
-                            // 复制到剪贴板
-                            if (selectedText.isNotBlank()) {
-                                context.sendToClip(selectedText)
-                            }
-                            mode.finish()
-                            true
-                        }
-                        else -> false
+                        true
                     }
-                }
-
-                override fun onDestroyActionMode(mode: android.view.ActionMode) {
-                    // 可选：清理操作
+                    R.id.menu_search_content -> {
+                        // 在书院中搜索选中的文本
+                        if (selectedText.isNotBlank()) {
+                            val intent = android.content.Intent(
+                                this@AiChatActivity,
+                                io.legado.app.ui.book.search.SearchActivity::class.java
+                            ).apply {
+                                putExtra("key", selectedText.trim())
+                                putExtra("searchScope", "book")
+                            }
+                            startActivity(intent)
+                        }
+                        true
+                    }
+                    R.id.menu_copy -> {
+                        // 复制到剪贴板
+                        if (selectedText.isNotBlank()) {
+                            sendToClip(selectedText)
+                        }
+                        true
+                    }
+                    else -> false
                 }
             }
+
+            override fun onMenuActionFinally() {
+                // 可选：清理操作
+            }
+        })
+
+        val location = IntArray(2)
+        anchor.getLocationOnScreen(location)
+        val startX = location[0]
+        val startTopY = location[1]
+        val startBottomY = startTopY + anchor.height
+
+        // 获取选区位置
+        val layout = anchor.layout
+        if (layout != null) {
+            val startOffset = anchor.selectionStart
+            val endOffset = anchor.selectionEnd
+            val startLine = layout.getLineForOffset(startOffset)
+            val endLine = layout.getLineForOffset(endOffset)
+
+            val startY = location[1] + layout.getLineTop(startLine)
+            val endY = location[1] + layout.getLineBottom(endLine)
+
+            menu.show(anchor, startX, startY, startY, endY, startX, endY)
+        } else {
+            menu.show(anchor, startX, startTopY, startBottomY, startTopY, startX, startBottomY)
+        }
+    }
 
             // 流式输出时显示光标动画
             val isStreaming = position == getStreamingPosition()

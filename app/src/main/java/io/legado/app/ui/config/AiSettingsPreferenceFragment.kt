@@ -159,6 +159,7 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             "ai_log_viewer" -> openAiLogViewer()
             "ai_mcp_server_manager" -> showMcpServerManagerDialog()
             "aiTavilyConfig" -> showTavilyConfigDialog()
+            "aiChatMenuConfig" -> showAiChatMenuConfigDialog()
         }
         return super.onPreferenceTreeClick(preference)
     }
@@ -1557,5 +1558,12 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
                 etMaxResults.setText("5")
             }
             .show()
+    }
+
+    /**
+     * 显示 AI 对话菜单配置对话框
+     */
+    private fun showAiChatMenuConfigDialog() {
+        io.legado.app.ui.book.read.AiChatMenuConfigDialog().show(childFragmentManager, "aiChatMenuConfig")
     }
 }
