@@ -80,7 +80,8 @@ viewpager2 = "1.0.0"
 firebaseBom = "33.2.0"
 
 # Compose
-compose = { bom = "2024.12.01", compiler = "1.5.14" }
+compose-bom = "2024.12.01"
+compose-compiler = "1.5.14"
 
 [libraries]
 
