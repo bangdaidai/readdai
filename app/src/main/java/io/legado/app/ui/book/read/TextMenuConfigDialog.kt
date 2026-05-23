@@ -15,7 +15,7 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
 
     private val binding by viewBinding(DialogRecyclerViewBinding::bind)
     private val adapter by lazy {
-        MenuItemAdapter(requireContext()) { it.nameResId }
+        MenuItemAdapter(requireContext())
     }
 
     override fun onStart() {
@@ -43,7 +43,7 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
         recyclerView.adapter = adapter
 
         val menuItems = TextMenuConfig.getAllMenuItems().map {
-            MenuItemAdapter.MenuItemInfo(it.id, it.nameResId)
+            MenuItemAdapter.Item(it.id, it.nameResId)
         }
         adapter.setItems(menuItems)
         adapter.setCheckedIds(TextMenuConfig.getHiddenMenuItemIds(requireContext()))

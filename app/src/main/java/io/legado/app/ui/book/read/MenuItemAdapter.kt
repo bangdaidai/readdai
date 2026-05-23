@@ -7,12 +7,9 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemCheckBoxBinding
 
-class MenuItemAdapter(
-    private val context: Context,
-    private val getNameResId: (ITEM) -> Int
-) : RecyclerAdapter<MenuItemAdapter.MenuItemInfo, ItemCheckBoxBinding>(context) {
+class MenuItemAdapter(context: Context) : RecyclerAdapter<MenuItemAdapter.Item, ItemCheckBoxBinding>(context) {
 
-    data class MenuItemInfo(
+    data class Item(
         val id: Int,
         val nameResId: Int
     )
@@ -35,7 +32,7 @@ class MenuItemAdapter(
     override fun convert(
         holder: ItemViewHolder,
         binding: ItemCheckBoxBinding,
-        item: MenuItemInfo,
+        item: Item,
         payloads: MutableList<Any>
     ) {
         binding.apply {
