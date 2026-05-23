@@ -1997,6 +1997,78 @@ class ChatAdapter(
                 }
                 true
             }
+        } else {
+            holder.itemView.setBackgroundResource(0)
+            holder.contentText.maxLines = Int.MAX_VALUE
+            holder.btnExpandCollapse.visibility = View.GONE
+            holder.tvCursor.visibility = View.GONE
+            holder.layoutReasoning.visibility = View.GONE
+            holder.layoutToolSteps.visibility = View.GONE
+            holder.layoutAiActions.visibility = View.GONE
+            holder.btnRegenerate.visibility = View.GONE
+            holder.btnCopy.visibility = View.GONE
+
+            holder.contentText.text = message.content
+            holder.contentText.setTextIsSelectable(true)
+            holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    menu.clear()
+                    menu.add(android.view.Menu.NONE, android.R.id.copy, 0, android.R.string.copy)
+                    return true
+                }
+
+                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    return false
+                }
+
+                override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
+                    return when (item.itemId) {
+                        android.R.id.copy -> {
+                            val selectedText = holder.contentText.text?.substring(
+                                holder.contentText.selectionStart,
+                                holder.contentText.selectionEnd
+                            ) ?: ""
+                            copyToClipboard(selectedText)
+                            mode.finish()
+                            true
+                        }
+                        else -> false
+                    }
+                }
+
+                override fun onDestroyActionMode(mode: android.view.ActionMode) {
+                }
+            }
+
+            val accentColor = ThemeStore.accentColor(context)
+            val semiTransparentAccent = android.graphics.Color.argb(
+                153,
+                android.graphics.Color.red(accentColor),
+                android.graphics.Color.green(accentColor),
+                android.graphics.Color.blue(accentColor)
+            )
+
+            val gradientDrawable = android.graphics.drawable.GradientDrawable()
+            gradientDrawable.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            gradientDrawable.cornerRadius = 16f.dpToPx().toFloat()
+            gradientDrawable.setColor(semiTransparentAccent)
+            holder.contentText.background = gradientDrawable
+            holder.contentText.setTextColor(android.graphics.Color.WHITE)
+            holder.contentText.setPadding(12.dpToPx(), 8.dpToPx(), 12.dpToPx(), 8.dpToPx())
+
+            val contentParams = holder.contentText.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            contentParams.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
+            contentParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            contentParams.topToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
+            contentParams.topToBottom = R.id.layout_tool_steps
+            contentParams.marginStart = 0
+            contentParams.marginEnd = 0
+            contentParams.topMargin = 0
+            val displayMetrics = context.resources.displayMetrics
+            val maxWidth = (displayMetrics.widthPixels * 0.85).toInt()
+            contentParams.matchConstraintMaxWidth = maxWidth
+            contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
+            holder.contentText.layoutParams = contentParams
         }
     }
 
@@ -2067,360 +2139,6 @@ class ChatAdapter(
         } else {
             menu.show(anchor, startX, startTopY, startBottomY, startTopY, startX, startBottomY)
         }
-    }
-
-            // 流式输出时显示光标动画
-            val isStreaming = position == getStreamingPosition()
-            
-            // ✅ 关键修复：判断AI是否还在工作
-            // 1. 流式中 → AI在工作
-            // 2. 有工具步骤且没有最终内容 → AI在工作
-            // 3. 有未完成（PENDING/RUNNING）的工具步骤 → AI在工作
-            val hasUnfinishedTools = message.toolSteps.any {
-                it.status == ToolStepStatus.PENDING ||
-                it.status == ToolStepStatus.RUNNING
-            }
-            val isAiWorking = isStreaming || hasUnfinishedTools || (message.toolSteps.isNotEmpty() && message.content.isEmpty())
-
-            // 光标在AI工作中（流式输出或工具执行中）且没有内容时显示
-            if (isAiWorking && message.content.isEmpty()) {
-                holder.tvCursor.visibility = View.VISIBLE
-                holder.tvCursor.startAnimation(
-                    android.view.animation.AnimationUtils.loadAnimation(
-                        context,
-                        R.anim.cursor_blink
-                    )
-                )
-            } else {
-                holder.tvCursor.visibility = View.GONE
-                holder.tvCursor.clearAnimation()
-            }
-
-            // 显示推理过程（如果有）
-            if (message.reasoningContent.isNotEmpty()) {
-                holder.layoutReasoning.visibility = View.VISIBLE
-                holder.layoutReasoning.removeAllViews()
-                
-                // 关键修复：使用卡片布局，与工具调用样式一致
-                val reasoningView = android.view.LayoutInflater.from(context)
-                    .inflate(R.layout.item_reasoning_step, holder.layoutReasoning, false)
-                
-                val layoutHeader = reasoningView.findViewById<LinearLayout>(R.id.layout_reasoning_header)
-                val tvTitle = reasoningView.findViewById<TextView>(R.id.tv_reasoning_title)
-                val ivExpand = reasoningView.findViewById<ImageView>(R.id.iv_expand_indicator)
-                val tvContent = reasoningView.findViewById<TextView>(R.id.tv_reasoning_content)
-                
-                tvContent.text = message.reasoningContent
-                
-                // 默认折叠
-                var isExpanded = message.isReasoningExpanded
-                if (isExpanded) {
-                    tvContent.visibility = View.VISIBLE
-                    ivExpand.rotation = 180f
-                } else {
-                    tvContent.visibility = View.GONE
-                    ivExpand.rotation = 0f
-                }
-                
-                layoutHeader.setOnClickListener {
-                    isExpanded = !isExpanded
-                    message.isReasoningExpanded = isExpanded
-                    if (isExpanded) {
-                        tvContent.visibility = View.VISIBLE
-                        ivExpand.rotation = 180f
-                    } else {
-                        tvContent.visibility = View.GONE
-                        ivExpand.rotation = 0f
-                    }
-                }
-                
-                holder.layoutReasoning.addView(reasoningView)
-            }
-
-            // 显示工具步骤（如果有）
-            if (message.toolSteps.isNotEmpty()) {
-                holder.layoutToolSteps.visibility = View.VISIBLE
-                holder.toolStepsContainer.removeAllViews()
-                
-                // 🔍 调试日志：确认渲染时的 toolSteps 数据
-                io.legado.app.help.ai.AiLogManager.log(
-                    io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
-                    "AiChat",
-                    "=== 渲染工具步骤 ===\n" +
-                    "position: $position\n" +
-                    "toolSteps 数量: ${message.toolSteps.size}\n" +
-                    message.toolSteps.mapIndexed { idx, step ->
-                        "  [$idx] name=${step.name}, status=${step.status}"
-                    }.joinToString("\n")
-                )
-                
-                io.legado.app.help.ai.AiLogManager.log(
-                    io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
-                    "AiChat",
-                    "渲染工具步骤: position=$position, toolSteps数=${message.toolSteps.size}"
-                )
-
-                val adapterContext = context
-                message.toolSteps.forEachIndexed { index, step ->
-                    io.legado.app.help.ai.AiLogManager.log(
-                        io.legado.app.help.ai.AiLogManager.LogLevel.DEBUG,
-                        "AiChat",
-                        "渲染工具步骤[$index]: name=${step.name}, status=${step.status}"
-                    )
-                    
-                    val stepView = android.view.LayoutInflater.from(adapterContext)
-                        .inflate(R.layout.item_tool_step, holder.toolStepsContainer, false)
-                    
-                    // 关键修复：在代码中统一设置垂直 margin，与 AI/用户消息保持一致
-                    val layoutParams = stepView.layoutParams as android.widget.LinearLayout.LayoutParams
-                    layoutParams.topMargin = if (index == 0) 0 else 4.dpToPx()  // 第一个没有上边距，其他有 4dp
-                    layoutParams.bottomMargin = 4.dpToPx()  // 所有都有下边距
-                    stepView.layoutParams = layoutParams
-
-                    val layoutHeader = stepView.findViewById<LinearLayout>(R.id.layout_tool_header)
-                    val ivIcon = stepView.findViewById<ImageView>(R.id.iv_tool_icon)
-                    val tvName = stepView.findViewById<TextView>(R.id.tv_tool_name)
-                    val ivExpand = stepView.findViewById<ImageView>(R.id.iv_expand)
-                    val layoutContent = stepView.findViewById<LinearLayout>(R.id.layout_tool_content)
-                    val layoutInput = stepView.findViewById<LinearLayout>(R.id.layout_tool_input)
-                    val tvInput = stepView.findViewById<TextView>(R.id.tv_tool_input)
-                    val layoutOutput = stepView.findViewById<LinearLayout>(R.id.layout_tool_output)
-                    val tvOutput = stepView.findViewById<TextView>(R.id.tv_tool_output)
-                    val layoutError = stepView.findViewById<LinearLayout>(R.id.layout_tool_error)
-                    val tvError = stepView.findViewById<TextView>(R.id.tv_tool_error)
-
-                    // 关键修复：显示工具的中文名称，而不是 ID
-                    val toolDef = io.legado.app.help.ai.AiToolRegistry.getDefinition(step.name)
-                    val toolDisplayName = toolDef?.displayNameBuilder?.invoke() ?: step.name
-                    tvName.text = toolDisplayName
-
-                    when (step.status) {
-                        ToolStepStatus.PENDING -> {
-                            ivIcon.setImageResource(R.drawable.ic_circle_outline)
-                        }
-                        ToolStepStatus.RUNNING -> {
-                            ivIcon.setImageResource(R.drawable.ic_circle_running)
-                        }
-                        ToolStepStatus.SUCCESS -> {
-                            ivIcon.setImageResource(R.drawable.ic_circle_success)
-                        }
-                        ToolStepStatus.FAILED -> {
-                            ivIcon.setImageResource(R.drawable.ic_circle_failed)
-                        }
-                    }
-
-                    // 默认不展开，用户点击后才展开
-                    var isExpanded = false
-
-                    if (!step.input.isNullOrBlank()) {
-                        layoutInput.visibility = View.VISIBLE
-                        tvInput.text = step.input
-                    } else {
-                        layoutInput.visibility = View.GONE
-                    }
-
-                    if (!step.output.isNullOrBlank()) {
-                        layoutOutput.visibility = View.VISIBLE
-                        tvOutput.text = step.output
-                    } else {
-                        layoutOutput.visibility = View.GONE
-                    }
-
-                    if (!step.error.isNullOrBlank()) {
-                        layoutError.visibility = View.VISIBLE
-                        tvError.text = step.error
-                    } else {
-                        layoutError.visibility = View.GONE
-                    }
-
-                    // 根据状态显示/隐藏内容区域
-                    if (isExpanded) {
-                        layoutContent.visibility = View.VISIBLE
-                        ivExpand.rotation = 180f
-                    } else {
-                        layoutContent.visibility = View.GONE
-                        ivExpand.rotation = 0f
-                    }
-
-                    layoutHeader.setOnClickListener {
-                        isExpanded = !isExpanded
-                        if (isExpanded) {
-                            layoutContent.visibility = View.VISIBLE
-                            ivExpand.rotation = 180f
-                        } else {
-                            layoutContent.visibility = View.GONE
-                            ivExpand.rotation = 0f
-                        }
-                    }
-
-                    holder.toolStepsContainer.addView(stepView)
-                }
-            }
-
-            // ❌ 已禁用：长文本折叠功能（全部展开）
-            // if (message.content.length > 300) {
-            //     holder.btnExpandCollapse.visibility = View.VISIBLE
-            //
-            //     // ✅ 关键修复：无论展开还是折叠，都启用文本选择
-            //     holder.contentText.setTextIsSelectable(true)
-            //     holder.contentText.movementMethod = null
-            //
-            //     if (message.isExpanded) {
-            //         holder.contentText.maxLines = Int.MAX_VALUE
-            //         holder.btnExpandCollapse.rotation = 180f
-            //     } else {
-            //         holder.contentText.maxLines = 10
-            //         holder.btnExpandCollapse.rotation = 0f
-            //     }
-            //
-            //     holder.btnExpandCollapse.setOnClickListener {
-            //         message.isExpanded = !message.isExpanded
-            //         // ✅ 关键修复：直接修改 TextView 属性，不使用 notifyItemChanged，避免影响文本选择功能
-            //         if (message.isExpanded) {
-            //             holder.contentText.maxLines = Int.MAX_VALUE
-            //             holder.btnExpandCollapse.rotation = 180f
-            //         } else {
-            //             holder.contentText.maxLines = 10
-            //             holder.btnExpandCollapse.rotation = 0f
-            //         }
-            //         // ✅ 确保文本选择始终启用
-            //         holder.contentText.setTextIsSelectable(true)
-            //         holder.contentText.movementMethod = null
-            //         // ✅ 强制刷新布局
-            //         holder.contentText.requestLayout()
-            //     }
-            // }
-            
-            // ✅ 全部展开，不限制行数
-            holder.contentText.maxLines = Int.MAX_VALUE
-
-            // ❌ 已禁用：显示操作按钮
-            // holder.layoutAiActions.visibility = if (isAiWorking) View.GONE else View.VISIBLE
-            holder.layoutAiActions.visibility = View.GONE
-                        
-            // ❌ 已禁用：复制按钮
-            // holder.btnCopy.visibility = if (isAiWorking) View.GONE else View.VISIBLE
-            holder.btnCopy.visibility = View.GONE
-            
-            // ❌ 已禁用：展开/折叠按钮
-            // if (message.content.length <= 300) {
-            //     holder.btnExpandCollapse.visibility = View.GONE
-            // }
-            holder.btnExpandCollapse.visibility = View.GONE
-
-            // ❌ 已禁用：只有最后一条 AI 消息显示“重新生成”按钮
-            // val isLastAiMessage = position == messages.lastIndex &&
-            //                       messages.indexOfLast { it.role == "ai" } == position
-            // holder.btnRegenerate.visibility = if (isLastAiMessage && !isAiWorking) View.VISIBLE else View.GONE
-            holder.btnRegenerate.visibility = View.GONE
-
-            // ❌ 已禁用：复制按钮点击事件
-            // holder.btnCopy.setOnClickListener {
-            //     onCopyClick?.invoke(message.content)
-            // }
-
-            // ❌ 已禁用：重新生成按钮点击事件
-            // holder.btnRegenerate.setOnClickListener {
-            //     onRegenerateClick?.invoke()
-            // }
-
-        } else {
-            // 用户消息：先重置所有视图状态，防止复用问题
-            holder.itemView.setBackgroundResource(0)
-            holder.contentText.maxLines = Int.MAX_VALUE
-            holder.btnExpandCollapse.visibility = View.GONE
-            holder.tvCursor.visibility = View.GONE
-            holder.layoutReasoning.visibility = View.GONE
-            holder.layoutToolSteps.visibility = View.GONE
-            holder.layoutAiActions.visibility = View.GONE
-            holder.btnRegenerate.visibility = View.GONE
-            holder.btnCopy.visibility = View.GONE
-
-            // 用户消息：设置内容和样式
-            holder.contentText.text = message.content
-
-            // 启用文本选择功能
-            holder.contentText.setTextIsSelectable(true)
-
-            // 设置自定义选择操作模式回调
-            holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
-                override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    menu.clear()
-                    menu.add(android.view.Menu.NONE, android.R.id.copy, 0, android.R.string.copy)
-                    return true
-                }
-
-                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    return false
-                }
-
-                override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
-                    return when (item.itemId) {
-                        android.R.id.copy -> {
-                            val selectedText = holder.contentText.text?.substring(
-                                holder.contentText.selectionStart,
-                                holder.contentText.selectionEnd
-                            ) ?: ""
-                            copyToClipboard(selectedText)
-                            mode.finish()
-                            true
-                        }
-                        else -> false
-                    }
-                }
-
-                override fun onDestroyActionMode(mode: android.view.ActionMode) {
-                }
-            }
-
-            // 使用主题强调色作为气泡背景（半透明）
-            val accentColor = ThemeStore.accentColor(context)
-
-            // 创建半透明强调色（60% 不透明度）
-            val semiTransparentAccent = android.graphics.Color.argb(
-                153, // 60% 不透明度 (255 * 0.6 = 153)
-                android.graphics.Color.red(accentColor),
-                android.graphics.Color.green(accentColor),
-                android.graphics.Color.blue(accentColor)
-            )
-
-            // 创建气泡背景 - 圆角矩形
-            val gradientDrawable = android.graphics.drawable.GradientDrawable()
-            gradientDrawable.shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-            gradientDrawable.cornerRadius = 16f.dpToPx().toFloat()
-            gradientDrawable.setColor(semiTransparentAccent)
-            holder.contentText.background = gradientDrawable  // 关键：背景设置在 contentText 上
-
-            // 文字颜色为白色（在强调色背景上）
-            holder.contentText.setTextColor(android.graphics.Color.WHITE)
-
-            // 设置内边距 - 文字距离气泡边缘的距离
-            holder.contentText.setPadding(12.dpToPx(), 8.dpToPx(), 12.dpToPx(), 8.dpToPx())
-
-            // 用户消息：靠右对齐，重置所有约束参数（不设置 margin，由 itemView 的 padding 控制）
-            val contentParams = holder.contentText.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
-            contentParams.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
-            contentParams.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
-            contentParams.topToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.UNSET
-            contentParams.topToBottom = R.id.layout_tool_steps
-            contentParams.marginStart = 0
-            contentParams.marginEnd = 0
-            contentParams.topMargin = 0
-
-            // 限制最大宽度为 85% - 参考 ReadAny: max-w-[85%]
-            val displayMetrics = context.resources.displayMetrics
-            val maxWidth = (displayMetrics.widthPixels * 0.85).toInt()
-            contentParams.matchConstraintMaxWidth = maxWidth
-            contentParams.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
-
-            holder.contentText.layoutParams = contentParams
-        }
-
-        // ❌ 已禁用：itemView 的长按监听器会拦截 TextView 的文本选择功能
-        // holder.itemView.setOnLongClickListener {
-        //     onItemLongClick(message, true)
-        //     true
-        // }
     }
 
     override fun getItemCount() = messages.size
