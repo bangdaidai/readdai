@@ -2,11 +2,16 @@ package io.legado.app.ui.book.read
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
+import android.content.pm.ResolveInfo
+import android.os.Build
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupWindow
+import androidx.annotation.RequiresApi
+import androidx.appcompat.view.menu.MenuBuilder
 import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
@@ -39,7 +44,8 @@ class AiChatTextActionMenu(
      */
     data class MenuItem(
         val id: Int,
-        val title: String
+        val title: String,
+        val intent: Intent? = null
     )
 
     init {
@@ -84,10 +90,20 @@ class AiChatTextActionMenu(
         // 获取用户配置的隐藏菜单项
         val hiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(context)
 
-        // 构建菜单项列表
-        menuItems = AiChatMenuConfig.getAllMenuItems()
+        // 构建基础菜单项列表
+        val baseMenuItems = AiChatMenuConfig.getAllMenuItems()
             .filter { it.id !in hiddenIds }
             .map { MenuItem(it.id, context.getString(it.nameResId)) }
+
+        // 添加系统菜单项（ACTION_PROCESS_TEXT 应用，如"问小爱"）
+        val systemMenuItems = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            getSystemProcessTextItems()
+        } else {
+            emptyList()
+        }
+
+        // 合并所有菜单项
+        menuItems = baseMenuItems + systemMenuItems
 
         // 清空旧数据
         visibleMenuItems.clear()
@@ -99,6 +115,34 @@ class AiChatTextActionMenu(
             moreMenuItems.addAll(menuItems.subList(5, menuItems.size))
         } else {
             visibleMenuItems.addAll(menuItems)
+        }
+    }
+
+    /**
+     * 获取系统文本处理应用（如"问小爱"）
+     */
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun getSystemProcessTextItems(): List<MenuItem> {
+        return try {
+            val intent = Intent().apply {
+                action = Intent.ACTION_PROCESS_TEXT
+                type = "text/plain"
+            }
+            val resolveInfoList = context.packageManager.queryIntentActivities(intent, 0)
+            resolveInfoList.map { resolveInfo ->
+                MenuItem(
+                    id = resolveInfo.activityInfo.packageName.hashCode(),
+                    title = resolveInfo.loadLabel(context.packageManager).toString(),
+                    intent = Intent().apply {
+                        action = Intent.ACTION_PROCESS_TEXT
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_PROCESS_TEXT, callBack.selectedText)
+                        setClassName(resolveInfo.activityInfo.packageName, resolveInfo.activityInfo.name)
+                    }
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 
@@ -126,7 +170,6 @@ class AiChatTextActionMenu(
 
         val location = IntArray(2)
         anchor.getLocationOnScreen(location)
-        val windowHeight = context.resources.displayMetrics.heightPixels
 
         when {
             startBottomY > 500 -> {
@@ -169,12 +212,21 @@ class AiChatTextActionMenu(
         override fun registerListener(holder: ItemViewHolder, binding: ItemTextBinding) {
             holder.itemView.setOnClickListener {
                 getItem(holder.layoutPosition)?.let { menuItem ->
-                    val handled = callBack.onMenuItemSelected(menuItem.id)
-                    if (!handled) {
-                        // 默认处理
-                        when (menuItem.id) {
-                            R.id.menu_copy -> {
-                                context.sendToClip(callBack.selectedText)
+                    // 如果菜单项有 intent，执行它（系统菜单项）
+                    menuItem.intent?.let { intent ->
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // 忽略启动失败
+                        }
+                    } ?: run {
+                        // 否则调用回调处理
+                        val handled = callBack.onMenuItemSelected(menuItem.id)
+                        if (!handled) {
+                            when (menuItem.id) {
+                                R.id.menu_copy -> {
+                                    context.sendToClip(callBack.selectedText)
+                                }
                             }
                         }
                     }
