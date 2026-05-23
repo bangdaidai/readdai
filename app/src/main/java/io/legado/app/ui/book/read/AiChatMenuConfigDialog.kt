@@ -2,7 +2,6 @@ package io.legado.app.ui.book.read
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,14 +22,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.DialogFragment
 import io.legado.app.R
-import io.legado.app.ui.theme.LegadoTheme
-import io.legado.app.ui.theme.pageCardContainerColor
-import io.legado.app.ui.theme.pageTopBarContainerColor
 import io.legado.app.utils.toastOnUi
 
-/**
- * AI 对话页面文本菜单配置对话框
- */
 class AiChatMenuConfigDialog : DialogFragment() {
 
     override fun onCreateView(
@@ -40,7 +33,7 @@ class AiChatMenuConfigDialog : DialogFragment() {
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                LegadoTheme {
+                MaterialTheme {
                     AiChatMenuConfigDialogContent(
                         onDismiss = { dismiss() }
                     )
@@ -50,9 +43,6 @@ class AiChatMenuConfigDialog : DialogFragment() {
     }
 }
 
-/**
- * AI 对话页面菜单配置对话框内容
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiChatMenuConfigDialogContent(
@@ -64,8 +54,8 @@ fun AiChatMenuConfigDialogContent(
         mutableStateOf(AiChatMenuConfig.getHiddenMenuItemIds(context))
     }
 
-    val topBarColor = pageTopBarContainerColor()
-    val cardColor = pageCardContainerColor()
+    val topBarColor = MaterialTheme.colorScheme.primaryContainer
+    val cardColor = MaterialTheme.colorScheme.surface
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -102,7 +92,7 @@ fun AiChatMenuConfigDialogContent(
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = topBarColor,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 )
 
@@ -161,9 +151,6 @@ fun AiChatMenuConfigDialogContent(
     }
 }
 
-/**
- * 菜单项行
- */
 @Composable
 fun AiChatMenuItemRow(
     item: AiChatMenuConfig.MenuItemInfo,
