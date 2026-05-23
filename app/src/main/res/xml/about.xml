@@ -45,6 +45,18 @@
             app:iconSpaceReserved="false" />
 
         <io.legado.app.lib.prefs.Preference
+            android:key="textMenuConfig"
+            android:title="@string/text_menu_config"
+            android:summary="配置阅读页面长按文本的菜单项"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.Preference
+            android:key="aiChatMenuConfig"
+            android:title="@string/ai_chat_menu_config"
+            android:summary="配置AI对话页面长按文本的菜单项"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.Preference
             android:key="privacyPolicy"
             android:title="@string/privacy_policy"
             app:iconSpaceReserved="false" />

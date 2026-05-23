@@ -66,6 +66,8 @@ class AboutFragment : PreferenceFragmentCompat() {
             "crashLog" -> showDialogFragment<CrashLogsDialog>()
             "saveLog" -> saveLog()
             "createHeapDump" -> createHeapDump()
+            "textMenuConfig" -> showTextMenuConfig()
+            "aiChatMenuConfig" -> showAiChatMenuConfig()
         }
         return super.onPreferenceTreeClick(preference)
     }
@@ -209,6 +211,20 @@ class AboutFragment : PreferenceFragmentCompat() {
         } catch (e: Exception) {
             AppLog.put("保存Logcat失败\n$e", e)
         }
+    }
+
+    /**
+     * 显示阅读页面文本菜单配置
+     */
+    private fun showTextMenuConfig() {
+        io.legado.app.ui.book.read.TextMenuConfigDialog().show(childFragmentManager, "textMenuConfig")
+    }
+
+    /**
+     * 显示 AI 对话页面文本菜单配置
+     */
+    private fun showAiChatMenuConfig() {
+        io.legado.app.ui.book.read.AiChatMenuConfigDialog().show(childFragmentManager, "aiChatMenuConfig")
     }
 
 }
