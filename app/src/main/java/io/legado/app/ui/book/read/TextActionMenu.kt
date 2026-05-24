@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
@@ -60,8 +61,6 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         isOutsideTouchable = false
         isFocusable = false
 
-        reloadMenuItems()
-
         binding.recyclerView.adapter = adapter
         binding.recyclerViewMore.adapter = adapter
         setOnDismissListener {
@@ -88,10 +87,9 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         upMenu()
     }
 
-    /**
-     * 重新加载菜单项，根据配置过滤被隐藏的菜单项
-     */
-    private fun reloadMenuItems() {
+    fun reloadMenuItems() {
+        Log.d("TextActionMenu", "reloadMenuItems called")
+
         val myMenu = MenuBuilder(context)
         val otherMenu = MenuBuilder(context)
         SupportMenuInflater(context).inflate(R.menu.content_select_action, myMenu)
@@ -100,6 +98,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         }
 
         // 获取所有菜单项（不仅仅是 visibleItems）
+        // 重要：通过 menu.add() 添加的菜单项不会出现在 visibleItems 中
         val allMenuItems = ArrayList<MenuItemImpl>()
         for (i in 0 until myMenu.size()) {
             allMenuItems.add(myMenu.getItem(i) as MenuItemImpl)
@@ -107,10 +106,27 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         for (i in 0 until otherMenu.size()) {
             allMenuItems.add(otherMenu.getItem(i) as MenuItemImpl)
         }
+        Log.d("TextActionMenu", "Total menu items before filter: ${allMenuItems.size}")
 
-        // ✅ 从配置中获取隐藏的菜单项ID，过滤掉被隐藏的菜单项
+        // 从配置中获取隐藏的菜单项ID，过滤掉被隐藏的菜单项
         val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(context)
-        menuItems = allMenuItems.filter { it.itemId !in hiddenIds }
+        Log.d("TextActionMenu", "Hidden IDs from config: $hiddenIds")
+
+        // 获取隐藏的系统菜单项（问小爱等）
+        val hiddenProcessTextItems = TextMenuConfig.getHiddenProcessTextItems(context)
+        Log.d("TextActionMenu", "Hidden process text items: $hiddenProcessTextItems")
+
+        // 过滤自定义菜单项
+        menuItems = allMenuItems.filter { item ->
+            if (item.itemId in hiddenIds) {
+                Log.d("TextActionMenu", "Hiding custom item: ${item.title} (${item.itemId})")
+                false
+            } else {
+                true
+            }
+        }
+
+        Log.d("TextActionMenu", "Menu items after filter: ${menuItems.size}")
 
         // 清空旧数据
         visibleMenuItems.clear()
@@ -123,10 +139,11 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         } else {
             visibleMenuItems.addAll(menuItems)
         }
+
+        Log.d("TextActionMenu", "Visible items: ${visibleMenuItems.size}, More items: ${moreMenuItems.size}")
     }
 
     fun upMenu() {
-        // ✅ 重新加载菜单项，确保使用最新的配置
         reloadMenuItems()
 
         if (expandTextMenu) {
@@ -147,6 +164,8 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         endX: Int,
         endBottomY: Int
     ) {
+        // ✅ 每次显示前重新加载菜单项，确保使用最新的配置
+        upMenu()
         if (expandTextMenu) {
             when {
                 startTopY > 500 -> {
@@ -327,7 +346,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
                 val packageName = resolveInfo.activityInfo.packageName
                 val className = resolveInfo.activityInfo.name
                 val itemKey = TextMenuConfig.getProcessTextItemKey(packageName, className)
-                // ✅ 检查是否被隐藏
+                // 检查是否被隐藏
                 if (itemKey !in hiddenItems) {
                     menu.add(
                         Menu.NONE, Menu.NONE,

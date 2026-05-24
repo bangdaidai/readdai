@@ -2057,10 +2057,12 @@ class ChatAdapter(
             // ✅ 关键修复：启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
 
-            // ✅ 禁用系统菜单，使用自定义菜单
+            // ✅ 修复：创建空的 ActionMode 以允许文本选择，然后通过长按显示自定义菜单
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    return false
+                    // 创建菜单但保持空白，系统会启动文本选择模式
+                    menu.clear()
+                    return true
                 }
 
                 override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
