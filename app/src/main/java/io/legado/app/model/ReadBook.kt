@@ -1196,7 +1196,7 @@ object ReadBook : CoroutineScope by MainScope() {
                         callBack?.showReadingTicket()
                     }
                 } catch (e: Exception) {
-                    AppLog.putError("显示阅读小票失败", e)
+                    AppLog.put("显示阅读小票失败: ${e.localizedMessage}")
                 }
             }
         }

@@ -15,25 +15,13 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
      * 检查是否需要显示藏书票
      */
     private fun checkBookplate(page: TextPage, chapter: io.legado.app.ui.book.read.page.entities.TextChapter) {
-        if (ReadBook.showBookplate == 1) return  // 用户选择不显示
-        
         val book = ReadBook.book ?: return
         val isLastChapter = chapter.position >= ReadBook.simulatedChapterSize - 1
         val isFirstPage = chapter.position == 0 && page.index == 0
         val isLastPage = isLastChapter && chapter.isLastIndex(page.index)
         
-        // 首页显示藏书票（第一本书的第一章第一页）
-        if (isFirstPage && !appCtx.getPrefBoolean(io.legado.app.constant.PreferKey.showBookplate, true)) {
-            ReadBook.showBookplate = 1
-            return
-        }
-        
         // 尾页显示藏书票（最后一章的最后一页）
         if (isLastChapter && isLastPage) {
-            if (!appCtx.getPrefBoolean(io.legado.app.constant.PreferKey.showBookplate, true)) {
-                ReadBook.showBookplate = 1
-                return
-            }
             page.isBookplateEnd = true
         }
     }

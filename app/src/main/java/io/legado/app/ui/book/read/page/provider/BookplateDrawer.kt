@@ -125,11 +125,9 @@ object BookplateDrawer {
         
         paint.textSize = 12.dpToPx().toFloat()
         
-        // 获取最早开始阅读时间
-        val earliestStartTime = appDb.detailedReadRecordDao.getEarliestStartTime(book.name) ?: book.addTime
-        val trueStartTime = if (earliestStartTime > 0) earliestStartTime else book.addTime
-        
-        val addTimeStr = if (trueStartTime > 0) dateFormat.format(Date(trueStartTime)) else "____/__/__"
+        // 开始时间（使用首次阅读时间或 durChapterTime）
+        val startTime = if (book.firstReadTime > 0) book.firstReadTime else book.durChapterTime
+        val addTimeStr = if (startTime > 0) dateFormat.format(Date(startTime)) else "____/__/__"
         drawRow("开始时间", addTimeStr, currentY, false)
         
         currentY += 25.dpToPx()
@@ -181,17 +179,15 @@ object BookplateDrawer {
         drawListRow("书名", displayBookName, currentY)
         currentY += 20.dpToPx()
         
-        // 笔记数量
-        val noteCount = appDb.bookmarkDao.getByBook(book.name, book.author).size
-        val thoughtCount = appDb.bookThoughtDao.getByBook(book.name, book.author).size
-        val totalNotes = noteCount + thoughtCount
-        val noteStr = if (totalNotes > 0) "$totalNotes" else "?"
-        drawListRow("笔记条数", noteStr, currentY)
+        // 书摘数量
+        val annotationCount = appDb.bookAnnotationDao.getByBook(book.name, book.author).size
+        val annotationStr = if (annotationCount > 0) "$annotationCount" else "?"
+        drawListRow("书摘条数", annotationStr, currentY)
         currentY += 20.dpToPx()
         
         // 阅读时间（天数）
-        val readingTimeStr = if (book.finishTime > 0 && trueStartTime > 0) {
-            val diff = book.finishTime - trueStartTime
+        val readingTimeStr = if (book.finishReadTime > 0 && startTime > 0) {
+            val diff = book.finishReadTime - startTime
             val days = kotlin.math.max(0L, diff / (1000 * 60 * 60 * 24))
             "${days} 天"
         } else {
@@ -229,6 +225,58 @@ object BookplateDrawer {
         currentY += 20.dpToPx()
         drawDivider(currentY)
         currentY += 30.dpToPx()
+        
+        // 书评内容区域
+        if (!book.reviewContent.isNullOrBlank()) {
+            paint.isFakeBoldText = true
+            paint.textSize = 12.dpToPx().toFloat()
+            canvas.drawText("📝 我的书评", left + 20.dpToPx(), currentY, paint)
+            currentY += 20.dpToPx()
+            
+            paint.isFakeBoldText = false
+            paint.textSize = 11.dpToPx().toFloat()
+            
+            // 绘制完整书评内容（支持多行）
+            val reviewText = book.reviewContent
+            val maxWidth = bpWidth - 40.dpToPx()
+            
+            // 按换行符分割
+            val paragraphs = reviewText.split("\n")
+            
+            for (paragraph in paragraphs) {
+                if (paragraph.isEmpty()) {
+                    // 空行，增加间距
+                    currentY += 10.dpToPx()
+                    continue
+                }
+                
+                // 处理长文本自动换行
+                var remainingText = paragraph
+                while (remainingText.isNotEmpty()) {
+                    var lineWidth = paint.measureText(remainingText)
+                    if (lineWidth <= maxWidth) {
+                        // 整行可以放下
+                        canvas.drawText(remainingText, left + 20.dpToPx(), currentY, paint)
+                        currentY += 18.dpToPx()
+                        break
+                    } else {
+                        // 需要截断
+                        var cutIndex = remainingText.length
+                        while (cutIndex > 0 && paint.measureText(remainingText.substring(0, cutIndex)) > maxWidth) {
+                            cutIndex--
+                        }
+                        if (cutIndex == 0) cutIndex = 1
+                        canvas.drawText(remainingText.substring(0, cutIndex), left + 20.dpToPx(), currentY, paint)
+                        currentY += 18.dpToPx()
+                        remainingText = remainingText.substring(cutIndex)
+                    }
+                }
+            }
+            
+            currentY += 10.dpToPx()
+            drawDivider(currentY)
+            currentY += 20.dpToPx()
+        }
         
         // 底部标语
         paint.color = ColorUtils.withAlpha(textColor, 0.7f)
@@ -281,7 +329,7 @@ object BookplateDrawer {
         etReview.setText(book.reviewContent ?: "")
         
         // 如果未读完，提示并禁用评分
-        if (textPage.isBookplateStart && book.finishTime <= 0) {
+        if (textPage.isBookplateStart && book.finishReadTime <= 0) {
             tvTitle.text = "请完读后再打分"
             ratingBar.isEnabled = false
             etReview.isEnabled = false

@@ -24,10 +24,12 @@ import kotlinx.coroutines.withContext
 
 class BookReviewDialog() : BaseDialogFragment(R.layout.dialog_book_review, true) {
 
-    constructor(bookReview: BookReview, editPos: Int = -1) : this() {
+    constructor(bookReview: BookReview, editPos: Int = -1, showRating: Boolean = false, initialRating: Float = 0f) : this() {
         arguments = Bundle().apply {
             putInt("editPos", editPos)
             putParcelable("bookReview", bookReview)
+            putBoolean("showRating", showRating)
+            putFloat("initialRating", initialRating)
         }
     }
 
@@ -67,6 +69,8 @@ class BookReviewDialog() : BaseDialogFragment(R.layout.dialog_book_review, true)
             return
         }
         val editPos = arguments.getInt("editPos", -1)
+        val showRating = arguments.getBoolean("showRating", false)
+        val initialRating = arguments.getFloat("initialRating", 0f)
         
         binding.tvDelete.visible(true)
         binding.run {
@@ -76,6 +80,14 @@ class BookReviewDialog() : BaseDialogFragment(R.layout.dialog_book_review, true)
             etReviewContent.setBackgroundResource(android.R.color.transparent)
             // 设置输入框文字颜色为主题文字颜色
             etReviewContent.setTextColor(ThemeStore.textColorPrimary(requireContext()))
+            
+            // 处理评分组件
+            if (showRating) {
+                layoutRating.visibility = View.VISIBLE
+                ratingBar.rating = initialRating
+            } else {
+                layoutRating.visibility = View.GONE
+            }
             
             tvCancel.setOnClickListener {
                 dismiss()
@@ -101,10 +113,15 @@ class BookReviewDialog() : BaseDialogFragment(R.layout.dialog_book_review, true)
                             val updatedMemory = memory.copy(reviewContent = updatedReview.reviewContent)
                             appDb.readingMemoryDao.update(updatedMemory)
                         }
-                        // 同步更新Book表的书评字段
+                        // 同步更新Book表的书评字段和评分
                         val book = appDb.bookDao.getBook(updatedReview.bookUrl)
                         if (book != null) {
                             book.reviewContent = updatedReview.reviewContent
+                            // 如果显示了评分组件，也保存评分
+                            if (showRating) {
+                                book.rating = ratingBar.rating
+                                book.userModifiedRating = true
+                            }
                             appDb.bookDao.update(book)
                         }
                     }

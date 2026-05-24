@@ -47,6 +47,35 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <!-- 评分组件（默认隐藏，只在阅读结束时显示） -->
+            <LinearLayout
+                android:id="@+id/layout_rating"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="请为这本书打分"
+                    android:textSize="14sp"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <RatingBar
+                    android:id="@+id/rating_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:numStars="5"
+                    android:stepSize="1.0"
+                    android:rating="0"
+                    android:isIndicator="false"
+                    style="?android:attr/ratingBarStyle" />
+
+            </LinearLayout>
+
             <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/etReviewContent"
                 android:layout_width="match_parent"

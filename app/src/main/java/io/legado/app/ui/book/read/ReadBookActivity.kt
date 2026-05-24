@@ -1369,9 +1369,9 @@ $content
                     .create()
                 
                 // 加载小票数据
-                lifecycleScope.launch(Dispatchers.IO) {
+                lifecycleScope.launch(IO) {
                     val ticket = io.legado.app.help.book.ReadingTicketHelper.getTicket(book.bookUrl)
-                    withContext(Dispatchers.Main) {
+                    withContext(Main) {
                         ticket?.let {
                             ticketView.setTicket(it, book)
                             dialog.show()
@@ -1392,11 +1392,11 @@ $content
                 .setMessage("这本书您已经读完了，是否开始重新阅读（N刷）？\n\n选择“是”将记录为一次新的阅读，书架上会显示“N刷”标签。\n选择“否”将继续保持读完状态。")
                 .setPositiveButton("是，开始N刷") { _, _ ->
                     // 用户确认，增加 readIteration（变成偶数，表示开始N刷）
-                    lifecycleScope.launch(Dispatchers.IO) {
+                    lifecycleScope.launch(IO) {
                         book.readIteration++
                         book.save()
                         
-                        withContext(Dispatchers.Main) {
+                        withContext(Main) {
                             Toast.makeText(this@ReadBookActivity, "已开始重新阅读", Toast.LENGTH_SHORT).show()
                         }
                     }

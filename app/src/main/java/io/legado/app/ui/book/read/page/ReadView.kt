@@ -394,9 +394,10 @@ class ReadView(context: Context, attrs: AttributeSet) :
     private fun onSingleTapUp() {
         // 先检查是否点击了藏书票（评分区域）
         ReadBook.book?.let { book ->
-            if (curPage.isBookplateStart || curPage.isBookplateEnd) {
+            val textPage = curPage.textPage
+            if (textPage.isBookplateStart || textPage.isBookplateEnd) {
                 if (io.legado.app.ui.book.read.page.provider.BookplateDrawer.onClick(
-                        context, startX, startY, curPage, book, relativeOffset(0)
+                        context, startX, startY, textPage, book, 0f
                     )
                 ) {
                     return  // 已处理藏书票点击
