@@ -213,15 +213,17 @@ class BooksAdapterList(
                     }
                 }
                 
-                // 获取阅读次数（N刷）
-                val readCount = getReadCount(item)
+                // 获取阅读次数（N刷）- 使用 readIteration
+                val iteration = item.readIteration
+                val isFinished = iteration > 0 && iteration % 2 == 1  // 奇数=读完
+                val nBrushCount = if (iteration >= 2) iteration / 2 else 0  // N刷次数
                 
                 // 无论是否有标签，都需要更新缓存并刷新UI
                 // 使用 == 比较列表内容（空列表也相等）
-                if (cachedTags == null || cachedTags != tags || shouldUpdateReadCount(item.bookUrl, readCount)) {
+                if (cachedTags == null || cachedTags != tags || shouldUpdateReadCount(item.bookUrl, nBrushCount)) {
                     // 标签或阅读次数发生变化（或缓存为空），更新缓存
                     tagCache[item.bookUrl] = tags
-                    updateReadCountCache(item.bookUrl, readCount)
+                    updateReadCountCache(item.bookUrl, nBrushCount)
                     
                     // 在UI线程中设置标签
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
@@ -348,14 +350,27 @@ class BooksAdapterList(
                             }
                         }
                         
-                        // 添加N刷标签（如果阅读次数>0）
-                        if (readCount > 0) {
+                        // 添加N刷标签（如果阅读轮次>0）
+                        if (iteration > 0) {
                             val readCountView = android.widget.TextView(context)
                             readCountView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
                                 com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
                                 com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
                             )
-                            readCountView.setText("${readCount + 1}刷")
+                            
+                            // 根据 readIteration 显示不同文案
+                            val label = when {
+                                iteration == 1 -> "初读"  // 初读完成
+                                iteration == 2 -> "二刷"  // 正在二刷
+                                iteration == 3 -> "二刷完"  // 二刷完成
+                                iteration == 4 -> "三刷"  // 正在三刷
+                                iteration == 5 -> "三刷完"  // 三刷完成
+                                else -> {
+                                    val brushNum = (iteration + 1) / 2
+                                    if (isFinished) "${brushNum}刷完" else "${brushNum}刷"
+                                }
+                            }
+                            readCountView.setText(label)
                             readCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
                             readCountView.setPadding(8, 0, 8, 0)
                             readCountView.setGravity(android.view.Gravity.CENTER)
@@ -398,16 +413,6 @@ class BooksAdapterList(
     
     // 缓存阅读次数，避免重复查询
     private val readCountCache = mutableMapOf<String, Int>()
-    
-    /**
-     * 获取书籍的阅读次数（N刷）
-     */
-    private suspend fun getReadCount(book: Book): Int {
-        return kotlinx.coroutines.withContext(Dispatchers.IO) {
-            val ticket = appDb.readingTicketDao.getByBookUrl(book.bookUrl)
-            ticket?.readCount ?: 0
-        }
-    }
     
     /**
      * 检查是否需要更新阅读次数显示

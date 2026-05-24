@@ -12,14 +12,17 @@ import kotlinx.coroutines.withContext
 object ReadingTicketHelper {
     
     /**
-     * 创建或更新阅读小票（与Book实体的rating和readingStatus联动）
+     * 创建或更新阅读小票（与Book实体的rating和readIteration联动）
      */
     suspend fun updateTicket(
         book: Book,
-        readTime: Long = 0,
-        incrementReadCount: Boolean = false
+        readTime: Long = 0
     ) = withContext(Dispatchers.IO) {
         val existingTicket = appDb.readingTicketDao.getByBookUrl(book.bookUrl)
+        
+        // 根据 readIteration 计算阅读状态
+        val isFinished = book.readIteration > 0 && book.readIteration % 2 == 1  // 奇数=读完
+        val readCount = if (book.readIteration >= 2) book.readIteration / 2 else 0  // N刷次数
         
         val ticket = if (existingTicket != null) {
             // 更新现有小票
@@ -27,12 +30,12 @@ object ReadingTicketHelper {
                 bookName = book.name,
                 author = book.author,
                 totalReadTime = existingTicket.totalReadTime + readTime,
-                readCount = if (incrementReadCount) existingTicket.readCount + 1 else existingTicket.readCount,
+                readCount = readCount,
                 rating = book.rating, // 直接使用Book的rating，保持联动
                 lastReadTime = System.currentTimeMillis(),
                 completedChapters = book.durChapterIndex + 1,
                 totalChapters = book.totalChapterNum,
-                finishTime = if (book.readingStatus == 2) book.finishReadTime else existingTicket.finishTime
+                finishTime = if (isFinished) book.finishReadTime else existingTicket.finishTime
             )
         } else {
             // 创建新小票
@@ -41,13 +44,13 @@ object ReadingTicketHelper {
                 bookName = book.name,
                 author = book.author,
                 totalReadTime = readTime,
-                readCount = if (incrementReadCount) 1 else 0,
+                readCount = readCount,
                 rating = book.rating, // 使用Book的rating
                 firstReadTime = System.currentTimeMillis(),
                 lastReadTime = System.currentTimeMillis(),
                 completedChapters = book.durChapterIndex + 1,
                 totalChapters = book.totalChapterNum,
-                finishTime = if (book.readingStatus == 2) book.finishReadTime else 0L
+                finishTime = if (isFinished) book.finishReadTime else 0L
             )
         }
         
@@ -55,25 +58,19 @@ object ReadingTicketHelper {
     }
     
     /**
-     * 标记书籍为读完（可选是否增加阅读次数）
-     * @param incrementReadCount 是否增加阅读次数（N刷）
+     * 标记书籍为读完（增加 readIteration）
      */
-    suspend fun markAsFinished(book: Book, incrementReadCount: Boolean = true) = withContext(Dispatchers.IO) {
-        // 更新书籍状态
-        book.setReadingStatus(2, userModified = true)
+    suspend fun markAsFinished(book: Book) = withContext(Dispatchers.IO) {
+        // 增加阅读轮次（变成奇数，表示读完）
+        book.readIteration++
         book.finishReadTime = System.currentTimeMillis()
         appDb.bookDao.update(book)
-        
-        // 如果需要，增加阅读次数
-        if (incrementReadCount) {
-            appDb.readingTicketDao.incrementReadCount(book.bookUrl)
-        }
         
         // 设置完成时间
         appDb.readingTicketDao.setFinishTime(book.bookUrl)
         
         // 更新小票
-        updateTicket(book, incrementReadCount = incrementReadCount)
+        updateTicket(book)
     }
     
     /**

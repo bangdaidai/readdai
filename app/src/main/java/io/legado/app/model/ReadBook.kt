@@ -1188,8 +1188,8 @@ object ReadBook : CoroutineScope by MainScope() {
         book?.let { currentBook ->
             launch(IO) {
                 try {
-                    // 更新阅读小票，标记为读完（但不增加阅读次数）
-                    io.legado.app.help.book.ReadingTicketHelper.markAsFinished(currentBook, incrementReadCount = false)
+                    // 更新阅读小票，标记为读完（增加 readIteration）
+                    io.legado.app.help.book.ReadingTicketHelper.markAsFinished(currentBook)
                     
                     // 通知UI显示阅读小票
                     withContext(Main) {
@@ -1206,8 +1206,9 @@ object ReadBook : CoroutineScope by MainScope() {
      * 检测是否需要询问N刷（已读完的书，重新打开时）
      */
     private fun checkMultiReadIfNeeded(book: Book) {
-        // 条件：书籍已读完（不管从哪个章节打开）
-        if (book.readingStatus == 2) {
+        // 条件：书籍已读完（readIteration 为奇数且 > 0）
+        val isFinished = book.readIteration > 0 && book.readIteration % 2 == 1
+        if (isFinished) {
             launch(Main) {
                 // 通知UI显示N刷确认对话框
                 callBack?.showMultiReadConfirm(book)

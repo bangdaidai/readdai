@@ -162,7 +162,11 @@ data class Book(
     
     // 首次阅读时间
     @ColumnInfo(defaultValue = "0")
-    var firstReadTime: Long = 0L
+    var firstReadTime: Long = 0L,
+    
+    // 阅读轮次(0=未读完, 1=初读完成, 2=二刷中, 3=二刷完成, 4=三刷中, 依此类推)
+    @ColumnInfo(defaultValue = "0")
+    var readIteration: Int = 0
 ) : Parcelable, BaseBook {
 
     override fun equals(other: Any?): Boolean {

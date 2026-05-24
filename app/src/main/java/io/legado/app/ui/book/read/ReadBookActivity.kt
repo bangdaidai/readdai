@@ -1391,20 +1391,18 @@ $content
                 .setTitle("重新开始阅读")
                 .setMessage("这本书您已经读完了，是否开始重新阅读（N刷）？\n\n选择“是”将记录为一次新的阅读，书架上会显示“N刷”标签。\n选择“否”将继续保持读完状态。")
                 .setPositiveButton("是，开始N刷") { _, _ ->
-                    // 用户确认，增加阅读次数
+                    // 用户确认，增加 readIteration（变成偶数，表示开始N刷）
                     lifecycleScope.launch(Dispatchers.IO) {
-                        io.legado.app.help.book.ReadingTicketHelper.markAsFinished(book, incrementReadCount = true)
+                        book.readIteration++
+                        book.save()
                         
-                        // 更新书籍状态为“在读”
                         withContext(Dispatchers.Main) {
-                            book.setReadingStatus(1, userModified = true)
-                            book.save()
                             Toast.makeText(this@ReadBookActivity, "已开始重新阅读", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
                 .setNegativeButton("否，保持读完状态") { _, _ ->
-                    // 用户取消，不增加阅读次数，保持读完状态
+                    // 用户取消，不增加 readIteration，保持读完状态
                     Toast.makeText(this@ReadBookActivity, "已保持读完状态", Toast.LENGTH_SHORT).show()
                 }
                 .setCancelable(true)
