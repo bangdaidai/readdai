@@ -73,7 +73,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
             }
         }
         binding.ivMenuMore.setOnClickListener {
-            if (binding.recyclerView.isVisible) {
+            if (binding.recyclerView.visibility == View.VISIBLE) {
                 binding.ivMenuMore.setImageResource(R.drawable.ic_arrow_back)
                 adapter.setItems(moreMenuItems)
                 binding.recyclerView.gone()
