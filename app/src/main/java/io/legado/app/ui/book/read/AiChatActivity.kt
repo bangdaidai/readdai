@@ -2059,30 +2059,33 @@ class ChatAdapter(
 
             // ✅ 使用自定义 ActionMode 来显示我们的菜单
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                private var currentMode: android.view.ActionMode? = null
+
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    currentMode = mode
                     // 清空菜单，使用我们自定义的 PopupWindow
                     menu.clear()
-                    // 获取选中的文本
+                    return true
+                }
+
+                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
+                    // 获取选中的文本并显示自定义菜单
                     val start = holder.contentText.selectionStart
                     val end = holder.contentText.selectionEnd
                     if (start >= 0 && end > start) {
                         val selectedText = holder.contentText.text?.substring(start, end) ?: ""
-                        // 显示自定义菜单
                         activity.showAiChatTextMenu(holder.contentText, selectedText)
                     }
-                    // 返回 false 表示不显示系统 ActionMode
-                    return false
-                }
-
-                override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     return false
                 }
 
                 override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
+                    mode.finish()
                     return false
                 }
 
                 override fun onDestroyActionMode(mode: android.view.ActionMode) {
+                    currentMode = null
                 }
             }
         } else {

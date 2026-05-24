@@ -242,6 +242,8 @@ class AiChatTextActionMenu(
                         }
                     }
                     callBack.onMenuActionFinally()
+                    // 点击后关闭菜单
+                    dismiss()
                 }
             }
         }

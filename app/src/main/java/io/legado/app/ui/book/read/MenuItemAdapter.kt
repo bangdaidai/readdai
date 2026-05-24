@@ -29,12 +29,14 @@ class MenuItemAdapter(context: Context) :
         checkedIds.clear()
         checkedIds.addAll(ids)
         Log.d(TAG, "setCheckedIds: $checkedIds")
+        notifyDataSetChanged() // 通知数据已变化
     }
 
     fun setCheckedSystemItemKeys(keys: Set<String>) {
         checkedSystemItemKeys.clear()
         checkedSystemItemKeys.addAll(keys)
         Log.d(TAG, "setCheckedSystemItemKeys: $checkedSystemItemKeys")
+        notifyDataSetChanged() // 通知数据已变化
     }
 
     fun getCheckedIds(): Set<Int> {
