@@ -95,9 +95,19 @@ jobs:
 
       - name: Setup Android Signing
         run: |
+          # 同时支持两种 secret 名称：RELEASE_KEY_STORE 或 ANDROID_KEYSTORE_BASE64
+          KEYSTORE=""
           if [ ! -z "${{ secrets.RELEASE_KEY_STORE }}" ]; then
+            KEYSTORE="${{ secrets.RELEASE_KEY_STORE }}"
+            echo "✅ Using RELEASE_KEY_STORE secret"
+          elif [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            KEYSTORE="${{ secrets.ANDROID_KEYSTORE_BASE64 }}"
+            echo "✅ Using ANDROID_KEYSTORE_BASE64 secret"
+          fi
+          
+          if [ ! -z "$KEYSTORE" ]; then
             echo "Setting up signing keys..."
-            echo "${{ secrets.RELEASE_KEY_STORE }}" | base64 --decode > $GITHUB_WORKSPACE/app/key.jks
+            echo "$KEYSTORE" | base64 --decode > $GITHUB_WORKSPACE/app/key.jks
             echo "RELEASE_STORE_FILE=./key.jks" >> gradle.properties
             echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
             echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
@@ -106,6 +116,7 @@ jobs:
             ls -la $GITHUB_WORKSPACE/app/key.jks
           else
             echo "⚠️ No signing keys configured, build will use debug signature"
+            echo "⚠️ This will cause different signatures for each build!"
           fi
 
       - name: Generate Version Info
@@ -115,6 +126,12 @@ jobs:
           echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
           echo "📦 Building version: $VERSION_CODE"
           echo "$VERSION_CODE" > version.txt
+
+      - name: Upload Version Info
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-info
+          path: version.txt
 
       - name: Unify Version Name
         run: |
@@ -191,14 +208,14 @@ jobs:
           name: release-aab
           path: artifacts/aab
 
-      - name: Download Release Info
+      - name: Download Version Info
         uses: actions/download-artifact@v4
         with:
-          name: release-info
+          name: version-info
           path: artifacts
 
       - name: Read Version Info
-        id: version
+        id: read_version
         run: |
           if [ -f artifacts/version.txt ]; then
             VERSION=$(cat artifacts/version.txt)
@@ -226,14 +243,14 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref_name || 'v' }}{{ needs.create-release.outputs.VERSION }}
-          name: "Legado ${{ needs.create-release.outputs.VERSION }}"
+          tag_name: ${{ github.ref_name || 'v' }}${{ steps.read_version.outputs.VERSION }}
+          name: "Legado ${{ steps.read_version.outputs.VERSION }}"
           body: |
             ## 📦 自动化构建发布
             
             **构建时间**: $(date)
             **Commit**: ${{ github.sha }}
-            **版本**: ${{ needs.create-release.outputs.VERSION }}
+            **版本**: ${{ steps.read_version.outputs.VERSION }}
             
             ### 📥 下载说明
             - 直接下载 APK 文件即可安装
