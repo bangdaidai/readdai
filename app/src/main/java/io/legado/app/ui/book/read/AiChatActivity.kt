@@ -991,9 +991,6 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     private fun executeSkillDirectly(skillId: String, userQuestion: String) {
-        // ✅ 每轮对话开始时插入分割线
-        io.legado.app.help.ai.AiLogManager.newConversation("快捷操作: ${userQuestion.take(20)}${if (userQuestion.length > 20) "..." else ""}")
-        
         lifecycleScope.launch {
             val skill = skillManager.getSkill(skillId) ?: return@launch
 
@@ -1366,9 +1363,6 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     private fun sendMessage(content: String, isRegenerate: Boolean = false) {
-        // ✅ 每轮对话开始时插入分割线
-        io.legado.app.help.ai.AiLogManager.newConversation("用户发送: ${content.take(20)}${if (content.length > 20) "..." else ""}")
-        
         io.legado.app.help.ai.AiLogManager.log(
             io.legado.app.help.ai.AiLogManager.LogLevel.INFO,
             "AiChat",
@@ -1967,19 +1961,23 @@ class ChatAdapter(
             // 📝 调试日志：验证 ConstraintLayout 参数是否正确重置
             android.util.Log.d("VH", "AI消息 - width=${contentParams.width}, maxW=${contentParams.matchConstraintMaxWidth}")
 
-            // 渲染 Markdown（已内置文本选择支持）
+            // 渲染 Markdown
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
 
-            // ✅ 关键修复：启用文本选择功能（必须在设置 customSelectionActionModeCallback 之前调用）
+            // ✅ 关键修复：启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
+
+            // ✅ 关键修复：不使用 MovementMethod，避免拦截触摸事件影响文本选择
+            // 如果需要支持链接点击，可以在 MarkdownUtils 中处理
+            holder.contentText.movementMethod = null
 
             // 设置自定义选择操作模式回调，添加"搜索书籍"选项
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     // ✅ 不清除默认菜单，直接添加自定义选项
-                    // 使用正数 order 值避免 MIUI 系统兼容性问题
-                    menu.add(android.view.Menu.NONE, 1001, 100, "搜书")
-                    menu.add(android.view.Menu.NONE, 1002, 101, "追问")
+                    // 使用负的 order 值让自定义选项排在前面
+                    menu.add(0, 1001, -100, "搜书")
+                    menu.add(0, 1002, -99, "追问")
                     return true
                 }
             
@@ -2303,7 +2301,7 @@ class ChatAdapter(
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     menu.clear()
-                    menu.add(android.view.Menu.NONE, android.R.id.copy, 0, android.R.string.copy)
+                    menu.add(0, android.R.id.copy, 0, android.R.string.copy)
                     return true
                 }
 

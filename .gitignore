@@ -18,3 +18,8 @@ package-lock.json
 .kotlin/
 .cxx
 .vscode
+
+# 🔐 签名密钥文件（永远不要提交到 Git）
+*.keystore
+*.jks
+*.base64
