@@ -170,6 +170,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
 
     fun upMenu() {
         reloadMenuItems()
+        Log.d(TAG, "upMenu: menuItems=${menuItems.size}, visibleMenuItems=${visibleMenuItems.size}")
 
         if (expandTextMenu) {
             adapter.setItems(menuItems)
@@ -189,6 +190,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         endX: Int,
         endBottomY: Int
     ) {
+        Log.d(TAG, "show() called")
         upMenu() // 每次显示前重新加载
         if (expandTextMenu) {
             when {

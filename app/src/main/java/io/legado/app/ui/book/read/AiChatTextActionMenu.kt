@@ -134,13 +134,16 @@ class AiChatTextActionMenu(
                 type = "text/plain"
             }
             val resolveInfoList = context.packageManager.queryIntentActivities(intent, 0)
+            android.util.Log.d("AiChatTextActionMenu", "Found ${resolveInfoList.size} system process text activities")
             resolveInfoList.mapNotNull { resolveInfo ->
                 val packageName = resolveInfo.activityInfo.packageName
                 val className = resolveInfo.activityInfo.name
                 val itemKey = AiChatMenuConfig.getProcessTextItemKey(packageName, className)
                 if (itemKey in hiddenItems) {
+                    android.util.Log.d("AiChatTextActionMenu", "Skipping hidden: ${resolveInfo.loadLabel(context.packageManager)}")
                     return@mapNotNull null
                 }
+                android.util.Log.d("AiChatTextActionMenu", "Adding system item: ${resolveInfo.loadLabel(context.packageManager)}")
                 MenuItem(
                     id = itemKey.hashCode(),
                     title = resolveInfo.loadLabel(context.packageManager).toString(),
@@ -153,12 +156,14 @@ class AiChatTextActionMenu(
                 )
             }
         } catch (e: Exception) {
+            android.util.Log.e("AiChatTextActionMenu", "Error loading system items", e)
             emptyList()
         }
     }
 
     fun upMenu() {
         reloadMenuItems()
+        android.util.Log.d("AiChatTextActionMenu", "upMenu: menuItems=${menuItems.size}, visibleMenuItems=${visibleMenuItems.size}")
 
         if (menuItems.size <= 5) {
             adapter.setItems(menuItems)
@@ -177,6 +182,7 @@ class AiChatTextActionMenu(
         endX: Int,
         endBottomY: Int
     ) {
+        android.util.Log.d("AiChatTextActionMenu", "show() called")
         upMenu()
 
         val location = IntArray(2)
