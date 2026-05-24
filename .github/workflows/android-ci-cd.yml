@@ -13,6 +13,7 @@ on:
   push:
     branches:
       - master
+      - main
   pull_request:
     types: [closed]
 
@@ -195,7 +196,7 @@ jobs:
     name: Create GitHub Release
     needs: build-release
     runs-on: ubuntu-latest
-    if: always() && needs.build-release.result == 'success'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     
     steps:
       - name: Download Release APK
@@ -238,15 +239,18 @@ jobs:
         run: |
           TAG_NAME="v$(cat artifacts/version.txt)"
           echo "Release version: $TAG_NAME"
+          
+          # 配置 git 用户信息
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
           # 检查标签是否已存在
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag $TAG_NAME already exists, skipping tag creation"
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+            echo "⚠️ Tag $TAG_NAME already exists on remote, using existing tag"
           else
             echo "Creating new tag: $TAG_NAME"
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git tag $TAG_NAME
-            git push origin $TAG_NAME || echo "Failed to push tag (may already exist)"
+            git push origin $TAG_NAME || echo "Failed to push tag"
           fi
 
       - name: Create Release
@@ -277,6 +281,7 @@ jobs:
           files: |
             artifacts/apk/*.apk
             artifacts/aab/*.aab
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
