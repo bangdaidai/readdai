@@ -65,7 +65,6 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
     }
 
     private fun reloadMenuItems() {
-        Log.d(TAG, "reloadMenuItems")
         // 添加自定义菜单项
         val customItems = TextMenuConfig.getAllMenuItems().map {
             MenuItemAdapter.DisplayItem(it.id, requireContext().getString(it.nameResId))
@@ -79,7 +78,6 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
                     .setAction(android.content.Intent.ACTION_PROCESS_TEXT)
                     .setType("text/plain")
                 val resolveInfoList = requireContext().packageManager.queryIntentActivities(intent, 0)
-                Log.d(TAG, "Found ${resolveInfoList.size} system process text activities")
                 resolveInfoList.forEach { resolveInfo ->
                     val packageName = resolveInfo.activityInfo.packageName
                     val className = resolveInfo.activityInfo.name
@@ -94,25 +92,32 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error loading system process text items", e)
+                // 忽略错误
             }
         }
 
         val allItems = customItems + systemItems
-        Log.d(TAG, "Setting ${allItems.size} items")
         adapter.setItems(allItems)
 
+        // 计算要显示的自定义菜单项（隐藏的取反）
         val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(requireContext())
+        val visibleIds = TextMenuConfig.getAllMenuItems()
+            .map { it.id }
+            .filter { it !in hiddenIds }
+            .toSet()
+        
+        // 计算要显示的系统菜单项（隐藏的取反）
+        val allSystemItemKeys = systemItems.mapNotNull { it.systemItemKey }.toSet()
         val hiddenProcessTextItems = TextMenuConfig.getHiddenProcessTextItems(requireContext())
-        Log.d(TAG, "Setting checkedIds: $hiddenIds, checkedSystemItemKeys: $hiddenProcessTextItems")
-        adapter.setCheckedIds(hiddenIds)
-        adapter.setCheckedSystemItemKeys(hiddenProcessTextItems)
+        val visibleSystemKeys = allSystemItemKeys - hiddenProcessTextItems
+        
+        adapter.setVisibleItemIds(visibleIds)
+        adapter.setVisibleSystemItemKeys(visibleSystemKeys)
     }
 
     private fun saveConfig() {
-        Log.d(TAG, "saveConfig")
-        TextMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getCheckedIds())
-        TextMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getCheckedSystemItemKeys())
+        TextMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getHiddenItemIds())
+        TextMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getHiddenSystemItemKeys())
     }
 
     override fun dismiss() {

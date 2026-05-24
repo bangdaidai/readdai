@@ -1,19 +1,13 @@
 package io.legado.app.ui.book.read
 
 import android.content.Context
-import android.util.Log
 import android.view.ViewGroup
-import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemCheckBoxBinding
 
 class MenuItemAdapter(context: Context) :
     RecyclerAdapter<MenuItemAdapter.DisplayItem, ItemCheckBoxBinding>(context) {
-
-    companion object {
-        private const val TAG = "MenuItemAdapter"
-    }
 
     data class DisplayItem(
         val id: Int,
@@ -22,32 +16,52 @@ class MenuItemAdapter(context: Context) :
         val systemItemKey: String? = null
     )
 
-    private val checkedIds = mutableSetOf<Int>()
-    private val checkedSystemItemKeys = mutableSetOf<String>()
+    private val visibleItemIds = mutableSetOf<Int>()
+    private val visibleSystemItemKeys = mutableSetOf<String>()
 
-    fun setCheckedIds(ids: Set<Int>) {
-        checkedIds.clear()
-        checkedIds.addAll(ids)
-        Log.d(TAG, "setCheckedIds: $checkedIds")
-        notifyDataSetChanged() // 通知数据已变化
+    /**
+     * 设置要显示的自定义菜单项ID（即应该勾选的
+     */
+    fun setVisibleItemIds(ids: Set<Int>) {
+        visibleItemIds.clear()
+        visibleItemIds.addAll(ids)
+        notifyDataSetChanged()
     }
 
-    fun setCheckedSystemItemKeys(keys: Set<String>) {
-        checkedSystemItemKeys.clear()
-        checkedSystemItemKeys.addAll(keys)
-        Log.d(TAG, "setCheckedSystemItemKeys: $checkedSystemItemKeys")
-        notifyDataSetChanged() // 通知数据已变化
+    /**
+     * 设置要显示的系统菜单项Key
+     */
+    fun setVisibleSystemItemKeys(keys: Set<String>) {
+        visibleSystemItemKeys.clear()
+        visibleSystemItemKeys.addAll(keys)
+        notifyDataSetChanged()
     }
 
-    fun getCheckedIds(): Set<Int> {
-        val result = checkedIds.toSet()
-        Log.d(TAG, "getCheckedIds: $result")
+    /**
+     * 获取要隐藏的自定义菜单项ID
+     */
+    fun getHiddenItemIds(): Set<Int> {
+        val result = mutableSetOf<Int>()
+        for (i in 0 until itemCount) {
+            val item = getItem(i) ?: continue
+            if (!item.isSystemItem && item.id !in visibleItemIds) {
+                result.add(item.id)
+            }
+        }
         return result
     }
 
-    fun getCheckedSystemItemKeys(): Set<String> {
-        val result = checkedSystemItemKeys.toSet()
-        Log.d(TAG, "getCheckedSystemItemKeys: $result")
+    /**
+     * 获取要隐藏的系统菜单项Key
+     */
+    fun getHiddenSystemItemKeys(): Set<String> {
+        val result = mutableSetOf<String>()
+        for (i in 0 until itemCount) {
+            val item = getItem(i) ?: continue
+            if (item.isSystemItem && item.systemItemKey != null && item.systemItemKey !in visibleSystemItemKeys) {
+                result.add(item.systemItemKey)
+            }
+        }
         return result
     }
 
@@ -63,34 +77,30 @@ class MenuItemAdapter(context: Context) :
     ) {
         binding.apply {
             checkBox.text = item.name
-            val isChecked = if (item.isSystemItem) {
-                item.systemItemKey !in checkedSystemItemKeys
+            checkBox.isChecked = if (item.isSystemItem) {
+                item.systemItemKey in visibleSystemItemKeys
             } else {
-                item.id !in checkedIds
+                item.id in visibleItemIds
             }
-            Log.d(TAG, "convert: ${item.name}, isChecked=$isChecked, id=${item.id}, isSystemItem=${item.isSystemItem}")
-            checkBox.isChecked = isChecked
         }
     }
 
     override fun registerListener(holder: ItemViewHolder, binding: ItemCheckBoxBinding) {
         holder.itemView.setOnClickListener {
             getItem(holder.layoutPosition)?.let { item ->
-                Log.d(TAG, "clicked: ${item.name}")
                 if (item.isSystemItem) {
-                    if (item.systemItemKey in checkedSystemItemKeys) {
-                        checkedSystemItemKeys.remove(item.systemItemKey)
+                    if (item.systemItemKey in visibleSystemItemKeys) {
+                        visibleSystemItemKeys.remove(item.systemItemKey)
                     } else {
-                        checkedSystemItemKeys.add(item.systemItemKey!!)
+                        visibleSystemItemKeys.add(item.systemItemKey!!)
                     }
                 } else {
-                    if (item.id in checkedIds) {
-                        checkedIds.remove(item.id)
+                    if (item.id in visibleItemIds) {
+                        visibleItemIds.remove(item.id)
                     } else {
-                        checkedIds.add(item.id)
+                        visibleItemIds.add(item.id)
                     }
                 }
-                Log.d(TAG, "after click: checkedIds=$checkedIds, checkedSystemItemKeys=$checkedSystemItemKeys")
                 notifyItemChanged(holder.layoutPosition)
             }
         }

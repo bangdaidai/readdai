@@ -1880,10 +1880,10 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     /**
-     * 添加系统文本处理菜单项（问小爱等）
+     * 添加系统文本处理菜单项（问小爱等），并支持配置过滤
      */
     @android.annotation.SuppressLint("NewApi")
-    private fun addSystemProcessTextMenuItems(menu: android.view.Menu, textView: android.widget.TextView) {
+    private fun addSystemProcessTextMenuItems(menu: android.view.Menu) {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
             return
         }
@@ -1895,22 +1895,31 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
             }
             
             val resolveInfoList = packageManager.queryIntentActivities(intent, 0)
+            val hiddenItems = AiChatMenuConfig.getHiddenProcessTextItems(this)
+            
             var order = 10
             for (resolveInfo in resolveInfoList) {
-                val item = menu.add(
-                    android.view.Menu.NONE, 
-                    android.view.Menu.NONE, 
-                    order++, 
-                    resolveInfo.loadLabel(packageManager)
-                )
-                item.intent = android.content.Intent().apply {
-                    action = android.content.Intent.ACTION_PROCESS_TEXT
-                    type = "text/plain"
-                    putExtra(android.content.Intent.EXTRA_PROCESS_TEXT_READONLY, false)
-                    setClassName(
-                        resolveInfo.activityInfo.packageName,
-                        resolveInfo.activityInfo.name
+                val packageName = resolveInfo.activityInfo.packageName
+                val className = resolveInfo.activityInfo.name
+                val itemKey = AiChatMenuConfig.getProcessTextItemKey(packageName, className)
+                
+                // 只添加未被隐藏的系统菜单项
+                if (itemKey !in hiddenItems) {
+                    val item = menu.add(
+                        android.view.Menu.NONE, 
+                        android.view.Menu.NONE, 
+                        order++, 
+                        resolveInfo.loadLabel(packageManager)
                     )
+                    item.intent = android.content.Intent().apply {
+                        action = android.content.Intent.ACTION_PROCESS_TEXT
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_PROCESS_TEXT_READONLY, false)
+                        setClassName(
+                            resolveInfo.activityInfo.packageName,
+                            resolveInfo.activityInfo.name
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -2096,20 +2105,30 @@ class ChatAdapter(
             // ✅ 启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
 
-            // ✅ 简单可靠的实现：只添加我们需要的菜单项
+            // ✅ 简单可靠的实现：只添加我们需要的菜单项，并支持配置过滤
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
                     // 清空默认菜单
                     menu.clear()
                     
-                    // 添加自定义菜单项
-                    menu.add(android.view.Menu.NONE, R.id.menu_ai_chat, 1, R.string.follow_up_question)
-                    menu.add(android.view.Menu.NONE, R.id.menu_search_content, 2, R.string.search_book)
-                    menu.add(android.view.Menu.NONE, android.R.id.copy, 3, android.R.string.copy)
+                    // 获取隐藏的菜单项
+                    val hiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(this@AiChatActivity)
                     
-                    // 添加系统菜单项（问小爱等）
+                    // 添加自定义菜单项（支持过滤）
+                    var order = 1
+                    if (R.id.menu_ai_chat !in hiddenIds) {
+                        menu.add(android.view.Menu.NONE, R.id.menu_ai_chat, order++, R.string.follow_up_question)
+                    }
+                    if (R.id.menu_search_content !in hiddenIds) {
+                        menu.add(android.view.Menu.NONE, R.id.menu_search_content, order++, R.string.search_book)
+                    }
+                    if (android.R.id.copy !in hiddenIds) {
+                        menu.add(android.view.Menu.NONE, android.R.id.copy, order++, android.R.string.copy)
+                    }
+                    
+                    // 添加系统菜单项（问小爱等，支持过滤）
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        addSystemProcessTextMenuItems(menu, holder.contentText)
+                        addSystemProcessTextMenuItems(menu)
                     }
                     
                     return true

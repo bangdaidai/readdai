@@ -89,14 +89,28 @@ class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view)
             }
         }
 
-        adapter.setItems(customItems + systemItems)
-        adapter.setCheckedIds(AiChatMenuConfig.getHiddenMenuItemIds(requireContext()))
-        adapter.setCheckedSystemItemKeys(AiChatMenuConfig.getHiddenProcessTextItems(requireContext()))
+        val allItems = customItems + systemItems
+        adapter.setItems(allItems)
+
+        // 计算要显示的自定义菜单项（隐藏的取反）
+        val hiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(requireContext())
+        val visibleIds = AiChatMenuConfig.getAllMenuItems()
+            .map { it.id }
+            .filter { it !in hiddenIds }
+            .toSet()
+        
+        // 计算要显示的系统菜单项（隐藏的取反）
+        val allSystemItemKeys = systemItems.mapNotNull { it.systemItemKey }.toSet()
+        val hiddenProcessTextItems = AiChatMenuConfig.getHiddenProcessTextItems(requireContext())
+        val visibleSystemKeys = allSystemItemKeys - hiddenProcessTextItems
+        
+        adapter.setVisibleItemIds(visibleIds)
+        adapter.setVisibleSystemItemKeys(visibleSystemKeys)
     }
 
     private fun saveConfig() {
-        AiChatMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getCheckedIds())
-        AiChatMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getCheckedSystemItemKeys())
+        AiChatMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getHiddenItemIds())
+        AiChatMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getHiddenSystemItemKeys())
     }
 
     override fun dismiss() {

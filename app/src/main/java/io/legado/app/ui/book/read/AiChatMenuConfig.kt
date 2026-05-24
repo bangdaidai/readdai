@@ -35,7 +35,7 @@ object AiChatMenuConfig {
      * AI 对话页面所有可配置的菜单项
      */
     val ALL_MENU_ITEMS = listOf(
-        MenuItemInfo(R.id.menu_copy, android.R.string.copy),
+        MenuItemInfo(android.R.id.copy, android.R.string.copy),
         MenuItemInfo(R.id.menu_search_content, R.string.search_book),
         MenuItemInfo(R.id.menu_ai_chat, R.string.follow_up_question)
     )
