@@ -1878,123 +1878,6 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         // 滚动到底部
         binding.recyclerView.scrollToPosition(messages.size - 1)
     }
-
-    /**
-     * 添加系统文本处理菜单项（问小爱等），并支持配置过滤
-     */
-    @android.annotation.SuppressLint("NewApi")
-    private fun addSystemProcessTextMenuItems(menu: android.view.Menu) {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
-            return
-        }
-        
-        try {
-            val intent = android.content.Intent().apply {
-                action = android.content.Intent.ACTION_PROCESS_TEXT
-                type = "text/plain"
-            }
-            
-            val resolveInfoList = packageManager.queryIntentActivities(intent, 0)
-            val hiddenItems = AiChatMenuConfig.getHiddenProcessTextItems(this)
-            
-            var order = 10
-            for (resolveInfo in resolveInfoList) {
-                val packageName = resolveInfo.activityInfo.packageName
-                val className = resolveInfo.activityInfo.name
-                val itemKey = AiChatMenuConfig.getProcessTextItemKey(packageName, className)
-                
-                // 只添加未被隐藏的系统菜单项
-                if (itemKey !in hiddenItems) {
-                    val item = menu.add(
-                        android.view.Menu.NONE, 
-                        android.view.Menu.NONE, 
-                        order++, 
-                        resolveInfo.loadLabel(packageManager)
-                    )
-                    item.intent = android.content.Intent().apply {
-                        action = android.content.Intent.ACTION_PROCESS_TEXT
-                        type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_PROCESS_TEXT_READONLY, false)
-                        setClassName(
-                            resolveInfo.activityInfo.packageName,
-                            resolveInfo.activityInfo.name
-                        )
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // 忽略错误
-        }
-    }
-
-    /**
-     * 显示 AI 对话页面的文本操作菜单
-     */
-    fun showAiChatTextMenu(anchor: android.widget.TextView, selectedText: String) {
-        val menu = AiChatTextActionMenu(this, object : AiChatTextActionMenu.CallBack {
-            override val selectedText: String get() = selectedText
-
-            override fun onMenuItemSelected(itemId: Int): Boolean {
-                return when (itemId) {
-                    R.id.menu_ai_chat -> {
-                        // 追问：以选中的文本作为引用继续提问
-                        if (selectedText.isNotBlank()) {
-                            handleFollowUpQuestion(selectedText)
-                        }
-                        true
-                    }
-                    R.id.menu_search_content -> {
-                        // 在书院中搜索选中的文本
-                        if (selectedText.isNotBlank()) {
-                            val intent = android.content.Intent(
-                                this@AiChatActivity,
-                                io.legado.app.ui.book.search.SearchActivity::class.java
-                            ).apply {
-                                putExtra("key", selectedText.trim())
-                                putExtra("searchScope", "book")
-                            }
-                            startActivity(intent)
-                        }
-                        true
-                    }
-                    R.id.menu_copy -> {
-                        // 复制到剪贴板
-                        if (selectedText.isNotBlank()) {
-                            sendToClip(selectedText)
-                        }
-                        true
-                    }
-                    else -> false
-                }
-            }
-
-            override fun onMenuActionFinally() {
-                // 可选：清理操作
-            }
-        })
-
-        val location = IntArray(2)
-        anchor.getLocationOnScreen(location)
-        val startX = location[0]
-        val startTopY = location[1]
-        val startBottomY = startTopY + anchor.height
-
-        // 获取选区位置
-        val layout = anchor.layout
-        if (layout != null) {
-            val startOffset = anchor.selectionStart
-            val endOffset = anchor.selectionEnd
-            val startLine = layout.getLineForOffset(startOffset)
-            val endLine = layout.getLineForOffset(endOffset)
-
-            val startY = location[1] + layout.getLineTop(startLine)
-            val endY = location[1] + layout.getLineBottom(endLine)
-
-            menu.show(anchor, startX, startY, startY, startX, endY)
-        } else {
-            menu.show(anchor, startX, startTopY, startBottomY, startX, startBottomY)
-        }
-    }
 }
 
 /**
@@ -2112,7 +1995,7 @@ class ChatAdapter(
                     menu.clear()
                     
                     // 获取隐藏的菜单项
-                    val hiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(this@AiChatActivity)
+                    val hiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(activity)
                     
                     // 添加自定义菜单项（支持过滤）
                     var order = 1
@@ -2128,7 +2011,39 @@ class ChatAdapter(
                     
                     // 添加系统菜单项（问小爱等，支持过滤）
                     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        addSystemProcessTextMenuItems(menu)
+                        try {
+                            val intent = android.content.Intent().apply {
+                                action = android.content.Intent.ACTION_PROCESS_TEXT
+                                type = "text/plain"
+                            }
+                            
+                            val resolveInfoList = activity.packageManager.queryIntentActivities(intent, 0)
+                            val hiddenItems = AiChatMenuConfig.getHiddenProcessTextItems(activity)
+                            
+                            var systemOrder = 10
+                            for (resolveInfo in resolveInfoList) {
+                                val packageName = resolveInfo.activityInfo.packageName
+                                val className = resolveInfo.activityInfo.name
+                                val itemKey = AiChatMenuConfig.getProcessTextItemKey(packageName, className)
+                                
+                                if (itemKey !in hiddenItems) {
+                                    val menuItem = menu.add(
+                                        android.view.Menu.NONE, 
+                                        android.view.Menu.NONE, 
+                                        systemOrder++, 
+                                        resolveInfo.loadLabel(activity.packageManager)
+                                    )
+                                    menuItem.intent = android.content.Intent().apply {
+                                        action = android.content.Intent.ACTION_PROCESS_TEXT
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_PROCESS_TEXT_READONLY, false)
+                                        setClassName(packageName, className)
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // 忽略错误
+                        }
                     }
                     
                     return true
@@ -2150,7 +2065,7 @@ class ChatAdapter(
                     return when (item.itemId) {
                         R.id.menu_ai_chat -> {
                             if (selectedText.isNotBlank()) {
-                                handleFollowUpQuestion(selectedText)
+                                activity.handleFollowUpQuestion(selectedText)
                             }
                             mode.finish()
                             true
@@ -2158,13 +2073,13 @@ class ChatAdapter(
                         R.id.menu_search_content -> {
                             if (selectedText.isNotBlank()) {
                                 val intent = android.content.Intent(
-                                    this@AiChatActivity,
+                                    activity,
                                     io.legado.app.ui.book.search.SearchActivity::class.java
                                 ).apply {
                                     putExtra("key", selectedText.trim())
                                     putExtra("searchScope", "book")
                                 }
-                                startActivity(intent)
+                                activity.startActivity(intent)
                             }
                             mode.finish()
                             true
@@ -2180,7 +2095,7 @@ class ChatAdapter(
                                 item.intent?.let { intent ->
                                     try {
                                         intent.putExtra(android.content.Intent.EXTRA_PROCESS_TEXT, selectedText)
-                                        startActivity(intent)
+                                        activity.startActivity(intent)
                                     } catch (e: Exception) {
                                         // 忽略错误
                                     }
