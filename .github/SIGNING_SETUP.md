@@ -41,24 +41,32 @@ base64 -i release.keystore -o release.keystore.base64
 进入你的 GitHub 仓库：
 1. 点击 **Settings** → **Secrets and variables** → **Actions**
 2. 点击 **New repository secret**
-3. 添加以下 Secrets：
+3. 添加以下 Secrets（**注意：secret名称必须完全匹配**）：
 
 | Secret 名称 | 值 | 说明 |
 |------------|-----|------|
-| `ANDROID_KEYSTORE_BASE64` | 第2步生成的 base64 内容 | 签名密钥文件的 base64 编码 |
+| `RELEASE_KEY_STORE` | 第2步生成的 base64 内容 | 签名密钥文件的 base64 编码 |
 | `RELEASE_STORE_PASSWORD` | 你的密钥库密码 | keystore 的密码 |
 | `RELEASE_KEY_ALIAS` | 你的密钥别名 | 例如：my-release-key |
 | `RELEASE_KEY_PASSWORD` | 你的密钥密码 | key 的密码 |
 
-### 4. 验证配置
+⚠️ **重要提示**：
+- 确保 secret 名称为 `RELEASE_KEY_STORE`（不是 `ANDROID_KEYSTORE_BASE64`）
+- secret 值必须是 keystore 文件的 **Base64 编码**，而不是文件名或路径
+- 如果 secret 配置错误或不匹配，每次构建会使用不同的签名，导致无法覆盖安装
 
-推送代码后，手动触发工作流测试：
+### 4. 验证签名配置
+
+配置完 secrets 后，手动触发 workflow 测试：
 
 1. 进入 **Actions** 标签页
 2. 选择 **Android CI/CD Pipeline**
 3. 点击 **Run workflow**
-4. 选择构建类型为 `release`
-5. 等待构建完成
+4. 等待构建完成
+5. 检查构建日志中是否显示 "✅ Keystore loaded successfully"
+6. 下载生成的 APK，验证签名是否一致
+
+如果签名配置正确，每次构建的 APK 都会有相同的签名，可以直接覆盖安装旧版本。
 
 ## 🔒 安全最佳实践
 
@@ -80,11 +88,33 @@ base64 -i release.keystore -o release.keystore.base64
 
 ## 🛠️ 故障排除
 
+### 问题：每次构建都是不同的签名，无法覆盖安装
+
+**原因分析：**
+每次构建签名不同通常是因为：
+1. ❌ 使用的 secret 名称不一致（如 `ANDROID_KEYSTORE_BASE64` vs `RELEASE_KEY_STORE`）
+2. ❌ secret 的值不是 Base64 编码，而是文件名或其他内容
+3. ❌ secret 配置了多个不同的值
+4. ❌ 没有配置 secret，构建使用了 debug 签名
+
+**解决方案：**
+1. 检查 GitHub Secrets 配置，确保使用正确的 secret 名称：
+   - `RELEASE_KEY_STORE`（不是 `ANDROID_KEYSTORE_BASE64`）
+2. 验证 Base64 编码是否正确：
+   ```bash
+   # 在本地验证
+   base64 -i release.keystore > temp.base64
+   # 检查是否有多行或特殊字符
+   head -c 100 temp.base64
+   ```
+3. 确保 GitHub Secrets 中只有一个 `RELEASE_KEY_STORE` 的值
+4. 检查 workflow 日志，确保看到 "✅ Keystore loaded successfully"
+
 ### 问题：构建失败，提示签名错误
 
 **解决方案：**
 1. 检查所有 Secrets 是否正确配置
-2. 确认 base64 编码是否完整
+2. 确认 base64 编码是否完整（没有换行符）
 3. 验证密码是否正确
 4. 检查工作流日志中的详细错误信息
 
