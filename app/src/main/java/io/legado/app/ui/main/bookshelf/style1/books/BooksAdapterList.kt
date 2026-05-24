@@ -141,6 +141,11 @@ class BooksAdapterList(
                         "tags" -> upTags(binding, item)
                         "intro" -> upIntro(binding, item)
                         "review" -> upReview(binding, item)
+                        "readCount" -> {
+                            // 阅读次数变化，清除缓存并重新加载
+                            clearTagCache(item.bookUrl)
+                            upTags(binding, item)
+                        }
                     }
                 }
             }
@@ -208,11 +213,15 @@ class BooksAdapterList(
                     }
                 }
                 
+                // 获取阅读次数（N刷）
+                val readCount = getReadCount(item)
+                
                 // 无论是否有标签，都需要更新缓存并刷新UI
                 // 使用 == 比较列表内容（空列表也相等）
-                if (cachedTags == null || cachedTags != tags) {
-                    // 标签发生变化（或缓存为空），更新缓存
+                if (cachedTags == null || cachedTags != tags || shouldUpdateReadCount(item.bookUrl, readCount)) {
+                    // 标签或阅读次数发生变化（或缓存为空），更新缓存
                     tagCache[item.bookUrl] = tags
+                    updateReadCountCache(item.bookUrl, readCount)
                     
                     // 在UI线程中设置标签
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
@@ -338,6 +347,36 @@ class BooksAdapterList(
                                 height = currentHeight
                             }
                         }
+                        
+                        // 添加N刷标签（如果阅读次数>0）
+                        if (readCount > 0) {
+                            val readCountView = android.widget.TextView(context)
+                            readCountView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                            )
+                            readCountView.setText("${readCount + 1}刷")
+                            readCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                            readCountView.setPadding(8, 0, 8, 0)
+                            readCountView.setGravity(android.view.Gravity.CENTER)
+                            readCountView.setSingleLine(true)
+                            // 使用橙色背景表示阅读次数
+                            val readCountBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
+                            val readCountColor = context.getColor(R.color.md_orange_500)
+                            val readCountBackgroundColor = readCountColor and 0x00FFFFFF or (0x1A shl 24)
+                            readCountBg?.setTint(readCountBackgroundColor)
+                            if (readCountBg is android.graphics.drawable.GradientDrawable) {
+                                readCountBg.setStroke(1, readCountColor)
+                            }
+                            readCountView.background = readCountBg
+                            readCountView.setTextColor(readCountColor)
+                            
+                            val layoutParams = readCountView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
+                            layoutParams.setMarginEnd(8)
+                            readCountView.layoutParams = layoutParams
+                            
+                            binding.tvTags.addView(readCountView)
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -354,6 +393,35 @@ class BooksAdapterList(
      */
     fun clearTagCache(bookUrl: String) {
         tagCache.remove(bookUrl)
+        readCountCache.remove(bookUrl)
+    }
+    
+    // 缓存阅读次数，避免重复查询
+    private val readCountCache = mutableMapOf<String, Int>()
+    
+    /**
+     * 获取书籍的阅读次数（N刷）
+     */
+    private suspend fun getReadCount(book: Book): Int {
+        return kotlinx.coroutines.withContext(Dispatchers.IO) {
+            val ticket = appDb.readingTicketDao.getByBookUrl(book.bookUrl)
+            ticket?.readCount ?: 0
+        }
+    }
+    
+    /**
+     * 检查是否需要更新阅读次数显示
+     */
+    private fun shouldUpdateReadCount(bookUrl: String, newReadCount: Int): Boolean {
+        val cachedCount = readCountCache[bookUrl]
+        return cachedCount == null || cachedCount != newReadCount
+    }
+    
+    /**
+     * 更新阅读次数缓存
+     */
+    private fun updateReadCountCache(bookUrl: String, readCount: Int) {
+        readCountCache[bookUrl] = readCount
     }
 
     private fun upIntro(binding: ItemBookshelfListBinding, item: Book) {

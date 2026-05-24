@@ -29,14 +29,14 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 100,
+    version = 101,
     exportSchema = true,
     entities = [Book::class, BookGroup::class, BookSource::class, BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
         RssSource::class, Bookmark::class, BookAnnotation::class, BookReview::class, RssArticle::class, RssReadRecord::class,
         RssStar::class, TxtTocRule::class, ReadSession::class, HttpTTS::class, Cache::class,
         RuleSub::class, DictRule::class, KeyboardAssist::class, Server::class, BookTag::class, BookTagGroup::class, BookTagRelation::class, ReadingMemory::class, RemovedAutoTag::class, ExcludedTag::class, BookProtagonist::class, TagMapping::class,
-        ReadRecord::class, ReadRecordDetail::class, VectorEntity::class, ChunkEntity::class, VectorizedBookEntity::class],
+        ReadRecord::class, ReadRecordDetail::class, VectorEntity::class, ChunkEntity::class, VectorizedBookEntity::class, ReadingTicket::class],
     views = [BookSourcePart::class],
     autoMigrations = [
         AutoMigration(from = 43, to = 44),
@@ -129,6 +129,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val vectorDao: VectorDao
     abstract val chunkDao: ChunkDao
     abstract val vectorizedBookDao: VectorizedBookDao
+    abstract val readingTicketDao: ReadingTicketDao
 
     companion object {
 

@@ -1354,6 +1354,63 @@ $content
             binding.readView.cancelSelect()
         }
     }
+    
+    /**
+     * 显示阅读小票（到达最后一章时）
+     */
+    override fun showReadingTicket() {
+        runOnUiThread {
+            ReadBook.book?.let { book ->
+                // 创建并显示阅读小票对话框
+                val ticketView = io.legado.app.ui.widget.ReadingTicketView(this)
+                val dialog = AlertDialog.Builder(this)
+                    .setView(ticketView)
+                    .setCancelable(true)
+                    .create()
+                
+                // 加载小票数据
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val ticket = io.legado.app.help.book.ReadingTicketHelper.getTicket(book.bookUrl)
+                    withContext(Dispatchers.Main) {
+                        ticket?.let {
+                            ticketView.setTicket(it, book)
+                            dialog.show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 显示N刷确认对话框
+     */
+    override fun showMultiReadConfirm(book: io.legado.app.data.entities.Book) {
+        runOnUiThread {
+            AlertDialog.Builder(this)
+                .setTitle("重新开始阅读")
+                .setMessage("这本书您已经读完了，是否开始重新阅读（N刷）？\n\n选择“是”将记录为一次新的阅读，书架上会显示“N刷”标签。\n选择“否”将继续保持读完状态。")
+                .setPositiveButton("是，开始N刷") { _, _ ->
+                    // 用户确认，增加阅读次数
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        io.legado.app.help.book.ReadingTicketHelper.markAsFinished(book, incrementReadCount = true)
+                        
+                        // 更新书籍状态为“在读”
+                        withContext(Dispatchers.Main) {
+                            book.setReadingStatus(1, userModified = true)
+                            book.save()
+                            Toast.makeText(this@ReadBookActivity, "已开始重新阅读", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                .setNegativeButton("否，保持读完状态") { _, _ ->
+                    // 用户取消，不增加阅读次数，保持读完状态
+                    Toast.makeText(this@ReadBookActivity, "已保持读完状态", Toast.LENGTH_SHORT).show()
+                }
+                .setCancelable(true)
+                .show()
+        }
+    }
 
     /**
      * 页面改变

@@ -392,6 +392,18 @@ class ReadView(context: Context, attrs: AttributeSet) :
      * 单击
      */
     private fun onSingleTapUp() {
+        // 先检查是否点击了藏书票（评分区域）
+        ReadBook.book?.let { book ->
+            if (curPage.isBookplateStart || curPage.isBookplateEnd) {
+                if (io.legado.app.ui.book.read.page.provider.BookplateDrawer.onClick(
+                        context, startX, startY, curPage, book, relativeOffset(0)
+                    )
+                ) {
+                    return  // 已处理藏书票点击
+                }
+            }
+        }
+        
         when {
             isTextSelected -> Unit
             mcRect.contains(startX, startY) -> if (!isAbortAnim) {

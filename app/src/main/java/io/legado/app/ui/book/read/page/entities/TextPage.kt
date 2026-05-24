@@ -58,6 +58,10 @@ data class TextPage(
     var paddingTop = ChapterProvider.paddingTop
     var isCompleted = false
     var hasReadAloudSpan = false
+    
+    // 藏书票标记
+    var isBookplateStart: Boolean = false  // 是否为书籍首页（显示藏书票）
+    var isBookplateEnd: Boolean = false    // 是否为书籍尾页（显示藏书票）
 
     @JvmField
     var textChapter = emptyTextChapter
@@ -327,6 +331,15 @@ data class TextPage(
     }
 
     private fun drawPage(view: ContentTextView, canvas: Canvas) {
+        // 如果是藏书票页面，先绘制藏书票
+        if (isBookplateStart || isBookplateEnd) {
+            ReadBook.book?.let { book ->
+                io.legado.app.ui.book.read.page.provider.BookplateDrawer.draw(canvas, this, book)
+            }
+            return  // 绘制藏书票后不再绘制普通文本
+        }
+        
+        // 正常绘制文本内容
         for (i in lines.indices) {
             val line = lines[i]
             canvas.withTranslation(0f, line.lineTop) {

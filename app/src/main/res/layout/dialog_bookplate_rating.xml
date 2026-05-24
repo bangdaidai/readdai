@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tv_dialog_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="请为这本书打分并写下书评"
+        android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface" />
+
+    <!-- 评分区域 -->
+    <RatingBar
+        android:id="@+id/rating_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:numStars="5"
+        android:stepSize="1.0"
+        android:rating="0"
+        android:isIndicator="false"
+        style="?android:attr/ratingBarStyle" />
+
+    <!-- 书评输入框 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="📝 我的书评"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorPrimary" />
+
+    <EditText
+        android:id="@+id/et_review"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:minHeight="100dp"
+        android:maxHeight="200dp"
+        android:hint="写下你的读后感..."
+        android:inputType="textMultiLine"
+        android:gravity="top|start"
+        android:padding="12dp"
+        android:background="@drawable/bg_edit_text_rounded"
+        android:textSize="14sp"
+        android:textColor="?attr/colorOnSurface" />
+
+</LinearLayout>

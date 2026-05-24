@@ -73,6 +73,7 @@ object ReadBook : CoroutineScope by MainScope() {
     var durChapterPos = 0
     var isLocalBook = true
     var chapterChanged = false
+    var showBookplate: Int = -1  // -1:未初始化, 0:显示, 1:不显示
     var prevTextChapter: TextChapter? = null
     var curTextChapter: TextChapter? = null
     var nextTextChapter: TextChapter? = null
@@ -125,6 +126,9 @@ object ReadBook : CoroutineScope by MainScope() {
             downloadedChapters.clear()
             downloadFailChapters.clear()
         }
+        
+        // 检测是否需要询问N刷：已读完的书，从第一章开始阅读
+        checkMultiReadIfNeeded(book)
     }
 
     fun upData(book: Book) {
@@ -408,6 +412,12 @@ object ReadBook : CoroutineScope by MainScope() {
             callBack?.upMenuView()
             AppLog.putDebug("moveToNextChapter-curPageChanged()")
             curPageChanged()
+            
+            // 检查是否到达最后一章，如果是则显示阅读小票
+            if (durChapterIndex >= simulatedChapterSize - 1) {
+                showReadingTicketIfNeeded()
+            }
+            
             return true
         } else {
             AppLog.putDebug("跳转下一章失败,没有下一章")
@@ -439,6 +449,12 @@ object ReadBook : CoroutineScope by MainScope() {
             callBack?.upMenuView()
             AppLog.putDebug("moveToNextChapter-curPageChanged()")
             curPageChanged()
+            
+            // 检查是否到达最后一章，如果是则显示阅读小票
+            if (durChapterIndex >= simulatedChapterSize - 1) {
+                showReadingTicketIfNeeded()
+            }
+            
             return true
         } else {
             AppLog.putDebug("跳转下一章失败,没有下一章")
@@ -1164,6 +1180,40 @@ object ReadBook : CoroutineScope by MainScope() {
             CacheBook.close()
         }
     }
+    
+    /**
+     * 检查并显示阅读小票（到达最后一章时）
+     */
+    private fun showReadingTicketIfNeeded() {
+        book?.let { currentBook ->
+            launch(IO) {
+                try {
+                    // 更新阅读小票，标记为读完（但不增加阅读次数）
+                    io.legado.app.help.book.ReadingTicketHelper.markAsFinished(currentBook, incrementReadCount = false)
+                    
+                    // 通知UI显示阅读小票
+                    withContext(Main) {
+                        callBack?.showReadingTicket()
+                    }
+                } catch (e: Exception) {
+                    AppLog.putError("显示阅读小票失败", e)
+                }
+            }
+        }
+    }
+    
+    /**
+     * 检测是否需要询问N刷（已读完的书，重新打开时）
+     */
+    private fun checkMultiReadIfNeeded(book: Book) {
+        // 条件：书籍已读完（不管从哪个章节打开）
+        if (book.readingStatus == 2) {
+            launch(Main) {
+                // 通知UI显示N刷确认对话框
+                callBack?.showMultiReadConfirm(book)
+            }
+        }
+    }
 
     interface CallBack : LayoutProgressListener {
         fun upMenuView()
@@ -1193,6 +1243,16 @@ object ReadBook : CoroutineScope by MainScope() {
         fun sureNewProgress(progress: BookProgress)
 
         fun cancelSelect()
+        
+        /**
+         * 显示阅读小票
+         */
+        fun showReadingTicket()
+        
+        /**
+         * 显示N刷确认对话框
+         */
+        fun showMultiReadConfirm(book: Book)
     }
 
 }
