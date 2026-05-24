@@ -237,7 +237,7 @@ object BookplateDrawer {
             paint.textSize = 11.dpToPx().toFloat()
             
             // 绘制完整书评内容（支持多行）
-            val reviewText = book.reviewContent
+            val reviewText = book.reviewContent ?: ""
             val maxWidth = bpWidth - 40.dpToPx()
             
             // 按换行符分割
