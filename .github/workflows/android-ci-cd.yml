@@ -10,12 +10,12 @@ on:
         type: choice
         options:
           - release
-  push:
-    branches:
-      - master
-      - main
-  pull_request:
-    types: [closed]
+  # push:
+  #   branches:
+  #     - master
+  #     - main
+  # pull_request:
+  #   types: [closed]
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx2g -XX:+UseParallelGC"
