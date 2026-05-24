@@ -1880,6 +1880,45 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
     }
 
     /**
+     * 添加系统文本处理菜单项（问小爱等）
+     */
+    @android.annotation.SuppressLint("NewApi")
+    private fun addSystemProcessTextMenuItems(menu: android.view.Menu, textView: android.widget.TextView) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.M) {
+            return
+        }
+        
+        try {
+            val intent = android.content.Intent().apply {
+                action = android.content.Intent.ACTION_PROCESS_TEXT
+                type = "text/plain"
+            }
+            
+            val resolveInfoList = packageManager.queryIntentActivities(intent, 0)
+            var order = 10
+            for (resolveInfo in resolveInfoList) {
+                val item = menu.add(
+                    android.view.Menu.NONE, 
+                    android.view.Menu.NONE, 
+                    order++, 
+                    resolveInfo.loadLabel(packageManager)
+                )
+                item.intent = android.content.Intent().apply {
+                    action = android.content.Intent.ACTION_PROCESS_TEXT
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_PROCESS_TEXT_READONLY, false)
+                    setClassName(
+                        resolveInfo.activityInfo.packageName,
+                        resolveInfo.activityInfo.name
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            // 忽略错误
+        }
+    }
+
+    /**
      * 显示 AI 对话页面的文本操作菜单
      */
     fun showAiChatTextMenu(anchor: android.widget.TextView, selectedText: String) {
@@ -2054,38 +2093,87 @@ class ChatAdapter(
             // 渲染 Markdown（已内置文本选择支持）
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
 
-            // ✅ 关键修复：启用文本选择功能，使用自定义菜单
+            // ✅ 启用文本选择功能
             holder.contentText.setTextIsSelectable(true)
 
-            // ✅ 使用自定义 ActionMode 来显示我们的菜单
+            // ✅ 简单可靠的实现：只添加我们需要的菜单项
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
-                private var currentMode: android.view.ActionMode? = null
-
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    currentMode = mode
-                    // 清空菜单，使用我们自定义的 PopupWindow
+                    // 清空默认菜单
                     menu.clear()
+                    
+                    // 添加自定义菜单项
+                    menu.add(android.view.Menu.NONE, R.id.menu_ai_chat, 1, R.string.follow_up_question)
+                    menu.add(android.view.Menu.NONE, R.id.menu_search_content, 2, R.string.search_book)
+                    menu.add(android.view.Menu.NONE, android.R.id.copy, 3, android.R.string.copy)
+                    
+                    // 添加系统菜单项（问小爱等）
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        addSystemProcessTextMenuItems(menu, holder.contentText)
+                    }
+                    
                     return true
                 }
 
                 override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    // 获取选中的文本并显示自定义菜单
-                    val start = holder.contentText.selectionStart
-                    val end = holder.contentText.selectionEnd
-                    if (start >= 0 && end > start) {
-                        val selectedText = holder.contentText.text?.substring(start, end) ?: ""
-                        activity.showAiChatTextMenu(holder.contentText, selectedText)
-                    }
                     return false
                 }
 
                 override fun onActionItemClicked(mode: android.view.ActionMode, item: android.view.MenuItem): Boolean {
-                    mode.finish()
-                    return false
+                    val start = holder.contentText.selectionStart
+                    val end = holder.contentText.selectionEnd
+                    val selectedText = if (start >= 0 && end > start) {
+                        holder.contentText.text?.substring(start, end) ?: ""
+                    } else {
+                        ""
+                    }
+                    
+                    return when (item.itemId) {
+                        R.id.menu_ai_chat -> {
+                            if (selectedText.isNotBlank()) {
+                                handleFollowUpQuestion(selectedText)
+                            }
+                            mode.finish()
+                            true
+                        }
+                        R.id.menu_search_content -> {
+                            if (selectedText.isNotBlank()) {
+                                val intent = android.content.Intent(
+                                    this@AiChatActivity,
+                                    io.legado.app.ui.book.search.SearchActivity::class.java
+                                ).apply {
+                                    putExtra("key", selectedText.trim())
+                                    putExtra("searchScope", "book")
+                                }
+                                startActivity(intent)
+                            }
+                            mode.finish()
+                            true
+                        }
+                        android.R.id.copy -> {
+                            copyToClipboard(selectedText)
+                            mode.finish()
+                            true
+                        }
+                        else -> {
+                            // 处理系统菜单项（问小爱等）
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                                item.intent?.let { intent ->
+                                    try {
+                                        intent.putExtra(android.content.Intent.EXTRA_PROCESS_TEXT, selectedText)
+                                        startActivity(intent)
+                                    } catch (e: Exception) {
+                                        // 忽略错误
+                                    }
+                                }
+                            }
+                            mode.finish()
+                            true
+                        }
+                    }
                 }
 
                 override fun onDestroyActionMode(mode: android.view.ActionMode) {
-                    currentMode = null
                 }
             }
         } else {
