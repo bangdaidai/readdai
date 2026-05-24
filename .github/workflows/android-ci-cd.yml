@@ -150,15 +150,6 @@ jobs:
           find app/build/outputs -name "*.apk" -type f || echo "No APK found"
           ls -la app/build/outputs/apk/app/release/ 2>/dev/null || echo "Release directory not found"
 
-      - name: Build Release AAB (Google Play)
-        run: ./gradlew bundleAppRelease --no-daemon
-
-      - name: Check AAB output
-        run: |
-          echo "Checking for AAB files..."
-          find app/build/outputs -name "*.aab" -type f || echo "No AAB found"
-          ls -la app/build/outputs/bundle/appRelease/ 2>/dev/null || echo "AAB directory not found"
-
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
@@ -166,16 +157,6 @@ jobs:
           path: |
             app/build/outputs/apk/app/release/*.apk
             app/build/outputs/apk/**/*.apk
-          retention-days: 90
-          if-no-files-found: warn
-
-      - name: Upload Release AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-aab
-          path: |
-            app/build/outputs/bundle/appRelease/*.aab
-            app/build/outputs/bundle/**/*.aab
           retention-days: 90
           if-no-files-found: warn
 
@@ -205,12 +186,6 @@ jobs:
           name: release-apk
           path: artifacts/apk
 
-      - name: Download Release AAB
-        uses: actions/download-artifact@v4
-        with:
-          name: release-aab
-          path: artifacts/aab
-
       - name: Download Version Info
         uses: actions/download-artifact@v4
         with:
@@ -232,8 +207,6 @@ jobs:
         run: |
           echo "Available APK files:"
           find artifacts/apk -name "*.apk" -type f
-          echo "Available AAB files:"
-          find artifacts/aab -name "*.aab" -type f
 
       - name: Create Release Tag
         run: |
@@ -280,7 +253,6 @@ jobs:
           generate_release_notes: true
           files: |
             artifacts/apk/*.apk
-            artifacts/aab/*.aab
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
