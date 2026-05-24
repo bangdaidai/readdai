@@ -1,6 +1,7 @@
 package io.legado.app.ui.book.read
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -13,6 +14,10 @@ import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.visible
 
 class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
+
+    companion object {
+        private const val TAG = "TextMenuConfigDialog"
+    }
 
     private val binding by viewBinding(DialogRecyclerViewBinding::bind)
     private val adapter by lazy { MenuItemAdapter(requireContext()) }
@@ -43,10 +48,12 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
         tvOk.visible()
 
         tvCancel.setOnClickListener {
+            Log.d(TAG, "Cancel clicked, not saving")
             dismiss()
         }
 
         tvOk.setOnClickListener {
+            Log.d(TAG, "Save clicked, saving config")
             saveConfig()
             dismiss()
         }
@@ -58,6 +65,7 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
     }
 
     private fun reloadMenuItems() {
+        Log.d(TAG, "reloadMenuItems")
         // 添加自定义菜单项
         val customItems = TextMenuConfig.getAllMenuItems().map {
             MenuItemAdapter.DisplayItem(it.id, requireContext().getString(it.nameResId))
@@ -71,6 +79,7 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
                     .setAction(android.content.Intent.ACTION_PROCESS_TEXT)
                     .setType("text/plain")
                 val resolveInfoList = requireContext().packageManager.queryIntentActivities(intent, 0)
+                Log.d(TAG, "Found ${resolveInfoList.size} system process text activities")
                 resolveInfoList.forEach { resolveInfo ->
                     val packageName = resolveInfo.activityInfo.packageName
                     val className = resolveInfo.activityInfo.name
@@ -85,16 +94,23 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
                     )
                 }
             } catch (e: Exception) {
-                // 忽略
+                Log.e(TAG, "Error loading system process text items", e)
             }
         }
 
-        adapter.setItems(customItems + systemItems)
-        adapter.setCheckedIds(TextMenuConfig.getHiddenMenuItemIds(requireContext()))
-        adapter.setCheckedSystemItemKeys(TextMenuConfig.getHiddenProcessTextItems(requireContext()))
+        val allItems = customItems + systemItems
+        Log.d(TAG, "Setting ${allItems.size} items")
+        adapter.setItems(allItems)
+
+        val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(requireContext())
+        val hiddenProcessTextItems = TextMenuConfig.getHiddenProcessTextItems(requireContext())
+        Log.d(TAG, "Setting checkedIds: $hiddenIds, checkedSystemItemKeys: $hiddenProcessTextItems")
+        adapter.setCheckedIds(hiddenIds)
+        adapter.setCheckedSystemItemKeys(hiddenProcessTextItems)
     }
 
     private fun saveConfig() {
+        Log.d(TAG, "saveConfig")
         TextMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getCheckedIds())
         TextMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getCheckedSystemItemKeys())
     }

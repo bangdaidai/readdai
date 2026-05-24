@@ -20,12 +20,9 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.view.SupportMenuInflater
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.view.menu.MenuItemImpl
-import androidx.core.view.isVisible
 import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
-import io.legado.app.constant.AppLog
-import io.legado.app.constant.PreferKey
 import io.legado.app.databinding.ItemTextBinding
 import io.legado.app.databinding.PopupActionMenuBinding
 import io.legado.app.help.config.AppConfig
@@ -42,6 +39,10 @@ import io.legado.app.utils.visible
 class TextActionMenu(private val context: Context, private val callBack: CallBack) :
     PopupWindow(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) {
 
+    companion object {
+        private const val TAG = "TextActionMenu"
+    }
+
     private val binding = PopupActionMenuBinding.inflate(LayoutInflater.from(context))
     private val adapter = Adapter(context).apply {
         setHasStableIds(true)
@@ -49,7 +50,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
     private var menuItems: List<MenuItemImpl> = emptyList()
     private val visibleMenuItems = arrayListOf<MenuItemImpl>()
     private val moreMenuItems = arrayListOf<MenuItemImpl>()
-    private val expandTextMenu get() = context.getPrefBoolean(PreferKey.expandTextMenu)
+    private val expandTextMenu get() = context.getPrefBoolean(io.legado.app.constant.PreferKey.expandTextMenu)
     private val handler = Handler(Looper.getMainLooper())
     private var dismissCallback: (() -> Unit)? = null
 
@@ -64,7 +65,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         binding.recyclerView.adapter = adapter
         binding.recyclerViewMore.adapter = adapter
         setOnDismissListener {
-            if (!context.getPrefBoolean(PreferKey.expandTextMenu)) {
+            if (!context.getPrefBoolean(io.legado.app.constant.PreferKey.expandTextMenu)) {
                 binding.ivMenuMore.setImageResource(R.drawable.ic_more_vert)
                 binding.recyclerViewMore.gone()
                 adapter.setItems(visibleMenuItems)
@@ -88,45 +89,37 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
     }
 
     fun reloadMenuItems() {
-        Log.d("TextActionMenu", "reloadMenuItems called")
+        Log.d(TAG, "reloadMenuItems called")
 
         val myMenu = MenuBuilder(context)
         val otherMenu = MenuBuilder(context)
         SupportMenuInflater(context).inflate(R.menu.content_select_action, myMenu)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            onInitializeMenu(otherMenu)
-        }
 
-        // 获取所有菜单项（不仅仅是 visibleItems）
-        // 重要：通过 menu.add() 添加的菜单项不会出现在 visibleItems 中
-        val allMenuItems = ArrayList<MenuItemImpl>()
-        for (i in 0 until myMenu.size()) {
-            allMenuItems.add(myMenu.getItem(i) as MenuItemImpl)
-        }
-        for (i in 0 until otherMenu.size()) {
-            allMenuItems.add(otherMenu.getItem(i) as MenuItemImpl)
-        }
-        Log.d("TextActionMenu", "Total menu items before filter: ${allMenuItems.size}")
-
-        // 从配置中获取隐藏的菜单项ID，过滤掉被隐藏的菜单项
+        // 获取隐藏的菜单项
         val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(context)
-        Log.d("TextActionMenu", "Hidden IDs from config: $hiddenIds")
+        Log.d(TAG, "Hidden custom items: $hiddenIds")
 
-        // 获取隐藏的系统菜单项（问小爱等）
-        val hiddenProcessTextItems = TextMenuConfig.getHiddenProcessTextItems(context)
-        Log.d("TextActionMenu", "Hidden process text items: $hiddenProcessTextItems")
-
-        // 过滤自定义菜单项
-        menuItems = allMenuItems.filter { item ->
-            if (item.itemId in hiddenIds) {
-                Log.d("TextActionMenu", "Hiding custom item: ${item.title} (${item.itemId})")
-                false
+        // 添加自定义菜单项（过滤隐藏项）
+        val customMenuItems = ArrayList<MenuItemImpl>()
+        for (i in 0 until myMenu.size()) {
+            val item = myMenu.getItem(i) as MenuItemImpl
+            if (item.itemId !in hiddenIds) {
+                customMenuItems.add(item)
             } else {
-                true
+                Log.d(TAG, "Skipping hidden custom item: ${item.title}")
             }
         }
 
-        Log.d("TextActionMenu", "Menu items after filter: ${menuItems.size}")
+        // 添加系统菜单项（问小爱等）
+        val systemMenuItems = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            getSystemProcessTextMenuItems()
+        } else {
+            emptyList()
+        }
+
+        // 合并所有菜单项
+        menuItems = customMenuItems + systemMenuItems
+        Log.d(TAG, "Total menu items after filter: ${menuItems.size}")
 
         // 清空旧数据
         visibleMenuItems.clear()
@@ -140,7 +133,39 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
             visibleMenuItems.addAll(menuItems)
         }
 
-        Log.d("TextActionMenu", "Visible items: ${visibleMenuItems.size}, More items: ${moreMenuItems.size}")
+        Log.d(TAG, "Visible items: ${visibleMenuItems.size}, More items: ${moreMenuItems.size}")
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    private fun getSystemProcessTextMenuItems(): List<MenuItemImpl> {
+        val tempMenu = MenuBuilder(context)
+        val hiddenItems = TextMenuConfig.getHiddenProcessTextItems(context)
+        Log.d(TAG, "Hidden system items: $hiddenItems")
+
+        var menuItemOrder = 100
+        for (resolveInfo in getSupportedActivities()) {
+            val packageName = resolveInfo.activityInfo.packageName
+            val className = resolveInfo.activityInfo.name
+            val itemKey = TextMenuConfig.getProcessTextItemKey(packageName, className)
+
+            if (itemKey !in hiddenItems) {
+                val item = tempMenu.add(
+                    Menu.NONE, Menu.NONE,
+                    menuItemOrder++, resolveInfo.loadLabel(context.packageManager)
+                )
+                item.intent = createProcessTextIntentForResolveInfo(resolveInfo)
+                Log.d(TAG, "Adding system item: ${item.title}")
+            } else {
+                Log.d(TAG, "Skipping hidden system item: ${resolveInfo.loadLabel(context.packageManager)}")
+            }
+        }
+
+        // 从临时菜单中提取所有项
+        val items = ArrayList<MenuItemImpl>()
+        for (i in 0 until tempMenu.size()) {
+            items.add(tempMenu.getItem(i) as MenuItemImpl)
+        }
+        return items
     }
 
     fun upMenu() {
@@ -164,8 +189,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         endX: Int,
         endBottomY: Int
     ) {
-        // ✅ 每次显示前重新加载菜单项，确保使用最新的配置
-        upMenu()
+        upMenu() // 每次显示前重新加载
         if (expandTextMenu) {
             when {
                 startTopY > 500 -> {
@@ -239,9 +263,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
             item: MenuItemImpl,
             payloads: MutableList<Any>
         ) {
-            with(binding) {
-                textView.text = item.title
-            }
+            binding.textView.text = item.title
         }
 
         override fun registerListener(holder: ItemViewHolder, binding: ItemTextBinding) {
@@ -305,7 +327,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
                         it.putExtra(Intent.EXTRA_PROCESS_TEXT, callBack.selectedText)
                         context.startActivity(it)
                     }.onFailure { e ->
-                        AppLog.put("执行文本菜单操作出错\n$e", e, true)
+                        io.legado.app.constant.AppLog.put("执行文本菜单操作出错\n$e", e, true)
                     }
                 }
             }
@@ -330,33 +352,6 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         return createProcessTextIntent()
             .putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, false)
             .setClassName(info.activityInfo.packageName, info.activityInfo.name)
-    }
-
-    /**
-     * Start with a menu Item order value that is high enough
-     * so that your "PROCESS_TEXT" menu items appear after the
-     * standard selection menu items like Cut, Copy, Paste.
-     */
-    @RequiresApi(Build.VERSION_CODES.M)
-    private fun onInitializeMenu(menu: Menu) {
-        kotlin.runCatching {
-            val hiddenItems = TextMenuConfig.getHiddenProcessTextItems(context)
-            var menuItemOrder = 100
-            for (resolveInfo in getSupportedActivities()) {
-                val packageName = resolveInfo.activityInfo.packageName
-                val className = resolveInfo.activityInfo.name
-                val itemKey = TextMenuConfig.getProcessTextItemKey(packageName, className)
-                // 检查是否被隐藏
-                if (itemKey !in hiddenItems) {
-                    menu.add(
-                        Menu.NONE, Menu.NONE,
-                        menuItemOrder++, resolveInfo.loadLabel(context.packageManager)
-                    ).intent = createProcessTextIntentForResolveInfo(resolveInfo)
-                }
-            }
-        }.onFailure {
-            context.toastOnUi("获取文字操作菜单出错:${it.localizedMessage}")
-        }
     }
 
     interface CallBack {

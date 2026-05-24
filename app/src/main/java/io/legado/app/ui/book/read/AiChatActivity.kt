@@ -2054,15 +2054,24 @@ class ChatAdapter(
             // 渲染 Markdown（已内置文本选择支持）
             MarkdownUtils.setMarkdown(holder.contentText, message.content)
 
-            // ✅ 关键修复：启用文本选择功能
+            // ✅ 关键修复：启用文本选择功能，使用自定义菜单
             holder.contentText.setTextIsSelectable(true)
 
-            // ✅ 修复：创建空的 ActionMode 以允许文本选择，然后通过长按显示自定义菜单
+            // ✅ 使用自定义 ActionMode 来显示我们的菜单
             holder.contentText.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
                 override fun onCreateActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
-                    // 创建菜单但保持空白，系统会启动文本选择模式
+                    // 清空菜单，使用我们自定义的 PopupWindow
                     menu.clear()
-                    return true
+                    // 获取选中的文本
+                    val start = holder.contentText.selectionStart
+                    val end = holder.contentText.selectionEnd
+                    if (start >= 0 && end > start) {
+                        val selectedText = holder.contentText.text?.substring(start, end) ?: ""
+                        // 显示自定义菜单
+                        activity.showAiChatTextMenu(holder.contentText, selectedText)
+                    }
+                    // 返回 false 表示不显示系统 ActionMode
+                    return false
                 }
 
                 override fun onPrepareActionMode(mode: android.view.ActionMode, menu: android.view.Menu): Boolean {
@@ -2075,17 +2084,6 @@ class ChatAdapter(
 
                 override fun onDestroyActionMode(mode: android.view.ActionMode) {
                 }
-            }
-
-            // ✅ 使用自定义文本选择监听器，显示自定义 PopupWindow 菜单
-            holder.contentText.setOnLongClickListener {
-                val start = holder.contentText.selectionStart
-                val end = holder.contentText.selectionEnd
-                if (start >= 0 && end > start) {
-                    val selectedText = holder.contentText.text?.substring(start, end) ?: ""
-                    activity.showAiChatTextMenu(holder.contentText, selectedText)
-                }
-                true
             }
         } else {
             holder.itemView.setBackgroundResource(0)
