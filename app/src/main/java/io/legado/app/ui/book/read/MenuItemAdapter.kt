@@ -6,6 +6,10 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.ItemCheckBoxBinding
 
+/**
+ * 菜单项适配器 - 简化版
+ * 直接操作隐藏项集合，逻辑更清晰
+ */
 class MenuItemAdapter(context: Context) :
     RecyclerAdapter<MenuItemAdapter.DisplayItem, ItemCheckBoxBinding>(context) {
 
@@ -16,53 +20,41 @@ class MenuItemAdapter(context: Context) :
         val systemItemKey: String? = null
     )
 
-    private val visibleItemIds = mutableSetOf<Int>()
-    private val visibleSystemItemKeys = mutableSetOf<String>()
+    // 隐藏的自定义菜单项ID
+    private val hiddenItemIds = mutableSetOf<Int>()
+    // 隐藏的系统菜单项Key
+    private val hiddenSystemItemKeys = mutableSetOf<String>()
 
     /**
-     * 设置要显示的自定义菜单项ID（即应该勾选的
+     * 设置隐藏的自定义菜单项ID
      */
-    fun setVisibleItemIds(ids: Set<Int>) {
-        visibleItemIds.clear()
-        visibleItemIds.addAll(ids)
+    fun setHiddenItemIds(ids: Set<Int>) {
+        hiddenItemIds.clear()
+        hiddenItemIds.addAll(ids)
         notifyDataSetChanged()
     }
 
     /**
-     * 设置要显示的系统菜单项Key
+     * 设置隐藏的系统菜单项Key
      */
-    fun setVisibleSystemItemKeys(keys: Set<String>) {
-        visibleSystemItemKeys.clear()
-        visibleSystemItemKeys.addAll(keys)
+    fun setHiddenSystemItemKeys(keys: Set<String>) {
+        hiddenSystemItemKeys.clear()
+        hiddenSystemItemKeys.addAll(keys)
         notifyDataSetChanged()
     }
 
     /**
-     * 获取要隐藏的自定义菜单项ID
+     * 获取隐藏的自定义菜单项ID
      */
     fun getHiddenItemIds(): Set<Int> {
-        val result = mutableSetOf<Int>()
-        for (i in 0 until itemCount) {
-            val item = getItem(i) ?: continue
-            if (!item.isSystemItem && item.id !in visibleItemIds) {
-                result.add(item.id)
-            }
-        }
-        return result
+        return hiddenItemIds.toSet()
     }
 
     /**
-     * 获取要隐藏的系统菜单项Key
+     * 获取隐藏的系统菜单项Key
      */
     fun getHiddenSystemItemKeys(): Set<String> {
-        val result = mutableSetOf<String>()
-        for (i in 0 until itemCount) {
-            val item = getItem(i) ?: continue
-            if (item.isSystemItem && item.systemItemKey != null && item.systemItemKey !in visibleSystemItemKeys) {
-                result.add(item.systemItemKey)
-            }
-        }
-        return result
+        return hiddenSystemItemKeys.toSet()
     }
 
     override fun getViewBinding(parent: ViewGroup): ItemCheckBoxBinding {
@@ -77,10 +69,11 @@ class MenuItemAdapter(context: Context) :
     ) {
         binding.apply {
             checkBox.text = item.name
+            // 勾选表示可见，不勾选表示隐藏
             checkBox.isChecked = if (item.isSystemItem) {
-                item.systemItemKey in visibleSystemItemKeys
+                item.systemItemKey !in hiddenSystemItemKeys
             } else {
-                item.id in visibleItemIds
+                item.id !in hiddenItemIds
             }
         }
     }
@@ -89,16 +82,17 @@ class MenuItemAdapter(context: Context) :
         holder.itemView.setOnClickListener {
             getItem(holder.layoutPosition)?.let { item ->
                 if (item.isSystemItem) {
-                    if (item.systemItemKey in visibleSystemItemKeys) {
-                        visibleSystemItemKeys.remove(item.systemItemKey)
+                    val key = item.systemItemKey ?: return@let
+                    if (key in hiddenSystemItemKeys) {
+                        hiddenSystemItemKeys.remove(key)
                     } else {
-                        visibleSystemItemKeys.add(item.systemItemKey!!)
+                        hiddenSystemItemKeys.add(key)
                     }
                 } else {
-                    if (item.id in visibleItemIds) {
-                        visibleItemIds.remove(item.id)
+                    if (item.id in hiddenItemIds) {
+                        hiddenItemIds.remove(item.id)
                     } else {
-                        visibleItemIds.add(item.id)
+                        hiddenItemIds.add(item.id)
                     }
                 }
                 notifyItemChanged(holder.layoutPosition)

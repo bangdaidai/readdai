@@ -65,6 +65,8 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
     }
 
     private fun reloadMenuItems() {
+        Log.d(TAG, "reloadMenuItems: 开始加载菜单项")
+        
         // 添加自定义菜单项
         val customItems = TextMenuConfig.getAllMenuItems().map {
             MenuItemAdapter.DisplayItem(it.id, requireContext().getString(it.nameResId))
@@ -92,32 +94,37 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
                     )
                 }
             } catch (e: Exception) {
-                // 忽略错误
+                Log.e(TAG, "加载系统菜单项失败", e)
             }
         }
 
         val allItems = customItems + systemItems
         adapter.setItems(allItems)
+        Log.d(TAG, "reloadMenuItems: 总共有 ${allItems.size} 个菜单项")
 
-        // 计算要显示的自定义菜单项（隐藏的取反）
+        // 直接设置隐藏的项
         val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(requireContext())
-        val visibleIds = TextMenuConfig.getAllMenuItems()
-            .map { it.id }
-            .filter { it !in hiddenIds }
-            .toSet()
-        
-        // 计算要显示的系统菜单项（隐藏的取反）
-        val allSystemItemKeys = systemItems.mapNotNull { it.systemItemKey }.toSet()
         val hiddenProcessTextItems = TextMenuConfig.getHiddenProcessTextItems(requireContext())
-        val visibleSystemKeys = allSystemItemKeys - hiddenProcessTextItems
         
-        adapter.setVisibleItemIds(visibleIds)
-        adapter.setVisibleSystemItemKeys(visibleSystemKeys)
+        Log.d(TAG, "reloadMenuItems: 自定义隐藏项 $hiddenIds, 系统隐藏项 $hiddenProcessTextItems")
+        
+        adapter.setHiddenItemIds(hiddenIds)
+        adapter.setHiddenSystemItemKeys(hiddenProcessTextItems)
     }
 
     private fun saveConfig() {
-        TextMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getHiddenItemIds())
-        TextMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getHiddenSystemItemKeys())
+        val hiddenIds = adapter.getHiddenItemIds()
+        val hiddenSystemItemKeys = adapter.getHiddenSystemItemKeys()
+        
+        Log.d(TAG, "saveConfig: 保存自定义隐藏项 $hiddenIds, 系统隐藏项 $hiddenSystemItemKeys")
+        
+        TextMenuConfig.setHiddenMenuItemIds(requireContext(), hiddenIds)
+        TextMenuConfig.setHiddenProcessTextItems(requireContext(), hiddenSystemItemKeys)
+        
+        // 验证保存结果
+        val verifyHiddenIds = TextMenuConfig.getHiddenMenuItemIds(requireContext())
+        val verifyHiddenSystemItemKeys = TextMenuConfig.getHiddenProcessTextItems(requireContext())
+        Log.d(TAG, "saveConfig: 验证保存结果 - 自定义隐藏项 $verifyHiddenIds, 系统隐藏项 $verifyHiddenSystemItemKeys")
     }
 
     override fun dismiss() {

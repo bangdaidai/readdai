@@ -63,8 +63,11 @@ object AiChatMenuConfig {
      */
     fun setHiddenMenuItemIds(context: Context, ids: Set<Int>) {
         val hiddenStr = ids.joinToString(",")
-        Log.d(TAG, "setHiddenMenuItemIds: ids=$ids, hiddenStr='$hiddenStr'")
+        Log.d(TAG, "setHiddenMenuItemIds: key=${PreferKey.hiddenAiChatMenuItems}, ids=$ids, hiddenStr='$hiddenStr'")
         context.putPrefString(PreferKey.hiddenAiChatMenuItems, hiddenStr)
+        // 立即验证是否保存成功
+        val savedStr = context.getPrefString(PreferKey.hiddenAiChatMenuItems, "NOT_FOUND")
+        Log.d(TAG, "setHiddenMenuItemIds: 验证保存结果, savedStr='$savedStr'")
     }
 
     /**
