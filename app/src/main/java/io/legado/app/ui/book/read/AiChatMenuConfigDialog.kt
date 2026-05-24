@@ -1,7 +1,6 @@
 package io.legado.app.ui.book.read
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,10 +13,6 @@ import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.visible
 
 class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view) {
-
-    companion object {
-        private const val TAG = "AiChatMenuConfigDialog"
-    }
 
     private val binding by viewBinding(DialogRecyclerViewBinding::bind)
     private val adapter by lazy { MenuItemAdapter(requireContext()) }
@@ -43,17 +38,14 @@ class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view)
             }
         }
 
-        // 显示保存和取消按钮
         tvCancel.visible()
         tvOk.visible()
 
         tvCancel.setOnClickListener {
-            Log.d(TAG, "Cancel clicked, not saving")
             dismiss()
         }
 
         tvOk.setOnClickListener {
-            Log.d(TAG, "Save clicked, saving config")
             saveConfig()
             dismiss()
         }
@@ -65,14 +57,10 @@ class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view)
     }
 
     private fun reloadMenuItems() {
-        Log.d(TAG, "reloadMenuItems: 开始加载菜单项")
-        
-        // 添加自定义菜单项
         val customItems = AiChatMenuConfig.getAllMenuItems().map {
             MenuItemAdapter.DisplayItem(it.id, requireContext().getString(it.nameResId))
         }
 
-        // 加载并添加系统菜单项（问小爱等）
         val systemItems = mutableListOf<MenuItemAdapter.DisplayItem>()
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
             try {
@@ -94,41 +82,22 @@ class AiChatMenuConfigDialog : BaseDialogFragment(R.layout.dialog_recycler_view)
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "加载系统菜单项失败", e)
             }
         }
 
         val allItems = customItems + systemItems
         adapter.setItems(allItems)
-        Log.d(TAG, "reloadMenuItems: 总共有 ${allItems.size} 个菜单项")
 
-        // 直接设置隐藏的项
-        val hiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(requireContext())
-        val hiddenProcessTextItems = AiChatMenuConfig.getHiddenProcessTextItems(requireContext())
-        
-        Log.d(TAG, "reloadMenuItems: 自定义隐藏项 $hiddenIds, 系统隐藏项 $hiddenProcessTextItems")
-        
-        adapter.setHiddenItemIds(hiddenIds)
-        adapter.setHiddenSystemItemKeys(hiddenProcessTextItems)
+        adapter.setHiddenItemIds(AiChatMenuConfig.getHiddenMenuItemIds(requireContext()))
+        adapter.setHiddenSystemItemKeys(AiChatMenuConfig.getHiddenProcessTextItems(requireContext()))
     }
 
     private fun saveConfig() {
-        val hiddenIds = adapter.getHiddenItemIds()
-        val hiddenSystemItemKeys = adapter.getHiddenSystemItemKeys()
-        
-        Log.d(TAG, "saveConfig: 保存自定义隐藏项 $hiddenIds, 系统隐藏项 $hiddenSystemItemKeys")
-        
-        AiChatMenuConfig.setHiddenMenuItemIds(requireContext(), hiddenIds)
-        AiChatMenuConfig.setHiddenProcessTextItems(requireContext(), hiddenSystemItemKeys)
-        
-        // 验证保存结果
-        val verifyHiddenIds = AiChatMenuConfig.getHiddenMenuItemIds(requireContext())
-        val verifyHiddenSystemItemKeys = AiChatMenuConfig.getHiddenProcessTextItems(requireContext())
-        Log.d(TAG, "saveConfig: 验证保存结果 - 自定义隐藏项 $verifyHiddenIds, 系统隐藏项 $verifyHiddenSystemItemKeys")
+        AiChatMenuConfig.setHiddenMenuItemIds(requireContext(), adapter.getHiddenItemIds())
+        AiChatMenuConfig.setHiddenProcessTextItems(requireContext(), adapter.getHiddenSystemItemKeys())
     }
 
     override fun dismiss() {
-        // 不在这里保存，让用户点击保存按钮才保存
         super.dismiss()
     }
 }

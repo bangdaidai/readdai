@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
@@ -38,10 +37,6 @@ import io.legado.app.utils.visible
 @SuppressLint("RestrictedApi")
 class TextActionMenu(private val context: Context, private val callBack: CallBack) :
     PopupWindow(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT) {
-
-    companion object {
-        private const val TAG = "TextActionMenu"
-    }
 
     private val binding = PopupActionMenuBinding.inflate(LayoutInflater.from(context))
     private val adapter = Adapter(context).apply {
@@ -89,58 +84,42 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
     }
 
     fun reloadMenuItems() {
-        Log.d(TAG, "reloadMenuItems called")
-
         val myMenu = MenuBuilder(context)
-        val otherMenu = MenuBuilder(context)
         SupportMenuInflater(context).inflate(R.menu.content_select_action, myMenu)
 
-        // 获取隐藏的菜单项
         val hiddenIds = TextMenuConfig.getHiddenMenuItemIds(context)
-        Log.d(TAG, "Hidden custom items: $hiddenIds")
 
-        // 添加自定义菜单项（过滤隐藏项）
         val customMenuItems = ArrayList<MenuItemImpl>()
         for (i in 0 until myMenu.size()) {
             val item = myMenu.getItem(i) as MenuItemImpl
             if (item.itemId !in hiddenIds) {
                 customMenuItems.add(item)
-            } else {
-                Log.d(TAG, "Skipping hidden custom item: ${item.title}")
             }
         }
 
-        // 添加系统菜单项（问小爱等）
         val systemMenuItems = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             getSystemProcessTextMenuItems()
         } else {
             emptyList()
         }
 
-        // 合并所有菜单项
         menuItems = customMenuItems + systemMenuItems
-        Log.d(TAG, "Total menu items after filter: ${menuItems.size}")
 
-        // 清空旧数据
         visibleMenuItems.clear()
         moreMenuItems.clear()
 
-        // 将菜单项分为可见项（前5项）和更多项（第5项之后）
         if (menuItems.size > 5) {
             visibleMenuItems.addAll(menuItems.subList(0, 5))
             moreMenuItems.addAll(menuItems.subList(5, menuItems.size))
         } else {
             visibleMenuItems.addAll(menuItems)
         }
-
-        Log.d(TAG, "Visible items: ${visibleMenuItems.size}, More items: ${moreMenuItems.size}")
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
     private fun getSystemProcessTextMenuItems(): List<MenuItemImpl> {
         val tempMenu = MenuBuilder(context)
         val hiddenItems = TextMenuConfig.getHiddenProcessTextItems(context)
-        Log.d(TAG, "Hidden system items: $hiddenItems")
 
         var menuItemOrder = 100
         for (resolveInfo in getSupportedActivities()) {
@@ -154,13 +133,9 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
                     menuItemOrder++, resolveInfo.loadLabel(context.packageManager)
                 )
                 item.intent = createProcessTextIntentForResolveInfo(resolveInfo)
-                Log.d(TAG, "Adding system item: ${item.title}")
-            } else {
-                Log.d(TAG, "Skipping hidden system item: ${resolveInfo.loadLabel(context.packageManager)}")
             }
         }
 
-        // 从临时菜单中提取所有项
         val items = ArrayList<MenuItemImpl>()
         for (i in 0 until tempMenu.size()) {
             items.add(tempMenu.getItem(i) as MenuItemImpl)
@@ -170,7 +145,6 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
 
     fun upMenu() {
         reloadMenuItems()
-        Log.d(TAG, "upMenu: menuItems=${menuItems.size}, visibleMenuItems=${visibleMenuItems.size}")
 
         if (expandTextMenu) {
             adapter.setItems(menuItems)
@@ -190,8 +164,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         endX: Int,
         endBottomY: Int
     ) {
-        Log.d(TAG, "show() called")
-        upMenu() // 每次显示前重新加载
+        upMenu()
         if (expandTextMenu) {
             when {
                 startTopY > 500 -> {
