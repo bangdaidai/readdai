@@ -16,27 +16,20 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Setup Android Signing
-        env:
-          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      - name: Setup Android Signing (Using Repository's legado.jks)
         run: |
-          if [ ! -z "$KEYSTORE_BASE64" ]; then
-            echo "✅ Setting up signing keys..."
-            # 解码 keystore 文件到 app 目录
-            echo "$KEYSTORE_BASE64" | base64 --decode > ./app/release.keystore
-            
-            # 写入 gradle.properties（使用绝对路径）
-            echo "RELEASE_STORE_FILE=./app/release.keystore" >> ./gradle.properties
-            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> ./gradle.properties
-            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> ./gradle.properties
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> ./gradle.properties
-            
-            echo "✅ Signing configuration completed"
-            echo "📄 gradle.properties content:"
-            cat ./gradle.properties
-          else
-            echo "⚠️ WARNING: No keystore found, building with debug signature"
-          fi
+          echo "✅ Setting up signing keys using repository's legado.jks..."
+          
+          # 复制现有 legado.jks 到 app 目录
+          cp ./.github/workflows/legado.jks ./app/legado.jks
+          
+          # 写入 gradle.properties
+          echo "RELEASE_STORE_FILE=./app/legado.jks" >> ./gradle.properties
+          echo "RELEASE_STORE_PASSWORD=legado" >> ./gradle.properties
+          echo "RELEASE_KEY_ALIAS=legado" >> ./gradle.properties
+          echo "RELEASE_KEY_PASSWORD=legado" >> ./gradle.properties
+          
+          echo "✅ Signing configuration completed"
 
       - name: Build Release APK
         run: |
@@ -49,9 +42,21 @@ jobs:
           find app/build/outputs -name "*.apk" -type f
           ls -la app/build/outputs/apk/app/release/ || echo "Release directory not found"
 
+      - name: Prepare APK for Upload
+        id: prepare_apk
+        run: |
+          # 获取生成的APK文件名
+          APK_FILE=$(find app/build/outputs/apk/app/release -name "*.apk" -type f | head -1)
+          echo "APK_FILE=$APK_FILE" >> $GITHUB_ENV
+          echo "📦 Found APK: $APK_FILE"
+          
+          # 获取APK文件名（不含路径）
+          APK_NAME=$(basename "$APK_FILE")
+          echo "APK_NAME=$APK_NAME" >> $GITHUB_ENV
+
       - name: Upload Signed APK
         uses: actions/upload-artifact@v6
         with:
-          name: legado_release_signed_apk
-          path: app/build/outputs/apk/app/release/*.apk
+          name: ${{ env.APK_NAME }}
+          path: ${{ env.APK_FILE }}
           retention-days: 30
