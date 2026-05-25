@@ -1404,28 +1404,39 @@ $content
             }
         }.show()
     }
-        runOnUiThread {
-            AlertDialog.Builder(this)
-                .setTitle("重新开始阅读")
-                .setMessage("这本书您已经读完了，是否开始重新阅读（N刷）？\n\n选择“是”将记录为一次新的阅读，书架上会显示“N刷”标签。\n选择“否”将继续保持读完状态。")
-                .setPositiveButton("是，开始N刷") { _, _ ->
-                    // 用户确认，增加 readIteration（变成偶数，表示开始N刷）
-                    lifecycleScope.launch(IO) {
-                        book.readIteration++
-                        book.save()
-                        
-                        withContext(Main) {
-                            Toast.makeText(this@ReadBookActivity, "已开始重新阅读", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-                .setNegativeButton("否，保持读完状态") { _, _ ->
-                    // 用户取消，不增加 readIteration，保持读完状态
-                    Toast.makeText(this@ReadBookActivity, "已保持读完状态", Toast.LENGTH_SHORT).show()
-                }
-                .setCancelable(true)
-                .show()
+    
+    /**
+     * 实现 ReadBook.CallBack - 书籍读到末尾时弹窗
+     */
+    override fun onBookEnd() {
+        val book = ReadBook.book ?: return
+        if (!getPrefBoolean(PreferKey.readIterationPopup, true)) return
+        // 只处理奇数前的状态：0->1(读完), 2->3(二刷完), ... 即 readIteration 为偶数时
+        if (book.readIteration % 2 != 0) return
+        if (!ReadBook.inBookshelf) return
+        val iterNum = book.readIteration / 2
+        val title = when (iterNum) {
+            0 -> getString(R.string.mark_book_finished)
+            else -> {
+                val nthStr = iterNum + 1
+                "标记${nthStr}刷完"
+            }
         }
+        val message = when (iterNum) {
+            0 -> "已读完《${book.name}》，是否标记为已读完？"
+            else -> {
+                val nthStr = iterNum + 1
+                "已完成${nthStr}刷，是否标记？"
+            }
+        }
+        alert(title) {
+            setMessage(message)
+            yesButton {
+                ReadIterationHelper.markAsFinished(book)
+                postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
+            }
+            noButton()
+        }.show()
     }
 
     /**
