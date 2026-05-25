@@ -55,6 +55,8 @@ import io.legado.app.help.IntentData
 import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
+import io.legado.app.help.book.ReadIterationHelper
+import io.legado.app.help.book.ReadingTicketHelper
 import io.legado.app.help.book.isAudio
 import io.legado.app.help.book.isEpub
 import io.legado.app.help.book.isLocal
@@ -1386,6 +1388,22 @@ $content
      * 显示N刷确认对话框
      */
     override fun showMultiReadConfirm(book: io.legado.app.data.entities.Book) {
+        val nextIterNum = (book.readIteration + 3) / 2
+        val nthStr = when (nextIterNum) {
+            2 -> "二"; 3 -> "三"; 4 -> "四"; 5 -> "五"; 6 -> "六"; 7 -> "七"
+            else -> "${nextIterNum}"
+        }
+        alert("开始${nthStr}刷") {
+            setMessage("《${book.name}》已标记为读完，是否开始${nthStr}刷？")
+            yesButton {
+                ReadIterationHelper.moveToNextIteration(book)
+                postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
+            }
+            noButton {
+                Toast.makeText(this@ReadBookActivity, "已保持读完状态", Toast.LENGTH_SHORT).show()
+            }
+        }.show()
+    }
         runOnUiThread {
             AlertDialog.Builder(this)
                 .setTitle("重新开始阅读")
