@@ -1,6 +1,8 @@
 package io.legado.app.ui.book.read.page.provider
 
 import io.legado.app.R
+import io.legado.app.constant.PreferKey
+import io.legado.app.help.config.AppConfig
 import io.legado.app.model.ReadBook
 import io.legado.app.ui.book.read.page.api.DataSource
 import io.legado.app.ui.book.read.page.api.PageFactory
@@ -16,6 +18,9 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
      */
     private fun checkBookplate(page: TextPage, chapter: io.legado.app.ui.book.read.page.entities.TextChapter) {
         val book = ReadBook.book ?: return
+        if (!AppConfig.getPrefBoolean(PreferKey.showBookplate, true)) {
+            return
+        }
         val isLastChapter = chapter.position >= ReadBook.simulatedChapterSize - 1
         val isFirstPage = chapter.position == 0 && page.index == 0
         val isLastPage = isLastChapter && chapter.isLastIndex(page.index)

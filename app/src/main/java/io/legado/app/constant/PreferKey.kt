@@ -269,4 +269,10 @@ object PreferKey {
     const val bottomBarLayoutMode = "bottomBarLayoutMode"
     const val bottomBarSidebarGravity = "bottomBarSidebarGravity"
     const val syncThemePackages = "syncThemePackages"
+    
+    // 阅读轮次相关
+    const val readIterationTagColor = "readIterationTagColor"
+    const val readIterationPopup = "readIterationPopup"
+    const val readIterationShowTag = "readIterationShowTag"
+    const val showBookplate = "showBookplate"
 }

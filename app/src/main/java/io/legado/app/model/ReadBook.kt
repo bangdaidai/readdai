@@ -2,15 +2,14 @@ package io.legado.app.model
 
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.EventBus
+import io.legado.app.constant.PreferKey
 import io.legado.app.constant.PageAnim.scrollPageAnim
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
-import io.legado.app.data.entities.ReplaceBook
 import io.legado.app.data.entities.BookProgress
 import io.legado.app.data.entities.BookSource
-import io.legado.app.data.entities.readRecord.ReadSession
-import io.legado.app.data.repository.ReadRecordRepository
+import io.legado.app.data.entities.ReadRecord
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
@@ -29,7 +28,6 @@ import io.legado.app.model.localBook.TextFile
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.service.BaseReadAloudService
 import io.legado.app.service.CacheBookService
-import io.legado.app.service.DataSyncService
 import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.page.provider.LayoutProgressListener
@@ -71,15 +69,16 @@ object ReadBook : CoroutineScope by MainScope() {
     var simulatedChapterSize = 0
     var durChapterIndex = 0
     var durChapterPos = 0
+    var showBookplate = 0 // -1 for start, 1 for end, 0 for none
     var isLocalBook = true
     var chapterChanged = false
-    var showBookplate: Int = -1  // -1:未初始化, 0:显示, 1:不显示
     var prevTextChapter: TextChapter? = null
     var curTextChapter: TextChapter? = null
     var nextTextChapter: TextChapter? = null
     var bookSource: BookSource? = null
     var msg: String? = null
     private val loadingChapters = arrayListOf<Int>()
+    private val readRecord = ReadRecord()
     private val chapterLoadingJobs = ConcurrentHashMap<Int, Coroutine<*>>()
     private val prevChapterLoadingLock = Mutex()
     private val curChapterLoadingLock = Mutex()
@@ -103,15 +102,19 @@ object ReadBook : CoroutineScope by MainScope() {
     fun resetData(book: Book) {
         releaseAndCancel()
         ReadBook.book = book
-
-        // 重置阅读开始时间，确保每次开始阅读时都从当前时间开始计算
-        readStartTime.set(System.currentTimeMillis())
-
+        readRecord.bookName = book.name
+        readRecord.readTime = appDb.readRecordDao.getReadTime(book.name) ?: 0
         chapterSize = appDb.bookChapterDao.getChapterCount(book.bookUrl)
-        simulatedChapterSize = chapterSize // 始终使用实际章节大小，不使用模拟章节数
+        simulatedChapterSize = if (book.readSimulating()) {
+            book.simulatedTotalChapterNum()
+        } else {
+            chapterSize
+        }
         contentProcessor = ContentProcessor.get(book)
         durChapterIndex = book.durChapterIndex
         durChapterPos = book.durChapterPos
+        showBookplate = if (durChapterIndex == 0 && durChapterPos == 0
+            && appCtx.getPrefBoolean(PreferKey.showBookplate, true)) -1 else 0
         isLocalBook = book.isLocal
         clearTextChapter()
         callBack?.upContent()
@@ -126,16 +129,17 @@ object ReadBook : CoroutineScope by MainScope() {
             downloadedChapters.clear()
             downloadFailChapters.clear()
         }
-        
-        // 检测是否需要询问N刷：已读完的书，从第一章开始阅读
-        checkMultiReadIfNeeded(book)
     }
 
     fun upData(book: Book) {
         releaseAndCancel()
         ReadBook.book = book
         chapterSize = appDb.bookChapterDao.getChapterCount(book.bookUrl)
-        simulatedChapterSize = chapterSize // 始终使用实际章节大小，不使用模拟章节数
+        simulatedChapterSize = if (book.readSimulating()) {
+            book.simulatedTotalChapterNum()
+        } else {
+            chapterSize
+        }
         if (durChapterIndex != book.durChapterIndex) {
             durChapterIndex = book.durChapterIndex
             durChapterPos = book.durChapterPos
@@ -288,69 +292,11 @@ object ReadBook : CoroutineScope by MainScope() {
         if (!AppConfig.enableReadRecord) {
             return
         }
-        launch(IO) {
-            try {
-                // 确保readStartTime的访问是线程安全的
-                val startTime = readStartTime.get()
-                val currentTime = System.currentTimeMillis()
-                val duration = currentTime - startTime
-
-                // 检查时间戳是否正确
-                if (duration <= 0) {
-                    readStartTime.set(currentTime)
-                    return@launch
-                }
-
-                // 只在本次阅读时长大于10秒时才记录，减少ReadSession记录数量
-                val MIN_READ_DURATION = 10 * 1000L // 10秒
-                if (duration <= MIN_READ_DURATION) {
-                    // 重置阅读开始时间
-                    readStartTime.set(currentTime)
-                    return@launch
-                }
-
-                val book = ReadBook.book
-                if (book == null) {
-                    return@launch
-                }
-
-                val currentChapter = curTextChapter?.title.orEmpty()
-                val coverUrl = book.getDisplayCover().orEmpty()
-
-                // 1. 创建阅读会话记录（统一表结构）
-                val readSession = ReadSession(
-                    bookName = book.name,
-                    author = book.author,
-                    bookUrl = book.bookUrl,
-                    deviceId = "",
-                    startTime = startTime,
-                    endTime = currentTime,
-                    duration = duration,
-                    words = durChapterIndex.toLong(),
-                    type = book.type,
-                    durChapterTitle = currentChapter,
-                    coverUrl = coverUrl
-                )
-
-                // 2. 保存阅读会话记录到统一的ReadSession表
-                val sessionId = appDb.readSessionDao.insert(readSession)
-                AppLog.put("创建阅读会话成功，ID: $sessionId, 时长: ${duration/1000}秒, 书籍: ${book.name}")
-
-                // 更新书籍的阅读时间
-                book.durChapterTime = currentTime
-                appDb.bookDao.update(book)
-
-                // 3. 同步阅读会话
-                DataSyncService.syncReadRecord(readSession, book)
-
-                // 4. 发送阅读会话更新事件，通知阅读详情页面更新数据
-                postEvent(EventBus.READ_SESSION_UPDATED, book.name)
-
-                // 5. 重置阅读开始时间（在事务外，因为它是内存操作，不影响数据库一致性）
-                readStartTime.set(currentTime)
-            } catch (e: Exception) {
-                AppLog.put("创建阅读会话失败: ${e.localizedMessage}", e)
-            }
+        executor.execute {
+            readRecord.readTime = readRecord.readTime + System.currentTimeMillis() - readStartTime.get()
+            readStartTime.set(System.currentTimeMillis())
+            readRecord.lastRead = System.currentTimeMillis()
+            appDb.readRecordDao.insert(readRecord)
         }
     }
 
@@ -412,15 +358,10 @@ object ReadBook : CoroutineScope by MainScope() {
             callBack?.upMenuView()
             AppLog.putDebug("moveToNextChapter-curPageChanged()")
             curPageChanged()
-            
-            // 检查是否到达最后一章，如果是则显示阅读小票
-            if (durChapterIndex >= simulatedChapterSize - 1) {
-                showReadingTicketIfNeeded()
-            }
-            
             return true
         } else {
             AppLog.putDebug("跳转下一章失败,没有下一章")
+            callBack?.onBookEnd()
             return false
         }
     }
@@ -449,15 +390,10 @@ object ReadBook : CoroutineScope by MainScope() {
             callBack?.upMenuView()
             AppLog.putDebug("moveToNextChapter-curPageChanged()")
             curPageChanged()
-            
-            // 检查是否到达最后一章，如果是则显示阅读小票
-            if (durChapterIndex >= simulatedChapterSize - 1) {
-                showReadingTicketIfNeeded()
-            }
-            
             return true
         } else {
             AppLog.putDebug("跳转下一章失败,没有下一章")
+            callBack?.onBookEnd()
             return false
         }
     }
@@ -614,9 +550,11 @@ object ReadBook : CoroutineScope by MainScope() {
         loadContent(durChapterIndex - 1, resetPageOffset = resetPageOffset)
     }
 
-    fun loadOrUpContent() {
+    fun loadOrUpContent(success: (() -> Unit)? = null) {
         if (curTextChapter == null) {
-            loadContent(durChapterIndex)
+            loadContent(durChapterIndex) {
+                success?.invoke()
+            }
         } else {
             callBack?.upContent()
         }
@@ -779,20 +717,7 @@ object ReadBook : CoroutineScope by MainScope() {
             val displayTitle = chapter.getDisplayTitle(
                 contentProcessor.getTitleReplaceRules(),
                 book.getUseReplaceRule(),
-                replaceBook = ReplaceBook(
-                    bookUrl = book.bookUrl,
-                    origin = book.origin,
-                    originName = book.origin,
-                    type = book.type,
-                    name = book.name,
-                    author = book.author,
-                    kind = book.kind,
-                    coverUrl = book.coverUrl,
-                    intro = book.intro,
-                    wordCount = book.wordCount,
-                    latestChapterTitle = book.latestChapterTitle,
-                    tocUrl = book.tocUrl
-                )
+                replaceBook = book.toReplaceBook()
             )
             val contents = contentProcessor
                 .getContent(book, chapter, content, includeTitle = false)
@@ -881,20 +806,7 @@ object ReadBook : CoroutineScope by MainScope() {
             val displayTitle = chapter.getDisplayTitle(
                 contentProcessor.getTitleReplaceRules(),
                 book.getUseReplaceRule(),
-                replaceBook = ReplaceBook(
-                    bookUrl = book.bookUrl,
-                    origin = book.origin,
-                    originName = book.origin,
-                    type = book.type,
-                    name = book.name,
-                    author = book.author,
-                    kind = book.kind,
-                    coverUrl = book.coverUrl,
-                    intro = book.intro,
-                    wordCount = book.wordCount,
-                    latestChapterTitle = book.latestChapterTitle,
-                    tocUrl = book.tocUrl
-                )
+                replaceBook = book.toReplaceBook()
             )
             val contents = contentProcessor
                 .getContent(book, chapter, content, includeTitle = false)
@@ -968,17 +880,22 @@ object ReadBook : CoroutineScope by MainScope() {
         val bookSource = bookSource ?: return
         val book = book ?: return
         if (!book.canUpdate) return
+        if (chapterSize - durChapterIndex - 1 >= 3) return
         if (System.currentTimeMillis() - book.lastCheckTime < 600000) return
         book.lastCheckTime = System.currentTimeMillis()
+        val oldBook = book.copy()
         WebBook.getChapterList(this, bookSource, book).onSuccess(IO) { cList ->
-            if (book.bookUrl == ReadBook.book?.bookUrl
-                && cList.size > chapterSize
-            ) {
-                appDb.bookChapterDao.delByBook(book.bookUrl)
+            ensureActive()
+            if (cList.size > chapterSize) {
+                if (oldBook.bookUrl == book.bookUrl) {
+                    appDb.bookDao.update(book)
+                } else {
+                    appDb.bookDao.replace(oldBook, book)
+                    BookHelp.updateCacheFolder(oldBook, book)
+                }
+                appDb.bookChapterDao.delByBook(oldBook.bookUrl)
                 appDb.bookChapterDao.insert(*cList.toTypedArray())
-                saveRead()
-                chapterSize = cList.size
-                simulatedChapterSize = book.simulatedTotalChapterNum()
+                onChapterListUpdated(book, false)
                 nextTextChapter ?: loadContent(durChapterIndex + 1)
             }
         }
@@ -996,86 +913,27 @@ object ReadBook : CoroutineScope by MainScope() {
         saveRead()
     }
 
-    // 用于跟踪上次保存的时间，避免过于频繁的保存
-    private var lastSaveTime = 0L
-    // 保存间隔，默认30秒
-    private val SAVE_INTERVAL = 30 * 1000L
-    // 用于跟踪上次保存的状态，避免重复保存相同状态
-    private var lastDurChapterIndex = -1
-    private var lastDurChapterPos = -1
-
     fun saveRead(pageChanged: Boolean = false) {
         val book = book ?: return
         executor.execute {
             kotlin.runCatching {
-                val book = book ?: return@execute
-                val currentTime = System.currentTimeMillis()
-
-                // 检查是否需要保存：只有当阅读位置变化或时间间隔超过SAVE_INTERVAL时才保存
-                if (book.durChapterIndex == durChapterIndex &&
-                    book.durChapterPos == durChapterPos &&
-                    currentTime - lastSaveTime < SAVE_INTERVAL) {
-                    return@execute // 不需要保存，直接返回
-                }
-
-                // 更新上次保存时间和状态
-                lastSaveTime = currentTime
-                lastDurChapterIndex = durChapterIndex
-                lastDurChapterPos = durChapterPos
-
                 book.lastCheckCount = 0
-                val durTime = currentTime
+                val durTime = System.currentTimeMillis()
                 book.durChapterTime = durTime
-
-                // 如果是首次阅读，设置首次阅读时间
-                if (book.firstReadTime == 0L) {
-                    book.firstReadTime = durTime
-                }
-
-                // 无论书籍当前状态如何，始终更新阅读进度
                 val chapterChanged = book.durChapterIndex != durChapterIndex
                 book.durChapterIndex = durChapterIndex
                 book.durChapterPos = durChapterPos
-
                 if (!pageChanged || chapterChanged) {
                     appDb.bookChapterDao.getChapter(book.bookUrl, durChapterIndex)?.let {
                         book.durChapterTitle = it.getDisplayTitle(
                             ContentProcessor.get(book.name, book.origin).getTitleReplaceRules(),
-                            book.getUseReplaceRule()
+                            book.getUseReplaceRule(),
+                            replaceBook = book.toReplaceBook()
                         )
                         SourceCallBack.callBackBook(SourceCallBack.SAVE_READ, bookSource, book, it, durTime.toString())
                     }
                 }
-
-                // 如果用户没有手动修改过阅读状态，且当前状态不是弃文或已读完，则自动更新阅读状态和分组
-                // 已读完的书籍保持读完状态，即使再次阅读
-                if (!book.userModifiedReadingStatus &&
-                    book.readingStatus != io.legado.app.constant.ReadingStatus.ABANDONED.value &&
-                    book.readingStatus != io.legado.app.constant.ReadingStatus.FINISHED.value) {
-                    // 使用runBlocking来在非协程环境中调用挂起函数
-                    val newStatus = kotlinx.coroutines.runBlocking {
-                        io.legado.app.help.book.ReadingProgressHelper.calculateReadingStatus(book)
-                    }
-                    if (book.readingStatus != newStatus.value) {
-                        book.readingStatus = newStatus.value
-
-                        // 更新书籍分组 - 使用setReadingStatus方法确保正确处理分组
-                        book.setReadingStatus(newStatus)
-                    }
-                }
-
-                appDb.bookDao.update(book)
-                SourceCallBack.callBackBook(SourceCallBack.SAVE_READ, bookSource, book, null, durTime.toString())
-
-                // 同步更新我的阅读记录
-                try {
-                    // 使用runBlocking来在非协程环境中调用挂起函数
-                    kotlinx.coroutines.runBlocking {
-                        io.legado.app.help.book.ReadingMemoryHelper.createReadingMemory(book)
-                    }
-                } catch (e: Exception) {
-                    AppLog.put("更新我的阅读记录失败: ${e.localizedMessage}", e)
-                }
+                book.update()
             }.onFailure {
                 AppLog.put("保存书籍阅读进度信息出错\n$it", it)
             }
@@ -1123,18 +981,18 @@ object ReadBook : CoroutineScope by MainScope() {
         }
     }
 
-    fun onChapterListUpdated(newBook: Book) {
+    fun onChapterListUpdated(newBook: Book, loadContent: Boolean = true) {
         if (newBook.isSameNameAuthor(book)) {
             book = newBook
-            chapterSize = appDb.bookChapterDao.getChapterCount(newBook.bookUrl) // 使用实际章节大小
-            simulatedChapterSize = chapterSize // 始终使用实际章节大小，不使用模拟章节数
+            chapterSize = newBook.totalChapterNum
+            simulatedChapterSize = newBook.simulatedTotalChapterNum()
             if (simulatedChapterSize > 0 && durChapterIndex > simulatedChapterSize - 1) {
                 durChapterIndex = simulatedChapterSize - 1
             }
             callBack?.upMenuView()
             if (callBack == null) {
                 clearTextChapter()
-            } else {
+            } else if (loadContent) {
                 loadContent(true)
             }
         }
@@ -1180,41 +1038,6 @@ object ReadBook : CoroutineScope by MainScope() {
             CacheBook.close()
         }
     }
-    
-    /**
-     * 检查并显示阅读小票（到达最后一章时）
-     */
-    private fun showReadingTicketIfNeeded() {
-        book?.let { currentBook ->
-            launch(IO) {
-                try {
-                    // 更新阅读小票，标记为读完（增加 readIteration）
-                    io.legado.app.help.book.ReadingTicketHelper.markAsFinished(currentBook)
-                    
-                    // 通知UI显示阅读小票
-                    withContext(Main) {
-                        callBack?.showReadingTicket()
-                    }
-                } catch (e: Exception) {
-                    AppLog.put("显示阅读小票失败: ${e.localizedMessage}")
-                }
-            }
-        }
-    }
-    
-    /**
-     * 检测是否需要询问N刷（已读完的书，重新打开时）
-     */
-    private fun checkMultiReadIfNeeded(book: Book) {
-        // 条件：书籍已读完（readIteration 为奇数且 > 0）
-        val isFinished = book.readIteration > 0 && book.readIteration % 2 == 1
-        if (isFinished) {
-            launch(Main) {
-                // 通知UI显示N刷确认对话框
-                callBack?.showMultiReadConfirm(book)
-            }
-        }
-    }
 
     interface CallBack : LayoutProgressListener {
         fun upMenuView()
@@ -1244,16 +1067,11 @@ object ReadBook : CoroutineScope by MainScope() {
         fun sureNewProgress(progress: BookProgress)
 
         fun cancelSelect()
-        
+
         /**
-         * 显示阅读小票
+         * 书籍读到末尾时回调
          */
-        fun showReadingTicket()
-        
-        /**
-         * 显示N刷确认对话框
-         */
-        fun showMultiReadConfirm(book: Book)
+        fun onBookEnd()
     }
 
 }

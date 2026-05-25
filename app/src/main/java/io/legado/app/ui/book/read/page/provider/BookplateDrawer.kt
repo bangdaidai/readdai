@@ -59,7 +59,7 @@ object BookplateDrawer {
         // 获取主题色
         val cardBgColor = ThemeStore.backgroundCard(appCtx)
         val dividerColor = ThemeStore.dividerColor(appCtx)
-        val textColor = ThemeStore.colorSurface(appCtx)
+        val textColor = ThemeStore.textColorPrimary(appCtx)
         val primaryColor = ThemeStore.primaryColor(appCtx)
         
         // 绘制阴影
