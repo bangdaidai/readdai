@@ -222,6 +222,12 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         binding.tvEmptyMsg.isGone = modern
         searchView?.isGone = modern
         
+        // 确保现代模式标题栏背景是透明的
+        if (modern) {
+            binding.titleBarModern.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            binding.titleBarModern.elevation = 0f
+        }
+        
         // ✅ 关键修复：动态更新 SwipeRefreshLayout 的顶部约束
         val constraintLayout = binding.root as androidx.constraintlayout.widget.ConstraintLayout
         val constraintSet = androidx.constraintlayout.widget.ConstraintSet()

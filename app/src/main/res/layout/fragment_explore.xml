@@ -23,6 +23,7 @@
         app:contentLayout="@layout/view_discover_modern"
         app:layout_constraintTop_toTopOf="parent"
         app:title="@string/discovery"
+        app:opaque="false"
         android:visibility="gone"
         android:fitsSystemWindows="true" />
 
