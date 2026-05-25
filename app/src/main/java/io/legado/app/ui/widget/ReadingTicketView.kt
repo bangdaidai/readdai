@@ -32,7 +32,6 @@ class ReadingTicketView @JvmOverloads constructor(
     private val tvReadTime: TextView
     private val tvReadCount: TextView
     private val tvProgress: TextView
-    private val tvAnnotationCount: TextView
     private val ratingBar: RatingBar
     private val etReview: EditText
     private val tvFinishTime: TextView
@@ -49,7 +48,6 @@ class ReadingTicketView @JvmOverloads constructor(
         tvReadTime = findViewById(R.id.tv_read_time)
         tvReadCount = findViewById(R.id.tv_read_count)
         tvProgress = findViewById(R.id.tv_progress)
-        tvAnnotationCount = findViewById(R.id.tv_annotation_count)
         ratingBar = findViewById(R.id.rating_bar)
         etReview = findViewById(R.id.et_review)
         tvFinishTime = findViewById(R.id.tv_finish_time)
@@ -125,17 +123,6 @@ class ReadingTicketView @JvmOverloads constructor(
         tvReadCount.text = ticket.getReadCountText()
         tvProgress.text = "${ticket.getProgressPercentage()}%"
         ratingBar.rating = ticket.rating
-        
-        // 显示书摘数量
-        CoroutineScope(Dispatchers.IO).launch {
-            // 由于书摘表中没有bookUrl字段，需要使用bookName和author查询
-            val bookName = ticket.bookName
-            val author = ticket.author
-            val annotationCount = io.legado.app.data.appDb.bookAnnotationDao.getCount(bookName, author)
-            launch(Dispatchers.Main) {
-                tvAnnotationCount.text = "${annotationCount}条"
-            }
-        }
 
         // 显示完成时间
         if (ticket.finishTime > 0) {
