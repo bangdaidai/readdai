@@ -1246,6 +1246,11 @@ object ReadBook : CoroutineScope by MainScope() {
         fun cancelSelect()
         
         /**
+         * 书籍读到末尾时回调，显示N刷确认对话框
+         */
+        fun onBookEnd()
+        
+        /**
          * 显示阅读小票
          */
         fun showReadingTicket()
