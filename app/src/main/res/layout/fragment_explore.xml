@@ -19,6 +19,7 @@
         android:id="@+id/title_bar_modern"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
         app:attachToActivity="false"
         app:contentLayout="@layout/view_discover_modern"
         app:layout_constraintTop_toTopOf="parent"

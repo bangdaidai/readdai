@@ -224,8 +224,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         
         // 确保现代模式标题栏背景是透明的
         if (modern) {
-            binding.titleBarModern.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            binding.titleBarModern.setBackgroundResource(android.R.color.transparent)
             binding.titleBarModern.elevation = 0f
+            binding.titleBarModern.outlineProvider = null
         }
         
         // ✅ 关键修复：动态更新 SwipeRefreshLayout 的顶部约束
