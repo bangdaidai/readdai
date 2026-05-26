@@ -91,19 +91,11 @@ object ReadIterationHelper {
      * 标记书籍为已完成当前轮次
      * 如果 readIteration 为 0 -> 1（首次读完）
      * 如果 readIteration >= 1 -> readIteration + 1（进入下一轮）
-     * 同时更新阅读状态和标签系统
-     * @param asFinished true表示标记为已读完（设为FINISHED），false表示开始新的一轮（设为READING）
+     * 只更新N刷标签，阅读状态由阅读进度自动决定
      */
-    fun markAsFinished(book: Book, asFinished: Boolean = true) {
+    fun markAsFinished(book: Book) {
         val oldIteration = book.readIteration
         book.readIteration++
-        
-        // 根据场景设置阅读状态
-        if (asFinished) {
-            book.setReadingStatus(ReadingStatus.FINISHED)
-        } else {
-            book.setReadingStatus(ReadingStatus.READING)
-        }
         book.save()
         
         // 同步更新标签系统（只有二刷及以上才需要更新标签）
