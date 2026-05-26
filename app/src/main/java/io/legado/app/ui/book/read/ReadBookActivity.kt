@@ -1396,7 +1396,7 @@ $content
         alert("开始${nthStr}刷") {
             setMessage("《${book.name}》已标记为读完，是否开始${nthStr}刷？")
             yesButton {
-                ReadIterationHelper.markAsFinished(book)
+                ReadIterationHelper.markAsFinished(book, asFinished = false)
                 postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
             }
             noButton {
