@@ -20,8 +20,8 @@ import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 
 /**
- * 阅读轮次（读完/刷书）相关工具方法
- * 完整集成到标签系统，与书籍状态同步
+ * 阅读轮次（N刷）相关工具方法
+ * 简化设计：只记录完成的刷书轮次，只有二刷及以上才显示标签
  */
 object ReadIterationHelper {
 
@@ -32,41 +32,31 @@ object ReadIterationHelper {
 
     /**
      * 根据 readIteration 值获取标签文本
-     * 0 -> 不显示
-     * 1 -> 读完
-     * 2 -> 二刷
-     * 3 -> 二刷完
-     * 4 -> 三刷
-     * 5 -> 三刷完
-     * 6 -> 四刷
+     * 0 -> 不显示（未开始）
+     * 1 -> 不显示（首次读完，不需要标签）
+     * 2 -> "二刷"
+     * 3 -> "三刷"
+     * 4 -> "四刷"
      * ...
+     * 
+     * 只有二刷及以上才显示标签
      */
     fun getTagText(readIteration: Int): String? {
-        if (readIteration <= 0) return null
-        return when (readIteration) {
-            1 -> "读完"
-            else -> {
-                val nth = (readIteration + 2) / 2 // 2->2, 3->2, 4->3, 5->3...
-                val nthStr = when (nth) {
-                    2 -> "二"
-                    3 -> "三"
-                    4 -> "四"
-                    5 -> "五"
-                    6 -> "六"
-                    7 -> "七"
-                    8 -> "八"
-                    9 -> "九"
-                    else -> "${nth}"
-                }
-                if (readIteration % 2 == 0) {
-                    // 偶数：刷中 (二刷, 三刷...)
-                    "${nthStr}刷"
-                } else {
-                    // 奇数且>1：刷完 (二刷完, 三刷完...)
-                    "${nthStr}刷完"
-                }
-            }
+        // 只有二刷及以上才显示标签
+        if (readIteration < 2) return null
+        
+        val nthStr = when (readIteration) {
+            2 -> "二"
+            3 -> "三"
+            4 -> "四"
+            5 -> "五"
+            6 -> "六"
+            7 -> "七"
+            8 -> "八"
+            9 -> "九"
+            else -> "$readIteration"
         }
+        return "${nthStr}刷"
     }
 
     /**
@@ -77,64 +67,57 @@ object ReadIterationHelper {
     }
 
     /**
-     * 是否处于"已读完"状态（奇数）
-     * 即 1, 3, 5, 7...
+     * 是否处于"已读完"状态
+     * readIteration >= 1 都视为已读完
      */
     fun isFinished(book: Book): Boolean {
-        return book.readIteration > 0 && book.readIteration % 2 == 1
+        return book.readIteration >= 1
     }
 
     /**
      * 根据 readIteration 值获取对应的阅读状态
-     * 0 -> 待看 (READING)
-     * 1 -> 读完 (FINISHED)
-     * 2 -> 在看 (READING) - 二刷中
-     * 3 -> 读完 (FINISHED) - 二刷完
-     * 4 -> 在看 (READING) - 三刷中
-     * ...
+     * readIteration >= 1 都视为"读完"
+     * readIteration == 0 视为"待看"
      */
     fun getReadingStatusForIteration(readIteration: Int): ReadingStatus {
-        return when {
-            readIteration <= 0 -> ReadingStatus.PENDING
-            readIteration % 2 == 1 -> ReadingStatus.FINISHED
-            else -> ReadingStatus.READING
+        return if (readIteration >= 1) {
+            ReadingStatus.FINISHED
+        } else {
+            ReadingStatus.PENDING
         }
     }
 
     /**
-     * 让书进入下一轮次（读完->二刷, 二刷完->三刷, ...）
-     * 即 readIteration + 1
-     * 同时更新阅读状态和标签系统
-     */
-    fun moveToNextIteration(book: Book) {
-        val oldIteration = book.readIteration
-        book.readIteration++
-        // 同步更新阅读状态
-        syncReadingStatus(book)
-        book.save()
-        // 同步更新标签系统
-        GlobalScope.launch {
-            updateBookTag(book, oldIteration)
-        }
-    }
-
-    /**
-     * 将书标记为已读完（readIteration变为下一个奇数）
-     * 若 readIteration 为 0 -> 1（读完）
-     * 若 readIteration 为 2 -> 3（二刷完）
-     * 若 readIteration 为 4 -> 5（三刷完）
+     * 标记书籍为已完成当前轮次
+     * 如果 readIteration 为 0 -> 1（首次读完）
+     * 如果 readIteration >= 1 -> readIteration + 1（进入下一轮）
      * 同时更新阅读状态和标签系统
      */
     fun markAsFinished(book: Book) {
         val oldIteration = book.readIteration
-        if (book.readIteration == 0) {
-            book.readIteration = 1
-        } else if (book.readIteration % 2 == 0) {
-            book.readIteration++
-        }
+        book.readIteration++
+        
         // 同步更新阅读状态为"读完"
         book.setReadingStatus(ReadingStatus.FINISHED)
         book.save()
+        
+        // 同步更新标签系统（只有二刷及以上才需要更新标签）
+        GlobalScope.launch {
+            updateBookTag(book, oldIteration)
+        }
+    }
+
+    /**
+     * 标记书籍为弃文
+     * 重置 readIteration 为 0
+     * 阅读状态设为 ABANDONED
+     */
+    fun markAsAbandoned(book: Book) {
+        val oldIteration = book.readIteration
+        book.readIteration = 0
+        book.setReadingStatus(ReadingStatus.ABANDONED)
+        book.save()
+        
         // 同步更新标签系统
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
@@ -142,26 +125,20 @@ object ReadIterationHelper {
     }
 
     /**
-     * 根据书籍进度更新N刷状态
-     * 当进度接近末尾时，提示用户标记为读完
+     * 重新开始阅读（弃文后重新开始）
+     * 设置 readIteration 为 0
+     * 阅读状态设为 PENDING
      */
-    fun updateIterationByProgress(book: Book, chapterIndex: Int, totalChapters: Int) {
-        // 如果已经是某个刷次的完状态，先不处理
-        if (book.readIteration > 0 && book.readIteration % 2 == 1) {
-            return
+    fun restartReading(book: Book) {
+        val oldIteration = book.readIteration
+        book.readIteration = 0
+        book.setReadingStatus(ReadingStatus.PENDING)
+        book.save()
+        
+        // 同步更新标签系统
+        GlobalScope.launch {
+            updateBookTag(book, oldIteration)
         }
-        // 当进度到90%以上时，可以标记为当前刷次完成
-        if (totalChapters > 0 && chapterIndex >= totalChapters * 0.9) {
-            // 这里只是提示，不自动修改，让用户手动标记
-        }
-    }
-
-    /**
-     * 同步更新书籍阅读状态
-     */
-    private fun syncReadingStatus(book: Book) {
-        val newStatus = getReadingStatusForIteration(book.readIteration)
-        book.setReadingStatus(newStatus)
     }
 
     /**
@@ -233,18 +210,6 @@ object ReadIterationHelper {
         }
         
         TagManager.clearCache(bookUrl)
-    }
-
-    /**
-     * 重置N刷状态，清除所有相关标签
-     */
-    fun resetIteration(book: Book) {
-        val oldIteration = book.readIteration
-        book.readIteration = 0
-        book.save()
-        GlobalScope.launch {
-            updateBookTag(book, oldIteration)
-        }
     }
 
     /**

@@ -70,7 +70,7 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                 val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
                 if (isLastChapter && ReadBook.showBookplate == 0) {
                     val book = ReadBook.book
-                    if (book != null && book.readIteration % 2 == 0 && ReadBook.inBookshelf
+                    if (book != null && book.readIteration >= 1 && ReadBook.inBookshelf
                         && appCtx.getPrefBoolean(PreferKey.readIterationPopup, true)) {
                         ReadBook.callBack?.onBookEnd()
                         return@with false
@@ -105,7 +105,7 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                     val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
                     if (isLastChapter && ReadBook.showBookplate == 0) {
                         val book = ReadBook.book
-                        if (book != null && book.readIteration % 2 == 0 && ReadBook.inBookshelf
+                        if (book != null && book.readIteration >= 1 && ReadBook.inBookshelf
                             && appCtx.getPrefBoolean(PreferKey.readIterationPopup, true)) {
                             ReadBook.callBack?.onBookEnd()
                             return@with false
