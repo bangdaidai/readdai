@@ -1208,8 +1208,8 @@ object ReadBook : CoroutineScope by MainScope() {
      * 检测是否需要询问N刷（已读完的书，重新打开时）
      */
     private fun checkMultiReadIfNeeded(book: Book) {
-        // 条件：书籍已读完（readIteration 为奇数且 > 0）
-        val isFinished = book.readIteration > 0 && book.readIteration % 2 == 1
+        // 条件：书籍已读完（readIteration >= 1）
+        val isFinished = book.readIteration >= 1
         if (isFinished) {
             launch(Main) {
                 // 通知UI显示N刷确认对话框
