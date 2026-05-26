@@ -16,6 +16,7 @@ import io.legado.app.R
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.help.PaintPool
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.longToastOnUi
@@ -35,6 +36,13 @@ object BookplateDrawer {
     fun draw(canvas: Canvas, textPage: TextPage, book: Book) {
         val width = ChapterProvider.visibleWidth.toFloat()
         val height = ChapterProvider.visibleHeight.toFloat()
+        
+        // 获取主题颜色
+        val bgColor = ThemeStore.backgroundCard(appCtx)
+        val textPrimary = ThemeStore.textColorPrimary(appCtx)
+        val textSecondary = ThemeStore.textColorSecondary(appCtx)
+        val dividerColor = ThemeStore.dividerColor(appCtx)
+        val primaryColor = ThemeStore.primaryColor(appCtx)
         
         // 计算高度：基础高度 + 书评占用的高度
         val baseHeight = 385.dpToPx().toFloat()
@@ -62,11 +70,11 @@ object BookplateDrawer {
         canvas.drawRect(left + 4.dpToPx(), top + 4.dpToPx(), right + 4.dpToPx(), bottom + 4.dpToPx(), paint)
         
         // Draw background
-        paint.color = Color.parseColor("#FCFCFA")
+        paint.color = bgColor
         canvas.drawRect(left, top, right, bottom, paint)
         
         // Draw dashed top/bottom borders
-        paint.color = Color.parseColor("#B0B0B0")
+        paint.color = dividerColor
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 3.dpToPx().toFloat()
         paint.pathEffect = DashPathEffect(floatArrayOf(15f, 15f), 0f)
@@ -76,7 +84,7 @@ object BookplateDrawer {
 
         // Draw content
         paint.style = Paint.Style.FILL
-        paint.color = Color.parseColor("#222222")
+        paint.color = textPrimary
         paint.typeface = Typeface.MONOSPACE
         
         var currentY = top + 40.dpToPx()
@@ -99,20 +107,22 @@ object BookplateDrawer {
         
         val drawRow = { title: String, value: String, y: Float, isBold: Boolean ->
             paint.isFakeBoldText = isBold
+            paint.color = textSecondary
             canvas.drawText(title, left + 20.dpToPx(), y, paint)
+            paint.color = textPrimary
             val valWidth = paint.measureText(value)
             canvas.drawText(value, right - 20.dpToPx() - valWidth, y, paint)
         }
         
         val drawDivider = { y: Float ->
-            paint.color = Color.parseColor("#666666")
+            paint.color = dividerColor
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 1.dpToPx().toFloat()
             paint.pathEffect = DashPathEffect(floatArrayOf(5f, 5f), 0f)
             canvas.drawLine(left + 20.dpToPx(), y, right - 20.dpToPx(), y, paint)
             paint.pathEffect = null
             paint.style = Paint.Style.FILL
-            paint.color = Color.parseColor("#222222")
+            paint.color = textPrimary
         }
         
         paint.textSize = 12.dpToPx().toFloat()
@@ -135,17 +145,21 @@ object BookplateDrawer {
         
         paint.textSize = 14.dpToPx().toFloat()
         
-        // 结算清单
+        // 结算清单标题
         paint.isFakeBoldText = true
+        paint.color = primaryColor
         val listTitle = "- 结 算 清 单 -"
         val listTitleWidth = paint.measureText(listTitle)
         canvas.drawText(listTitle, left + (bpWidth - listTitleWidth) / 2f, currentY, paint)
         currentY += 25.dpToPx()
         
         paint.isFakeBoldText = false
+        paint.color = textPrimary
         
         val drawListRow = { title: String, value: String, y: Float ->
+            paint.color = textSecondary
             canvas.drawText(title, left + 20.dpToPx(), y, paint)
+            paint.color = textPrimary
             val valWidth = paint.measureText(value)
             val valueX = right - 20.dpToPx() - valWidth
             canvas.drawText(value, valueX, y, paint)
@@ -199,18 +213,19 @@ object BookplateDrawer {
         currentY += 30.dpToPx()
         
         // Rating
-        paint.isFakeBoldText = false
+        paint.color = textSecondary
         canvas.drawText("阅读打分", left + 20.dpToPx(), currentY, paint)
         
         val starsStr = "[ ☆ ☆ ☆ ☆ ☆ ]"
         val starsWidth = paint.measureText(starsStr)
         val starsX = right - 20.dpToPx() - starsWidth
+        paint.color = textPrimary
         canvas.drawText(starsStr, starsX, currentY, paint)
         
         ratingRect.set(starsX, currentY - 20.dpToPx(), starsX + starsWidth, currentY + 10.dpToPx())
         
         // Draw filled stars
-        paint.color = Color.parseColor("#222222")
+        paint.color = primaryColor
         val starWidth = paint.measureText("☆ ")
         val bracketWidth = paint.measureText("[ ")
         for (i in 0 until 5) {
@@ -218,7 +233,7 @@ object BookplateDrawer {
                 canvas.drawText("★", starsX + bracketWidth + i * starWidth, currentY, paint)
             }
         }
-        paint.color = Color.parseColor("#222222")
+        paint.color = textPrimary
         
         currentY += 20.dpToPx()
         drawDivider(currentY)
@@ -227,11 +242,13 @@ object BookplateDrawer {
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
             paint.isFakeBoldText = true
+            paint.color = primaryColor
             paint.textSize = 12.dpToPx().toFloat()
             canvas.drawText("📝 我的书评", left + 20.dpToPx(), currentY, paint)
             currentY += 20.dpToPx()
             
             paint.isFakeBoldText = false
+            paint.color = textPrimary
             paint.textSize = 11.dpToPx().toFloat()
             
             // 绘制完整书评内容（支持多行）
@@ -277,7 +294,7 @@ object BookplateDrawer {
         }
         
         // Footer
-        paint.color = Color.parseColor("#444444")
+        paint.color = textSecondary
         paint.textSize = 9.dpToPx().toFloat()
         paint.isFakeBoldText = false
         
