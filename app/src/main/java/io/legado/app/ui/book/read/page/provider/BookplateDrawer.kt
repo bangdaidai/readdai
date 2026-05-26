@@ -156,6 +156,11 @@ object BookplateDrawer {
         paint.isFakeBoldText = false
         paint.color = textPrimary
         
+        // 在标题后加虚线
+        currentY += 10.dpToPx()
+        drawDivider(currentY)
+        currentY += 30.dpToPx()
+        
         val drawListRow = { title: String, value: String, y: Float ->
             paint.color = textSecondary
             canvas.drawText(title, left + 20.dpToPx(), y, paint)
@@ -197,11 +202,6 @@ object BookplateDrawer {
         val noteStr = if (noteCount > 0) "$noteCount" else "?"
         drawListRow("书摘条数", noteStr, currentY)
         currentY += 20.dpToPx()
-        
-        // 在书摘条数后添加虚线
-        currentY += 10.dpToPx()
-        drawDivider(currentY)
-        currentY += 30.dpToPx()
         
         // Reading time - 使用 ReadSession 的总阅读时长（毫秒）转换为天
         val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
