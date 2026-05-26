@@ -148,7 +148,7 @@ object BookplateDrawer {
         // 结算清单标题
         paint.isFakeBoldText = true
         paint.color = primaryColor
-        val listTitle = "- 结 算 清 单 -"
+        val listTitle = "- 藏 书 票 -"
         val listTitleWidth = paint.measureText(listTitle)
         canvas.drawText(listTitle, left + (bpWidth - listTitleWidth) / 2f, currentY, paint)
         currentY += 25.dpToPx()
@@ -198,6 +198,11 @@ object BookplateDrawer {
         drawListRow("书摘条数", noteStr, currentY)
         currentY += 20.dpToPx()
         
+        // 在书摘条数后添加虚线
+        currentY += 10.dpToPx()
+        drawDivider(currentY)
+        currentY += 30.dpToPx()
+        
         // Reading time - 使用 ReadSession 的总阅读时长（毫秒）转换为天
         val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
         val readingTimeStr = if (totalReadMillis > 0) {
@@ -236,8 +241,6 @@ object BookplateDrawer {
         paint.color = textPrimary
         
         currentY += 20.dpToPx()
-        drawDivider(currentY)
-        currentY += 30.dpToPx()
         
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
