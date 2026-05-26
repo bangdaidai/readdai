@@ -36,8 +36,18 @@ object BookplateDrawer {
         val width = ChapterProvider.visibleWidth.toFloat()
         val height = ChapterProvider.visibleHeight.toFloat()
         
+        // 计算高度：基础高度 + 书评占用的高度
+        val baseHeight = 385.dpToPx().toFloat()
+        var extraHeight = if (!book.reviewContent.isNullOrBlank()) {
+            // 粗略估算书评占用的高度
+            val lines = book.reviewContent?.split("\n")?.size ?: 1
+            (lines * 18 + 20).dpToPx().toFloat()
+        } else {
+            0f
+        }
+        
         val bpWidth = width * 0.8f
-        val bpHeight = 385.dpToPx().toFloat()
+        val bpHeight = baseHeight + extraHeight
         val left = (width - bpWidth) / 2f + ChapterProvider.paddingLeft
         val top = (height - bpHeight) / 2f + ChapterProvider.paddingTop
         val right = left + bpWidth
@@ -117,8 +127,8 @@ object BookplateDrawer {
         
         currentY += 25.dpToPx()
         
-        // 完成时间
-        val finishTimeStr = if (book.finishReadTime > 0) dateFormat.format(Date(book.finishReadTime)) else "____/__/__"
+        // 完成时间 - 藏书票只有读完才显示，所以肯定有完成时间
+        val finishTimeStr = if (book.finishReadTime > 0) dateFormat.format(Date(book.finishReadTime)) else dateFormat.format(Date())
         drawRow("完成时间", finishTimeStr, currentY, false)
         
         currentY += 25.dpToPx()
