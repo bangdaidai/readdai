@@ -81,7 +81,15 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                             io.legado.app.data.appDb.bookDao.update(it)
                         }
                     }
+                    // 如果还没有填写评分或书评，先弹出评分对话框
                     if (!appCtx.getPrefBoolean(PreferKey.showBookplate, true)) {
+                        return@with false
+                    }
+                    // 检查是否需要弹出评分对话框
+                    val book2 = ReadBook.book
+                    if (book2 != null && book2.rating <= 0f) {
+                        // 还没有评分，弹出评分对话框
+                        ReadBook.callBack?.showBookplateRatingDialog()
                         return@with false
                     }
                     ReadBook.showBookplate = 1

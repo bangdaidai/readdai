@@ -1253,6 +1253,11 @@ object ReadBook : CoroutineScope by MainScope() {
         fun onBookEnd()
         
         /**
+         * 显示藏书票评分对话框
+         */
+        fun showBookplateRatingDialog()
+        
+        /**
          * 显示阅读小票
          */
         fun showReadingTicket()

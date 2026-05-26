@@ -1440,6 +1440,14 @@ $content
     }
 
     /**
+     * 显示藏书票评分对话框
+     */
+    override fun showBookplateRatingDialog() {
+        val book = ReadBook.book ?: return
+        BookplateDrawer.showRatingDialog(this, book)
+    }
+
+    /**
      * 页面改变
      */
     override fun pageChanged() {

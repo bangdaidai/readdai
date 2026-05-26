@@ -241,15 +241,9 @@ object BookplateDrawer {
         
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
-            paint.isFakeBoldText = true
-            paint.color = primaryColor
-            paint.textSize = 12.dpToPx().toFloat()
-            canvas.drawText("📝 我的书评", left + 20.dpToPx(), currentY, paint)
-            currentY += 20.dpToPx()
-            
             paint.isFakeBoldText = false
             paint.color = textPrimary
-            paint.textSize = 11.dpToPx().toFloat()
+            paint.textSize = 12.dpToPx().toFloat()
             
             // 绘制完整书评内容（支持多行）
             val reviewText = book.reviewContent ?: ""
@@ -326,7 +320,8 @@ object BookplateDrawer {
         return false
     }
     
-    private fun showRatingDialog(context: Context, book: Book) {
+    @JvmStatic
+    fun showRatingDialog(context: Context, book: Book) {
         // 创建对话框视图
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_bookplate_rating, null)
         
@@ -359,13 +354,27 @@ object BookplateDrawer {
                         appDb.bookDao.update(book)
                         CoroutineScope(Dispatchers.Main).launch {
                             context.longToastOnUi("已保存评价")
+                            // 保存成功后，显示藏书票
+                            ReadBook.showBookplate = 1
+                            ReadBook.callBack?.upContent()
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }
             }
-            .setNegativeButton("取消", null)
+            .setNegativeButton("取消") { _, _ ->
+                // 用户取消，仍显示藏书票（不带评分）
+                ReadBook.showBookplate = 1
+                ReadBook.callBack?.upContent()
+            }
+            .setOnDismissListener {
+                // 对话框消失时，如果还没有显示藏书票，则显示
+                if (ReadBook.showBookplate != 1) {
+                    ReadBook.showBookplate = 1
+                    ReadBook.callBack?.upContent()
+                }
+            }
             .show()
     }
 }
