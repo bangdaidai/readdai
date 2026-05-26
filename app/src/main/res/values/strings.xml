@@ -237,6 +237,7 @@
 
     <!-- 阅读详情页面相关字符串 -->
     <string name="book_reading_detail">Reading Details</string>
+    <string name="bookplate">藏书票</string>
     <string name="reading_data">Reading Data</string>
     <string name="total_reading_time">Total Reading Time</string>
     <string name="reading_days">Reading Days</string>
