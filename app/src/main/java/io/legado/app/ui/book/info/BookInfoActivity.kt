@@ -530,7 +530,6 @@ class BookInfoActivity :
         (tvOrigin as android.widget.TextView).text = getString(R.string.origin_show, book.originName)
         (tvLasted as android.widget.TextView).text = getString(R.string.lasted_show, book.latestChapterTitle)
         showBookIntro(book)
-        upReview(book)
         if (book.isWebFile) {
             llToc.gone()
             (tvLasted as android.widget.TextView).text = getString(R.string.lasted_show, "下载中...")
@@ -582,17 +581,6 @@ class BookInfoActivity :
             }
         }
     }
-
-    private fun upReview(book: Book) {
-        val reviewContent = book.reviewContent
-        if (!reviewContent.isNullOrBlank()) {
-            binding.layoutReview.visibility = android.view.View.VISIBLE
-            binding.tvReviewContent.text = reviewContent
-        } else {
-            binding.layoutReview.visibility = android.view.View.GONE
-        }
-    }
-
     private fun showBookIntro(book: Book) {
         val intro = book.getDisplayIntro()
         if (intro?.startsWith("<useweb>") == true) {

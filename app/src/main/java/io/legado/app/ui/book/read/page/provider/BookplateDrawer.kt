@@ -327,7 +327,6 @@ object BookplateDrawer {
         
         val ratingBar = dialogView.findViewById<RatingBar>(R.id.rating_bar)
         val etReview = dialogView.findViewById<EditText>(R.id.et_review)
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tv_dialog_title)
         
         // 设置当前评分
         ratingBar.rating = book.rating
@@ -351,12 +350,47 @@ object BookplateDrawer {
                 // 异步保存到数据库
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
+                        // 1. 保存到Book表
                         appDb.bookDao.update(book)
+                        
+                        // 2. 保存到BookReview表
+                        val existingReview = appDb.bookReviewDao.getReviewByBookUrl(book.bookUrl)
+                        if (existingReview.isNotEmpty()) {
+                            // 更新已有书评
+                            val updatedReview = existingReview[0].copy(
+                                reviewContent = book.reviewContent ?: "",
+                                updateTime = System.currentTimeMillis()
+                            )
+                            appDb.bookReviewDao.update(updatedReview)
+                        } else if (!book.reviewContent.isNullOrBlank()) {
+                            // 创建新书评
+                            val newReview = io.legado.app.data.entities.BookReview(
+                                bookUrl = book.bookUrl,
+                                bookName = book.name,
+                                bookAuthor = book.author,
+                                reviewContent = book.reviewContent,
+                                createTime = System.currentTimeMillis(),
+                                updateTime = System.currentTimeMillis()
+                            )
+                            appDb.bookReviewDao.insert(newReview)
+                        } else {
+                            // 如果书评为空且没有现有记录，则不创建
+                        }
+                        
+                        // 3. 同步更新ReadingMemory表
+                        val memory = appDb.readingMemoryDao.getByBookUrl(book.bookUrl)
+                        if (memory != null) {
+                            val updatedMemory = memory.copy(reviewContent = book.reviewContent)
+                            appDb.readingMemoryDao.update(updatedMemory)
+                        }
+                        
                         CoroutineScope(Dispatchers.Main).launch {
                             context.longToastOnUi("已保存评价")
                             // 保存成功后，显示藏书票
                             ReadBook.showBookplate = 1
                             ReadBook.callBack?.upContent()
+                            // 发送书评更新事件，让书架和阅读详情刷新
+                            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOK_REVIEW_UPDATED, book.bookUrl)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
