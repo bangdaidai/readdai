@@ -500,87 +500,8 @@ class BookInfoActivity :
         // 显示在对话框中
         alert(title = "藏书票") {
             customView = bookplateView
-            negativeButton("保存图片") { 
-                saveBookplateAsImage(book)
-            }
             positiveButton("确定") { }
         }.show()
-    }
-
-    private fun saveBookplateAsImage(book: Book) {
-        lifecycleScope.launch {
-            try {
-                // 创建藏书票位图
-                val bitmap = io.legado.app.ui.book.read.page.provider.BookplateDrawer.createBookplateBitmap(book)
-                
-                // 保存到相册
-                val saved = withContext(Dispatchers.IO) {
-                    saveBitmapToGallery(bitmap, "藏书票_${book.name}")
-                }
-                
-                if (saved) {
-                    longToastOnUi("藏书票已保存到相册")
-                } else {
-                    longToastOnUi("保存失败")
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                longToastOnUi("保存失败: ${e.message}")
-            }
-        }
-    }
-
-    private suspend fun saveBitmapToGallery(bitmap: Bitmap, fileName: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val context = this@BookInfoActivity
-                
-                // Android 10+ 需要使用 MediaStore
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val contentValues = android.content.ContentValues().apply {
-                        put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "$fileName.png")
-                        put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
-                        put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, android.provider.MediaStore.Images.Media.RELATIVE_PATH + "/readdai")
-                    }
-                    
-                    val uri = context.contentResolver.insert(
-                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        contentValues
-                    )
-                    
-                    uri?.let {
-                        context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                        }
-                        true
-                    } ?: false
-                } else {
-                    // Android 10 以下直接保存到 Pictures 目录
-                    @Suppress("DEPRECATION")
-                    val picturesDir = android.os.Environment.getExternalStoragePublicDirectory(
-                        android.os.Environment.DIRECTORY_PICTURES
-                    )
-                    val appDir = java.io.File(picturesDir, "readdai")
-                    if (!appDir.exists()) {
-                        appDir.mkdirs()
-                    }
-                    
-                    val file = java.io.File(appDir, "$fileName.png")
-                    java.io.FileOutputStream(file).use { outputStream ->
-                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-                    }
-                    
-                    // 通知媒体库更新
-                    val intent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-                    intent.data = android.net.Uri.fromFile(file)
-                    context.sendBroadcast(intent)
-                    true
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
-            }
-        }
     }
 
     private fun refreshBook() {

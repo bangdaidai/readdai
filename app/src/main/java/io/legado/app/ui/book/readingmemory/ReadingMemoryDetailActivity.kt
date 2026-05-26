@@ -40,8 +40,10 @@ import io.legado.app.help.glide.ImageLoader
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.book.annotation.BookAnnotationDialog
 import io.legado.app.ui.book.readingdetail.adapter.AnnotationAdapter
+import androidx.appcompat.app.AlertDialog
 import io.legado.app.ui.book.readingdetail.adapter.ReviewAdapter
 import io.legado.app.ui.book.review.BookReviewDialog
+import io.legado.app.ui.book.read.page.provider.BookplateDrawer
 import io.legado.app.utils.applyNavigationBarPadding
 import io.legado.app.ui.book.info.edit.BookInfoEditActivity
 import io.legado.app.utils.TagColorUtils
@@ -377,6 +379,21 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
 
     override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.menu_bookplate -> {
+                memory?.let { memory ->
+                    lifecycleScope.launch {
+                        val book = withContext(Dispatchers.IO) {
+                            appDb.bookDao.getBook(memory.bookUrl)
+                        }
+                        if (book != null) {
+                            showBookplate(book)
+                        } else {
+                            toastOnUi("无法获取书籍信息")
+                        }
+                    }
+                }
+                return true
+            }
             R.id.menu_edit -> {
                 memory?.let { memory ->
                     val intent = android.content.Intent(this, BookInfoEditActivity::class.java)
@@ -1089,24 +1106,247 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         }
     }
     
-    /**
-     * 格式化阅读时长，与阅读记录页面保持一致
-     */
-    private fun formatDuring(mss: Long): String {
-        val days = mss / (1000 * 60 * 60 * 24)
-        val hours = mss % (1000 * 60 * 60 * 24) / (1000 * 60 * 60)
-        val minutes = mss % (1000 * 60 * 60) / (1000 * 60)
-        val seconds = mss % (1000 * 60) / 1000
-        val d = if (days > 0) "${days}天" else ""
-        val h = if (hours > 0) "${hours}小时" else ""
-        val m = if (minutes > 0) "${minutes}分钟" else ""
-        val s = if (seconds > 0) "${seconds}秒" else ""
-        var time = "$d$h$m$s"
-        if (time.isBlank()) {
-            time = "0秒"
-        }
-        return time
+    private fun showBookplate(book: Book) {
+        val bookplateView = BookplateDrawer.createBookplateView(this, book)
+        AlertDialog.Builder(this)
+            .setTitle("藏书票")
+            .setView(bookplateView)
+            .setPositiveButton("确定") { _, _ -> }
+            .setNeutralButton("保存图片") { _, _ ->
+                saveBookplateAsImage(book)
+            }
+            .show()
     }
     
+    private fun saveBookplateAsImage(book: Book) {
+        lifecycleScope.launch {
+            try {
+                val bitmap = withContext(Dispatchers.IO) {
+                    val bpWidth = 320.dpToPx()
+                    var baseHeight = 385.dpToPx()
+                    var extraHeight = if (!book.reviewContent.isNullOrBlank()) {
+                        val lines = book.reviewContent?.split("\n")?.size ?: 1
+                        (lines * 18 + 20).dpToPx()
+                    } else {
+                        0
+                    }
+                    val bpHeight = baseHeight + extraHeight
+                    
+                    val bitmap = android.graphics.Bitmap.createBitmap(bpWidth, bpHeight, android.graphics.Bitmap.Config.ARGB_8888)
+                    val canvas = android.graphics.Canvas(bitmap)
+                    
+                    val context = appCtx
+                    val bgColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(context)
+                    val textPrimary = io.legado.app.lib.theme.ThemeStore.textColorPrimary(context)
+                    val textSecondary = io.legado.app.lib.theme.ThemeStore.textColorSecondary(context)
+                    val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(context)
+                    val primaryColor = io.legado.app.lib.theme.ThemeStore.primaryColor(context)
+                    
+                    val paint = io.legado.app.help.PaintPool.obtain()
+                    paint.isAntiAlias = true
+                    
+                    val left = 0f
+                    val top = 0f
+                    val right = bpWidth.toFloat()
+                    val bottom = bpHeight.toFloat()
+                    
+                    paint.color = android.graphics.Color.parseColor("#22000000")
+                    paint.style = android.graphics.Paint.Style.FILL
+                    canvas.drawRect(left + 4.dpToPx().toFloat(), top + 4.dpToPx().toFloat(), right + 4.dpToPx().toFloat(), bottom + 4.dpToPx().toFloat(), paint)
+                    
+                    paint.color = bgColor
+                    canvas.drawRect(left, top, right, bottom, paint)
+                    
+                    paint.color = primaryColor
+                    paint.style = android.graphics.Paint.Style.STROKE
+                    paint.strokeWidth = 2.dpToPx().toFloat()
+                    canvas.drawRect(left + 10.dpToPx().toFloat(), top + 10.dpToPx().toFloat(), right - 10.dpToPx().toFloat(), bottom - 10.dpToPx().toFloat(), paint)
+                    
+                    paint.style = android.graphics.Paint.Style.FILL
+                    
+                    val contentLeft = left + 20.dpToPx()
+                    val contentRight = right - 20.dpToPx()
+                    var y = 30.dpToPx().toFloat()
+                    
+                    val dateFormat = java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.getDefault())
+                    
+                    paint.color = primaryColor
+                    paint.textSize = 16.dpToPx().toFloat()
+                    paint.isFakeBoldText = true
+                    val title = "藏书票"
+                    val titleWidth = paint.measureText(title)
+                    canvas.drawText(title, (bpWidth - titleWidth) / 2f, y, paint)
+                    
+                    y += 15.dpToPx()
+                    paint.color = dividerColor
+                    paint.strokeWidth = 1.dpToPx().toFloat()
+                    canvas.drawLine(contentLeft, y, contentRight, y, paint)
+                    
+                    y += 25.dpToPx()
+                    
+                    paint.color = textPrimary
+                    paint.textSize = 14.dpToPx().toFloat()
+                    paint.isFakeBoldText = true
+                    canvas.drawText(book.name, contentLeft, y, paint)
+                    
+                    y += 20.dpToPx()
+                    
+                    paint.color = textSecondary
+                    paint.textSize = 12.dpToPx().toFloat()
+                    paint.isFakeBoldText = false
+                    val noteCount = appDb.bookAnnotationDao.getByBook(book.name, book.author).size
+                    val noteStr = if (noteCount > 0) "$noteCount" else "?"
+                    canvas.drawText("书摘条数: $noteStr", contentLeft, y, paint)
+                    
+                    y += 20.dpToPx()
+                    
+                    val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
+                    val readingTimeStr = if (totalReadMillis > 0) {
+                        val days = totalReadMillis / (24 * 60 * 60 * 1000L)
+                        if (days > 0) "$days 天" else "${totalReadMillis / (60 * 60 * 1000L)} 小时"
+                    } else {
+                        "? 天"
+                    }
+                    canvas.drawText("阅读时间: $readingTimeStr", contentLeft, y, paint)
+                    
+                    y += 20.dpToPx()
+                    
+                    paint.color = textSecondary
+                    canvas.drawText("阅读打分", contentLeft, y, paint)
+                    
+                    val starsStr = "[ ☆ ☆ ☆ ☆ ☆ ]"
+                    val starsWidth = paint.measureText(starsStr)
+                    val starsX = contentRight - starsWidth
+                    paint.color = textPrimary
+                    canvas.drawText(starsStr, starsX, y, paint)
+                    
+                    paint.color = primaryColor
+                    val starWidth = paint.measureText("☆ ")
+                    val bracketWidth = paint.measureText("[ ")
+                    for (i in 0 until 5) {
+                        if (book.rating >= i + 1) {
+                            canvas.drawText("★", starsX + bracketWidth + i * starWidth, y, paint)
+                        }
+                    }
+                    paint.color = textPrimary
+                    
+                    y += 20.dpToPx()
+                    
+                    if (!book.reviewContent.isNullOrBlank()) {
+                        paint.isFakeBoldText = false
+                        paint.color = textPrimary
+                        paint.textSize = 12.dpToPx().toFloat()
+                        
+                        val maxWidth = contentRight - contentLeft
+                        val lines = wrapTextForBookplate(book.reviewContent!!, paint, maxWidth.toFloat())
+                        for (line in lines) {
+                            canvas.drawText(line, contentLeft, y, paint)
+                            y += 18.dpToPx().toFloat()
+                        }
+                    }
+                    
+                    y += 10.dpToPx()
+                    paint.color = dividerColor
+                    canvas.drawLine(contentLeft, y, contentRight, y, paint)
+                    
+                    y += 20.dpToPx()
+                    
+                    paint.color = textSecondary
+                    paint.textSize = 10.dpToPx().toFloat()
+                    val footer1 = "「读万卷书，行万里路」"
+                    val footer2 = "—— ${dateFormat.format(java.util.Date())}"
+                    val f1Width = paint.measureText(footer1)
+                    val f2Width = paint.measureText(footer2)
+                    canvas.drawText(footer1, (bpWidth - f1Width) / 2f, y, paint)
+                    y += 16.dpToPx()
+                    canvas.drawText(footer2, (bpWidth - f2Width) / 2f, y, paint)
+                    
+                    io.legado.app.help.PaintPool.recycle(paint)
+                    
+                    bitmap
+                }
+                
+                val savedPath = withContext(Dispatchers.IO) {
+                    saveBitmapToGallery(bitmap, "藏书票_${book.name}")
+                }
+                
+                if (savedPath != null) {
+                    toastOnUi("已保存到: $savedPath")
+                } else {
+                    toastOnUi("保存失败")
+                }
+            } catch (e: Exception) {
+                toastOnUi("保存失败: ${e.localizedMessage}")
+            }
+        }
+    }
+    
+    private fun wrapTextForBookplate(text: String, paint: android.graphics.Paint, maxWidth: Float): List<String> {
+        val lines = mutableListOf<String>()
+        val paragraphs = text.split("\n")
+        
+        for (paragraph in paragraphs) {
+            if (paragraph.isEmpty()) {
+                lines.add("")
+                continue
+            }
+            
+            val words = paragraph.toCharArray()
+            var currentLine = StringBuilder()
+            
+            for (char in words) {
+                val testLine = currentLine.toString() + char
+                val testWidth = paint.measureText(testLine)
+                
+                if (testWidth > maxWidth) {
+                    if (currentLine.isNotEmpty()) {
+                        lines.add(currentLine.toString())
+                        currentLine = StringBuilder()
+                    }
+                    if (paint.measureText(char.toString()) > maxWidth) {
+                        lines.add(char.toString())
+                    } else {
+                        currentLine.append(char)
+                    }
+                } else {
+                    currentLine.append(char)
+                }
+            }
+            
+            if (currentLine.isNotEmpty()) {
+                lines.add(currentLine.toString())
+            }
+        }
+        
+        return lines
+    }
+    
+    private fun saveBitmapToGallery(bitmap: android.graphics.Bitmap, fileName: String): String? {
+        return try {
+            val context = appCtx
+            val imagesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES)
+            val legReadDir = java.io.File(imagesDir, "LegRead")
+            if (!legReadDir.exists()) {
+                legReadDir.mkdirs()
+            }
+            
+            val safeFileName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+            val file = java.io.File(legReadDir, "${safeFileName}_${System.currentTimeMillis()}.png")
+            
+            val outputStream = java.io.FileOutputStream(file)
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, outputStream)
+            outputStream.flush()
+            outputStream.close()
+            
+            val mediaScanIntent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+            mediaScanIntent.data = android.net.Uri.fromFile(file)
+            context.sendBroadcast(mediaScanIntent)
+            
+            file.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 
 }
