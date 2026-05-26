@@ -37,7 +37,7 @@ object BookplateDrawer {
         val height = ChapterProvider.visibleHeight.toFloat()
         
         val bpWidth = width * 0.8f
-        val bpHeight = 360.dpToPx().toFloat()
+        val bpHeight = 385.dpToPx().toFloat()
         val left = (width - bpWidth) / 2f + ChapterProvider.paddingLeft
         val top = (height - bpHeight) / 2f + ChapterProvider.paddingTop
         val right = left + bpWidth
@@ -114,6 +114,12 @@ object BookplateDrawer {
         
         val addTimeStr = if (trueStartTime > 0) dateFormat.format(Date(trueStartTime)) else "____/__/__"
         drawRow("开始时间", addTimeStr, currentY, false)
+        
+        currentY += 25.dpToPx()
+        
+        // 完成时间
+        val finishTimeStr = if (book.finishReadTime > 0) dateFormat.format(Date(book.finishReadTime)) else "____/__/__"
+        drawRow("完成时间", finishTimeStr, currentY, false)
         
         currentY += 25.dpToPx()
         
