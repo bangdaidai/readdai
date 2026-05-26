@@ -127,8 +127,8 @@ object BookplateDrawer {
         
         paint.textSize = 12.dpToPx().toFloat()
         
-        // Add Time - 获取首次阅读时间
-        val firstReadTime = appDb.readSessionDao.getFirstReadTimeByBook(book.bookUrl) ?: book.firstReadTime
+        // Add Time - 获取首次阅读时间（使用同步方法）
+        val firstReadTime = appDb.readSessionDao.getFirstReadTimeByBookSync(book.bookUrl) ?: book.firstReadTime
         val earliestStartTime = if (firstReadTime > 0) firstReadTime else book.firstReadTime
         val trueStartTime = if (earliestStartTime > 0) earliestStartTime else System.currentTimeMillis()
         
@@ -198,11 +198,11 @@ object BookplateDrawer {
         drawListRow("书摘条数", noteStr, currentY)
         currentY += 20.dpToPx()
         
-        // Reading time - 使用 ReadSession 的总阅读时长（秒）转换为天
-        val totalReadSeconds = appDb.readSessionDao.getTotalReadTimeByUrl(book.bookUrl) ?: 0L
-        val readingTimeStr = if (totalReadSeconds > 0) {
-            val days = totalReadSeconds / (24 * 60 * 60)
-            if (days > 0) "${days} 天" else "${totalReadSeconds / (60 * 60)} 小时"
+        // Reading time - 使用 ReadSession 的总阅读时长（毫秒）转换为天
+        val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
+        val readingTimeStr = if (totalReadMillis > 0) {
+            val days = totalReadMillis / (24 * 60 * 60 * 1000L)
+            if (days > 0) "$days 天" else "${totalReadMillis / (60 * 60 * 1000L)} 小时"
         } else {
             "? 天"
         }

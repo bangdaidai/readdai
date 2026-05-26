@@ -276,6 +276,7 @@ object PreferKey {
     const val readIterationPopup = "readIterationPopup"
     
     // 藏书票功能配置
+    const val showBookplate = "showBookplate"
     const val showReadingTicket = "showReadingTicket"
     const val readingTicketPosition = "readingTicketPosition"
 }

@@ -61,10 +61,6 @@ data class TextPage(
     var paddingTop = ChapterProvider.paddingTop
     var isCompleted = false
     var hasReadAloudSpan = false
-    
-    // 藏书票标记
-    var isBookplateStart: Boolean = false  // 是否为书籍首页（显示藏书票）
-    var isBookplateEnd: Boolean = false    // 是否为书籍尾页（显示藏书票）
 
     @JvmField
     var textChapter = emptyTextChapter

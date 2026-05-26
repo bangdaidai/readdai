@@ -49,9 +49,15 @@ interface ReadSessionDao {
 
     @Query("SELECT SUM(duration) FROM readSession WHERE bookUrl = :bookUrl")
     suspend fun getTotalReadTimeByUrl(bookUrl: String): Long?
+    
+    @Query("SELECT SUM(duration) FROM readSession WHERE bookUrl = :bookUrl")
+    fun getTotalReadTimeByUrlSync(bookUrl: String): Long?
 
     @Query("SELECT MIN(startTime) FROM readSession WHERE bookUrl = :bookUrl")
     suspend fun getFirstReadTimeByBook(bookUrl: String): Long?
+    
+    @Query("SELECT MIN(startTime) FROM readSession WHERE bookUrl = :bookUrl")
+    fun getFirstReadTimeByBookSync(bookUrl: String): Long?
 
     @Query("SELECT SUM(duration) FROM readSession WHERE bookName = :bookName")
     suspend fun getTotalReadTime(bookName: String): Long?
