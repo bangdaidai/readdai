@@ -103,6 +103,11 @@ data class ReadingMemory(
     @ColumnInfo(name = "firstReadTime", defaultValue = "0")
     var firstReadTime: Long = 0L,
     
+    // 阅读轮次(0=未读完, 1=初读完成, 2=二刷中, 3=二刷完成, 4=三刷中, 依此类推)
+    // 与Book.readIteration保持一致
+    @ColumnInfo(name = "readIteration", defaultValue = "0")
+    var readIteration: Int = 0,
+    
     // 书籍类型，与Book.type保持一致
     @ColumnInfo(name = "type", defaultValue = "0")
     var type: Int = 0

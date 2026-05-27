@@ -167,7 +167,9 @@ object ReadingMemoryHelper {
                     userModifiedRating = userModifiedRating,
                     userModifiedReadingStatus = userModifiedReadingStatus,
                     finishReadTime = finishReadTime,
-                    firstReadTime = firstReadTime
+                    firstReadTime = firstReadTime,
+                    readIteration = book.readIteration,
+                    type = book.type
                 )
                 appDb.readingMemoryDao.update(updatedMemory)
                 
@@ -223,6 +225,7 @@ object ReadingMemoryHelper {
                     userModifiedReadingStatus = userModifiedReadingStatus,
                     finishReadTime = finishReadTime,
                     firstReadTime = book.firstReadTime,
+                    readIteration = book.readIteration,
                     createTime = createTime,
                     updateTime = bookLastReadTime,
                     type = book.type

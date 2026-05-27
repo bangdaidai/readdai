@@ -34,9 +34,10 @@ object ReadIterationHelper {
      * 根据 readIteration 值获取标签文本
      * 0 -> 不显示（未开始）
      * 1 -> 不显示（首次读完，不需要标签）
-     * 2 -> "二刷"
-     * 3 -> "三刷"
-     * 4 -> "四刷"
+     * 2 -> "二刷"（正在二刷）
+     * 3 -> "二刷完"（二刷完成）
+     * 4 -> "三刷"（正在三刷）
+     * 5 -> "三刷完"（三刷完成）
      * ...
      * 
      * 只有二刷及以上才显示标签
@@ -45,7 +46,11 @@ object ReadIterationHelper {
         // 只有二刷及以上才显示标签
         if (readIteration < 2) return null
         
-        val nthStr = when (readIteration) {
+        // 计算刷数：(iteration + 1) / 2
+        val brushNum = (readIteration + 1) / 2
+        val isFinished = readIteration % 2 == 1  // 奇数表示完成
+        
+        val nthStr = when (brushNum) {
             2 -> "二"
             3 -> "三"
             4 -> "四"
@@ -54,9 +59,10 @@ object ReadIterationHelper {
             7 -> "七"
             8 -> "八"
             9 -> "九"
-            else -> "$readIteration"
+            else -> "$brushNum"
         }
-        return "${nthStr}刷"
+        
+        return if (isFinished) "${nthStr}刷完" else "${nthStr}刷"
     }
 
     /**

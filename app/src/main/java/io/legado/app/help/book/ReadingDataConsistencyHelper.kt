@@ -115,6 +115,8 @@ object ReadingDataConsistencyHelper {
             memory.durChapterIndex = book.durChapterIndex
             memory.durChapterPos = book.durChapterPos
             memory.durChapterTitle = book.durChapterTitle
+            // 同步阅读轮次
+            memory.readIteration = book.readIteration
             appDb.readingMemoryDao.update(memory)
         }
     }

@@ -62,6 +62,11 @@ object ReadingProgressHelper {
     
     /**
      * 根据书籍信息自动计算阅读状态
+     * 逻辑说明：
+     * - 首次阅读（readIteration <= 1）：状态跟随进度变化
+     * - 已读完但未N刷（readIteration == 1）：状态保持"看完"，不再跟随进度变化
+     * - N刷中（readIteration >= 2）：状态跟随进度变化
+     * 
      * @param book 书籍实体
      * @return 阅读状态枚举
      */
@@ -71,8 +76,9 @@ object ReadingProgressHelper {
             return ReadingStatus.ABANDONED
         }
         
-        // 如果当前状态是已读完，保持已读完状态，不受阅读进度影响
-        if (book.readingStatus == ReadingStatus.FINISHED.value) {
+        // 如果当前状态是已读完，且处于"未N刷"状态（readIteration == 1），保持已读完状态
+        // 这意味着用户选择不N刷，只是回顾，状态不再跟随进度变化
+        if (book.readingStatus == ReadingStatus.FINISHED.value && book.readIteration == 1) {
             return ReadingStatus.FINISHED
         }
         
