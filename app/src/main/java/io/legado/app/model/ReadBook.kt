@@ -1054,6 +1054,7 @@ object ReadBook : CoroutineScope by MainScope() {
 
                 // 如果用户没有手动修改过阅读状态，且当前状态不是弃文或已读完，则自动更新阅读状态和分组
                 // 已读完的书籍保持读完状态，即使再次阅读
+                var readingStatusChanged = false
                 if (!book.userModifiedReadingStatus &&
                     book.readingStatus != io.legado.app.constant.ReadingStatus.ABANDONED.value &&
                     book.readingStatus != io.legado.app.constant.ReadingStatus.FINISHED.value) {
@@ -1066,10 +1067,16 @@ object ReadBook : CoroutineScope by MainScope() {
 
                         // 更新书籍分组 - 使用setReadingStatus方法确保正确处理分组
                         book.setReadingStatus(newStatus)
+                        readingStatusChanged = true
                     }
                 }
 
                 appDb.bookDao.update(book)
+                
+                // 如果阅读状态或分组发生变化，通知书架刷新
+                if (readingStatusChanged) {
+                    io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
+                }
                 SourceCallBack.callBackBook(SourceCallBack.SAVE_READ, bookSource, book, null, durTime.toString())
 
                 // 同步更新我的阅读记录
