@@ -101,6 +101,8 @@ object ReadIterationHelper {
         // 同步更新标签系统（只有二刷及以上才需要更新标签）
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
+            // 通知书架刷新，确保分组更新
+            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 
