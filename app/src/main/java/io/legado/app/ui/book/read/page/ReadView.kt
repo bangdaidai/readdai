@@ -788,12 +788,12 @@ class ReadView(context: Context, attrs: AttributeSet) :
         ReadBook.book?.let { book ->
             val dialogView = BookplateDrawer.createBookplateView(context, book)
             context.alert(title = "藏书票") {
-                customView = dialogView
+                customView { dialogView }
                 positiveButton("保存图片") { _ ->
                     BookplateDrawer.saveBookplateToGallery(context, book)
                 }
                 negativeButton("取消") { }
-            }.show()
+            }
         }
     }
 
