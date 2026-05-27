@@ -92,6 +92,7 @@ object ReadIterationHelper {
      * 如果 readIteration 为 0 -> 1（首次读完）
      * 如果 readIteration >= 1 -> readIteration + 1（进入下一轮）
      * 只更新N刷标签，阅读状态由阅读进度自动决定
+     * 注意：此方法不触发书架刷新，因为只改变N刷标签，不改变阅读状态
      */
     fun markAsFinished(book: Book) {
         val oldIteration = book.readIteration
@@ -101,8 +102,6 @@ object ReadIterationHelper {
         // 同步更新标签系统（只有二刷及以上才需要更新标签）
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
-            // 通知书架刷新，确保分组更新
-            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 
@@ -110,6 +109,7 @@ object ReadIterationHelper {
      * 标记书籍为弃文
      * 重置 readIteration 为 0
      * 阅读状态设为 ABANDONED
+     * 会触发书架刷新，因为阅读状态改变了
      */
     fun markAsAbandoned(book: Book) {
         val oldIteration = book.readIteration
@@ -120,6 +120,8 @@ object ReadIterationHelper {
         // 同步更新标签系统
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
+            // 通知书架刷新，因为阅读状态改变了
+            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 
@@ -127,6 +129,7 @@ object ReadIterationHelper {
      * 重新开始阅读（弃文后重新开始）
      * 设置 readIteration 为 0
      * 阅读状态设为 PENDING
+     * 会触发书架刷新，因为阅读状态改变了
      */
     fun restartReading(book: Book) {
         val oldIteration = book.readIteration
@@ -137,6 +140,8 @@ object ReadIterationHelper {
         // 同步更新标签系统
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
+            // 通知书架刷新，因为阅读状态改变了
+            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 
