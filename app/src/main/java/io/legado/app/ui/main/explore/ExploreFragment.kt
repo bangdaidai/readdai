@@ -1,6 +1,7 @@
 package io.legado.app.ui.main.explore
 
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -221,13 +222,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         binding.rvFind.isGone = modern
         binding.tvEmptyMsg.isGone = modern
         searchView?.isGone = modern
-        
-        // 确保现代模式标题栏背景是透明的
-        if (modern) {
-            binding.titleBarModern.setBackgroundResource(android.R.color.transparent)
-            binding.titleBarModern.elevation = 0f
-            binding.titleBarModern.outlineProvider = null
-        }
         
         // ✅ 关键修复：动态更新 SwipeRefreshLayout 的顶部约束
         val constraintLayout = binding.root as androidx.constraintlayout.widget.ConstraintLayout
@@ -1271,6 +1265,28 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             adapter.onPause()
         }
         super.onPause()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // 配置变化时，重新应用发现页模式来更新 UI
+        applyDiscoveryMode(loadData = false)
+        // 更新标题栏主题
+        if (usingModernDiscovery && modernModeInitialized) {
+            applyModernTitleBarTheme()
+        }
+    }
+
+    override fun observeLiveBus() {
+        super.observeLiveBus()
+        observeEvent<String>(EventBus.THEME_CHANGED) {
+            // 主题变化时，重新应用发现页模式来更新 UI
+            applyDiscoveryMode(loadData = false)
+            // 更新标题栏主题
+            if (usingModernDiscovery && modernModeInitialized) {
+                applyModernTitleBarTheme()
+            }
+        }
     }
 
     override fun onDestroyView() {
