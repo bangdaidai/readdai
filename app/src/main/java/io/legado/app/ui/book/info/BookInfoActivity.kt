@@ -330,12 +330,6 @@ class BookInfoActivity :
                 }
             }
 
-            R.id.menu_bookplate -> {
-                viewModel.getBook()?.let { book ->
-                    showBookplate(book)
-                }
-            }
-
             R.id.menu_share_it -> {
                 viewModel.getBook()?.let {
                         val bookJson = GSON.toJson(it)
@@ -491,17 +485,6 @@ class BookInfoActivity :
             }
         }
         return super.dispatchTouchEvent(ev)
-    }
-
-    private fun showBookplate(book: Book) {
-        // 创建藏书票视图
-        val bookplateView = io.legado.app.ui.book.read.page.provider.BookplateDrawer.createBookplateView(this, book)
-        
-        // 显示在对话框中
-        alert(title = "藏书票") {
-            customView = bookplateView
-            positiveButton("确定") { }
-        }.show()
     }
 
     private fun refreshBook() {

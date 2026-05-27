@@ -19,6 +19,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.help.PaintPool
 import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.model.ReadBook
 import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.longToastOnUi
@@ -575,8 +576,8 @@ object BookplateDrawer {
                 book.userModifiedRating = true
                 
                 // 保存书评
-                val reviewContent = etReview.text.toString().trim()
-                book.reviewContent = if (reviewContent.isBlank()) null else reviewContent
+                val reviewContentStr = etReview.text.toString().trim()
+                book.reviewContent = if (reviewContentStr.isBlank()) null else reviewContentStr
                 
                 // 异步保存到数据库
                 CoroutineScope(Dispatchers.IO).launch {
@@ -585,21 +586,22 @@ object BookplateDrawer {
                         appDb.bookDao.update(book)
                         
                         // 2. 保存到BookReview表
+                        val reviewContentToSave = book.reviewContent
                         val existingReview = appDb.bookReviewDao.getReviewByBookUrl(book.bookUrl)
                         if (existingReview.isNotEmpty()) {
                             // 更新已有书评
                             val updatedReview = existingReview[0].copy(
-                                reviewContent = book.reviewContent ?: "",
+                                reviewContent = reviewContentToSave ?: "",
                                 updateTime = System.currentTimeMillis()
                             )
                             appDb.bookReviewDao.update(updatedReview)
-                        } else if (!book.reviewContent.isNullOrBlank()) {
+                        } else if (!reviewContentToSave.isNullOrBlank()) {
                             // 创建新书评
                             val newReview = io.legado.app.data.entities.BookReview(
                                 bookUrl = book.bookUrl,
                                 bookName = book.name,
                                 bookAuthor = book.author,
-                                reviewContent = book.reviewContent,
+                                reviewContent = reviewContentToSave,
                                 createTime = System.currentTimeMillis(),
                                 updateTime = System.currentTimeMillis()
                             )
@@ -611,7 +613,7 @@ object BookplateDrawer {
                         // 3. 同步更新ReadingMemory表
                         val memory = appDb.readingMemoryDao.getByBookUrl(book.bookUrl)
                         if (memory != null) {
-                            val updatedMemory = memory.copy(reviewContent = book.reviewContent)
+                            val updatedMemory = memory.copy(reviewContent = reviewContentToSave)
                             appDb.readingMemoryDao.update(updatedMemory)
                         }
                         

@@ -57,6 +57,7 @@ import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.book.ReadIterationHelper
 import io.legado.app.help.book.ReadingTicketHelper
+import io.legado.app.ui.book.read.page.provider.BookplateDrawer
 import io.legado.app.help.book.isAudio
 import io.legado.app.help.book.isEpub
 import io.legado.app.help.book.isLocal

@@ -3,6 +3,9 @@ package io.legado.app.model
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.PageAnim.scrollPageAnim
+import io.legado.app.constant.PreferKey
+import io.legado.app.utils.getPrefBoolean
+import splitties.init.appCtx
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
