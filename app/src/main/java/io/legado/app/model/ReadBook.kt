@@ -162,6 +162,8 @@ object ReadBook : CoroutineScope by MainScope() {
             downloadedChapters.clear()
             downloadFailChapters.clear()
         }
+        // 检测是否需要询问N刷：已读完的书，重新打开同一本书时
+        checkMultiReadIfNeeded(book)
     }
 
     fun upWebBook(book: Book) {

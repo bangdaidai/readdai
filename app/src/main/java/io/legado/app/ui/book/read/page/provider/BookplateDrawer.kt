@@ -1,6 +1,8 @@
 package io.legado.app.ui.book.read.page.provider
 
+import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -8,11 +10,16 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
 import android.widget.RatingBar
 import android.widget.TextView
+import androidx.core.content.FileProvider
 import androidx.appcompat.app.AlertDialog
 import io.legado.app.R
 import io.legado.app.data.appDb
@@ -27,6 +34,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import splitties.init.appCtx
+import java.io.File
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,6 +79,73 @@ object BookplateDrawer {
             override fun onDraw(canvas: Canvas) {
                 super.onDraw(canvas)
                 canvas.drawBitmap(bitmap, 0f, 0f, null)
+            }
+        }
+    }
+
+    /**
+     * 保存藏书票图片到相册
+     */
+    fun saveBookplateToGallery(context: Context, book: Book) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // 创建藏书票位图
+                val bpWidth = 320.dpToPx()
+                var baseHeight = 480.dpToPx()
+                var extraHeight = if (!book.reviewContent.isNullOrBlank()) {
+                    val lines = book.reviewContent?.split("\n")?.size ?: 1
+                    (lines * 18 + 20).dpToPx()
+                } else {
+                    0
+                }
+                val bpHeight = baseHeight + extraHeight
+                
+                val bitmap = Bitmap.createBitmap(bpWidth, bpHeight, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(bitmap)
+                drawBookplate(canvas, book, bpWidth, bpHeight)
+                
+                // 保存到相册
+                val fileName = "藏书票_${book.name}_${System.currentTimeMillis()}.png"
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    // Android 10+ 使用 MediaStore
+                    val contentValues = ContentValues().apply {
+                        put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                        put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/LegRead")
+                    }
+                    
+                    val uri = context.contentResolver.insert(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        contentValues
+                    )
+                    
+                    uri?.let {
+                        context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                        }
+                    }
+                } else {
+                    // Android 9 及以下
+                    val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                    val legReadDir = File(picturesDir, "LegRead")
+                    if (!legReadDir.exists()) {
+                        legReadDir.mkdirs()
+                    }
+                    val file = File(legReadDir, fileName)
+                    FileOutputStream(file).use { outputStream ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+                    }
+                }
+                
+                CoroutineScope(Dispatchers.Main).launch {
+                    context.longToastOnUi("藏书票已保存到相册")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                CoroutineScope(Dispatchers.Main).launch {
+                    context.longToastOnUi("保存失败: ${e.message}")
+                }
             }
         }
     }
@@ -726,6 +802,8 @@ object BookplateDrawer {
                             ReadBook.callBack?.upContent()
                             // 发送书评更新事件，让书架和阅读详情刷新
                             io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOK_REVIEW_UPDATED, book.bookUrl)
+                            // 发送书架刷新事件，确保书架分组及时更新
+                            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
