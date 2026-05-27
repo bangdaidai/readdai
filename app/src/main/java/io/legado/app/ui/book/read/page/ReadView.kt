@@ -37,6 +37,8 @@ import io.legado.app.ui.book.read.page.entities.column.TextColumn
 import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.page.provider.LayoutProgressListener
 import io.legado.app.ui.book.read.page.provider.TextPageFactory
+import io.legado.app.lib.dialogs.alert
+import io.legado.app.ui.book.read.page.provider.BookplateDrawer
 import io.legado.app.utils.activity
 import io.legado.app.utils.invisible
 import io.legado.app.utils.longToastOnUi
@@ -785,7 +787,7 @@ class ReadView(context: Context, attrs: AttributeSet) :
     private fun showSaveBookplateDialog() {
         ReadBook.book?.let { book ->
             val dialogView = BookplateDrawer.createBookplateView(context, book)
-            alert(title = "藏书票") {
+            context.alert(title = "藏书票") {
                 customView = dialogView
                 positiveButton("保存图片") { _ ->
                     BookplateDrawer.saveBookplateToGallery(context, book)
