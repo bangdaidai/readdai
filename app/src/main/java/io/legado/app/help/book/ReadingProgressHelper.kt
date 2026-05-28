@@ -71,16 +71,16 @@ object ReadingProgressHelper {
             return ReadingStatus.ABANDONED
         }
         
-        // 如果当前状态是已读完，保持已读完状态，不受阅读进度影响
-        if (book.readingStatus == ReadingStatus.FINISHED.value) {
-            return ReadingStatus.FINISHED
-        }
-        
         // 计算阅读进度
         val progress = calculateReadingProgress(book)
         
         // 检查用户是否真正阅读过这本书
         val hasRead = book.durChapterIndex > 0 || book.durChapterPos > 0
+        
+        // 如果用户手动修改过阅读状态，保持用户设置
+        if (book.userModifiedReadingStatus) {
+            return ReadingStatus.fromValue(book.readingStatus)
+        }
         
         // 简单直接的判定条件：进度>=100%为已完成，进度>0%或有阅读记录为在读，否则为待读
         return when {
@@ -103,13 +103,6 @@ object ReadingProgressHelper {
             return book
         }
         
-        // 如果当前状态是已读完，保持已读完状态
-        if (book.getReadingStatusEnum() == ReadingStatus.FINISHED) {
-            return book
-        }
-        
-        // 计算阅读进度
-        val progress = calculateReadingProgress(book)
         // 使用统一的计算方法计算阅读状态，同时考虑阅读进度和阅读时间
         val newStatus = calculateReadingStatus(book)
         

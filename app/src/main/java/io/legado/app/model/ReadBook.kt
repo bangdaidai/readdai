@@ -1219,9 +1219,8 @@ object ReadBook : CoroutineScope by MainScope() {
      * 检测是否需要询问N刷（已读完的书，重新打开时）
      */
     private fun checkMultiReadIfNeeded(book: Book) {
-        // 条件：书籍已读完（readIteration >= 1）且在书架中
-        val isFinished = book.readIteration >= 1
-        if (isFinished && inBookshelf) {
+        // 条件：书籍已读完（readIteration为奇数）且在书架中
+        if (io.legado.app.help.book.ReadIterationHelper.isFinished(book) && inBookshelf) {
             launch(Main) {
                 // 通知UI显示N刷确认对话框
                 callBack?.showMultiReadConfirm(book)

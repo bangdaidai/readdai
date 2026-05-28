@@ -1389,7 +1389,7 @@ $content
      * 显示N刷确认对话框
      */
     override fun showMultiReadConfirm(book: io.legado.app.data.entities.Book) {
-        val nextIterNum = book.readIteration + 1
+        val nextIterNum = (book.readIteration + 3) / 2
         val nthStr = when (nextIterNum) {
             2 -> "二"; 3 -> "三"; 4 -> "四"; 5 -> "五"; 6 -> "六"; 7 -> "七"
             else -> "${nextIterNum}"
@@ -1397,12 +1397,10 @@ $content
         alert("开始${nthStr}刷") {
             setMessage("《${book.name}》已标记为读完，是否开始${nthStr}刷？")
             yesButton {
-                ReadIterationHelper.markAsFinished(book)
+                ReadIterationHelper.moveToNextIteration(book)
                 postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
             }
-            noButton {
-                Toast.makeText(this@ReadBookActivity, "已保持读完状态", Toast.LENGTH_SHORT).show()
-            }
+            noButton()
         }.show()
     }
     
@@ -1412,17 +1410,22 @@ $content
     override fun onBookEnd() {
         val book = ReadBook.book ?: return
         if (!getPrefBoolean(PreferKey.readIterationPopup, true)) return
-        // readIteration >= 1 时表示已经读过一轮了，可以进入下一轮
-        if (book.readIteration < 1) return
+        // 只处理偶数前的状态：0->1(读完), 2->3(二刷完), ... 即 readIteration 为偶数时
+        if (book.readIteration % 2 != 0) return
         if (!ReadBook.inBookshelf) return
         
-        val iterNum = book.readIteration
-        val nthStr = iterNum + 1
-        val title = "标记${nthStr}刷完"
-        val message = "已完成${nthStr}刷，是否标记？"
+        val iterNum = book.readIteration / 2
+        val nthStr = when (iterNum) {
+            0 -> ""
+            1 -> "二"
+            2 -> "三"
+            3 -> "四"
+            4 -> "五"
+            else -> "${iterNum + 1}"
+        }
+        val title = if (iterNum == 0) getString(R.string.mark_book_finished) else "标记${nthStr}刷完"
         
         alert(title) {
-            setMessage(message)
             yesButton {
                 ReadIterationHelper.markAsFinished(book)
                 postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)

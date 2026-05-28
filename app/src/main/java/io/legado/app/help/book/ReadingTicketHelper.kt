@@ -68,6 +68,8 @@ object ReadingTicketHelper {
         // 增加阅读轮次（变成奇数，表示读完）
         book.readIteration++
         book.finishReadTime = System.currentTimeMillis()
+        // 更新阅读状态为完成
+        book.setReadingStatus(io.legado.app.constant.ReadingStatus.FINISHED, false)
         appDb.bookDao.update(book)
         
         // 设置完成时间
@@ -75,6 +77,9 @@ object ReadingTicketHelper {
         
         // 更新小票
         updateTicket(book)
+        
+        // 通知书架刷新，确保分组更新
+        io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
     }
     
     /**
