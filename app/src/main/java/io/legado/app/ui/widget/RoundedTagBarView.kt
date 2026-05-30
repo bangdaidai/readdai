@@ -141,10 +141,12 @@ class RoundedTagBarView @JvmOverloads constructor(
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): TagViewHolder {
             val textView = LayoutInflater.from(parent.context)
                 .inflate(R.layout.item_bookshelf_group_tag, parent, false) as TextView
+            // 胶囊圆角：半径为标签高度的一半(28dp/2=14dp)
+            val capsuleRadius = UiCorner.scaledDp(14f)
             textView.background = UiCorner.actionSelector(
                 android.graphics.Color.TRANSPARENT,
                 ContextCompat.getColor(parent.context, R.color.background_card),
-                UiCorner.actionRadius(parent.context)
+                capsuleRadius
             )
             textView.setTextColor(
                 ColorStateList(

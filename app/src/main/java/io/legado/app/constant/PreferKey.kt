@@ -270,11 +270,6 @@ object PreferKey {
     const val bottomBarSidebarGravity = "bottomBarSidebarGravity"
     const val syncThemePackages = "syncThemePackages"
     
-    // 读完/N刷功能配置
-    const val readIterationShowTag = "readIterationShowTag"
-    const val readIterationTagColor = "readIterationTagColor"
-    const val readIterationPopup = "readIterationPopup"
-    
     // 藏书票功能配置
     const val showBookplate = "showBookplate"
     const val showReadingTicket = "showReadingTicket"

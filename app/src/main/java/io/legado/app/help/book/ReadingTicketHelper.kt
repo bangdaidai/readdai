@@ -13,16 +13,12 @@ object ReadingTicketHelper {
     
     /**
      * 创建或更新阅读小票（与Book实体的rating和readIteration联动）
-     * 使用ReadSession表中的实际阅读时长
      */
     suspend fun updateTicket(
         book: Book,
         readTime: Long = 0
     ) = withContext(Dispatchers.IO) {
         val existingTicket = appDb.readingTicketDao.getByBookUrl(book.bookUrl)
-        
-        // 从ReadSession表获取总阅读时长
-        val totalReadTime = appDb.readSessionDao.getTotalReadTimeByUrl(book.bookUrl) ?: 0L
         
         // 根据 readIteration 计算阅读状态
         val isFinished = book.readIteration > 0 && book.readIteration % 2 == 1  // 奇数=读完
@@ -33,7 +29,7 @@ object ReadingTicketHelper {
             existingTicket.copy(
                 bookName = book.name,
                 author = book.author,
-                totalReadTime = totalReadTime,
+                totalReadTime = existingTicket.totalReadTime + readTime,
                 readCount = readCount,
                 rating = book.rating, // 直接使用Book的rating，保持联动
                 lastReadTime = System.currentTimeMillis(),
@@ -47,7 +43,7 @@ object ReadingTicketHelper {
                 bookUrl = book.bookUrl,
                 bookName = book.name,
                 author = book.author,
-                totalReadTime = totalReadTime,
+                totalReadTime = readTime,
                 readCount = readCount,
                 rating = book.rating, // 使用Book的rating
                 firstReadTime = System.currentTimeMillis(),
@@ -104,12 +100,7 @@ object ReadingTicketHelper {
      * 获取阅读小票
      */
     suspend fun getTicket(bookUrl: String): ReadingTicket? = withContext(Dispatchers.IO) {
-        val ticket = appDb.readingTicketDao.getByBookUrl(bookUrl)
-        // 确保使用最新的ReadSession阅读时长
-        ticket?.let {
-            val totalReadTime = appDb.readSessionDao.getTotalReadTimeByUrl(bookUrl) ?: 0L
-            it.copy(totalReadTime = totalReadTime)
-        }
+        appDb.readingTicketDao.getByBookUrl(bookUrl)
     }
     
     /**

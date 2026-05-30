@@ -40,9 +40,7 @@ data class TextPage(
     var chapterIndex: Int = 0,
     var height: Float = 0f,
     var leftLineSize: Int = 0,
-    var renderHeight: Int = 0,
-    var isBookplateStart: Boolean = false,
-    var isBookplateEnd: Boolean = false
+    var renderHeight: Int = 0
 ) {
 
     companion object {
@@ -61,6 +59,10 @@ data class TextPage(
     var paddingTop = ChapterProvider.paddingTop
     var isCompleted = false
     var hasReadAloudSpan = false
+    
+    // 藏书票标记
+    var isBookplateStart: Boolean = false  // 是否为书籍首页（显示藏书票）
+    var isBookplateEnd: Boolean = false    // 是否为书籍尾页（显示藏书票）
 
     @JvmField
     var textChapter = emptyTextChapter
@@ -302,12 +304,6 @@ data class TextPage(
     }
 
     fun draw(view: ContentTextView, canvas: Canvas, relativeOffset: Float) {
-        if (isBookplateStart || isBookplateEnd) {
-            io.legado.app.model.ReadBook.book?.let {
-                io.legado.app.ui.book.read.page.provider.BookplateDrawer.draw(canvas, this, it)
-            }
-            return
-        }
         if (AppConfig.optimizeRender) {
             render(view)
             canvas.withTranslation(0f, relativeOffset) {

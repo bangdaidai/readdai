@@ -26,10 +26,12 @@ class DiscoverTagAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_discover_tag_chip, parent, false) as TextView
+        // 胶囊圆角：半径为标签高度的一半(30dp/2=15dp)
+        val capsuleRadius = UiCorner.scaledDp(15f)
         view.background = UiCorner.actionSelector(
             android.graphics.Color.TRANSPARENT,
             ContextCompat.getColor(parent.context, R.color.transparent10),
-            UiCorner.actionRadius(parent.context)
+            capsuleRadius
         )
         return ViewHolder(view)
     }

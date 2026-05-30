@@ -184,23 +184,26 @@ class BooksAdapterList(
     private fun upTags(binding: ItemBookshelfListBinding, item: Book) {
         // 保存当前书籍的URL，用于后续校验，防止ViewHolder被复用后显示错误的标签
         binding.root.tag = item.bookUrl
-        
+
+        // 关键修复：立即清空标签容器，防止ViewHolder被复用时显示上一本书的标签
+        binding.tvTags.removeAllViews()
+
         // 使用viewLifecycleOwner的lifecycleScope，确保协程在视图销毁时取消
         fragment.viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 // 先获取当前缓存的标签
                 val cachedTags = tagCache[item.bookUrl]
-                
+
                 // 使用TagManager.loadBookTags()方法获取标签，确保与阅读详情页面使用相同的逻辑
                 var tags = TagManager.loadBookTags(item.bookUrl)
-                
+
                 // 如果没有标签，检查是否为正版书源，如果是则生成标签
                 if (tags.isEmpty()) {
                     val isOfficialSource = kotlinx.coroutines.withContext(Dispatchers.IO) {
                             val bookSource = appDb.bookSourceDao.getBookSource(item.origin)
                             bookSource?.bookSourceGroup?.contains("正版") == true
                         }
-                    
+
                     if (isOfficialSource && !item.kind.isNullOrBlank()) {
                         // 生成标签
                         val generatedTags = kotlinx.coroutines.withContext(Dispatchers.IO) {
@@ -212,185 +215,129 @@ class BooksAdapterList(
                         }
                     }
                 }
-                
-                // 获取阅读次数（N刷）- 使用 readIteration
-                val iteration = item.readIteration
-                val isFinished = iteration > 0 && iteration % 2 == 1  // 奇数=读完
-                val nBrushCount = if (iteration >= 2) iteration / 2 else 0  // N刷次数
-                
-                // 无论是否有标签，都需要更新缓存并刷新UI
-                // 使用 == 比较列表内容（空列表也相等）
-                if (cachedTags == null || cachedTags != tags || shouldUpdateReadCount(item.bookUrl, nBrushCount)) {
-                    // 标签或阅读次数发生变化（或缓存为空），更新缓存
-                    tagCache[item.bookUrl] = tags
-                    updateReadCountCache(item.bookUrl, nBrushCount)
-                    
-                    // 在UI线程中设置标签
-                    kotlinx.coroutines.withContext(Dispatchers.Main) {
-                        // 校验：确保当前ViewHolder仍然绑定到同一本书，防止竞态条件
-                        if (binding.root.tag != item.bookUrl) {
-                            return@withContext
-                        }
-                        
-                        // 保存当前标签容器的高度，避免跳动
-                        val currentHeight = binding.tvTags.height
-                        
-                        // 清空标签容器
-                        binding.tvTags.removeAllViews()
-                        
-                        if (tags.isNotEmpty()) {
-                            // 计算容器宽度，只添加能容纳的标签
-                            val containerWidth = binding.tvTags.width
-                            if (containerWidth > 0) {
-                                var currentWidth = 0
-                                for (tag in tags) {
-                                    val bookTagView = android.widget.TextView(context)
-                                    bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
-                                    )
-                                    bookTagView.setText(tag.name)
-                                    bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                                    bookTagView.setPadding(8, 0, 8, 0) // 增加左右内边距
-                                    bookTagView.setGravity(android.view.Gravity.CENTER)
-                                    bookTagView.setSingleLine(true)
-                                    bookTagView.setEllipsize(null) // 不显示省略号，确保标签完整显示
-                                    bookTagView.setMaxLines(1)
-                                    // 使用矩形背景，有圆角和边框
-                                    val bookTagBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
-                                    val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24) // 10%透明度
-                                    bookTagBg?.setTint(bookTagBackgroundColor)
-                                    // 设置边框颜色为标签文字颜色
-                                    if (bookTagBg is android.graphics.drawable.GradientDrawable) {
-                                        bookTagBg.setStroke(1, tag.color)
-                                    }
-                                    bookTagView.background = bookTagBg
-                                    bookTagView.setTextColor(tag.color)
-                                    
-                                    // 添加右侧间距
-                                    val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
-                                    layoutParams.setMarginEnd(8)
-                                    bookTagView.layoutParams = layoutParams
-                                    
-                                    // 测量标签宽度
-                                    bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
-                                    val tagWidth = bookTagView.measuredWidth + 8 // 加上右边距
-                                    
-                                    if (currentWidth + tagWidth <= containerWidth) {
-                                        // 标签能容纳，添加到容器
-                                        binding.tvTags.addView(bookTagView)
-                                        currentWidth += tagWidth
-                                    } else {
-                                        // 标签超出容器，停止添加
-                                        break
-                                    }
+
+                // 更新缓存
+                tagCache[item.bookUrl] = tags
+
+                // 如果缓存未变化且标签为空，无需刷新UI
+                if (cachedTags != null && cachedTags == tags && tags.isEmpty()) {
+                    return@launch
+                }
+
+                // 在UI线程中设置标签
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    // 校验：确保当前ViewHolder仍然绑定到同一本书，防止竞态条件
+                    if (binding.root.tag != item.bookUrl) {
+                        return@withContext
+                    }
+
+                    // 保存当前标签容器的高度，避免跳动
+                    val currentHeight = binding.tvTags.height
+
+                    // 清空标签容器（防止延迟回调残留）
+                    binding.tvTags.removeAllViews()
+
+                    if (tags.isNotEmpty()) {
+                        // 计算容器宽度，只添加能容纳的标签
+                        val containerWidth = binding.tvTags.width
+                        if (containerWidth > 0) {
+                            var currentWidth = 0
+                            for (tag in tags) {
+                                val bookTagView = android.widget.TextView(context)
+                                bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                                )
+                                bookTagView.setText(tag.name)
+                                bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                                bookTagView.setPadding(8, 0, 8, 0)
+                                bookTagView.setGravity(android.view.Gravity.CENTER)
+                                bookTagView.setSingleLine(true)
+                                bookTagView.setEllipsize(null)
+                                bookTagView.setMaxLines(1)
+                                val bookTagBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
+                                val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
+                                bookTagBg?.setTint(bookTagBackgroundColor)
+                                if (bookTagBg is android.graphics.drawable.GradientDrawable) {
+                                    bookTagBg.setStroke(1, tag.color)
                                 }
-                            } else {
-                                // 容器宽度为0，添加布局监听器
-                                binding.tvTags.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
-                                    override fun onGlobalLayout() {
-                                        // 移除监听器，避免重复调用
-                                        binding.tvTags.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                                        
-                                        // 清空标签容器
-                                        binding.tvTags.removeAllViews()
-                                        
-                                        // 重新计算标签显示
-                                        val containerWidth = binding.tvTags.width
-                                        if (containerWidth > 0) {
-                                            var currentWidth = 0
-                                            for (tag in tags) {
-                                                val bookTagView = android.widget.TextView(context)
-                                                bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
-                                                )
-                                                bookTagView.setText(tag.name)
-                                                bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                                                bookTagView.setPadding(8, 0, 8, 0)
-                                                bookTagView.setGravity(android.view.Gravity.CENTER)
-                                                bookTagView.setSingleLine(true)
-                                                bookTagView.setEllipsize(null)
-                                                bookTagView.setMaxLines(1)
-                                                val bookTagBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
-                                                val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
-                                                bookTagBg?.setTint(bookTagBackgroundColor)
-                                                if (bookTagBg is android.graphics.drawable.GradientDrawable) {
-                                                    bookTagBg.setStroke(1, tag.color)
-                                                }
-                                                bookTagView.background = bookTagBg
-                                                bookTagView.setTextColor(tag.color)
-                                                
-                                                val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
-                                                layoutParams.setMarginEnd(8)
-                                                bookTagView.layoutParams = layoutParams
-                                                
-                                                // 测量标签宽度
-                                                bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
-                                                val tagWidth = bookTagView.measuredWidth + 8
-                                                
-                                                if (currentWidth + tagWidth <= containerWidth) {
-                                                    binding.tvTags.addView(bookTagView)
-                                                    currentWidth += tagWidth
-                                                } else {
-                                                    // 超出容器，停止添加
-                                                    break
-                                                }
+                                bookTagView.background = bookTagBg
+                                bookTagView.setTextColor(tag.color)
+
+                                val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
+                                layoutParams.setMarginEnd(8)
+                                bookTagView.layoutParams = layoutParams
+
+                                bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
+                                val tagWidth = bookTagView.measuredWidth + 8
+
+                                if (currentWidth + tagWidth <= containerWidth) {
+                                    binding.tvTags.addView(bookTagView)
+                                    currentWidth += tagWidth
+                                } else {
+                                    break
+                                }
+                            }
+                        } else {
+                            // 容器宽度为0，添加布局监听器
+                            binding.tvTags.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                                override fun onGlobalLayout() {
+                                    binding.tvTags.viewTreeObserver.removeOnGlobalLayoutListener(this)
+
+                                    // 校验ViewHolder是否仍然有效
+                                    if (binding.root.tag != item.bookUrl) return
+
+                                    binding.tvTags.removeAllViews()
+
+                                    val containerWidth = binding.tvTags.width
+                                    if (containerWidth > 0) {
+                                        var currentWidth = 0
+                                        for (tag in tags) {
+                                            val bookTagView = android.widget.TextView(context)
+                                            bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                                            )
+                                            bookTagView.setText(tag.name)
+                                            bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                                            bookTagView.setPadding(8, 0, 8, 0)
+                                            bookTagView.setGravity(android.view.Gravity.CENTER)
+                                            bookTagView.setSingleLine(true)
+                                            bookTagView.setEllipsize(null)
+                                            bookTagView.setMaxLines(1)
+                                            val bookTagBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
+                                            val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
+                                            bookTagBg?.setTint(bookTagBackgroundColor)
+                                            if (bookTagBg is android.graphics.drawable.GradientDrawable) {
+                                                bookTagBg.setStroke(1, tag.color)
+                                            }
+                                            bookTagView.background = bookTagBg
+                                            bookTagView.setTextColor(tag.color)
+
+                                            val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
+                                            layoutParams.setMarginEnd(8)
+                                            bookTagView.layoutParams = layoutParams
+
+                                            bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
+                                            val tagWidth = bookTagView.measuredWidth + 8
+
+                                            if (currentWidth + tagWidth <= containerWidth) {
+                                                binding.tvTags.addView(bookTagView)
+                                                currentWidth += tagWidth
+                                            } else {
+                                                break
                                             }
                                         }
                                     }
-                                })
-                            }
-                        }
-                        
-                        // 如果之前有标签，保持高度不变，避免跳动
-                        if (currentHeight > 0) {
-                            binding.tvTags.layoutParams = binding.tvTags.layoutParams.apply {
-                                height = currentHeight
-                            }
-                        }
-                        
-                        // 添加N刷标签（如果阅读轮次>0）
-                        if (iteration > 0) {
-                            val readCountView = android.widget.TextView(context)
-                            readCountView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
-                            )
-                            
-                            // 根据 readIteration 显示不同文案
-                            val label = when {
-                                iteration == 1 -> "初读"  // 初读完成
-                                iteration == 2 -> "二刷"  // 正在二刷
-                                iteration == 3 -> "二刷完"  // 二刷完成
-                                iteration == 4 -> "三刷"  // 正在三刷
-                                iteration == 5 -> "三刷完"  // 三刷完成
-                                else -> {
-                                    val brushNum = (iteration + 1) / 2
-                                    if (isFinished) "${brushNum}刷完" else "${brushNum}刷"
                                 }
-                            }
-                            readCountView.setText(label)
-                            readCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                            readCountView.setPadding(8, 0, 8, 0)
-                            readCountView.setGravity(android.view.Gravity.CENTER)
-                            readCountView.setSingleLine(true)
-                            // 使用橙色背景表示阅读次数
-                            val readCountBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
-                            val readCountColor = context.getColor(R.color.md_orange_500)
-                            val readCountBackgroundColor = readCountColor and 0x00FFFFFF or (0x1A shl 24)
-                            readCountBg?.setTint(readCountBackgroundColor)
-                            if (readCountBg is android.graphics.drawable.GradientDrawable) {
-                                readCountBg.setStroke(1, readCountColor)
-                            }
-                            readCountView.background = readCountBg
-                            readCountView.setTextColor(readCountColor)
-                            
-                            val layoutParams = readCountView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
-                            layoutParams.setMarginEnd(8)
-                            readCountView.layoutParams = layoutParams
-                            
-                            binding.tvTags.addView(readCountView)
+                            })
+                        }
+                    }
+
+                    // 如果之前有标签，保持高度不变，避免跳动
+                    if (currentHeight > 0) {
+                        binding.tvTags.layoutParams = binding.tvTags.layoutParams.apply {
+                            height = currentHeight
                         }
                     }
                 }
@@ -408,25 +355,7 @@ class BooksAdapterList(
      */
     fun clearTagCache(bookUrl: String) {
         tagCache.remove(bookUrl)
-        readCountCache.remove(bookUrl)
     }
-    
-    // 缓存阅读次数，避免重复查询
-    private val readCountCache = mutableMapOf<String, Int>()
-    
-    /**
-     * 检查是否需要更新阅读次数显示
-     */
-    private fun shouldUpdateReadCount(bookUrl: String, newReadCount: Int): Boolean {
-        val cachedCount = readCountCache[bookUrl]
-        return cachedCount == null || cachedCount != newReadCount
-    }
-    
-    /**
-     * 更新阅读次数缓存
-     */
-    private fun updateReadCountCache(bookUrl: String, readCount: Int) {
-        readCountCache[bookUrl] = readCount
     }
 
     private fun upIntro(binding: ItemBookshelfListBinding, item: Book) {

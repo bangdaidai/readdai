@@ -35,6 +35,7 @@ import io.legado.app.constant.AppLog
 import io.legado.app.constant.BookType
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.PreferKey
+import io.legado.app.help.book.ReadIterationHelper
 import io.legado.app.constant.Status
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
@@ -55,9 +56,6 @@ import io.legado.app.help.IntentData
 import io.legado.app.help.TTS
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.ContentProcessor
-import io.legado.app.help.book.ReadIterationHelper
-import io.legado.app.help.book.ReadingTicketHelper
-import io.legado.app.ui.book.read.page.provider.BookplateDrawer
 import io.legado.app.help.book.isAudio
 import io.legado.app.help.book.isEpub
 import io.legado.app.help.book.isLocal
@@ -329,7 +327,13 @@ class ReadBookActivity : BaseReadBookActivity(),
         super.onPostCreate(savedInstanceState)
         viewModel.initReadBookConfig(intent)
         Looper.myQueue().addIdleHandler {
-            viewModel.initData(intent)
+            viewModel.initData(intent) {
+                // 初始化完成后检测书籍是否为已读完状态，若是则询问是否进行下一刷
+                val book = ReadBook.book ?: return@initData
+                if (ReadIterationHelper.isFinished(book) && ReadBook.inBookshelf) {
+                    showMultiReadConfirm(book)
+                }
+            }
             false
         }
         justInitData = true
@@ -372,6 +376,11 @@ class ReadBookActivity : BaseReadBookActivity(),
             viewModel.initData(intent) {
                 // 数据初始化完成后，检查是否需要显示前情提要（仅从书架进入时）
                 checkAndShowPreviousSummary()
+                // 数据初始化完成后检测书籍是否为已读完状态，若是则询问是否进行下一刷
+                val book = ReadBook.book ?: return@initData
+                if (ReadIterationHelper.isFinished(book) && ReadBook.inBookshelf) {
+                    showMultiReadConfirm(book)
+                }
             }
             justInitData = true
         } else {
@@ -1386,57 +1395,65 @@ $content
     }
     
     /**
-     * 显示N刷确认对话框
+     * 书籍读到末尾时触发，弹出完读/N刷标记对话框
+     */
+    override fun onBookEnd() {
+        val book = ReadBook.book ?: return
+        // 只处理奇数前的状态：0->1(读完), 2->3(二刷完), ... 即 readIteration 为偶数时
+        if (book.readIteration % 2 != 0) return
+        if (!ReadBook.inBookshelf) return
+        val iterNum = book.readIteration / 2
+        val title = when (iterNum) {
+            0 -> "标记读完"
+            else -> {
+                val nthStr = iterNum + 1
+                "标记${when(nthStr) { 2->"二"; 3->"三"; 4->"四"; 5->"五"; else->"${nthStr}" }}刷完"
+            }
+        }
+        val message = when (iterNum) {
+            0 -> "已读完《${book.name}》，是否标记为已读完？"
+            else -> {
+                val nthStr = iterNum + 1
+                "已完成${when(nthStr) { 2->"二"; 3->"三"; 4->"四"; 5->"五"; else->"${nthStr}" }}刷，是否标记？"
+            }
+        }
+        runOnUiThread {
+            AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("是") { _, _ ->
+                    ReadIterationHelper.markAsFinished(book)
+                    io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.UP_BOOKSHELF, book.bookUrl)
+                    // 标记完后显示阅读小票
+                    showReadingTicket()
+                }
+                .setNegativeButton("否", null)
+                .setCancelable(true)
+                .show()
+        }
+    }
+
+    /**
+     * 显示N刷确认对话框（已读完的书重新打开时触发）
      */
     override fun showMultiReadConfirm(book: io.legado.app.data.entities.Book) {
-        val nextIterNum = book.readIteration + 1
+        val nextIterNum = (book.readIteration + 3) / 2
         val nthStr = when (nextIterNum) {
             2 -> "二"; 3 -> "三"; 4 -> "四"; 5 -> "五"; 6 -> "六"; 7 -> "七"
             else -> "${nextIterNum}"
         }
-        alert("开始${nthStr}刷") {
-            setMessage("《${book.name}》已标记为读完，是否开始${nthStr}刷？")
-            yesButton {
-                ReadIterationHelper.markAsFinished(book)
-                postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
-            }
-            noButton {
-                Toast.makeText(this@ReadBookActivity, "已保持读完状态", Toast.LENGTH_SHORT).show()
-            }
-        }.show()
-    }
-    
-    /**
-     * 实现 ReadBook.CallBack - 书籍读到末尾时弹窗
-     */
-    override fun onBookEnd() {
-        val book = ReadBook.book ?: return
-        if (!getPrefBoolean(PreferKey.readIterationPopup, true)) return
-        // readIteration >= 1 时表示已经读过一轮了，可以进入下一轮
-        if (book.readIteration < 1) return
-        if (!ReadBook.inBookshelf) return
-        
-        val iterNum = book.readIteration
-        val nthStr = iterNum + 1
-        val title = "标记${nthStr}刷完"
-        val message = "已完成${nthStr}刷，是否标记？"
-        
-        alert(title) {
-            setMessage(message)
-            yesButton {
-                ReadIterationHelper.markAsFinished(book)
-                postEvent(EventBus.UP_BOOKSHELF, book.bookUrl)
-            }
-            noButton()
-        }.show()
-    }
-
-    /**
-     * 显示藏书票评分对话框
-     */
-    override fun showBookplateRatingDialog() {
-        val book = ReadBook.book ?: return
-        BookplateDrawer.showRatingDialog(this, book)
+        runOnUiThread {
+            AlertDialog.Builder(this)
+                .setTitle("开始${nthStr}刷")
+                .setMessage("《${book.name}》已标记为读完，是否开始${nthStr}刷？")
+                .setPositiveButton("是") { _, _ ->
+                    ReadIterationHelper.moveToNextIteration(book)
+                    io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.UP_BOOKSHELF, book.bookUrl)
+                }
+                .setNegativeButton("否", null)
+                .setCancelable(true)
+                .show()
+        }
     }
 
     /**

@@ -1,64 +1,54 @@
 package io.legado.app.help.book
 
-import android.graphics.drawable.GradientDrawable
-import android.widget.TextView
-import io.legado.app.constant.PreferKey
 import io.legado.app.constant.ReadingStatus
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookTag
 import io.legado.app.data.entities.BookTagRelation
-import io.legado.app.utils.dpToPx
-import io.legado.app.utils.gone
-import io.legado.app.utils.getPrefBoolean
-import io.legado.app.utils.getPrefInt
-import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import splitties.init.appCtx
 
 /**
  * 阅读轮次（N刷）相关工具方法
- * 简化设计：只记录完成的刷书轮次，只有二刷及以上才显示标签
+ * 
+ * 设计说明：
+ * - N刷标签集成到标签管理系统中，不显示在书籍封面上
+ * - 不需要"初读"标签，只有二刷及以上才创建标签
+ * - 标签颜色等由标签管理系统统一管理
+ * 
+ * readIteration 语义：
+ * 0 -> 未读/在读中
+ * 1 -> 首次读完（不创建标签）
+ * 2 -> 正在二刷（创建"二刷"标签）
+ * 3 -> 二刷完成（更新为"二刷完"标签）
+ * 4 -> 正在三刷（更新为"三刷"标签）
+ * 5 -> 三刷完成（更新为"三刷完"标签）
+ * ...
+ * 奇数 = 已读完当前轮次，偶数 = 正在N刷中
  */
 object ReadIterationHelper {
 
     /**
      * 默认标签背景色（带80%不透明度的橙红色）
+     * 仅在创建新标签时使用，已存在的标签保留原色
      */
-    private const val DEFAULT_TAG_COLOR = 0xCCB5451B.toInt() // ARGB: 80% opacity warm red
+    private const val DEFAULT_TAG_COLOR = 0xCCB5451B.toInt()
 
     /**
      * 根据 readIteration 值获取标签文本
-     * 0 -> 不显示（未开始）
-     * 1 -> 不显示（首次读完，不需要标签）
-     * 2 -> "二刷"（正在二刷）
-     * 3 -> "二刷完"（二刷完成）
-     * 4 -> "三刷"（正在三刷）
-     * 5 -> "三刷完"（三刷完成）
-     * ...
-     * 
-     * 只有二刷及以上才显示标签
+     * 只有二刷及以上才返回标签文本
      */
     fun getTagText(readIteration: Int): String? {
-        // 只有二刷及以上才显示标签
         if (readIteration < 2) return null
         
-        // 计算刷数：(iteration + 1) / 2
         val brushNum = (readIteration + 1) / 2
         val isFinished = readIteration % 2 == 1  // 奇数表示完成
         
         val nthStr = when (brushNum) {
-            2 -> "二"
-            3 -> "三"
-            4 -> "四"
-            5 -> "五"
-            6 -> "六"
-            7 -> "七"
-            8 -> "八"
-            9 -> "九"
+            2 -> "二"; 3 -> "三"; 4 -> "四"; 5 -> "五"
+            6 -> "六"; 7 -> "七"; 8 -> "八"; 9 -> "九"
             else -> "$brushNum"
         }
         
@@ -66,46 +56,36 @@ object ReadIterationHelper {
     }
 
     /**
-     * 获取标签颜色（从偏好设置读取，未设置则使用默认）
-     */
-    fun getTagColor(): Int {
-        return appCtx.getPrefInt(PreferKey.readIterationTagColor, DEFAULT_TAG_COLOR)
-    }
-
-    /**
      * 是否处于"已读完"状态
-     * readIteration >= 1 都视为已读完
+     * readIteration 为奇数且 > 0 表示已读完当前轮次
      */
     fun isFinished(book: Book): Boolean {
-        return book.readIteration >= 1
-    }
-
-    /**
-     * 根据 readIteration 值获取对应的阅读状态
-     * readIteration >= 1 都视为"读完"
-     * readIteration == 0 视为"待看"
-     */
-    fun getReadingStatusForIteration(readIteration: Int): ReadingStatus {
-        return if (readIteration >= 1) {
-            ReadingStatus.FINISHED
-        } else {
-            ReadingStatus.PENDING
-        }
+        return book.readIteration > 0 && book.readIteration % 2 == 1
     }
 
     /**
      * 标记书籍为已完成当前轮次
-     * 如果 readIteration 为 0 -> 1（首次读完）
-     * 如果 readIteration >= 1 -> readIteration + 1（进入下一轮）
-     * 只更新N刷标签，阅读状态由阅读进度自动决定
-     * 注意：此方法不触发书架刷新，因为只改变N刷标签，不改变阅读状态
+     * readIteration++，并同步更新标签系统
      */
     fun markAsFinished(book: Book) {
         val oldIteration = book.readIteration
         book.readIteration++
         book.save()
         
-        // 同步更新标签系统（只有二刷及以上才需要更新标签）
+        GlobalScope.launch {
+            updateBookTag(book, oldIteration)
+        }
+    }
+
+    /**
+     * 让书进入下一轮次（读完->二刷, 二刷完->三刷, ...）
+     * readIteration++，并同步更新标签系统
+     */
+    fun moveToNextIteration(book: Book) {
+        val oldIteration = book.readIteration
+        book.readIteration++
+        book.save()
+
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
         }
@@ -113,9 +93,7 @@ object ReadIterationHelper {
 
     /**
      * 标记书籍为弃文
-     * 重置 readIteration 为 0
-     * 阅读状态设为 ABANDONED
-     * 会触发书架刷新，因为阅读状态改变了
+     * 重置 readIteration 为 0，阅读状态设为 ABANDONED
      */
     fun markAsAbandoned(book: Book) {
         val oldIteration = book.readIteration
@@ -123,19 +101,15 @@ object ReadIterationHelper {
         book.setReadingStatus(ReadingStatus.ABANDONED)
         book.save()
         
-        // 同步更新标签系统
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
-            // 通知书架刷新，因为阅读状态改变了
             io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 
     /**
      * 重新开始阅读（弃文后重新开始）
-     * 设置 readIteration 为 0
-     * 阅读状态设为 PENDING
-     * 会触发书架刷新，因为阅读状态改变了
+     * 设置 readIteration 为 0，阅读状态设为 PENDING
      */
     fun restartReading(book: Book) {
         val oldIteration = book.readIteration
@@ -143,16 +117,15 @@ object ReadIterationHelper {
         book.setReadingStatus(ReadingStatus.PENDING)
         book.save()
         
-        // 同步更新标签系统
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
-            // 通知书架刷新，因为阅读状态改变了
             io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 
     /**
      * 同步更新书籍标签系统
+     * 移除旧标签，添加新标签
      */
     private suspend fun updateBookTag(book: Book, oldIteration: Int) {
         withContext(Dispatchers.IO) {
@@ -160,17 +133,14 @@ object ReadIterationHelper {
                 val oldTagText = getTagText(oldIteration)
                 val newTagText = getTagText(book.readIteration)
                 
-                // 如果旧标签存在，先移除
                 if (oldTagText != null) {
                     removeOldTag(book.bookUrl, oldTagText)
                 }
                 
-                // 如果新标签存在，添加新标签
                 if (newTagText != null) {
                     addNewTag(book.bookUrl, newTagText)
                 }
                 
-                // 通知标签更新
                 io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.TAGS_UPDATED, book.bookUrl)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -190,16 +160,15 @@ object ReadIterationHelper {
 
     /**
      * 为书籍添加新的N刷标签
+     * 已存在的标签保留原色，新标签使用默认颜色
      */
     private suspend fun addNewTag(bookUrl: String, tagText: String) {
-        val tagColor = getTagColor()
-        
         // 查找或创建标签
         var tag = appDb.bookTagDao.getTagByName(tagText)
         if (tag == null) {
             tag = BookTag(
                 name = tagText,
-                color = tagColor,
+                color = DEFAULT_TAG_COLOR,
                 createTime = System.currentTimeMillis()
             )
             val tagId = appDb.bookTagDao.insert(tag)
@@ -209,7 +178,6 @@ object ReadIterationHelper {
         // 检查是否已有关联关系
         val existingRelation = appDb.bookTagRelationDao.getRelation(bookUrl, tag.id)
         if (existingRelation == null) {
-            // 创建关联关系
             val relation = BookTagRelation(
                 id = "relation_${System.currentTimeMillis()}_${kotlin.random.Random.nextInt(1000, 9999)}",
                 bookUrl = bookUrl,
@@ -220,30 +188,5 @@ object ReadIterationHelper {
         }
         
         TagManager.clearCache(bookUrl)
-    }
-
-    /**
-     * 统一设置 TextView 的阅读轮次标签样式。
-     * 有标签时显示圆角背景 + 文本，无标签时隐藏。
-     */
-    fun applyTagStyle(tv: TextView, readIteration: Int) {
-        if (!appCtx.getPrefBoolean(PreferKey.readIterationShowTag, true)) {
-            tv.gone()
-            return
-        }
-        val tagText = getTagText(readIteration)
-        if (tagText != null) {
-            tv.text = tagText
-            val color = getTagColor()
-            val drawable = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 3f.dpToPx()
-                setColor(color)
-            }
-            tv.background = drawable
-            tv.visible()
-        } else {
-            tv.gone()
-        }
     }
 }

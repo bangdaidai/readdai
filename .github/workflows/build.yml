@@ -1,7 +1,7 @@
 name: Build Signed Release APK
 on:
   push:
-    branches: [main, trae/*]
+    branches: [main]
   workflow_dispatch:
 
 jobs:

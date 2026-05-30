@@ -37,8 +37,6 @@ import io.legado.app.ui.book.read.page.entities.column.TextColumn
 import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.page.provider.LayoutProgressListener
 import io.legado.app.ui.book.read.page.provider.TextPageFactory
-import io.legado.app.lib.dialogs.alert
-import io.legado.app.ui.book.read.page.provider.BookplateDrawer
 import io.legado.app.utils.activity
 import io.legado.app.utils.invisible
 import io.legado.app.utils.longToastOnUi
@@ -321,16 +319,6 @@ class ReadView(context: Context, attrs: AttributeSet) :
      */
     private fun onLongPress() {
         kotlin.runCatching {
-            // 检查是否是藏书票页面
-            ReadBook.book?.let { book ->
-                val textPage = curPage.textPage
-                if (textPage.isBookplateStart || textPage.isBookplateEnd) {
-                    // 显示保存藏书票对话框
-                    showSaveBookplateDialog()
-                    return
-                }
-            }
-            
             curPage.longPress(startX, startY) { textPos: TextPos ->
                 isTextSelected = true
                 pressOnTextSelected = true
@@ -779,22 +767,6 @@ class ReadView(context: Context, attrs: AttributeSet) :
 
     override fun hasPrevChapter(): Boolean {
         return ReadBook.durChapterIndex > 0
-    }
-
-    /**
-     * 显示保存藏书票对话框
-     */
-    private fun showSaveBookplateDialog() {
-        ReadBook.book?.let { book ->
-            val dialogView = BookplateDrawer.createBookplateView(context, book)
-            context.alert(title = "藏书票") {
-                customView { dialogView }
-                positiveButton("保存图片") { _ ->
-                    BookplateDrawer.saveBookplateToGallery(context, book)
-                }
-                negativeButton("取消") { }
-            }
-        }
     }
 
     interface CallBack {
