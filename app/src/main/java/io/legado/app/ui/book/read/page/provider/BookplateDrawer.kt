@@ -185,11 +185,11 @@ object BookplateDrawer {
         drawListRow("书摘条数", annotationStr, currentY)
         currentY += 20.dpToPx()
         
-        // 阅读时间（天数）
-        val readingTimeStr = if (book.finishReadTime > 0 && startTime > 0) {
-            val diff = book.finishReadTime - startTime
-            val days = kotlin.math.max(0L, diff / (1000 * 60 * 60 * 24))
-            "${days} 天"
+        // 阅读时间（实际累计阅读时长）
+        val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
+        val readingTimeStr = if (totalReadMillis > 0) {
+            val days = totalReadMillis / (24 * 60 * 60 * 1000L)
+            if (days > 0) "${days} 天" else "${totalReadMillis / (60 * 60 * 1000L)} 小时"
         } else {
             "? 天"
         }

@@ -356,7 +356,6 @@ class BooksAdapterList(
     fun clearTagCache(bookUrl: String) {
         tagCache.remove(bookUrl)
     }
-    }
 
     private fun upIntro(binding: ItemBookshelfListBinding, item: Book) {
         val showIntro = AppConfig.showBookIntro
