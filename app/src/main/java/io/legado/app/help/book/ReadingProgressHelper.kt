@@ -22,6 +22,9 @@ object ReadingProgressHelper {
      * 根据阅读进度和阅读时间计算阅读状态
      * 统一的阅读状态计算逻辑，适用于所有场景
      * 
+     * 注意：不再仅凭进度100%就自动设为FINISHED
+     * FINISHED状态只能通过用户手动确认"标记读完"来设置
+     * 
      * @param progress 阅读进度百分比 (0-100)
      * @param readTime 阅读时间（毫秒）
      * @param isAbandoned 是否已弃文
@@ -34,8 +37,8 @@ object ReadingProgressHelper {
         if (isFinished) return ReadingStatus.FINISHED
         
         // 根据进度和阅读时间自动计算状态
+        // 不再根据进度100%自动设为FINISHED，只区分为在读和待读
         return when {
-            progress >= 100f -> ReadingStatus.FINISHED
             progress > 0f || readTime > 0 -> ReadingStatus.READING
             else -> ReadingStatus.PENDING
         }
@@ -63,9 +66,10 @@ object ReadingProgressHelper {
     /**
      * 根据书籍信息自动计算阅读状态
      * 逻辑说明：
-     * - 首次阅读（readIteration <= 1）：状态跟随进度变化
-     * - 已读完但未N刷（readIteration == 1）：状态保持"看完"，不再跟随进度变化
-     * - N刷中（readIteration >= 2）：状态跟随进度变化
+     * - 只有用户手动确认"标记读完"后，状态才会变为FINISHED（通过ReadIterationHelper.markAsFinished）
+     * - 不会仅凭阅读进度100%就自动设为FINISHED
+     * - 已标记为FINISHED的书保持FINISHED状态（除非用户开始n刷）
+     * - 弃文状态保持不变
      * 
      * @param book 书籍实体
      * @return 阅读状态枚举
@@ -76,9 +80,9 @@ object ReadingProgressHelper {
             return ReadingStatus.ABANDONED
         }
         
-        // 如果当前状态是已读完，且处于"未N刷"状态（readIteration == 1），保持已读完状态
-        // 这意味着用户选择不N刷，只是回顾，状态不再跟随进度变化
-        if (book.readingStatus == ReadingStatus.FINISHED.value && book.readIteration == 1) {
+        // 如果当前状态是已读完，保持已读完状态
+        // 只有用户开始n刷时才会通过moveToNextIteration改为READING
+        if (book.readingStatus == ReadingStatus.FINISHED.value) {
             return ReadingStatus.FINISHED
         }
         
@@ -88,9 +92,9 @@ object ReadingProgressHelper {
         // 检查用户是否真正阅读过这本书
         val hasRead = book.durChapterIndex > 0 || book.durChapterPos > 0
         
-        // 简单直接的判定条件：进度>=100%为已完成，进度>0%或有阅读记录为在读，否则为待读
+        // 不再根据进度100%自动设为FINISHED
+        // 只有用户在阅读末尾手动确认"标记读完"才会变为FINISHED
         return when {
-            progress >= 100f -> ReadingStatus.FINISHED
             progress > 0f || hasRead -> ReadingStatus.READING
             else -> ReadingStatus.PENDING
         }

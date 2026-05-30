@@ -39,15 +39,87 @@ object BookplateDrawer {
     private var ratingRect = RectF()
 
     /**
+     * 计算藏书票所需高度
+     */
+    private fun measureHeight(book: Book, bpWidth: Float): Float {
+        val paint = PaintPool.obtain()
+        paint.isAntiAlias = true
+        paint.typeface = Typeface.MONOSPACE
+
+        var h = 0f
+        // 顶部留白
+        h += 40.dpToPx()
+        // 标题
+        h += 25.dpToPx()
+        // 开始时间
+        h += 22.dpToPx()
+        // 结束时间
+        h += 22.dpToPx()
+        // 虚线
+        h += 12.dpToPx()
+        // 书名
+        h += 22.dpToPx()
+        // 书摘条数
+        h += 22.dpToPx()
+        // 阅读时间
+        h += 22.dpToPx()
+        // 虚线
+        h += 12.dpToPx()
+        // 阅读评分
+        h += 24.dpToPx()
+
+        // 书评
+        if (!book.reviewContent.isNullOrBlank()) {
+            h += 20.dpToPx() // 标题
+            paint.textSize = 11.dpToPx().toFloat()
+            val maxWidth = bpWidth - 40.dpToPx()
+            val paragraphs = book.reviewContent!!.split("\n")
+            for (paragraph in paragraphs) {
+                if (paragraph.isEmpty()) {
+                    h += 10.dpToPx()
+                    continue
+                }
+                var remainingText = paragraph
+                while (remainingText.isNotEmpty()) {
+                    if (paint.measureText(remainingText) <= maxWidth) {
+                        h += 18.dpToPx()
+                        break
+                    } else {
+                        var cutIndex = remainingText.length
+                        while (cutIndex > 0 && paint.measureText(remainingText.substring(0, cutIndex)) > maxWidth) {
+                            cutIndex--
+                        }
+                        if (cutIndex == 0) cutIndex = 1
+                        h += 18.dpToPx()
+                        remainingText = remainingText.substring(cutIndex)
+                    }
+                }
+            }
+            h += 10.dpToPx() // 底部间距
+        }
+
+        // 虚线（书评后/评分后）
+        h += 12.dpToPx()
+        // 底部标语
+        h += 16.dpToPx()
+        h += 16.dpToPx()
+        // 底部留白
+        h += 24.dpToPx()
+
+        PaintPool.recycle(paint)
+        return h
+    }
+
+    /**
      * 绘制藏书票
      */
     fun draw(canvas: Canvas, textPage: TextPage, book: Book) {
         val width = ChapterProvider.visibleWidth.toFloat()
         val height = ChapterProvider.visibleHeight.toFloat()
-        
+
         // 计算藏书票尺寸和位置（居中显示）
         val bpWidth = width * 0.8f
-        val bpHeight = 360.dpToPx().toFloat()
+        val bpHeight = measureHeight(book, bpWidth)
         val left = (width - bpWidth) / 2f + ChapterProvider.paddingLeft
         val top = (height - bpHeight) / 2f + ChapterProvider.paddingTop
         val right = left + bpWidth
@@ -55,23 +127,22 @@ object BookplateDrawer {
 
         val paint = PaintPool.obtain()
         paint.isAntiAlias = true
-        
+
         // 获取主题色
-        val cardBgColor = ThemeStore.backgroundCard(appCtx)
+        val primaryColor = ThemeStore.primaryColor(appCtx)
         val dividerColor = ThemeStore.dividerColor(appCtx)
         val textColor = ThemeStore.colorSurface(appCtx)
-        val primaryColor = ThemeStore.primaryColor(appCtx)
-        
+
         // 绘制阴影
         paint.color = Color.parseColor("#22000000")
         paint.style = Paint.Style.FILL
         canvas.drawRect(left + 4.dpToPx(), top + 4.dpToPx(), right + 4.dpToPx(), bottom + 4.dpToPx(), paint)
-        
-        // 绘制背景（使用主题卡片背景色）
-        paint.color = cardBgColor
+
+        // 绘制背景（使用主题主色调）
+        paint.color = primaryColor
         canvas.drawRect(left, top, right, bottom, paint)
-        
-        // 绘制顶部和底部的虚线边框（模拟票据撕裂效果）
+
+        // 绘制顶部和底部的虚线边框
         paint.color = dividerColor
         paint.style = Paint.Style.STROKE
         paint.strokeWidth = 3.dpToPx().toFloat()
@@ -84,34 +155,31 @@ object BookplateDrawer {
         paint.style = Paint.Style.FILL
         paint.color = textColor
         paint.typeface = Typeface.MONOSPACE
-        
+
         var currentY = top + 40.dpToPx()
-        
-        // 标题
+
+        // 标题：阅 读 凭 证
         paint.textSize = 18.dpToPx().toFloat()
         paint.isFakeBoldText = true
-        val titleText = "Reading Certificate"
+        val titleText = "阅 读 凭 证"
         val titleWidth = paint.measureText(titleText)
         canvas.drawText(titleText, left + (bpWidth - titleWidth) / 2f, currentY, paint)
-        
+
         currentY += 25.dpToPx()
-        paint.textSize = 14.dpToPx().toFloat()
+        paint.textSize = 12.dpToPx().toFloat()
         paint.isFakeBoldText = false
-        val subtitleText = "=== 阅 读 凭 证 ==="
-        val subtitleWidth = paint.measureText(subtitleText)
-        canvas.drawText(subtitleText, left + (bpWidth - subtitleWidth) / 2f, currentY, paint)
-        
-        currentY += 30.dpToPx()
-        
+
         // 辅助函数：绘制一行（左右对齐）
-        val drawRow = { title: String, value: String, y: Float, isBold: Boolean ->
-            paint.isFakeBoldText = isBold
-            canvas.drawText(title, left + 20.dpToPx(), y, paint)
+        val drawRow = { rowTitle: String, value: String, y: Float ->
+            paint.isFakeBoldText = false
+            paint.color = textColor
+            paint.style = Paint.Style.FILL
+            canvas.drawText(rowTitle, left + 20.dpToPx(), y, paint)
             val valWidth = paint.measureText(value)
             canvas.drawText(value, right - 20.dpToPx() - valWidth, y, paint)
         }
-        
-        // 辅助函数：绘制分隔线
+
+        // 辅助函数：绘制虚线分隔线
         val drawDivider = { y: Float ->
             paint.color = dividerColor
             paint.style = Paint.Style.STROKE
@@ -122,53 +190,48 @@ object BookplateDrawer {
             paint.style = Paint.Style.FILL
             paint.color = textColor
         }
-        
-        paint.textSize = 12.dpToPx().toFloat()
-        
-        // 开始时间（使用首次阅读时间或 durChapterTime）
-        val startTime = if (book.firstReadTime > 0) book.firstReadTime else book.durChapterTime
-        val addTimeStr = if (startTime > 0) dateFormat.format(Date(startTime)) else "____/__/__"
-        drawRow("开始时间", addTimeStr, currentY, false)
-        
-        currentY += 25.dpToPx()
-        
-        paint.textSize = 14.dpToPx().toFloat()
-        
-        // 结算清单标题
-        paint.isFakeBoldText = true
-        val listTitle = "- 结 算 清 单 -"
-        val listTitleWidth = paint.measureText(listTitle)
-        canvas.drawText(listTitle, left + (bpWidth - listTitleWidth) / 2f, currentY, paint)
-        currentY += 25.dpToPx()
-        
-        paint.isFakeBoldText = false
-        
+
         // 辅助函数：绘制清单一行（带虚线连接）
-        val drawListRow = { title: String, value: String, y: Float ->
-            canvas.drawText(title, left + 20.dpToPx(), y, paint)
+        val drawListRow = { rowTitle: String, value: String, y: Float ->
+            paint.color = textColor
+            paint.style = Paint.Style.FILL
+            canvas.drawText(rowTitle, left + 20.dpToPx(), y, paint)
             val valWidth = paint.measureText(value)
             val valueX = right - 20.dpToPx() - valWidth
             canvas.drawText(value, valueX, y, paint)
-            
-            // 绘制中间的虚线
-            val titleWidth = paint.measureText(title)
-            val dashStartX = left + 20.dpToPx() + titleWidth + 5.dpToPx()
+            val titleW = paint.measureText(rowTitle)
+            val dashStartX = left + 20.dpToPx() + titleW + 5.dpToPx()
             val dashEndX = valueX - 5.dpToPx()
             if (dashEndX > dashStartX) {
-                val oldStyle = paint.style
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = 1.dpToPx().toFloat()
                 paint.pathEffect = DashPathEffect(floatArrayOf(5f, 5f), 0f)
                 val textMiddleY = y - paint.textSize / 3f
                 canvas.drawLine(dashStartX, textMiddleY, dashEndX, textMiddleY, paint)
                 paint.pathEffect = null
-                paint.style = oldStyle
+                paint.style = Paint.Style.FILL
+                paint.color = textColor
             }
         }
-        
+
+        // 开始时间
+        val startTime = if (book.firstReadTime > 0) book.firstReadTime else book.durChapterTime
+        val addTimeStr = if (startTime > 0) dateFormat.format(Date(startTime)) else "____/__/__"
+        drawRow("开始时间", addTimeStr, currentY)
+
+        currentY += 22.dpToPx()
+
+        // 结束时间
+        val finishTimeStr = if (book.finishReadTime > 0) dateFormat.format(Date(book.finishReadTime)) else "____/__/__"
+        drawRow("结束时间", finishTimeStr, currentY)
+
+        currentY += 18.dpToPx()
+        drawDivider(currentY)
+        currentY += 18.dpToPx()
+
         // 书名（过长时截断）
         var displayBookName = book.name
-        val maxNameWidth = bpWidth - 40.dpToPx() - paint.measureText("书名  ") - 20.dpToPx()
+        val maxNameWidth = bpWidth - 40.dpToPx() - paint.measureText("书名") - 25.dpToPx()
         if (paint.measureText(displayBookName) > maxNameWidth) {
             val ellipsizeWidth = paint.measureText("...")
             while (displayBookName.isNotEmpty() && paint.measureText(displayBookName) + ellipsizeWidth > maxNameWidth) {
@@ -177,90 +240,90 @@ object BookplateDrawer {
             displayBookName += "..."
         }
         drawListRow("书名", displayBookName, currentY)
-        currentY += 20.dpToPx()
-        
+        currentY += 22.dpToPx()
+
         // 书摘数量
         val annotationCount = appDb.bookAnnotationDao.getByBook(book.name, book.author).size
         val annotationStr = if (annotationCount > 0) "$annotationCount" else "?"
         drawListRow("书摘条数", annotationStr, currentY)
-        currentY += 20.dpToPx()
-        
-        // 阅读时间（实际累计阅读时长）
+        currentY += 22.dpToPx()
+
+        // 阅读时间（实际累计阅读时长，不到一天换算成小时/分钟）
         val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
         val readingTimeStr = if (totalReadMillis > 0) {
-            val days = totalReadMillis / (24 * 60 * 60 * 1000L)
-            if (days > 0) "${days} 天" else "${totalReadMillis / (60 * 60 * 1000L)} 小时"
+            val totalMinutes = totalReadMillis / (60 * 1000L)
+            val days = totalMinutes / (24 * 60)
+            val hours = totalMinutes / 60
+            when {
+                days > 0 -> "${days} 天"
+                hours > 0 -> "${hours} 小时"
+                else -> "${totalMinutes} 分钟"
+            }
         } else {
-            "? 天"
+            "?"
         }
         drawListRow("阅读时间", readingTimeStr, currentY)
-        
-        currentY += 20.dpToPx()
+
+        currentY += 18.dpToPx()
         drawDivider(currentY)
-        currentY += 30.dpToPx()
-        
-        // 评分区域
+        currentY += 18.dpToPx()
+
+        // 阅读评分
         paint.isFakeBoldText = false
-        canvas.drawText("阅读打分", left + 20.dpToPx(), currentY, paint)
-        
-        val starsStr = "[ ☆ ☆ ☆ ☆ ☆ ]"
-        val starsWidth = paint.measureText(starsStr)
-        val starsX = right - 20.dpToPx() - starsWidth
-        canvas.drawText(starsStr, starsX, currentY, paint)
-        
-        // 记录评分区域的点击范围
-        ratingRect.set(starsX, currentY - 20.dpToPx(), starsX + starsWidth, currentY + 10.dpToPx())
-        
-        // 绘制已填充的星星
-        paint.color = primaryColor
-        val starWidth = paint.measureText("☆ ")
-        val bracketWidth = paint.measureText("[ ")
+        paint.textSize = 12.dpToPx().toFloat()
+        paint.color = textColor
+        paint.style = Paint.Style.FILL
+        canvas.drawText("阅读评分", left + 20.dpToPx(), currentY, paint)
+
+        // 绘制星星：统一文字颜色，选中的实心★，未选中的空心☆，大小一致
+        val starSize = 14.dpToPx().toFloat()
+        val starGap = 4.dpToPx().toFloat()
+        paint.textSize = starSize
+        val totalStarWidth = starSize * 5 + starGap * 4
+        var starDrawX = right - 20.dpToPx() - totalStarWidth
+
         for (i in 0 until 5) {
-            if (book.rating >= i + 1) {
-                canvas.drawText("★", starsX + bracketWidth + i * starWidth, currentY, paint)
-            }
+            paint.color = textColor
+            paint.isFakeBoldText = false
+            val starChar = if (book.rating >= i + 1) "★" else "☆"
+            canvas.drawText(starChar, starDrawX, currentY, paint)
+            starDrawX += starSize + starGap
         }
         paint.color = textColor
-        
-        currentY += 20.dpToPx()
-        drawDivider(currentY)
-        currentY += 30.dpToPx()
-        
+        paint.textSize = 12.dpToPx().toFloat()
+        paint.isFakeBoldText = false
+
+        // 记录评分区域的点击范围
+        ratingRect.set(right - 20.dpToPx() - totalStarWidth, currentY - 24.dpToPx(), right - 20.dpToPx(), currentY + 10.dpToPx())
+
+        currentY += 24.dpToPx()
+
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
             paint.isFakeBoldText = true
             paint.textSize = 12.dpToPx().toFloat()
-            canvas.drawText("📝 我的书评", left + 20.dpToPx(), currentY, paint)
+            paint.color = textColor
+            canvas.drawText("我的书评", left + 20.dpToPx(), currentY, paint)
             currentY += 20.dpToPx()
-            
+
             paint.isFakeBoldText = false
             paint.textSize = 11.dpToPx().toFloat()
-            
-            // 绘制完整书评内容（支持多行）
-            val reviewText = book.reviewContent ?: ""
+            paint.color = textColor
             val maxWidth = bpWidth - 40.dpToPx()
-            
-            // 按换行符分割
-            val paragraphs = reviewText.split("\n")
-            
+            val paragraphs = book.reviewContent!!.split("\n")
+
             for (paragraph in paragraphs) {
                 if (paragraph.isEmpty()) {
-                    // 空行，增加间距
                     currentY += 10.dpToPx()
                     continue
                 }
-                
-                // 处理长文本自动换行
                 var remainingText = paragraph
                 while (remainingText.isNotEmpty()) {
-                    var lineWidth = paint.measureText(remainingText)
-                    if (lineWidth <= maxWidth) {
-                        // 整行可以放下
+                    if (paint.measureText(remainingText) <= maxWidth) {
                         canvas.drawText(remainingText, left + 20.dpToPx(), currentY, paint)
                         currentY += 18.dpToPx()
                         break
                     } else {
-                        // 需要截断
                         var cutIndex = remainingText.length
                         while (cutIndex > 0 && paint.measureText(remainingText.substring(0, cutIndex)) > maxWidth) {
                             cutIndex--
@@ -272,17 +335,16 @@ object BookplateDrawer {
                     }
                 }
             }
-            
             currentY += 10.dpToPx()
             drawDivider(currentY)
-            currentY += 20.dpToPx()
+            currentY += 12.dpToPx()
         }
-        
+
         // 底部标语
         paint.color = ColorUtils.withAlpha(textColor, 0.7f)
         paint.textSize = 9.dpToPx().toFloat()
         paint.isFakeBoldText = false
-        
+
         val footer1 = "BAD READS, NO RECEIPTS; GOOD READS, ON REPEAT."
         val footer2 = "烂书不退款，好书请多读。"
         val f1Width = paint.measureText(footer1)

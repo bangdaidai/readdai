@@ -65,29 +65,35 @@ object ReadIterationHelper {
 
     /**
      * 标记书籍为已完成当前轮次
-     * readIteration++，并同步更新标签系统
+     * readIteration++，设置阅读状态为FINISHED，并同步更新标签系统和分组
      */
     fun markAsFinished(book: Book) {
         val oldIteration = book.readIteration
         book.readIteration++
+        // 设置阅读状态为已读完，同时更新分组
+        book.setReadingStatus(ReadingStatus.FINISHED, false)
         book.save()
         
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
+            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 
     /**
      * 让书进入下一轮次（读完->二刷, 二刷完->三刷, ...）
-     * readIteration++，并同步更新标签系统
+     * readIteration++，设置阅读状态为READING，并同步更新标签系统和分组
      */
     fun moveToNextIteration(book: Book) {
         val oldIteration = book.readIteration
         book.readIteration++
+        // 进入新一轮阅读，设置状态为在读，同时更新分组
+        book.setReadingStatus(ReadingStatus.READING, false)
         book.save()
 
         GlobalScope.launch {
             updateBookTag(book, oldIteration)
+            io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.BOOKSHELF_REFRESH, "")
         }
     }
 

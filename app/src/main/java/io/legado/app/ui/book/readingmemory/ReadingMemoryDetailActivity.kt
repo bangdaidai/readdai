@@ -1153,22 +1153,64 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
 
     private fun createBookplateBitmap(book: Book): android.graphics.Bitmap {
         val bpWidth = 320.dpToPx()
-        var extraHeight = if (!book.reviewContent.isNullOrBlank()) {
-            val lines = book.reviewContent?.split("\n")?.size ?: 1
-            (lines * 18 + 20).dpToPx()
-        } else {
-            0
+        
+        // 先测量内容高度，自适应
+        var contentHeight = 0f
+        contentHeight += 40.dpToPx() // 顶部留白
+        contentHeight += 25.dpToPx() // 标题
+        contentHeight += 22.dpToPx() // 开始时间
+        contentHeight += 22.dpToPx() // 结束时间
+        contentHeight += 12.dpToPx() // 虚线
+        contentHeight += 22.dpToPx() // 书名
+        contentHeight += 22.dpToPx() // 书摘条数
+        contentHeight += 22.dpToPx() // 阅读时间
+        contentHeight += 12.dpToPx() // 虚线
+        contentHeight += 24.dpToPx() // 阅读评分
+        
+        if (!book.reviewContent.isNullOrBlank()) {
+            contentHeight += 20.dpToPx() // 书评标题
+            val maxWidth = bpWidth.toFloat() - 40.dpToPx()
+            val measurePaint = android.graphics.Paint()
+            measurePaint.textSize = 11.dpToPx().toFloat()
+            val paragraphs = book.reviewContent!!.split("\n")
+            for (paragraph in paragraphs) {
+                if (paragraph.isEmpty()) {
+                    contentHeight += 10.dpToPx()
+                    continue
+                }
+                var remainingText = paragraph
+                while (remainingText.isNotEmpty()) {
+                    if (measurePaint.measureText(remainingText) <= maxWidth) {
+                        contentHeight += 18.dpToPx()
+                        break
+                    } else {
+                        var cutIndex = remainingText.length
+                        while (cutIndex > 0 && measurePaint.measureText(remainingText.substring(0, cutIndex)) > maxWidth) {
+                            cutIndex--
+                        }
+                        if (cutIndex == 0) cutIndex = 1
+                        contentHeight += 18.dpToPx()
+                        remainingText = remainingText.substring(cutIndex)
+                    }
+                }
+            }
+            contentHeight += 10.dpToPx() // 书评底部间距
+            contentHeight += 12.dpToPx() // 虚线
         }
-        val bpHeight = 360.dpToPx() + extraHeight
+        
+        contentHeight += 16.dpToPx() // 底部标语1
+        contentHeight += 16.dpToPx() // 底部标语2
+        contentHeight += 24.dpToPx() // 底部留白
+        
+        val bpHeight = contentHeight.toInt()
         
         val bitmap = android.graphics.Bitmap.createBitmap(bpWidth, bpHeight, android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bitmap)
         
         val context = appCtx
-        val cardBgColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(context)
+        val primaryColor = io.legado.app.lib.theme.ThemeStore.primaryColor(context)
         val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(context)
         val textColor = io.legado.app.lib.theme.ThemeStore.colorSurface(context)
-        val primaryColor = io.legado.app.lib.theme.ThemeStore.primaryColor(context)
         
         val paint = io.legado.app.help.PaintPool.obtain()
         paint.isAntiAlias = true
@@ -1183,8 +1225,8 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         paint.style = android.graphics.Paint.Style.FILL
         canvas.drawRect(left + 4.dpToPx().toFloat(), top + 4.dpToPx().toFloat(), right + 4.dpToPx().toFloat(), bottom + 4.dpToPx().toFloat(), paint)
         
-        // 背景
-        paint.color = cardBgColor
+        // 背景（使用主题主色调）
+        paint.color = primaryColor
         canvas.drawRect(left, top, right, bottom, paint)
         
         // 顶部和底部虚线边框
@@ -1203,32 +1245,28 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         
         var currentY = top + 40.dpToPx()
         
-        // 标题
+        // 标题：阅 读 凭 证
         paint.textSize = 18.dpToPx().toFloat()
         paint.isFakeBoldText = true
-        val titleText = "Reading Certificate"
+        val titleText = "阅 读 凭 证"
         val titleWidth = paint.measureText(titleText)
         canvas.drawText(titleText, left + (right - left - titleWidth) / 2f, currentY, paint)
         
         currentY += 25.dpToPx()
-        paint.textSize = 14.dpToPx().toFloat()
-        paint.isFakeBoldText = false
-        val subtitleText = "=== 阅 读 凭 证 ==="
-        val subtitleWidth = paint.measureText(subtitleText)
-        canvas.drawText(subtitleText, left + (right - left - subtitleWidth) / 2f, currentY, paint)
-        
-        currentY += 30.dpToPx()
         paint.textSize = 12.dpToPx().toFloat()
+        paint.isFakeBoldText = false
         
         // 辅助函数：绘制一行（左右对齐）
-        val drawRow = { rowTitle: String, value: String, y: Float, isBold: Boolean ->
-            paint.isFakeBoldText = isBold
+        val drawRow = { rowTitle: String, value: String, y: Float ->
+            paint.isFakeBoldText = false
+            paint.color = textColor
+            paint.style = android.graphics.Paint.Style.FILL
             canvas.drawText(rowTitle, left + 20.dpToPx(), y, paint)
             val valWidth = paint.measureText(value)
             canvas.drawText(value, right - 20.dpToPx() - valWidth, y, paint)
         }
         
-        // 辅助函数：绘制分隔线
+        // 辅助函数：绘制虚线分隔线
         val drawDivider = { y: Float ->
             paint.color = dividerColor
             paint.style = android.graphics.Paint.Style.STROKE
@@ -1240,46 +1278,47 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             paint.color = textColor
         }
         
-        // 开始时间
-        val startTime = if (book.firstReadTime > 0) book.firstReadTime else book.durChapterTime
-        val addTimeStr = if (startTime > 0) java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.getDefault()).format(java.util.Date(startTime)) else "____/__/__"
-        drawRow("开始时间", addTimeStr, currentY, false)
-        
-        currentY += 25.dpToPx()
-        paint.textSize = 14.dpToPx().toFloat()
-        
-        // 结算清单标题
-        paint.isFakeBoldText = true
-        val listTitle = "- 结 算 清 单 -"
-        val listTitleWidth = paint.measureText(listTitle)
-        canvas.drawText(listTitle, left + (right - left - listTitleWidth) / 2f, currentY, paint)
-        currentY += 25.dpToPx()
-        paint.isFakeBoldText = false
-        
         // 辅助函数：绘制清单一行（带虚线连接）
         val drawListRow = { rowTitle: String, value: String, y: Float ->
+            paint.color = textColor
+            paint.style = android.graphics.Paint.Style.FILL
             canvas.drawText(rowTitle, left + 20.dpToPx(), y, paint)
             val valWidth = paint.measureText(value)
             val valueX = right - 20.dpToPx() - valWidth
             canvas.drawText(value, valueX, y, paint)
-            val titleWidthInner = paint.measureText(rowTitle)
-            val dashStartX = left + 20.dpToPx() + titleWidthInner + 5.dpToPx()
+            val titleW = paint.measureText(rowTitle)
+            val dashStartX = left + 20.dpToPx() + titleW + 5.dpToPx()
             val dashEndX = valueX - 5.dpToPx()
             if (dashEndX > dashStartX) {
-                val oldStyle = paint.style
                 paint.style = android.graphics.Paint.Style.STROKE
                 paint.strokeWidth = 1.dpToPx().toFloat()
                 paint.pathEffect = android.graphics.DashPathEffect(floatArrayOf(5f, 5f), 0f)
                 val textMiddleY = y - paint.textSize / 3f
                 canvas.drawLine(dashStartX, textMiddleY, dashEndX, textMiddleY, paint)
                 paint.pathEffect = null
-                paint.style = oldStyle
+                paint.style = android.graphics.Paint.Style.FILL
+                paint.color = textColor
             }
         }
         
+        // 开始时间
+        val startTime = if (book.firstReadTime > 0) book.firstReadTime else book.durChapterTime
+        val addTimeStr = if (startTime > 0) java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.getDefault()).format(java.util.Date(startTime)) else "____/__/__"
+        drawRow("开始时间", addTimeStr, currentY)
+        
+        currentY += 22.dpToPx()
+        
+        // 结束时间
+        val finishTimeStr = if (book.finishReadTime > 0) java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.getDefault()).format(java.util.Date(book.finishReadTime)) else "____/__/__"
+        drawRow("结束时间", finishTimeStr, currentY)
+        
+        currentY += 18.dpToPx()
+        drawDivider(currentY)
+        currentY += 18.dpToPx()
+        
         // 书名（过长时截断）
         var displayBookName = book.name
-        val maxNameWidth = right - left - 40.dpToPx() - paint.measureText("书名  ") - 20.dpToPx()
+        val maxNameWidth = right - left - 40.dpToPx() - paint.measureText("书名") - 25.dpToPx()
         if (paint.measureText(displayBookName) > maxNameWidth) {
             val ellipsizeWidth = paint.measureText("...")
             while (displayBookName.isNotEmpty() && paint.measureText(displayBookName) + ellipsizeWidth > maxNameWidth) {
@@ -1288,60 +1327,72 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             displayBookName += "..."
         }
         drawListRow("书名", displayBookName, currentY)
-        currentY += 20.dpToPx()
+        currentY += 22.dpToPx()
         
         // 书摘数量
         val noteCount = appDb.bookAnnotationDao.getByBook(book.name, book.author).size
         val noteStr = if (noteCount > 0) "$noteCount" else "?"
         drawListRow("书摘条数", noteStr, currentY)
-        currentY += 20.dpToPx()
+        currentY += 22.dpToPx()
         
-        // 阅读时间（实际累计阅读时长）
+        // 阅读时间（实际累计阅读时长，不到一天换算成小时/分钟）
         val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
         val readingTimeStr = if (totalReadMillis > 0) {
-            val days = totalReadMillis / (24 * 60 * 60 * 1000L)
-            if (days > 0) "${days} 天" else "${totalReadMillis / (60 * 60 * 1000L)} 小时"
+            val totalMinutes = totalReadMillis / (60 * 1000L)
+            val days = totalMinutes / (24 * 60)
+            val hours = totalMinutes / 60
+            when {
+                days > 0 -> "${days} 天"
+                hours > 0 -> "${hours} 小时"
+                else -> "${totalMinutes} 分钟"
+            }
         } else {
-            "? 天"
+            "?"
         }
         drawListRow("阅读时间", readingTimeStr, currentY)
         
-        currentY += 20.dpToPx()
+        currentY += 18.dpToPx()
         drawDivider(currentY)
-        currentY += 30.dpToPx()
+        currentY += 18.dpToPx()
         
-        // 评分区域
+        // 阅读评分
         paint.isFakeBoldText = false
-        canvas.drawText("阅读打分", left + 20.dpToPx(), currentY, paint)
+        paint.textSize = 12.dpToPx().toFloat()
+        paint.color = textColor
+        paint.style = android.graphics.Paint.Style.FILL
+        canvas.drawText("阅读评分", left + 20.dpToPx(), currentY, paint)
         
-        val starsStr = "[ ☆ ☆ ☆ ☆ ☆ ]"
-        val starsWidth = paint.measureText(starsStr)
-        val starsX = right - 20.dpToPx() - starsWidth
-        canvas.drawText(starsStr, starsX, currentY, paint)
+        // 绘制星星：统一文字颜色，选中的实心★，未选中的空心☆，大小一致
+        val starSize = 14.dpToPx().toFloat()
+        val starGap = 4.dpToPx().toFloat()
+        paint.textSize = starSize
+        val totalStarWidth = starSize * 5 + starGap * 4
+        var starDrawX = right - 20.dpToPx() - totalStarWidth
         
-        paint.color = primaryColor
-        val starWidth = paint.measureText("☆ ")
-        val bracketWidth = paint.measureText("[ ")
         for (i in 0 until 5) {
-            if (book.rating >= i + 1) {
-                canvas.drawText("★", starsX + bracketWidth + i * starWidth, currentY, paint)
-            }
+            paint.color = textColor
+            paint.isFakeBoldText = false
+            val starChar = if (book.rating >= i + 1) "★" else "☆"
+            canvas.drawText(starChar, starDrawX, currentY, paint)
+            starDrawX += starSize + starGap
         }
         paint.color = textColor
+        paint.textSize = 12.dpToPx().toFloat()
+        paint.isFakeBoldText = false
         
-        currentY += 20.dpToPx()
-        drawDivider(currentY)
-        currentY += 30.dpToPx()
+        currentY += 24.dpToPx()
         
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
             paint.isFakeBoldText = true
             paint.textSize = 12.dpToPx().toFloat()
-            canvas.drawText("📝 我的书评", left + 20.dpToPx(), currentY, paint)
+            paint.color = textColor
+            canvas.drawText("我的书评", left + 20.dpToPx(), currentY, paint)
             currentY += 20.dpToPx()
             
             paint.isFakeBoldText = false
             paint.textSize = 11.dpToPx().toFloat()
+            paint.color = textColor
             val maxWidth = right - left - 40.dpToPx()
             val paragraphs = book.reviewContent!!.split("\n")
             for (paragraph in paragraphs) {
@@ -1351,8 +1402,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
                 }
                 var remainingText = paragraph
                 while (remainingText.isNotEmpty()) {
-                    val lineWidth = paint.measureText(remainingText)
-                    if (lineWidth <= maxWidth) {
+                    if (paint.measureText(remainingText) <= maxWidth) {
                         canvas.drawText(remainingText, left + 20.dpToPx(), currentY, paint)
                         currentY += 18.dpToPx()
                         break
@@ -1370,7 +1420,87 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             }
             currentY += 10.dpToPx()
             drawDivider(currentY)
+            currentY += 12.dpToPx()
+        }
+        
+        // 底部标语
+        paint.color = io.legado.app.utils.ColorUtils.withAlpha(textColor, 0.7f)
+        paint.textSize = 9.dpToPx().toFloat()
+        paint.isFakeBoldText = false
+        val footer1 = "BAD READS, NO RECEIPTS; GOOD READS, ON REPEAT."
+        val footer2 = "烂书不退款，好书请多读。"
+        val f1Width = paint.measureText(footer1)
+        val f2Width = paint.measureText(footer2)
+        canvas.drawText(footer1, left + (right - left - f1Width) / 2f, currentY, paint)
+        currentY += 16.dpToPx()
+        canvas.drawText(footer2, left + (right - left - f2Width) / 2f, currentY, paint)
+        
+        io.legado.app.help.PaintPool.recycle(paint)
+        
+        return bitmap
+    }
+        
+        for (i in 0 until 5) {
+            if (book.rating >= i + 1) {
+                paint.color = starGoldColor
+                paint.textSize = filledStarSize
+                paint.isFakeBoldText = true
+                canvas.drawText("★", starDrawX, currentY, paint)
+                starDrawX += filledStarSize + starGap
+            } else {
+                paint.color = starGrayColor
+                paint.textSize = emptyStarSize
+                paint.isFakeBoldText = false
+                val offset = (filledStarSize - emptyStarSize) / 2f
+                canvas.drawText("☆", starDrawX, currentY - offset, paint)
+                starDrawX += emptyStarSize + starGap
+            }
+        }
+        paint.color = textColor
+        paint.textSize = 12.dpToPx().toFloat()
+        paint.isFakeBoldText = false
+        
+        currentY += 24.dpToPx()
+        
+        // 书评内容区域
+        if (!book.reviewContent.isNullOrBlank()) {
+            paint.isFakeBoldText = true
+            paint.textSize = 12.dpToPx().toFloat()
+            paint.color = textColor
+            canvas.drawText("我的书评", left + 20.dpToPx(), currentY, paint)
             currentY += 20.dpToPx()
+            
+            paint.isFakeBoldText = false
+            paint.textSize = 11.dpToPx().toFloat()
+            paint.color = textColor
+            val maxWidth = right - left - 40.dpToPx()
+            val paragraphs = book.reviewContent!!.split("\n")
+            for (paragraph in paragraphs) {
+                if (paragraph.isEmpty()) {
+                    currentY += 10.dpToPx()
+                    continue
+                }
+                var remainingText = paragraph
+                while (remainingText.isNotEmpty()) {
+                    if (paint.measureText(remainingText) <= maxWidth) {
+                        canvas.drawText(remainingText, left + 20.dpToPx(), currentY, paint)
+                        currentY += 18.dpToPx()
+                        break
+                    } else {
+                        var cutIndex = remainingText.length
+                        while (cutIndex > 0 && paint.measureText(remainingText.substring(0, cutIndex)) > maxWidth) {
+                            cutIndex--
+                        }
+                        if (cutIndex == 0) cutIndex = 1
+                        canvas.drawText(remainingText.substring(0, cutIndex), left + 20.dpToPx(), currentY, paint)
+                        currentY += 18.dpToPx()
+                        remainingText = remainingText.substring(cutIndex)
+                    }
+                }
+            }
+            currentY += 10.dpToPx()
+            drawDivider(currentY)
+            currentY += 12.dpToPx()
         }
         
         // 底部标语

@@ -341,7 +341,13 @@ class ReadBookActivity : BaseReadBookActivity(),
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        viewModel.initData(intent)
+        viewModel.initData(intent) {
+            // 数据初始化完成后检测书籍是否为已读完状态，若是则询问是否进行下一刷
+            val book = ReadBook.book ?: return@initData
+            if (ReadIterationHelper.isFinished(book) && ReadBook.inBookshelf) {
+                showMultiReadConfirm(book)
+            }
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -1393,6 +1399,40 @@ $content
             }
         }
     }
+
+    /**
+     * 先弹评分对话框，保存后显示藏书票
+     */
+    private fun showRatingAndBookplate(book: io.legado.app.data.entities.Book) {
+        val dialogView = layoutInflater.inflate(io.legado.app.R.layout.dialog_bookplate_rating, null)
+        val ratingBar = dialogView.findViewById<android.widget.RatingBar>(io.legado.app.R.id.rating_bar)
+        val etReview = dialogView.findViewById<android.widget.EditText>(io.legado.app.R.id.et_review)
+
+        ratingBar.rating = book.rating
+        etReview.setText(book.reviewContent ?: "")
+
+        AlertDialog.Builder(this)
+            .setTitle("阅读评价")
+            .setView(dialogView)
+            .setPositiveButton("保存并查看藏书票") { _, _ ->
+                book.rating = ratingBar.rating
+                book.userModifiedRating = true
+                val reviewContent = etReview.text.toString().trim()
+                book.reviewContent = if (reviewContent.isBlank()) null else reviewContent
+
+                lifecycleScope.launch(IO) {
+                    io.legado.app.data.appDb.bookDao.update(book)
+                    withContext(Main) {
+                        showReadingTicket()
+                    }
+                }
+            }
+            .setNegativeButton("跳过") { _, _ ->
+                showReadingTicket()
+            }
+            .setCancelable(true)
+            .show()
+    }
     
     /**
      * 书籍读到末尾时触发，弹出完读/N刷标记对话框
@@ -1424,8 +1464,8 @@ $content
                 .setPositiveButton("是") { _, _ ->
                     ReadIterationHelper.markAsFinished(book)
                     io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.UP_BOOKSHELF, book.bookUrl)
-                    // 标记完后显示阅读小票
-                    showReadingTicket()
+                    // 标记完后先弹评分对话框，填完再显示藏书票
+                    showRatingAndBookplate(book)
                 }
                 .setNegativeButton("否", null)
                 .setCancelable(true)
