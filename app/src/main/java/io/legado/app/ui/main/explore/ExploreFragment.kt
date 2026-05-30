@@ -1527,13 +1527,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         itemBinding.apply {
             root.setPadding(0, 0, 0, 0)
             root.background = null
-            llTitle.isClickable = false
-            llTitle.background = UiCorner.opaqueRounded(
-                ContextCompat.getColor(context, R.color.background_menu),
-                UiCorner.actionRadius(context)
-            )
-            tvName.text = source.bookSourceName
-            ivStatus.gone()
+            llTitle.gone()
             flexbox.visible()
             rotateLoading.visible()
         }

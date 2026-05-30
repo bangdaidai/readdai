@@ -46,7 +46,7 @@ class RoundedTagBarView @JvmOverloads constructor(
         clipToOutline = true
         background = UiCorner.opaqueRounded(
             ContextCompat.getColor(context, R.color.background_menu),
-            UiCorner.panelRadius(context)
+            UiCorner.scaledDp(14f)
         )
         val horizontalPadding = resources.getDimensionPixelSize(R.dimen.bookshelf_tag_bar_padding_horizontal)
         val verticalPadding = resources.getDimensionPixelSize(R.dimen.bookshelf_tag_bar_padding_vertical)
