@@ -329,7 +329,14 @@ class ReadBookActivity : BaseReadBookActivity(),
         super.onPostCreate(savedInstanceState)
         viewModel.initReadBookConfig(intent)
         Looper.myQueue().addIdleHandler {
-            viewModel.initData(intent)
+            viewModel.initData(intent) {
+                // 初始化完成后检测书籍是否为已读完状态，若是则询问是否进行下一刷
+                val book = ReadBook.book ?: return@initData
+                if (io.legado.app.help.book.ReadIterationHelper.isFinished(book) && ReadBook.inBookshelf
+                    && getPrefBoolean(io.legado.app.constant.PreferKey.readIterationPopup, true)) {
+                    showNextIterationDialog(book)
+                }
+            }
             false
         }
         justInitData = true
