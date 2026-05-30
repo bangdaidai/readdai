@@ -1436,90 +1436,10 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         canvas.drawText(footer2, left + (right - left - f2Width) / 2f, currentY, paint)
         
         io.legado.app.help.PaintPool.recycle(paint)
-        
+
         return bitmap
     }
-        
-        for (i in 0 until 5) {
-            if (book.rating >= i + 1) {
-                paint.color = starGoldColor
-                paint.textSize = filledStarSize
-                paint.isFakeBoldText = true
-                canvas.drawText("★", starDrawX, currentY, paint)
-                starDrawX += filledStarSize + starGap
-            } else {
-                paint.color = starGrayColor
-                paint.textSize = emptyStarSize
-                paint.isFakeBoldText = false
-                val offset = (filledStarSize - emptyStarSize) / 2f
-                canvas.drawText("☆", starDrawX, currentY - offset, paint)
-                starDrawX += emptyStarSize + starGap
-            }
-        }
-        paint.color = textColor
-        paint.textSize = 12.dpToPx().toFloat()
-        paint.isFakeBoldText = false
-        
-        currentY += 24.dpToPx()
-        
-        // 书评内容区域
-        if (!book.reviewContent.isNullOrBlank()) {
-            paint.isFakeBoldText = true
-            paint.textSize = 12.dpToPx().toFloat()
-            paint.color = textColor
-            canvas.drawText("我的书评", left + 20.dpToPx(), currentY, paint)
-            currentY += 20.dpToPx()
-            
-            paint.isFakeBoldText = false
-            paint.textSize = 11.dpToPx().toFloat()
-            paint.color = textColor
-            val maxWidth = right - left - 40.dpToPx()
-            val paragraphs = book.reviewContent!!.split("\n")
-            for (paragraph in paragraphs) {
-                if (paragraph.isEmpty()) {
-                    currentY += 10.dpToPx()
-                    continue
-                }
-                var remainingText = paragraph
-                while (remainingText.isNotEmpty()) {
-                    if (paint.measureText(remainingText) <= maxWidth) {
-                        canvas.drawText(remainingText, left + 20.dpToPx(), currentY, paint)
-                        currentY += 18.dpToPx()
-                        break
-                    } else {
-                        var cutIndex = remainingText.length
-                        while (cutIndex > 0 && paint.measureText(remainingText.substring(0, cutIndex)) > maxWidth) {
-                            cutIndex--
-                        }
-                        if (cutIndex == 0) cutIndex = 1
-                        canvas.drawText(remainingText.substring(0, cutIndex), left + 20.dpToPx(), currentY, paint)
-                        currentY += 18.dpToPx()
-                        remainingText = remainingText.substring(cutIndex)
-                    }
-                }
-            }
-            currentY += 10.dpToPx()
-            drawDivider(currentY)
-            currentY += 12.dpToPx()
-        }
-        
-        // 底部标语
-        paint.color = io.legado.app.utils.ColorUtils.withAlpha(textColor, 0.7f)
-        paint.textSize = 9.dpToPx().toFloat()
-        paint.isFakeBoldText = false
-        val footer1 = "BAD READS, NO RECEIPTS; GOOD READS, ON REPEAT."
-        val footer2 = "烂书不退款，好书请多读。"
-        val f1Width = paint.measureText(footer1)
-        val f2Width = paint.measureText(footer2)
-        canvas.drawText(footer1, left + (right - left - f1Width) / 2f, currentY, paint)
-        currentY += 16.dpToPx()
-        canvas.drawText(footer2, left + (right - left - f2Width) / 2f, currentY, paint)
-        
-        io.legado.app.help.PaintPool.recycle(paint)
-        
-        return bitmap
-    }
-    
+
     private fun wrapTextForBookplate(text: String, paint: android.graphics.Paint, maxWidth: Float): List<String> {
         val lines = mutableListOf<String>()
         val paragraphs = text.split("\n")
