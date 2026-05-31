@@ -39,7 +39,7 @@ val appDb by lazy {
         ReadRecord::class, ReadRecordDetail::class, VectorEntity::class, ChunkEntity::class, VectorizedBookEntity::class, ReadingTicket::class],
     views = [BookSourcePart::class],
     autoMigrations = [
-        AutoMigration(from = 101, to = 102),
+        AutoMigration(from = 101, to = 102, spec = DatabaseMigrations.Migration_101_102::class),
         AutoMigration(from = 43, to = 44),
         AutoMigration(from = 44, to = 45),
         AutoMigration(from = 45, to = 46),

@@ -72,6 +72,8 @@ object ReadIterationHelper {
         book.readIteration++
         // 设置阅读状态为已读完，同时更新分组
         book.setReadingStatus(ReadingStatus.FINISHED, false)
+        // N刷每次都更新完读时间
+        book.finishReadTime = System.currentTimeMillis()
         book.save()
         
         GlobalScope.launch {

@@ -555,4 +555,11 @@ object DatabaseMigrations {
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_bookProtagonists_bookUrl` ON `bookProtagonists` (`bookUrl`)")
         }
     }
+
+    @Suppress("ClassName")
+    @DeleteColumn(
+        tableName = "readingMemories",
+        columnName = "reviewContent"
+    )
+    class Migration_101_102 : AutoMigrationSpec
 }
