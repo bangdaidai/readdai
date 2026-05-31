@@ -341,6 +341,7 @@ class ReadBookActivity : BaseReadBookActivity(),
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        viewModel.initReadBookConfig(intent)
         viewModel.initData(intent) {
             // 数据初始化完成后检测书籍是否为已读完状态，若是则询问是否进行下一刷
             val book = ReadBook.book ?: return@initData
@@ -1441,6 +1442,7 @@ $content
         val book = ReadBook.book ?: return
         // 只处理奇数前的状态：0->1(读完), 2->3(二刷完), ... 即 readIteration 为偶数时
         if (book.readIteration % 2 != 0) return
+        if (!ReadBook.inBookshelf) return
         val iterNum = book.readIteration / 2
         val title = when (iterNum) {
             0 -> "标记读完"

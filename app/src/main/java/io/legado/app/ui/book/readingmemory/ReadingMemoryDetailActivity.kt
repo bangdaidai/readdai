@@ -1155,22 +1155,23 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
 
     private fun createBookplateBitmap(book: Book): android.graphics.Bitmap {
         val bpWidth = 320.dpToPx()
-        
+
         // 先测量内容高度，自适应
         var contentHeight = 0f
         contentHeight += 40.dpToPx() // 顶部留白
-        contentHeight += 25.dpToPx() // 标题
+        contentHeight += 30.dpToPx() // 标题（Reading Certificate + 阅读凭证）
         contentHeight += 22.dpToPx() // 开始时间
         contentHeight += 22.dpToPx() // 结束时间
+        contentHeight += 22.dpToPx() // 虚线分隔间距（上）
         contentHeight += 12.dpToPx() // 虚线
         contentHeight += 22.dpToPx() // 书名
         contentHeight += 22.dpToPx() // 书摘条数
         contentHeight += 22.dpToPx() // 阅读时间
+        contentHeight += 22.dpToPx() // 虚线分隔间距（下）
         contentHeight += 12.dpToPx() // 虚线
         contentHeight += 24.dpToPx() // 阅读评分
-        
+
         if (!book.reviewContent.isNullOrBlank()) {
-            contentHeight += 20.dpToPx() // 书评标题
             val maxWidth = bpWidth.toFloat() - 40.dpToPx()
             val measurePaint = android.graphics.Paint()
             measurePaint.textSize = 11.dpToPx().toFloat()
@@ -1196,10 +1197,10 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
                     }
                 }
             }
-            contentHeight += 10.dpToPx() // 书评底部间距
+            contentHeight += 16.dpToPx() // 书评底部间距
             contentHeight += 12.dpToPx() // 虚线
         }
-        
+
         contentHeight += 16.dpToPx() // 底部标语1
         contentHeight += 16.dpToPx() // 底部标语2
         contentHeight += 24.dpToPx() // 底部留白
@@ -1255,13 +1256,13 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         canvas.drawText(titleText1, left + (right - left - titleWidth1) / 2f, currentY, paint)
         
         currentY += 22.dpToPx()
-        paint.textSize = 12.dpToPx().toFloat()
+        paint.textSize = 14.dpToPx().toFloat()
         paint.isFakeBoldText = false
-        val titleText2 = "===阅读凭证===="
+        val titleText2 = "=== 阅 读 凭 证 ===="
         val titleWidth2 = paint.measureText(titleText2)
         canvas.drawText(titleText2, left + (right - left - titleWidth2) / 2f, currentY, paint)
-        
-        currentY += 25.dpToPx()
+
+        currentY += 30.dpToPx()
         
         // 辅助函数：绘制一行（左右对齐）
         val drawRow = { rowTitle: String, value: String, y: Float ->

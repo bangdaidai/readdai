@@ -112,8 +112,29 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
             }
             if (upContent) upContent(resetPageOffset = false)
             true
-        } else
+        } else {
+            // 没有下一页时，检查是否到达最后一章
+            val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
+            if (isLastChapter && ReadBook.showBookplate == 0) {
+                val book = ReadBook.book
+                // 如果正在N刷中（readIteration为偶数），弹出完读确认
+                if (book != null && book.readIteration % 2 == 0) {
+                    ReadBook.callBack?.onBookEnd()
+                    return@with false
+                }
+                // 自动记录完读时间
+                book?.let {
+                    if (it.finishReadTime <= 0) {
+                        it.finishReadTime = System.currentTimeMillis()
+                        io.legado.app.data.appDb.bookDao.update(it)
+                    }
+                }
+                ReadBook.showBookplate = 1
+                if (upContent) upContent(resetPageOffset = false)
+                return@with true
+            }
             false
+        }
     }
 
     override fun moveToPrev(upContent: Boolean): Boolean = with(dataSource) {
