@@ -1210,7 +1210,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         val context = appCtx
         val primaryColor = io.legado.app.lib.theme.ThemeStore.primaryColor(context)
         val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(context)
-        val textColor = context.primaryTextColor
+        val textColor = context.getPrimaryTextColor(!io.legado.app.AppConfig.isNightTheme)
         
         val paint = io.legado.app.help.PaintPool.obtain()
         paint.isAntiAlias = true
