@@ -27,7 +27,7 @@ data class BookTag(
     @ColumnInfo(name = "color")
     val color: Int = 0, // 标签颜色
     
-    @ColumnInfo(name = "groupId")
+    @ColumnInfo(name = "groupId", defaultValue = "0")
     val groupId: Long = 0, // 标签分组ID，0表示未分组
     
     @ColumnInfo(name = "createTime")
