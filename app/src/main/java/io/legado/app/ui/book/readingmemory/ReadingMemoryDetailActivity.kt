@@ -24,6 +24,7 @@ import androidx.cardview.widget.CardView
 import java.util.Random
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
+import io.legado.app.help.config.AppConfig
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.Theme
 import io.legado.app.data.appDb
@@ -38,6 +39,7 @@ import io.legado.app.databinding.ActivityBookReadingDetailBinding
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.help.glide.ImageLoader
 import io.legado.app.lib.theme.backgroundColor
+import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.book.annotation.BookAnnotationDialog
 import io.legado.app.ui.book.readingdetail.adapter.AnnotationAdapter
 import androidx.appcompat.app.AlertDialog
@@ -1210,7 +1212,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         val context = appCtx
         val primaryColor = io.legado.app.lib.theme.ThemeStore.primaryColor(context)
         val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(context)
-        val textColor = context.getPrimaryTextColor(!io.legado.app.AppConfig.isNightTheme)
+        val textColor = io.legado.app.lib.theme.ThemeStore.textColorPrimary(context)
         
         val paint = io.legado.app.help.PaintPool.obtain()
         paint.isAntiAlias = true
