@@ -53,14 +53,20 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
     }
 
     override fun moveToNext(upContent: Boolean): Boolean = with(dataSource) {
+        // 初始化 showBookplate 标志
+        if (ReadBook.showBookplate == -1) {
+            ReadBook.showBookplate = 0
+            if (upContent) upContent(resetPageOffset = false)
+            return@with true
+        }
         return if (hasNext()) {
             val pageIndex = pageIndex
             if (currentChapter == null || currentChapter?.isLastIndex(pageIndex) == true) {
                 val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
-                if (isLastChapter) {
+                if (isLastChapter && ReadBook.showBookplate == 0) {
                     val book = ReadBook.book
                     // 如果正在N刷中（readIteration为偶数），弹出完读确认
-                    if (book != null && book.readIteration % 2 == 0 && ReadBook.inBookshelf) {
+                    if (book != null && book.readIteration % 2 == 0) {
                         ReadBook.callBack?.onBookEnd()
                         return@with false
                     }
@@ -71,6 +77,9 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                             io.legado.app.data.appDb.bookDao.update(it)
                         }
                     }
+                    ReadBook.showBookplate = 1
+                    if (upContent) upContent(resetPageOffset = false)
+                    return@with true
                 }
                 if ((currentChapter == null || isScroll) && nextChapter == null) {
                     return@with false
@@ -79,10 +88,10 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
             } else {
                 if (pageIndex < 0 || currentChapter?.isLastIndexCurrent(pageIndex) == true) {
                     val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
-                    if (isLastChapter) {
+                    if (isLastChapter && ReadBook.showBookplate == 0) {
                         val book = ReadBook.book
                         // 如果正在N刷中（readIteration为偶数），弹出完读确认
-                        if (book != null && book.readIteration % 2 == 0 && ReadBook.inBookshelf) {
+                        if (book != null && book.readIteration % 2 == 0) {
                             ReadBook.callBack?.onBookEnd()
                             return@with false
                         }
@@ -93,6 +102,9 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                                 io.legado.app.data.appDb.bookDao.update(it)
                             }
                         }
+                        ReadBook.showBookplate = 1
+                        if (upContent) upContent(resetPageOffset = false)
+                        return@with true
                     }
                     return@with false
                 }

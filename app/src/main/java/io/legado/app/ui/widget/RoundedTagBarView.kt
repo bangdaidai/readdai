@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.lib.theme.UiCorner
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.uiTypeface
@@ -45,7 +46,7 @@ class RoundedTagBarView @JvmOverloads constructor(
     init {
         clipToOutline = true
         background = UiCorner.opaqueRounded(
-            ContextCompat.getColor(context, R.color.background_menu),
+            ThemeStore.backgroundCard(context),
             UiCorner.scaledDp(14f)
         )
         val horizontalPadding = resources.getDimensionPixelSize(R.dimen.bookshelf_tag_bar_padding_horizontal)
@@ -145,13 +146,13 @@ class RoundedTagBarView @JvmOverloads constructor(
             val capsuleRadius = UiCorner.scaledDp(14f)
             textView.background = UiCorner.actionSelector(
                 android.graphics.Color.TRANSPARENT,
-                ContextCompat.getColor(parent.context, R.color.background_card),
+                parent.context.accentColor,
                 capsuleRadius
             )
             textView.setTextColor(
                 ColorStateList(
                     arrayOf(intArrayOf(android.R.attr.state_selected), intArrayOf()),
-                    intArrayOf(parent.context.accentColor, parent.context.primaryTextColor)
+                    intArrayOf(android.graphics.Color.WHITE, parent.context.primaryTextColor)
                 )
             )
             return TagViewHolder(textView)

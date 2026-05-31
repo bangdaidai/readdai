@@ -28,13 +28,14 @@ object SourceSelectDialog {
 
     fun <T> show(
         context: android.content.Context,
-        title: CharSequence,
+        title: CharSequence?,
         items: List<T>,
         selectedKey: String?,
         displayName: (T) -> String,
         searchTexts: (T) -> List<String>,
         itemKey: (T) -> String,
-        onSelect: (T) -> Unit
+        onSelect: (T) -> Unit,
+        showTitle: Boolean = true
     ) {
         if (items.isEmpty()) return
         var dialog: AlertDialog? = null
@@ -93,33 +94,51 @@ object SourceSelectDialog {
                 topMargin = 10.dpToPx()
             }
         }
+        val titleView = if (showTitle) {
+            TextView(context).apply {
+                text = title
+                applyUiSectionTitleStyle(context)
+                textSize = 18f
+                includeFontPadding = false
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(2.dpToPx(), 0, 2.dpToPx(), 12.dpToPx())
+            }
+        } else null
+
+        val searchViewLayoutParams = if (showTitle) {
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                42.dpToPx()
+            )
+        } else {
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                42.dpToPx()
+            ).apply {
+                topMargin = 0
+            }
+        }
+
         val container = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             background = UiCorner.opaqueRounded(
                 ContextCompat.getColor(context, R.color.background_card),
                 UiCorner.panelRadius(context)
             )
-            setPadding(14.dpToPx(), 14.dpToPx(), 14.dpToPx(), 12.dpToPx())
-            addView(
-                TextView(context).apply {
-                    text = title
-                    applyUiSectionTitleStyle(context)
-                    textSize = 18f
-                    includeFontPadding = false
-                    gravity = Gravity.CENTER_VERTICAL
-                    setPadding(2.dpToPx(), 0, 2.dpToPx(), 12.dpToPx())
-                },
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    32.dpToPx()
+            val topPadding = if (showTitle) 14.dpToPx() else 14.dpToPx()
+            setPadding(14.dpToPx(), topPadding, 14.dpToPx(), 12.dpToPx())
+            titleView?.let {
+                addView(
+                    it,
+                    LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        32.dpToPx()
+                    )
                 )
-            )
+            }
             addView(
                 searchView,
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    42.dpToPx()
-                )
+                searchViewLayoutParams
             )
             addView(recyclerView)
         }

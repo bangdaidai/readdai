@@ -42,16 +42,16 @@ object ReadIterationHelper {
      */
     fun getTagText(readIteration: Int): String? {
         if (readIteration < 2) return null
-        
-        val brushNum = (readIteration + 1) / 2
+
+        val brushNum = readIteration / 2 + 1
         val isFinished = readIteration % 2 == 1  // 奇数表示完成
-        
+
         val nthStr = when (brushNum) {
             2 -> "二"; 3 -> "三"; 4 -> "四"; 5 -> "五"
             6 -> "六"; 7 -> "七"; 8 -> "八"; 9 -> "九"
             else -> "$brushNum"
         }
-        
+
         return if (isFinished) "${nthStr}刷完" else "${nthStr}刷"
     }
 
@@ -82,11 +82,14 @@ object ReadIterationHelper {
 
     /**
      * 让书进入下一轮次（读完->二刷, 二刷完->三刷, ...）
-     * readIteration++，设置阅读状态为READING，并同步更新标签系统和分组
+     * readIteration++，重置阅读进度到第一章，设置阅读状态为READING，并同步更新标签系统和分组
      */
     fun moveToNextIteration(book: Book) {
         val oldIteration = book.readIteration
         book.readIteration++
+        book.durChapterIndex = 0
+        book.durChapterPos = 0
+        book.durChapterTitle = null
         // 进入新一轮阅读，设置状态为在读，同时更新分组
         book.setReadingStatus(ReadingStatus.READING, false)
         book.save()
@@ -115,11 +118,14 @@ object ReadIterationHelper {
 
     /**
      * 重新开始阅读（弃文后重新开始）
-     * 设置 readIteration 为 0，阅读状态设为 PENDING
+     * 重置 readIteration 为 0，重置阅读进度到第一章，阅读状态设为 PENDING
      */
     fun restartReading(book: Book) {
         val oldIteration = book.readIteration
         book.readIteration = 0
+        book.durChapterIndex = 0
+        book.durChapterPos = 0
+        book.durChapterTitle = null
         book.setReadingStatus(ReadingStatus.PENDING)
         book.save()
         

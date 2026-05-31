@@ -1210,7 +1210,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         val context = appCtx
         val primaryColor = io.legado.app.lib.theme.ThemeStore.primaryColor(context)
         val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(context)
-        val textColor = io.legado.app.lib.theme.ThemeStore.colorSurface(context)
+        val textColor = context.primaryTextColor
         
         val paint = io.legado.app.help.PaintPool.obtain()
         paint.isAntiAlias = true
@@ -1245,16 +1245,21 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         
         var currentY = top + 40.dpToPx()
         
-        // 标题：阅 读 凭 证
+        // 标题：Reading Certificate
         paint.textSize = 18.dpToPx().toFloat()
         paint.isFakeBoldText = true
-        val titleText = "阅 读 凭 证"
-        val titleWidth = paint.measureText(titleText)
-        canvas.drawText(titleText, left + (right - left - titleWidth) / 2f, currentY, paint)
+        val titleText1 = "Reading Certificate"
+        val titleWidth1 = paint.measureText(titleText1)
+        canvas.drawText(titleText1, left + (right - left - titleWidth1) / 2f, currentY, paint)
         
-        currentY += 25.dpToPx()
+        currentY += 22.dpToPx()
         paint.textSize = 12.dpToPx().toFloat()
         paint.isFakeBoldText = false
+        val titleText2 = "===阅读凭证===="
+        val titleWidth2 = paint.measureText(titleText2)
+        canvas.drawText(titleText2, left + (right - left - titleWidth2) / 2f, currentY, paint)
+        
+        currentY += 25.dpToPx()
         
         // 辅助函数：绘制一行（左右对齐）
         val drawRow = { rowTitle: String, value: String, y: Float ->
@@ -1312,9 +1317,9 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         val finishTimeStr = if (book.finishReadTime > 0) java.text.SimpleDateFormat("yyyy/MM/dd", java.util.Locale.getDefault()).format(java.util.Date(book.finishReadTime)) else "____/__/__"
         drawRow("结束时间", finishTimeStr, currentY)
         
-        currentY += 18.dpToPx()
+        currentY += 22.dpToPx()
         drawDivider(currentY)
-        currentY += 18.dpToPx()
+        currentY += 22.dpToPx()
         
         // 书名（过长时截断）
         var displayBookName = book.name
@@ -1331,7 +1336,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         
         // 书摘数量
         val noteCount = appDb.bookAnnotationDao.getByBook(book.name, book.author).size
-        val noteStr = if (noteCount > 0) "$noteCount" else "?"
+        val noteStr = "$noteCount"
         drawListRow("书摘条数", noteStr, currentY)
         currentY += 22.dpToPx()
         
@@ -1347,13 +1352,13 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
                 else -> "${totalMinutes} 分钟"
             }
         } else {
-            "?"
+            "0 分钟"
         }
         drawListRow("阅读时间", readingTimeStr, currentY)
         
-        currentY += 18.dpToPx()
+        currentY += 22.dpToPx()
         drawDivider(currentY)
-        currentY += 18.dpToPx()
+        currentY += 22.dpToPx()
         
         // 阅读评分
         paint.isFakeBoldText = false
@@ -1384,12 +1389,6 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
-            paint.isFakeBoldText = true
-            paint.textSize = 12.dpToPx().toFloat()
-            paint.color = textColor
-            canvas.drawText("我的书评", left + 20.dpToPx(), currentY, paint)
-            currentY += 20.dpToPx()
-            
             paint.isFakeBoldText = false
             paint.textSize = 11.dpToPx().toFloat()
             paint.color = textColor
@@ -1418,7 +1417,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
                     }
                 }
             }
-            currentY += 10.dpToPx()
+            currentY += 16.dpToPx()
             drawDivider(currentY)
             currentY += 12.dpToPx()
         }
