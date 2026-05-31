@@ -22,6 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 
 class ReadingMemoryAdapter(
@@ -512,7 +516,7 @@ class ReadingMemoryAdapter(
 
             // 设置书评显示（统一从 BookReview 表读取）
             val showReview = AppConfig.showBookReview
-            lifecycleScope.launch {
+            CoroutineScope(Dispatchers.Main).launch {
                 val reviews = withContext(Dispatchers.IO) {
                     io.legado.app.data.appDb.bookReviewDao.getReviewByBookUrl(item.bookUrl)
                 }

@@ -1330,14 +1330,14 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
     }
     
     private fun showBookplate(book: Book) {
-        companion.showBookplate(this, lifecycleScope, book, showSaveButton = true) { saveBookplateAsImage(it) }
+        Companion.showBookplate(this, lifecycleScope, book, showSaveButton = true) { saveBookplateAsImage(it) }
     }
     
     private fun saveBookplateAsImage(book: Book) {
         lifecycleScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
-                    companion.createBookplateBitmap(this@ReadingMemoryDetailActivity, book)
+                    Companion.createBookplateBitmap(this@ReadingMemoryDetailActivity, book)
                 }
                 
                 val savedPath = withContext(Dispatchers.IO) {

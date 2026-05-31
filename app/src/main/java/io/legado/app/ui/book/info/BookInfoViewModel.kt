@@ -764,7 +764,6 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                     durChapterPos = book.durChapterPos,
                     progress = progress,
                     readTime = readTime,
-                    reviewContent = firstReviewContent,
                     annotationCount = annotationCount,
                     readingStatus = readingStatus,
                     type = book.type,
@@ -806,7 +805,6 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                     durChapterPos = book.durChapterPos,
                     progress = progress,
                     readTime = readTime,
-                    reviewContent = firstReviewContent,
                     annotationCount = annotationCount,
                     readingStatus = readingStatus,
                     updateTime = System.currentTimeMillis()

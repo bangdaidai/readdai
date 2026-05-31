@@ -128,7 +128,6 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
                 durChapterPos = book.durChapterPos,
                 progress = progress,
                 readTime = book.durChapterTime,
-                reviewContent = firstReviewContent,
                 annotationCount = annotationCount,
                 readingStatus = readingStatus,
                 type = book.type,

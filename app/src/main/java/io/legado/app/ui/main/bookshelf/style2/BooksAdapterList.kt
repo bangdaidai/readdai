@@ -682,14 +682,8 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
         }
 
         private fun upReview(binding: ItemBookshelfListNewBinding, item: Book) {
-            val showReview = AppConfig.showBookReview
-            val reviewContent = item.reviewContent
-            if (showReview && !reviewContent.isNullOrBlank()) {
-                binding.layoutReview.visibility = android.view.View.VISIBLE
-                binding.tvReview.text = reviewContent
-            } else {
-                binding.layoutReview.visibility = android.view.View.GONE
-            }
+            // 书评已迁移到 BookReview 表，书架列表不再显示
+            binding.layoutReview.visibility = android.view.View.GONE
         }
 
         fun registerListener(item: Any) {
