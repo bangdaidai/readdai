@@ -1375,28 +1375,14 @@ $content
     }
     
     /**
-     * 显示阅读小票（到达最后一章时）
+     * 显示藏书票弹窗（复用 ReadingMemoryDetailActivity 的静态方法）
      */
     override fun showReadingTicket() {
         runOnUiThread {
             ReadBook.book?.let { book ->
-                // 创建并显示阅读小票对话框
-                val ticketView = io.legado.app.ui.widget.ReadingTicketView(this)
-                val dialog = AlertDialog.Builder(this)
-                    .setView(ticketView)
-                    .setCancelable(true)
-                    .create()
-                
-                // 加载小票数据
-                lifecycleScope.launch(IO) {
-                    val ticket = io.legado.app.help.book.ReadingTicketHelper.getTicket(book.bookUrl)
-                    withContext(Main) {
-                        ticket?.let {
-                            ticketView.setTicket(it, book)
-                            dialog.show()
-                        }
-                    }
-                }
+                io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.showBookplate(
+                    this, lifecycleScope, book, showSaveButton = false
+                )
             }
         }
     }
@@ -1410,7 +1396,13 @@ $content
         val etReview = dialogView.findViewById<android.widget.EditText>(io.legado.app.R.id.et_review)
 
         ratingBar.rating = book.rating
-        etReview.setText(book.reviewContent ?: "")
+        // 从 BookReview 表加载已有书评
+        lifecycleScope.launch {
+            val reviews = withContext(IO) {
+                io.legado.app.data.appDb.bookReviewDao.getReviewByBookUrl(book.bookUrl)
+            }
+            etReview.setText(reviews.firstOrNull()?.reviewContent ?: "")
+        }
 
         AlertDialog.Builder(this)
             .setTitle("阅读评价")
@@ -1419,10 +1411,27 @@ $content
                 book.rating = ratingBar.rating
                 book.userModifiedRating = true
                 val reviewContent = etReview.text.toString().trim()
-                book.reviewContent = if (reviewContent.isBlank()) null else reviewContent
 
                 lifecycleScope.launch(IO) {
+                    // 保存评分到 Book 表
                     io.legado.app.data.appDb.bookDao.update(book)
+                    // 保存书评到 BookReview 表
+                    val existingReviews = io.legado.app.data.appDb.bookReviewDao.getReviewByBookUrl(book.bookUrl)
+                    val review = if (existingReviews.isNotEmpty()) {
+                        existingReviews.first().copy(reviewContent = reviewContent, updateTime = System.currentTimeMillis())
+                    } else {
+                        io.legado.app.data.entities.BookReview(
+                            bookUrl = book.bookUrl,
+                            bookName = book.name,
+                            bookAuthor = book.author,
+                            reviewContent = reviewContent
+                        )
+                    }
+                    if (existingReviews.isNotEmpty()) {
+                        io.legado.app.data.appDb.bookReviewDao.update(review)
+                    } else if (reviewContent.isNotBlank()) {
+                        io.legado.app.data.appDb.bookReviewDao.insert(review)
+                    }
                     withContext(Main) {
                         showReadingTicket()
                     }
@@ -1440,9 +1449,9 @@ $content
      */
     override fun onBookEnd() {
         val book = ReadBook.book ?: return
-        // 只处理奇数前的状态：0->1(读完), 2->3(二刷完), ... 即 readIteration 为偶数时
+        // readIteration 为偶数时弹窗（0→首读完，2→二刷完，...）
+        // 奇数是已标记读完状态，不重复弹
         if (book.readIteration % 2 != 0) return
-        if (!ReadBook.inBookshelf) return
         val iterNum = book.readIteration / 2
         val title = when (iterNum) {
             0 -> "标记读完"

@@ -29,7 +29,7 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 101,
+    version = 102,
     exportSchema = true,
     entities = [Book::class, BookGroup::class, BookSource::class, BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
@@ -39,6 +39,7 @@ val appDb by lazy {
         ReadRecord::class, ReadRecordDetail::class, VectorEntity::class, ChunkEntity::class, VectorizedBookEntity::class, ReadingTicket::class],
     views = [BookSourcePart::class],
     autoMigrations = [
+        AutoMigration(from = 101, to = 102),
         AutoMigration(from = 43, to = 44),
         AutoMigration(from = 44, to = 45),
         AutoMigration(from = 45, to = 46),

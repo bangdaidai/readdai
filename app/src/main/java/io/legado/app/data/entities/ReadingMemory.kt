@@ -60,10 +60,7 @@ data class ReadingMemory(
     
     @ColumnInfo(name = "readTime")
     var readTime: Long = 0L, // 阅读时长(毫秒)
-    
-    @ColumnInfo(name = "reviewContent")
-    var reviewContent: String? = null, // 书评内容
-    
+
     @ColumnInfo(name = "annotationCount")
     var annotationCount: Int = 0, // 书摘数量
     

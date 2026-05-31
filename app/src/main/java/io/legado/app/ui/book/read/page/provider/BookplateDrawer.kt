@@ -1,18 +1,15 @@
 package io.legado.app.ui.book.read.page.provider
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
-import android.view.LayoutInflater
-import android.widget.EditText
-import android.widget.RatingBar
-import android.widget.TextView
+import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
-import io.legado.app.R
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.help.PaintPool
@@ -20,10 +17,11 @@ import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.dpToPx
-import io.legado.app.utils.longToastOnUi
+import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,6 +35,14 @@ object BookplateDrawer {
 
     private val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
     private var ratingRect = RectF()
+
+    /**
+     * 获取书评内容，统一从 BookReview 表读取
+     */
+    private fun getReviewContent(book: Book): String? {
+        val reviews = appDb.bookReviewDao.getReviewByBookUrlSync(book.bookUrl)
+        return reviews.firstOrNull()?.reviewContent?.takeIf { it.isNotBlank() }
+    }
 
     /**
      * 计算藏书票所需高度
@@ -73,10 +79,11 @@ object BookplateDrawer {
         h += 24.dpToPx()
 
         // 书评
-        if (!book.reviewContent.isNullOrBlank()) {
+        val reviewContent = getReviewContent(book)
+        if (!reviewContent.isNullOrBlank()) {
             paint.textSize = 12.dpToPx().toFloat()
             val maxWidth = bpWidth - 40.dpToPx()
-            val paragraphs = book.reviewContent!!.split("\n")
+            val paragraphs = reviewContent.split("\n")
             for (paragraph in paragraphs) {
                 if (paragraph.isEmpty()) {
                     h += 12.dpToPx()
@@ -100,6 +107,7 @@ object BookplateDrawer {
             }
             h += 16.dpToPx() // 书评底部间距
             h += 12.dpToPx() // 虚线
+            h += 22.dpToPx() // 书评和底部标语之间的间隙
         }
 
         // 底部标语
@@ -306,12 +314,13 @@ object BookplateDrawer {
         currentY += 24.dpToPx()
 
         // 书评内容区域
-        if (!book.reviewContent.isNullOrBlank()) {
+        val reviewContent = getReviewContent(book)
+        if (!reviewContent.isNullOrBlank()) {
             paint.isFakeBoldText = false
             paint.textSize = 12.dpToPx().toFloat()
             paint.color = textColor
             val maxWidth = bpWidth - 40.dpToPx()
-            val paragraphs = book.reviewContent!!.split("\n")
+            val paragraphs = reviewContent.split("\n")
 
             for (paragraph in paragraphs) {
                 if (paragraph.isEmpty()) {
@@ -338,7 +347,7 @@ object BookplateDrawer {
             }
             currentY += 16.dpToPx()
             drawDivider(currentY)
-            currentY += 12.dpToPx()
+            currentY += 22.dpToPx() // 书评和底部标语之间的间隙
         }
 
         // 底部标语
@@ -358,72 +367,10 @@ object BookplateDrawer {
     }
 
     /**
-     * 处理点击事件（打开评分和书评论证）
+     * 处理点击事件（藏书票仅做展示，不再弹窗）
      */
     fun onClick(context: Context, x: Float, y: Float, textPage: TextPage, book: Book, relativeOffset: Float): Boolean {
-        if (!textPage.isBookplateStart && !textPage.isBookplateEnd) return false
-        
-        val realY = y - relativeOffset
-        
-        // 检查是否点击了评分区域或整个藏书票区域
-        if (ratingRect.contains(x, realY)) {
-            showRatingDialog(context, book, textPage)
-            return true
-        }
-        
+        // 藏书票不再拦截任何点击，纯展示
         return false
-    }
-    
-    /**
-     * 显示评分和书评论证
-     */
-    private fun showRatingDialog(context: Context, book: Book, textPage: TextPage) {
-        // 创建对话框视图
-        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_bookplate_rating, null)
-        
-        val ratingBar = dialogView.findViewById<RatingBar>(R.id.rating_bar)
-        val etReview = dialogView.findViewById<EditText>(R.id.et_review)
-        val tvTitle = dialogView.findViewById<TextView>(R.id.tv_dialog_title)
-        
-        // 设置当前评分
-        ratingBar.rating = book.rating
-        
-        // 加载已有书评
-        etReview.setText(book.reviewContent ?: "")
-        
-        // 如果未读完，提示并禁用评分
-        if (textPage.isBookplateStart && book.finishReadTime <= 0) {
-            tvTitle.text = "请完读后再打分"
-            ratingBar.isEnabled = false
-            etReview.isEnabled = false
-        }
-        
-        AlertDialog.Builder(context)
-            .setView(dialogView)
-            .setTitle("阅读评价")
-            .setPositiveButton("保存") { _, _ ->
-                // 保存评分
-                val newRating = ratingBar.rating
-                book.rating = newRating
-                book.userModifiedRating = true
-                
-                // 保存书评
-                val reviewContent = etReview.text.toString().trim()
-                book.reviewContent = if (reviewContent.isBlank()) null else reviewContent
-                
-                // 异步保存到数据库
-                CoroutineScope(Dispatchers.IO).launch {
-                    try {
-                        appDb.bookDao.update(book)
-                        CoroutineScope(Dispatchers.Main).launch {
-                            context.longToastOnUi("已保存评价")
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-            .setNegativeButton("取消", null)
-            .show()
     }
 }

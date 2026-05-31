@@ -1307,22 +1307,11 @@ class ReadingMemoryDetailViewModel(application: Application) : BaseViewModel(app
                     }
                 }
                 
-                // 更新我的阅读记录的书评内容
-                val updatedMemory = memory.copy(
-                    wordCount = memory.wordCount,
-                    kind = memory.kind,
-                    reviewContent = reviewContent, 
-                    updateTime = System.currentTimeMillis()
-                )
-                withContext(Dispatchers.IO) {
-                    appDb.readingMemoryDao.update(updatedMemory)
-                }
-                
                 // 重新加载书评
                 loadReviews(memory)
-                
-                // 更新UI
-                memoryData.postValue(updatedMemory)
+
+                // 更新UI（不修改 ReadingMemory 的书评字段，统一从 BookReview 表读取）
+                memoryData.postValue(memory)
                 getApplication<Application>().toastOnUi("书评已更新")
             } catch (e: Exception) {
                 getApplication<Application>().toastOnUi("更新书评失败: ${e.localizedMessage}")

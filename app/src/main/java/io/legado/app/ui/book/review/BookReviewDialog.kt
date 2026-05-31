@@ -107,22 +107,14 @@ class BookReviewDialog() : BaseDialogFragment(R.layout.dialog_book_review, true)
                             // 新增模式，使用insert方法
                             appDb.bookReviewDao.insert(updatedReview)
                         }
-                        // 同时更新阅读记忆中的书评内容
-                        val memory = appDb.readingMemoryDao.getByBookUrl(updatedReview.bookUrl)
-                        if (memory != null) {
-                            val updatedMemory = memory.copy(reviewContent = updatedReview.reviewContent)
-                            appDb.readingMemoryDao.update(updatedMemory)
-                        }
-                        // 同步更新Book表的书评字段和评分
-                        val book = appDb.bookDao.getBook(updatedReview.bookUrl)
-                        if (book != null) {
-                            book.reviewContent = updatedReview.reviewContent
-                            // 如果显示了评分组件，也保存评分
-                            if (showRating) {
+                        // 如果显示了评分组件，同步更新 Book 表的评分
+                        if (showRating) {
+                            val book = appDb.bookDao.getBook(updatedReview.bookUrl)
+                            if (book != null) {
                                 book.rating = ratingBar.rating
                                 book.userModifiedRating = true
+                                appDb.bookDao.update(book)
                             }
-                            appDb.bookDao.update(book)
                         }
                     }
                     // 发送书评更新事件，让书架刷新显示
@@ -135,18 +127,7 @@ class BookReviewDialog() : BaseDialogFragment(R.layout.dialog_book_review, true)
                 lifecycleScope.launch {
                     withContext(IO) {
                         appDb.bookReviewDao.delete(bookReview)
-                        // 同时清空阅读记忆中的书评内容
-                        val memory = appDb.readingMemoryDao.getByBookUrl(bookReview.bookUrl)
-                        if (memory != null) {
-                            val updatedMemory = memory.copy(reviewContent = null)
-                            appDb.readingMemoryDao.update(updatedMemory)
-                        }
-                        // 同步清空Book表的书评字段
-                        val book = appDb.bookDao.getBook(bookReview.bookUrl)
-                        if (book != null) {
-                            book.reviewContent = null
-                            appDb.bookDao.update(book)
-                        }
+                        // 删除书评时无需同步其他表，书评统一存于 BookReview 表
                     }
                     // 发送书评更新事件，让书架刷新显示
                     postEvent(EventBus.BOOK_REVIEW_UPDATED, bookReview.bookUrl)

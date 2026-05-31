@@ -135,8 +135,6 @@ data class Book(
     // 标记用户是否修改了简介
     @ColumnInfo(defaultValue = "false")
     var userModifiedIntro: Boolean = false,
-    // 书评内容
-    var reviewContent: String? = null,
     // 标记用户是否修改了封面
     @ColumnInfo(defaultValue = "false")
     var userModifiedCover: Boolean = false,

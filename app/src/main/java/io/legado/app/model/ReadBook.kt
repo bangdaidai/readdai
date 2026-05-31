@@ -73,7 +73,6 @@ object ReadBook : CoroutineScope by MainScope() {
     var durChapterPos = 0
     var isLocalBook = true
     var chapterChanged = false
-    var showBookplate: Int = -1  // -1:未初始化, 0:显示, 1:不显示
     var prevTextChapter: TextChapter? = null
     var curTextChapter: TextChapter? = null
     var nextTextChapter: TextChapter? = null

@@ -18,6 +18,9 @@ interface BookReviewDao {
     @Query("SELECT * FROM bookReviews WHERE bookUrl = :bookUrl ORDER BY updateTime DESC")
     suspend fun getReviewByBookUrl(bookUrl: String): List<BookReview>
 
+    @Query("SELECT * FROM bookReviews WHERE bookUrl = :bookUrl ORDER BY updateTime DESC")
+    fun getReviewByBookUrlSync(bookUrl: String): List<BookReview>
+
     @Query("SELECT * FROM bookReviews WHERE bookName = :bookName AND bookAuthor = :bookAuthor ORDER BY updateTime DESC")
     fun getByBook(bookName: String, bookAuthor: String): Flow<List<BookReview>>
     

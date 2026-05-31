@@ -510,14 +510,19 @@ class ReadingMemoryAdapter(
                 layoutIntro.visibility = android.view.View.GONE
             }
 
-            // 设置书评显示
+            // 设置书评显示（统一从 BookReview 表读取）
             val showReview = AppConfig.showBookReview
-            val reviewContent = item.reviewContent
-            if (showReview && !reviewContent.isNullOrBlank()) {
-                layoutReview.visibility = android.view.View.VISIBLE
-                reviewView.text = reviewContent
-            } else {
-                layoutReview.visibility = android.view.View.GONE
+            lifecycleScope.launch {
+                val reviews = withContext(Dispatchers.IO) {
+                    io.legado.app.data.appDb.bookReviewDao.getReviewByBookUrl(item.bookUrl)
+                }
+                val reviewContent = reviews.firstOrNull()?.reviewContent
+                if (showReview && !reviewContent.isNullOrBlank()) {
+                    layoutReview.visibility = android.view.View.VISIBLE
+                    reviewView.text = reviewContent
+                } else {
+                    layoutReview.visibility = android.view.View.GONE
+                }
             }
 
             // 添加阅读状态点击事件

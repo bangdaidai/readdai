@@ -11,7 +11,7 @@ import io.legado.app.constant.ReadingStatus
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookAnnotation
-import io.legado.app.data.entities.BookReview
+
 import io.legado.app.data.entities.ReadingMemory
 import io.legado.app.help.book.ReadingStatusGroupHelper
 import io.legado.app.utils.observeEvent
@@ -580,7 +580,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         durChapterPos = book.durChapterPos,
                         progress = progress,
                         readTime = readTime,
-                        reviewContent = review?.reviewContent,
                         annotationCount = annotations.size,
                         readingStatus = finalReadingStatus,
                         type = book.type, // 更新书籍类型
@@ -608,7 +607,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         durChapterPos = book.durChapterPos,
                         progress = progress,
                         readTime = readTime,
-                        reviewContent = review?.reviewContent,
                         annotationCount = annotations.size,
                         readingStatus = readingStatus,
                         type = book.type, // 设置书籍类型
@@ -645,7 +643,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
 
                         // 更新现有记忆的信息
                         val readTime = getBookReadTime(book)
-                        val review = getBookReview(book)
                         val annotations = getBookAnnotations(book)
 
                         // 计算阅读进度 - 使用与详情页一致的逻辑
@@ -677,7 +674,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                             durChapterPos = book.durChapterPos,
                             progress = progress,
                             readTime = readTime,
-                            reviewContent = review?.reviewContent,
                             annotationCount = annotations.size,
                             readingStatus = finalReadingStatus,
                             updateTime = System.currentTimeMillis()
@@ -692,7 +688,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                 } else {
                     // 已经存在匹配bookUrl的记忆，更新它
                     val readTime = getBookReadTime(book)
-                    val review = getBookReview(book)
                     val annotations = getBookAnnotations(book)
 
                     // 计算阅读进度 - 使用与详情页一致的逻辑
@@ -723,7 +718,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         durChapterPos = book.durChapterPos,
                         progress = progress,
                         readTime = readTime,
-                        reviewContent = review?.reviewContent,
                         annotationCount = annotations.size,
                         readingStatus = finalReadingStatus,
                         type = book.type,
@@ -737,7 +731,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                 if (existingMemory == null) {
                     // 如果仍然没有找到现有记忆，创建新记忆
                     val readTime = getBookReadTime(book)
-                    val review = getBookReview(book)
                     val annotations = getBookAnnotations(book)
 
                     // 计算阅读进度 - 使用与详情页一致的逻辑
@@ -763,7 +756,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         durChapterPos = book.durChapterPos,
                         progress = progress,
                         readTime = readTime,
-                        reviewContent = review?.reviewContent,
                         annotationCount = annotations.size,
                         readingStatus = readingStatus,
                         type = book.type,
@@ -849,18 +841,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
             time
         } catch (e: Exception) {
             0L
-        }
-    }
-
-    /**
-     * 获取书籍的书评
-     */
-    private suspend fun getBookReview(book: Book): BookReview? {
-        return try {
-            val reviewList = appDb.bookReviewDao.getReviewByBookUrl(book.bookUrl)
-            if (reviewList.isNotEmpty()) reviewList.first() else null
-        } catch (e: Exception) {
-            null
         }
     }
 
