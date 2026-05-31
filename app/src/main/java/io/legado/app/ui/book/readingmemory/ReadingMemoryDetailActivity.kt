@@ -1174,11 +1174,11 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         if (!book.reviewContent.isNullOrBlank()) {
             val maxWidth = bpWidth.toFloat() - 40.dpToPx()
             val measurePaint = android.graphics.Paint()
-            measurePaint.textSize = 11.dpToPx().toFloat()
+            measurePaint.textSize = 12.dpToPx().toFloat()
             val paragraphs = book.reviewContent!!.split("\n")
             for (paragraph in paragraphs) {
                 if (paragraph.isEmpty()) {
-                    contentHeight += 10.dpToPx()
+                    contentHeight += 12.dpToPx()
                     continue
                 }
                 var remainingText = paragraph
@@ -1258,7 +1258,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         currentY += 22.dpToPx()
         paint.textSize = 14.dpToPx().toFloat()
         paint.isFakeBoldText = false
-        val titleText2 = "=== 阅 读 凭 证 ===="
+        val titleText2 = "=== 阅 读 凭 证 ==="
         val titleWidth2 = paint.measureText(titleText2)
         canvas.drawText(titleText2, left + (right - left - titleWidth2) / 2f, currentY, paint)
 
@@ -1393,13 +1393,13 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
             paint.isFakeBoldText = false
-            paint.textSize = 11.dpToPx().toFloat()
+            paint.textSize = 12.dpToPx().toFloat()
             paint.color = textColor
             val maxWidth = right - left - 40.dpToPx()
             val paragraphs = book.reviewContent!!.split("\n")
             for (paragraph in paragraphs) {
                 if (paragraph.isEmpty()) {
-                    currentY += 10.dpToPx()
+                    currentY += 12.dpToPx()
                     continue
                 }
                 var remainingText = paragraph

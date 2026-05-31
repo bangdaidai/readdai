@@ -74,12 +74,12 @@ object BookplateDrawer {
 
         // 书评
         if (!book.reviewContent.isNullOrBlank()) {
-            paint.textSize = 11.dpToPx().toFloat()
+            paint.textSize = 12.dpToPx().toFloat()
             val maxWidth = bpWidth - 40.dpToPx()
             val paragraphs = book.reviewContent!!.split("\n")
             for (paragraph in paragraphs) {
                 if (paragraph.isEmpty()) {
-                    h += 10.dpToPx()
+                    h += 12.dpToPx()
                     continue
                 }
                 var remainingText = paragraph
@@ -308,14 +308,14 @@ object BookplateDrawer {
         // 书评内容区域
         if (!book.reviewContent.isNullOrBlank()) {
             paint.isFakeBoldText = false
-            paint.textSize = 11.dpToPx().toFloat()
+            paint.textSize = 12.dpToPx().toFloat()
             paint.color = textColor
             val maxWidth = bpWidth - 40.dpToPx()
             val paragraphs = book.reviewContent!!.split("\n")
 
             for (paragraph in paragraphs) {
                 if (paragraph.isEmpty()) {
-                    currentY += 10.dpToPx()
+                    currentY += 12.dpToPx()
                     continue
                 }
                 var remainingText = paragraph
