@@ -41,7 +41,7 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
         return if (hasNext()) {
             val pageIndex = pageIndex
             val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
-            if (currentChapter == null || currentChapter?.isLastIndex(pageIndex) == true) {
+            if (currentChapter == null || currentChapter?.isLastIndexCurrent(pageIndex) == true) {
                 if (isLastChapter) {
                     ReadBook.callBack?.onBookEnd()
                     return@with false
@@ -51,13 +51,6 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
                 }
                 ReadBook.moveToNextChapter(upContent, false)
             } else {
-                if (pageIndex < 0 || currentChapter?.isLastIndexCurrent(pageIndex) == true) {
-                    if (isLastChapter) {
-                        ReadBook.callBack?.onBookEnd()
-                        return@with false
-                    }
-                    return@with false
-                }
                 ReadBook.setPageIndex(pageIndex.plus(1))
             }
             if (upContent) upContent(resetPageOffset = false)
