@@ -16,6 +16,9 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
     }
 
     override fun hasNext(): Boolean = with(dataSource) {
+        // 原项目逻辑：末章总是返回 true，允许翻到"书末页"
+        val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
+        if (isLastChapter) return true
         return hasNextChapter() || (currentChapter != null && pageIndex < (currentChapter?.pageSize ?: 1) - 1)
     }
 
@@ -37,6 +40,12 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
         } ?: ReadBook.setPageIndex(0)
     }
 
+    /**
+     * 翻页逻辑，参考原项目设计：
+     * 1. hasNext 对末章末页返回 true（允许手势启动）
+     * 2. moveToNext 内检测到末章末页 → onBookEnd
+     * 3. hasNext 为 false 时兜底也调 onBookEnd（原项目的双重保障）
+     */
     override fun moveToNext(upContent: Boolean): Boolean = with(dataSource) {
         return if (hasNext()) {
             val pageIndex = pageIndex
@@ -63,7 +72,7 @@ class TextPageFactory(dataSource: DataSource) : PageFactory<TextPage>(dataSource
             if (upContent) upContent(resetPageOffset = false)
             true
         } else {
-            // hasNext() == false 说明当前页是最后一章最后一页，触发读完回调
+            // 兜底：hasNext 为 false（异常场景），仍然触发 onBookEnd
             val pageIndex = pageIndex
             val isLastChapter = currentChapter?.chapter?.index == (currentChapter?.chaptersSize?.minus(1) ?: 0)
             if (isLastChapter && currentChapter != null && pageIndex >= currentChapter!!.pageSize - 1) {

@@ -1449,8 +1449,8 @@ $content
      */
     override fun onBookEnd() {
         val book = ReadBook.book ?: return
-        // readIteration 为偶数时弹窗（0→首读完，2→二刷完，...）
-        // 奇数是已标记读完状态，不重复弹
+        // 调试：无论如何先弹 Toast 确认方法被调用
+        android.widget.Toast.makeText(this, "onBookEnd 触发", android.widget.Toast.LENGTH_SHORT).show()
         if (book.readIteration % 2 != 0) return
         val iterNum = book.readIteration / 2
         val title = when (iterNum) {
@@ -1467,19 +1467,23 @@ $content
                 "已完成${when(nthStr) { 2->"二"; 3->"三"; 4->"四"; 5->"五"; else->"${nthStr}" }}刷，是否标记？"
             }
         }
-        runOnUiThread {
-            AlertDialog.Builder(this)
-                .setTitle(title)
-                .setMessage(message)
-                .setPositiveButton("是") { _, _ ->
-                    ReadIterationHelper.markAsFinished(book)
-                    io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.UP_BOOKSHELF, book.bookUrl)
-                    // 标记完后先弹评分对话框，填完再显示藏书票
-                    showRatingAndBookplate(book)
-                }
-                .setNegativeButton("否", null)
-                .setCancelable(true)
-                .show()
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            try {
+                AlertDialog.Builder(this)
+                    .setTitle(title)
+                    .setMessage(message)
+                    .setPositiveButton("是") { _, _ ->
+                        ReadIterationHelper.markAsFinished(book)
+                        io.legado.app.utils.postEvent(io.legado.app.constant.EventBus.UP_BOOKSHELF, book.bookUrl)
+                        // 标记完后先弹评分对话框，填完再显示藏书票
+                        showRatingAndBookplate(book)
+                    }
+                    .setNegativeButton("否", null)
+                    .setCancelable(true)
+                    .show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
