@@ -89,12 +89,12 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             contentHeight += 22.dpToPx() // 阅读时间
             contentHeight += 22.dpToPx() // 虚线分隔间距（下）
             contentHeight += 12.dpToPx() // 虚线
-            contentHeight += 24.dpToPx() // 阅读评分
+            contentHeight += 36.dpToPx() // 阅读评分（星星行 + 评分与书评间距）
 
             if (!reviewContent.isNullOrBlank()) {
                 val maxWidth = bpWidth.toFloat() - 40.dpToPx()
                 val measurePaint = android.graphics.Paint()
-                measurePaint.textSize = 12.dpToPx().toFloat()
+                measurePaint.textSize = 14.dpToPx().toFloat()
                 val paragraphs = reviewContent.split("\n")
                 for (paragraph in paragraphs) {
                     if (paragraph.isEmpty()) { contentHeight += 12.dpToPx(); continue }
@@ -215,7 +215,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
 
             drawDivider(currentY); currentY += 22.dpToPx()
 
-            paint.isFakeBoldText = false; paint.textSize = 12.dpToPx().toFloat(); paint.color = textColor; paint.style = android.graphics.Paint.Style.FILL
+            paint.isFakeBoldText = false; paint.textSize = 14.dpToPx().toFloat(); paint.color = textColor; paint.style = android.graphics.Paint.Style.FILL
             canvas.drawText("阅读评分", left + 20.dpToPx(), currentY, paint)
             val starSize = 14.dpToPx().toFloat(); val starGap = 4.dpToPx().toFloat(); paint.textSize = starSize
             var starDrawX = right - 20.dpToPx() - (starSize * 5 + starGap * 4)
@@ -225,10 +225,10 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
                 starDrawX += starSize + starGap
             }
             paint.color = textColor; paint.textSize = 12.dpToPx().toFloat(); paint.isFakeBoldText = false
-            currentY += 24.dpToPx()
+            currentY += 36.dpToPx() // 评分与书评之间的间距
 
             if (!reviewContent.isNullOrBlank()) {
-                paint.isFakeBoldText = false; paint.textSize = 12.dpToPx().toFloat(); paint.color = textColor
+                paint.isFakeBoldText = false; paint.textSize = 14.dpToPx().toFloat(); paint.color = textColor
                 val maxW = right - left - 40.dpToPx()
                 for (paragraph in reviewContent.split("\n")) {
                     if (paragraph.isEmpty()) { currentY += 12.dpToPx(); continue }

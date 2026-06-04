@@ -1449,8 +1449,6 @@ $content
      */
     override fun onBookEnd() {
         val book = ReadBook.book ?: return
-        // 调试：无论如何先弹 Toast 确认方法被调用
-        android.widget.Toast.makeText(this, "onBookEnd 触发", android.widget.Toast.LENGTH_SHORT).show()
         if (book.readIteration % 2 != 0) return
         val iterNum = book.readIteration / 2
         val title = when (iterNum) {
