@@ -1118,7 +1118,8 @@ class TextChapterLayout(
         startX: Float,
         textWidths: List<Float>,
         srcList: LinkedList<String>?,
-        clickList: LinkedList<String?>?
+        clickList: LinkedList<String?>?,
+        wordStyles: List<WordStyle>? = null
     ) {
         if (!textFullJustify) {
             addCharsToLineNatural(
@@ -1183,7 +1184,8 @@ class TextChapterLayout(
         hasIndent: Boolean,
         textWidths: List<Float>,
         srcList: LinkedList<String>?,
-        clickList: LinkedList<String?>?
+        clickList: LinkedList<String?>?,
+        wordStyles: List<WordStyle>? = null
     ) {
         val indentLength = paragraphIndent.length
         var x = startX

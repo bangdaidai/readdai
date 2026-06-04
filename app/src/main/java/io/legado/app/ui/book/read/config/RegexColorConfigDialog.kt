@@ -157,9 +157,7 @@ class RegexColorConfigDialog : BottomSheetDialogFragment(R.layout.dialog_regex_c
     private fun showFontSelect(position: Int) {
         if (position !in ReadBookConfig.regexColorRules.indices) return
         editingRulePosition = position
-        FontSelectDialog().apply {
-            explicitCallback = this@RegexColorConfigDialog
-        }.show(childFragmentManager, "regexFontSelect")
+        FontSelectDialog().show(childFragmentManager, "regexFontSelect")
     }
 
     fun onColorSelected(color: Int) {
