@@ -1125,7 +1125,7 @@ class TextChapterLayout(
             addCharsToLineNatural(
                 book, absStartX, textLine, words,
                 startX, false, textWidths, srcList,
-                clickList
+                clickList, wordStyles
             )
             return
         }
@@ -1144,10 +1144,11 @@ class TextChapterLayout(
                 } else {
                     (x + cw)
                 }
+                val wordStyle = wordStyles?.getOrNull(index)
                 addCharToLine(
                     book, absStartX, textLine, char,
                     x, x1, index + 1 == words.size, srcList,
-                    clickList
+                    clickList, wordStyle?.color, wordStyle?.fontPath
                 )
                 x = x1
             }
@@ -1161,10 +1162,11 @@ class TextChapterLayout(
                 val char = words[index]
                 val cw = textWidths[index]
                 val x1 = if (index != words.lastIndex) (x + cw + d) else (x + cw)
+                val wordStyle = wordStyles?.getOrNull(index)
                 addCharToLine(
                     book, absStartX, textLine, char,
                     x, x1, index + 1 == words.size, srcList,
-                    clickList
+                    clickList, wordStyle?.color, wordStyle?.fontPath
                 )
                 x = x1
             }
@@ -1194,7 +1196,11 @@ class TextChapterLayout(
             val char = words[index]
             val cw = textWidths[index]
             val x1 = x + cw
-            addCharToLine(book, absStartX, textLine, char, x, x1, index + 1 == words.size, srcList, clickList)
+            val wordStyle = wordStyles?.getOrNull(index)
+            addCharToLine(
+                book, absStartX, textLine, char, x, x1, index + 1 == words.size,
+                srcList, clickList, wordStyle?.color, wordStyle?.fontPath
+            )
             x = x1
             if (hasIndent && index == indentLength - 1) {
                 textLine.indentWidth = x
