@@ -450,6 +450,36 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         }
 
         /**
+         * 显示藏书票弹窗（公开静态方法，供外部调用）
+         */
+        fun showBookplate(
+            context: android.content.Context,
+            scope: kotlinx.coroutines.CoroutineScope,
+            book: Book,
+            showSaveButton: Boolean = false,
+            onSave: ((Book) -> Unit)? = null
+        ) {
+            scope.launch {
+                val bitmap = withContext(Dispatchers.IO) { createBookplateBitmap(context, book) }
+                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                    val imageView = ImageView(context)
+                    imageView.setImageBitmap(bitmap)
+                    imageView.scaleType = ImageView.ScaleType.FIT_CENTER
+                    val padding = 16.dpToPx()
+                    imageView.setPadding(padding, padding, padding, padding)
+                    val builder = AlertDialog.Builder(context)
+                        .setTitle("藏书票")
+                        .setView(imageView)
+                        .setPositiveButton("确定", null)
+                    if (showSaveButton) {
+                        builder.setNeutralButton("保存图片") { _, _ -> onSave?.invoke(book) }
+                    }
+                    builder.show()
+                }
+            }
+        }
+
+        /**
          * 显示藏书票弹窗（基于ReadingMemory的重载方法，即使书籍已从书架删除也能显示藏书票）
          */
         fun showBookplate(
