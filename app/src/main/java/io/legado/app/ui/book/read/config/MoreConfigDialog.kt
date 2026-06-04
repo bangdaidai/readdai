@@ -196,6 +196,10 @@ class MoreConfigDialog : BaseDialogFragment(0) {
                     (activity as? ReadBookActivity)?.showClickRegionalConfig()
                 }
 
+                "regexColorConfig" -> {
+                    RegexColorConfigDialog().show(childFragmentManager, "regexColorConfig")
+                }
+
                 PreferKey.pageTouchSlop -> {
                     NumberPickerDialog(requireContext())
                         .setTitle(getString(R.string.page_touch_slop_dialog_title))

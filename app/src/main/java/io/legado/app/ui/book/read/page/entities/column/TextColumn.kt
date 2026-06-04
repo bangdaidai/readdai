@@ -1,6 +1,7 @@
 package io.legado.app.ui.book.read.page.entities.column
 
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.os.Build
 import androidx.annotation.Keep
 import io.legado.app.help.config.ReadBookConfig
@@ -18,6 +19,8 @@ data class TextColumn(
     override var start: Float,
     override var end: Float,
     override val charData: String,
+    val regexColor: Int? = null,
+    val regexFontPath: String? = null,
 ) : TextBaseColumn {
 
     override var textLine: TextLine = emptyTextLine
@@ -48,14 +51,23 @@ data class TextColumn(
         } else {
             ChapterProvider.contentPaint
         }
-        val textColor = if (textLine.isReadAloud || isSearchResult) {
-            ReadBookConfig.textAccentColor
-        } else {
-            ReadBookConfig.textColor
+        val textColor = when {
+            textLine.isReadAloud || isSearchResult -> ReadBookConfig.textAccentColor
+            regexColor != null -> regexColor
+            else -> ReadBookConfig.textColor
         }
         if (textPaint.color != textColor) {
             textPaint.color = textColor
         }
+        
+        val originalTypeface = textPaint.typeface
+        if (regexFontPath != null && regexFontPath.isNotEmpty()) {
+            try {
+                textPaint.typeface = android.graphics.Typeface.createFromFile(regexFontPath)
+            } catch (_: Exception) {
+            }
+        }
+        
         val y = textLine.lineBase - textLine.lineTop
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             val letterSpacing = textPaint.letterSpacing * textPaint.textSize
@@ -64,6 +76,11 @@ data class TextColumn(
         } else {
             canvas.drawText(charData, start, y, textPaint)
         }
+        
+        if (regexFontPath != null && regexFontPath.isNotEmpty()) {
+            textPaint.typeface = originalTypeface
+        }
+        
         if (selected) {
             canvas.drawRect(start, 0f, end, textLine.height, view.selectedPaint)
         }

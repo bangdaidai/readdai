@@ -249,6 +249,12 @@ object ReadBookConfig {
 
     val config get() = if (shareLayout) shareConfig else durConfig
 
+    val regexColorRules: ArrayList<RegexColorRule> get() = durConfig.regexColorRules
+
+    fun saveRegexColorRules() {
+        save()
+    }
+
     var bgAlpha: Int
         get() = config.bgAlpha
         set(value) {
@@ -591,7 +597,8 @@ object ReadBookConfig {
         var tipColor: Int = 0,
         var tipDividerColor: Int = -1,
         var headerMode: Int = 0,
-        var footerMode: Int = 0
+        var footerMode: Int = 0,
+        var regexColorRules: ArrayList<RegexColorRule> = arrayListOf()
     ) {
 
         @Transient
@@ -880,7 +887,8 @@ object ReadBookConfig {
             "tipColor" to tipColor,
             "tipDividerColor" to tipDividerColor,
             "headerMode" to headerMode,
-            "footerMode" to footerMode
+            "footerMode" to footerMode,
+            "regexColorRules" to regexColorRules.map { mapOf("name" to it.name, "pattern" to it.pattern, "color" to it.color, "fontPath" to it.fontPath) }
         )
 
     }
