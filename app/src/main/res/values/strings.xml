@@ -819,6 +819,7 @@
     <string name="night_divider_color">Night,Divider color</string>
     <string name="background_card_color">背景卡片颜色</string>
     <string name="divider_color">分割线颜色</string>
+    <string name="title_color">Title color</string>
     <string name="title_bar_text_icon_color">Title bar text &amp; icon color</string>
     <string name="bottom_nav_icon_unselected_color">Bottom nav icon color (unselected)</string>
     <string name="day_title_bar_text_icon_color">Day,Title bar text &amp; icon color</string>
