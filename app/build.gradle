@@ -5,6 +5,7 @@ plugins {
     alias libs.plugins.room
     alias libs.plugins.ksp
     alias libs.plugins.google.services
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.0"
 }
 
 // ✅ Room 配置必须放在 plugins 后、android {} 前（官方要求）
@@ -102,10 +103,6 @@ android {
         buildConfig = true
         viewBinding = true
         compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     buildTypes {
