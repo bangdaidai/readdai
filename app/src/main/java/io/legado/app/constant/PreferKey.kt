@@ -274,4 +274,12 @@ object PreferKey {
     const val showBookplate = "showBookplate"
     const val showReadingTicket = "showReadingTicket"
     const val readingTicketPosition = "readingTicketPosition"
+
+    // 高亮规则配置
+    const val highlightRuleItems = "highlightRuleItems"
+    const val highlightRuleGroups = "highlightRuleGroups"
+    const val highlightRuleCurrentGroup = "highlightRuleCurrentGroup"
+    const val highlightRuleDialog = "highlightRuleDialog"
+    const val highlightRuleBookTitle = "highlightRuleBookTitle"
+    const val highlightRuleBracketNote = "highlightRuleBracketNote"
 }

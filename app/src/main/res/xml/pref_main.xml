@@ -87,6 +87,13 @@
             app:iconSpaceReserved="false" />
 
         <io.legado.app.lib.prefs.Preference
+            android:icon="@drawable/ic_highlight"
+            android:key="highlightRuleManage"
+            android:summary="配置正文高亮规则"
+            android:title="高亮规则"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.Preference
             android:icon="@drawable/ic_translate"
             android:key="dictRuleManage"
             android:summary="@string/config_dict_rule"

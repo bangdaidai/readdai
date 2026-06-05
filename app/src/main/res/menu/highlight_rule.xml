@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="AlwaysShowAction">
+
+    <item
+        android:id="@+id/menu_group"
+        android:icon="@drawable/ic_groups"
+        android:title="分组"
+        app:showAsAction="always">
+
+        <menu>
+            <item
+                android:id="@+id/menu_group_manage"
+                android:title="分组管理" />
+
+            <group android:id="@+id/highlight_group">
+            </group>
+
+        </menu>
+
+    </item>
+
+    <item
+        android:id="@+id/menu_add"
+        android:icon="@drawable/ic_add"
+        android:title="添加"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/menu_import"
+        android:title="从剪贴板导入"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_export"
+        android:title="导出全部"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_reset"
+        android:title="恢复默认"
+        app:showAsAction="never" />
+
+</menu>

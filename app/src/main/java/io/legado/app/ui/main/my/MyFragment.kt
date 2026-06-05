@@ -36,6 +36,7 @@ import io.legado.app.ui.config.ConfigTag
 import io.legado.app.ui.dict.rule.DictRuleActivity
 import io.legado.app.ui.file.FileManageActivity
 import io.legado.app.ui.main.MainFragmentInterface
+import io.legado.app.ui.highlight.HighlightRuleActivity
 import io.legado.app.ui.replace.ReplaceRuleActivity
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.getPrefBoolean
@@ -158,6 +159,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
             when (preference.key) {
                 "bookSourceManage" -> startActivity<BookSourceActivity>()
                 "replaceManage" -> startActivity<ReplaceRuleActivity>()
+                "highlightRuleManage" -> HighlightRuleActivity.start(requireContext())
                 "dictRuleManage" -> startActivity<DictRuleActivity>()
                 "txtTocRuleManage" -> startActivity<TxtTocRuleActivity>()
                 "bookmark" -> startActivity<AllBookmarkActivity>()

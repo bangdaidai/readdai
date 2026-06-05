@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp"
+        android:background="@color/backgroundCard">
+
+        <TextView
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="返回"
+            android:textSize="16sp"
+            android:textColor="@color/primaryText"
+            android:background="?android:attr/selectableItemBackground" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="编辑高亮规则"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/primaryText" />
+
+        <TextView
+            android:id="@+id/btn_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="保存"
+            android:textSize="16sp"
+            android:textColor="@color/accent"
+            android:background="?android:attr/selectableItemBackground" />
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="启用"
+                    android:textSize="14sp"
+                    android:textColor="@color/primaryText"
+                    android:layout_marginEnd="16dp" />
+
+                <io.legado.app.lib.theme.view.ThemeSwitch
+                    android:id="@+id/switch_enable"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="规则名称"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/et_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入规则名称"
+                android:textSize="14sp"
+                android:padding="12dp"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="正则表达式"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/et_pattern"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入正则表达式"
+                android:textSize="14sp"
+                android:fontFamily="monospace"
+                android:padding="12dp"
+                android:minLines="2"
+                android:gravity="top"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="示例文本"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/et_sample_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入示例文本用于预览"
+                android:textSize="14sp"
+                android:padding="12dp"
+                android:minLines="3"
+                android:gravity="top"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="分组"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <Spinner
+                android:id="@+id/sp_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="作用范围"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <Spinner
+                android:id="@+id/sp_target_scope"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="字体颜色"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <EditText
+                    android:id="@+id/et_text_color"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="#RRGGBBAA"
+                    android:textSize="14sp"
+                    android:padding="12dp"
+                    android:background="@drawable/shape_edit_text" />
+
+                <TextView
+                    android:id="@+id/btn_pick_text_color"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:layout_marginStart="8dp"
+                    android:text="选择"
+                    android:textSize="14sp"
+                    android:textColor="@color/accent"
+                    android:background="?android:attr/selectableItemBackground" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="下划线样式"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <Spinner
+                android:id="@+id/sp_underline_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="下划线颜色"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="12dp">
+
+                <EditText
+                    android:id="@+id/et_underline_color"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="#RRGGBBAA"
+                    android:textSize="14sp"
+                    android:padding="12dp"
+                    android:background="@drawable/shape_edit_text" />
+
+                <TextView
+                    android:id="@+id/btn_pick_underline_color"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:layout_marginStart="8dp"
+                    android:text="选择"
+                    android:textSize="14sp"
+                    android:textColor="@color/accent"
+                    android:background="?android:attr/selectableItemBackground" />
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="下划线宽度"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/et_underline_width"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="1.0"
+                android:textSize="14sp"
+                android:inputType="numberDecimal"
+                android:padding="12dp"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="下划线偏移"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/et_underline_offset"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="2.0"
+                android:textSize="14sp"
+                android:inputType="numberDecimal"
+                android:padding="12dp"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SVG路径(当选择自定义SVG时)"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <EditText
+                android:id="@+id/et_svg_path"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="输入SVG路径"
+                android:textSize="14sp"
+                android:padding="12dp"
+                android:minLines="2"
+                android:background="@drawable/shape_edit_text"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="预览效果"
+                android:textSize="14sp"
+                android:textColor="@color/secondaryText"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tv_preview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:background="@drawable/shape_bg_card"
+                android:minHeight="100dp"
+                tools:text="这是预览文本" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

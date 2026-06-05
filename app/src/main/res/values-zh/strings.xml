@@ -40,6 +40,14 @@
     <string name="replace_purify">替换净化</string>
     <string name="custom_export_section">自定义Epub导出章节</string>
     <string name="replace_purify_desc">配置替换净化规则</string>
+    <string name="highlight_rule">高亮规则</string>
+    <string name="highlight_rule_desc">配置正文高亮规则</string>
+    <string name="add_highlight_rule">添加高亮规则</string>
+    <string name="highlight_rule_unnamed">未命名规则</string>
+    <string name="highlight_rule_clipboard_empty">剪贴板为空</string>
+    <string name="highlight_rule_import_invalid">导入格式错误</string>
+    <string name="highlight_rule_import_success">导入成功</string>
+    <string name="highlight_rule_pattern_required">正则表达式不能为空</string>
     <string name="not_available">暂无</string>
     <string name="edit_book_intro">编辑书籍介绍</string>
     <string name="intro_too_long">介绍不能超过200个字符</string>

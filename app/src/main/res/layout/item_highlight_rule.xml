@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:padding="12dp"
+    android:minHeight="56dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <io.legado.app.lib.theme.view.ThemeCheckBox
+        android:id="@+id/cb_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/primaryText"
+        android:textSize="16sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        tools:text="对话高亮" />
+
+    <TextView
+        android:id="@+id/tv_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:textSize="12sp"
+        android:textColor="@color/secondaryText"
+        android:maxLines="1"
+        android:ellipsize="end"
+        tools:text="作用于全部 / 字色 #FFFF8C00" />
+
+    <io.legado.app.lib.theme.view.ThemeSwitch
+        android:id="@+id/swt_enabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/iv_edit"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:padding="6dp"
+        android:src="@drawable/ic_edit"
+        android:scaleType="centerInside"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        app:tint="@color/secondaryText" />
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/iv_menu_more"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_more_vert"
+        android:scaleType="centerInside"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        app:tint="@color/secondaryText" />
+
+</LinearLayout>
