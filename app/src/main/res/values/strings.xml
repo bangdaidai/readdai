@@ -41,6 +41,14 @@
     <string name="replace">Replace</string>
     <string name="replace_purify">Replacement</string>
     <string name="replace_purify_desc">Configure replacement rules</string>
+    <string name="highlight_rule">Highlight Rules</string>
+    <string name="highlight_rule_desc">Configure text highlight rules</string>
+    <string name="add_highlight_rule">Add highlight rule</string>
+    <string name="highlight_rule_unnamed">Unnamed Rule</string>
+    <string name="highlight_rule_clipboard_empty">Clipboard is empty</string>
+    <string name="highlight_rule_import_invalid">Invalid import format</string>
+    <string name="highlight_rule_import_success">Imported successfully</string>
+    <string name="highlight_rule_pattern_required">Pattern cannot be empty</string>
     <string name="not_available">Not available now</string>
     <string name="edit_book_intro">Edit Book Introduction</string>
     <string name="intro_too_long">Introduction cannot exceed 200 characters</string>

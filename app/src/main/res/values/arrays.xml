@@ -229,4 +229,19 @@
 		<item>right</item>
 	</string-array>
 
+	<string-array name="highlight_target_scope">
+		<item>All</item>
+		<item>Title only</item>
+		<item>Body only</item>
+	</string-array>
+
+	<string-array name="highlight_underline_modes">
+		<item>None</item>
+		<item>Solid</item>
+		<item>Dashed</item>
+		<item>Wavy</item>
+		<item>Double</item>
+		<item>Custom SVG</item>
+	</string-array>
+
 </resources>
