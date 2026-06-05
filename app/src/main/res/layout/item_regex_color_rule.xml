@@ -1,143 +1,89 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="4dp"
-    android:layout_marginVertical="4dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:strokeWidth="0dp">
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/selector_fillet_btn_bg">
 
+    <!-- 规则名称和删除按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="12dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <!-- 规则名称和删除按钮 -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tv_rule_name"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="15sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="?attr/colorOnSurface"
-                android:maxLines="1"
-                android:ellipsize="end"
                 android:text="规则名称" />
 
-            <ImageButton
-                android:id="@+id/btn_delete"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_baseline_close"
-                android:contentDescription="删除规则"
-                android:scaleType="center"
-                app:tint="@color/secondaryText" />
-
-        </LinearLayout>
-
-        <!-- 正则表达式 -->
-        <TextView
-            android:id="@+id/tv_rule_pattern"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="12sp"
-            android:textColor="@color/secondaryText"
-            android:fontFamily="monospace"
-            android:maxLines="2"
-            android:ellipsize="end"
-            android:text="正则表达式" />
-
-        <!-- 分隔线 -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginVertical="10dp"
-            android:background="@color/divider" />
-
-        <!-- 颜色和字体选择 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <!-- 颜色预览 -->
-            <LinearLayout
-                android:id="@+id/color_preview_container"
+            <TextView
+                android:id="@+id/tv_rule_pattern"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="4dp"
-                android:paddingHorizontal="8dp"
-                android:background="@drawable/bg_rounded_small"
-                android:clickable="true"
-                android:focusable="true">
-
-                <View
-                    android:id="@+id/color_preview"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:background="@drawable/bg_color_circle" />
-
-                <TextView
-                    android:id="@+id/tv_color_hex"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:textSize="12sp"
-                    android:textColor="@color/secondaryText"
-                    android:fontFamily="monospace"
-                    android:text="#FF0000" />
-
-            </LinearLayout>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
-            <!-- 字体按钮 -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_select_font"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:text="@string/text_font"
-                android:textSize="12sp"
-                android:minWidth="0dp"
-                android:paddingHorizontal="12dp"
-                app:icon="@drawable/ic_baseline_text_fields"
-                app:iconSize="16dp"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon" />
-
-            <!-- 颜色按钮 -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_select_color"
-                android:layout_width="wrap_content"
-                android:layout_height="36dp"
-                android:layout_marginStart="8dp"
-                android:text="@string/title_color"
-                android:textSize="12sp"
-                android:minWidth="0dp"
-                android:paddingHorizontal="12dp"
-                app:icon="@drawable/ic_baseline_palette"
-                app:iconSize="16dp"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton.Icon" />
+                android:layout_marginTop="4dp"
+                android:textSize="13sp"
+                android:textColor="@color/secondaryText"
+                android:text="正则表达式" />
 
         </LinearLayout>
+
+        <!-- 颜色预览 -->
+        <View
+            android:id="@+id/color_preview"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/bg_color_circle"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <ImageButton
+            android:id="@+id/btn_delete"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_baseline_close"
+            android:contentDescription="删除规则"
+            android:scaleType="center"
+            app:tint="@color/secondaryText" />
 
     </LinearLayout>
 
-</com.google.android.material.card.MaterialCardView>
+    <!-- 按钮区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_select_font"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/text_font"
+            android:minWidth="0dp"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_select_color"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/title_color"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+    </LinearLayout>
+
+</LinearLayout>
