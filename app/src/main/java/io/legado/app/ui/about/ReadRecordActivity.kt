@@ -95,6 +95,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         initView()
         initComposeView()
+        initComposeRanking()
         // 初始化视图模式
         viewModel.setDisplayMode(DisplayMode.values()[displayMode])
         // 监听 UI 状态变化
@@ -102,6 +103,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             viewModel.uiState.collectLatest {
                 updateUI(it)
                 updateComposeSummary(it)
+                updateComposeRanking(it)
             }
         }
         
@@ -228,8 +230,19 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                 io.legado.app.ui.book.readRecord.component.ReadingSummaryCard(
                     title = "加载中...",
                     bookCount = 0,
-                    totalTime = "0分钟",
-                    bookNames = emptyList()
+                    totalTimeMillis = 0L,
+                    bookNamesForCover = emptyList()
+                )
+            }
+        }
+    }
+    
+    private fun initComposeRanking() {
+        val composeView = binding.root.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.compose_ranking_container)
+        composeView?.apply {
+            setContent {
+                io.legado.app.ui.book.readRecord.component.TopReadingListCard(
+                    topBooks = emptyList()
                 )
             }
         }
@@ -239,59 +252,60 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         val composeView = binding.root.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.compose_summary_container) ?: return
         
         val selectedDate = state.selectedDate
-        val readType = state.readType
         
-        val (title, readTypeText, bookCount, totalTime, bookNames) = if (selectedDate != null) {
+        val (title, bookCount, totalTimeMillis, bookNamesForCover) = if (selectedDate != null) {
             val dateKey = selectedDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
             val dailyDetails = state.groupedRecords[dateKey] ?: emptyList()
             if (dailyDetails.isNotEmpty()) {
-                val distinctBooks = dailyDetails.map { it.bookName }.distinct()
+                val distinctBooks = dailyDetails.map { it.bookName to it.bookAuthor }.distinct()
                 val dailyTime = dailyDetails.sumOf { it.readTime }
-                val titleText = when (readType) {
-                    BookType.text -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
-                    BookType.audio -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日听书概览"))
-                    BookType.video -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日看剧概览"))
-                    else -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
-                }
-                val readTypeTextVal = when (readType) {
-                    BookType.text -> "阅读"
-                    BookType.audio -> "听"
-                    BookType.video -> "观看"
-                    else -> "阅读"
-                }
-                val totalTimeText = formatDuring(dailyTime)
-                val bookNamesList = distinctBooks.take(3)
-                io.legado.app.ui.book.readRecord.component.SummaryCardData(titleText, readTypeTextVal, distinctBooks.size, totalTimeText, bookNamesList)
+                val titleText = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
+                io.legado.app.ui.book.readRecord.component.SummaryCardData(
+                    titleText,
+                    distinctBooks.size,
+                    dailyTime,
+                    distinctBooks.take(3)
+                )
             } else {
-                io.legado.app.ui.book.readRecord.component.SummaryCardData("无阅读记录", "阅读", 0, "0分钟", emptyList())
+                io.legado.app.ui.book.readRecord.component.SummaryCardData("无阅读记录", 0, 0L, emptyList())
             }
         } else {
             val allBooksCount = state.latestRecords.size
             val totalTime = state.totalReadTime
-            val titleText = when (readType) {
-                BookType.text -> "累计阅读成就"
-                BookType.audio -> "累计听书成就"
-                BookType.video -> "累计观看成就"
-                else -> "累计阅读成就"
-            }
-            val readTypeTextVal = when (readType) {
-                BookType.text -> "阅读"
-                BookType.audio -> "听"
-                BookType.video -> "观看"
-                else -> "阅读"
-            }
-            val totalTimeText = formatDuring(totalTime)
-            val bookNamesList = state.latestRecords.take(5).map { it.bookName }
-            io.legado.app.ui.book.readRecord.component.SummaryCardData(titleText, readTypeTextVal, allBooksCount, totalTimeText, bookNamesList)
+            val titleText = "累计阅读成就"
+            val bookNamesList = state.latestRecords.take(5).map { it.bookName to it.bookAuthor }
+            io.legado.app.ui.book.readRecord.component.SummaryCardData(titleText, allBooksCount, totalTime, bookNamesList)
         }
         
         composeView.setContent {
             io.legado.app.ui.book.readRecord.component.ReadingSummaryCard(
                 title = title,
                 bookCount = bookCount,
-                totalTime = totalTime,
-                readTypeText = readTypeText,
-                bookNames = bookNames
+                totalTimeMillis = totalTimeMillis,
+                bookNamesForCover = bookNamesForCover
+            )
+        }
+    }
+    
+    private fun updateComposeRanking(state: io.legado.app.ui.book.readRecord.ReadRecordUiState) {
+        val composeView = binding.root.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.compose_ranking_container) ?: return
+        
+        // 获取totalTimeRecords并取前10名
+        val top10 = state.totalTimeRecords.take(10)
+        val rankingData = top10.map { record ->
+            io.legado.app.ui.book.readRecord.component.BookRankingData(
+                bookName = record.bookName,
+                bookAuthor = record.bookAuthor ?: "",
+                readTime = record.readTime
+            )
+        }
+        
+        composeView.setContent {
+            io.legado.app.ui.book.readRecord.component.TopReadingListCard(
+                topBooks = rankingData,
+                onBookClick = { bookName, bookAuthor ->
+                    // 点击书籍可以跳转到对应阅读记录或详情页
+                }
             )
         }
     }

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,12 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import io.legado.app.data.appDb
-import io.legado.app.data.entities.readRecord.ReadRecord
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -42,17 +40,16 @@ data class SummaryCardData(
     val title: String,
     val readTypeText: String,
     val bookCount: Int,
-    val totalTime: String,
-    val bookNames: List<String>
+    val totalTimeMillis: Long,
+    val bookNamesForCover: List<Pair<String, String>>
 )
 
 @Composable
 fun ReadingSummaryCard(
     title: String,
     bookCount: Int,
-    totalTime: String,
-    readTypeText: String = "阅读",
-    bookNames: List<String> = emptyList(),
+    totalTimeMillis: Long,
+    bookNamesForCover: List<Pair<String, String>>,
     onClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -60,6 +57,8 @@ fun ReadingSummaryCard(
     val primaryColor = io.legado.app.lib.theme.ThemeStore.accentColor(context)
     val textColorPrimary = io.legado.app.lib.theme.ThemeStore.textColorPrimary(context)
     val textColorSecondary = io.legado.app.lib.theme.ThemeStore.textColorSecondary(context)
+    
+    val totalDurationMinutes = totalTimeMillis / 60000
 
     Card(
         modifier = Modifier
@@ -79,70 +78,66 @@ fun ReadingSummaryCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Column(modifier = Modifier.weight(1f)) {
+
                 Text(
                     text = title,
-                    fontSize = androidx.compose.ui.unit.TextUnit(14f, androidx.compose.ui.unit.TextUnitType.Sp),
-                    color = androidx.compose.ui.graphics.Color(primaryColor),
-                    fontWeight = FontWeight.Bold
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = androidx.compose.ui.graphics.Color(primaryColor)
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "已$readTypeText ",
-                        fontSize = androidx.compose.ui.unit.TextUnit(16f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        text = "已读 ",
+                        fontSize = 16.sp,
                         color = androidx.compose.ui.graphics.Color(textColorPrimary)
                     )
                     Text(
                         text = "$bookCount",
-                        fontSize = androidx.compose.ui.unit.TextUnit(48f, androidx.compose.ui.unit.TextUnitType.Sp),
-                        color = androidx.compose.ui.graphics.Color(primaryColor),
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        lineHeight = androidx.compose.ui.unit.TextUnit(40f, androidx.compose.ui.unit.TextUnitType.Sp)
-                    )
-                    Text(
-                        text = " 本书",
-                        fontSize = androidx.compose.ui.unit.TextUnit(16f, androidx.compose.ui.unit.TextUnitType.Sp),
                         color = androidx.compose.ui.graphics.Color(textColorPrimary)
                     )
+                    Text(
+                        text = " 本书，时长 ${formatMinutes(totalDurationMinutes)}",
+                        fontSize = 16.sp,
+                        color = androidx.compose.ui.graphics.Color(textColorSecondary)
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "共$readTypeText $totalTime",
-                    fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
-                    color = androidx.compose.ui.graphics.Color(textColorSecondary)
-                )
             }
-
-            if (bookNames.isNotEmpty()) {
-                BookStackView(bookNames = bookNames)
-            }
+            
+            BookStackView(
+                bookNamesForCover = bookNamesForCover
+            )
         }
     }
 }
 
 @Composable
-fun BookStackView(bookNames: List<String>) {
+fun BookStackView(
+    bookNamesForCover: List<Pair<String, String>>
+) {
     Box(contentAlignment = Alignment.CenterEnd) {
-        bookNames.reversed().forEachIndexed { index, bookName ->
+        bookNamesForCover.reversed().forEachIndexed { index, (name, author) ->
             var coverUrl by remember { mutableStateOf<String?>(null) }
-
-            LaunchedEffect(bookName) {
+            
+            LaunchedEffect(name, author) {
                 withContext(Dispatchers.IO) {
-                    val book = appDb.bookDao.findByName(bookName).firstOrNull()
+                    val book = appDb.bookDao.findByName(name).firstOrNull()
+                        ?: appDb.bookDao.findByName(author).firstOrNull()
                     coverUrl = book?.coverUrl
                 }
             }
-
+            
             BookCoverItem(
                 coverUrl = coverUrl ?: "",
-                bookName = bookName,
+                bookName = name,
                 index = index,
-                total = bookNames.size
+                total = bookNamesForCover.size
             )
         }
     }
@@ -155,10 +150,6 @@ fun BookCoverItem(
     index: Int,
     total: Int
 ) {
-    val overlapDp = 12.dp
-    val width = 32.dp
-    val height = 42.dp
-
     Image(
         painter = rememberAsyncImagePainter(
             model = ImageRequest.Builder(LocalContext.current)
@@ -169,15 +160,21 @@ fun BookCoverItem(
         contentDescription = bookName,
         contentScale = ContentScale.Crop,
         modifier = Modifier
-            .width(width)
-            .height(height)
+            .width(32.dp)
+            .padding(end = (index * 12).dp)
             .clip(RoundedCornerShape(4.dp))
-            .then(
-                if (index < total - 1) {
-                    Modifier.padding(end = overlapDp * (total - 1 - index))
-                } else {
-                    Modifier
-                }
-            )
     )
+}
+
+private fun formatMinutes(minutes: Long): String {
+    if (minutes < 60) {
+        return "${minutes}分钟"
+    }
+    val hours = minutes / 60
+    val remainingMinutes = minutes % 60
+    return if (remainingMinutes > 0) {
+        "${hours}小时${remainingMinutes}分钟"
+    } else {
+        "${hours}小时"
+    }
 }
