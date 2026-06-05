@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:padding="12dp"
     android:background="@drawable/selector_fillet_btn_bg">
 
-    <!-- 规则名称和删除按钮 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -33,35 +31,23 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:textSize="13sp"
+                android:textSize="14sp"
                 android:textColor="@color/secondaryText"
                 android:text="正则表达式" />
 
         </LinearLayout>
 
-        <!-- 颜色预览 -->
-        <View
-            android:id="@+id/color_preview"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginEnd="12dp"
-            android:background="@drawable/bg_color_circle"
-            android:clickable="true"
-            android:focusable="true" />
-
         <ImageButton
             android:id="@+id/btn_delete"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_baseline_close"
             android:contentDescription="删除规则"
-            android:scaleType="center"
-            app:tint="@color/secondaryText" />
+            android:scaleType="center" />
 
     </LinearLayout>
 
-    <!-- 按钮区域 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

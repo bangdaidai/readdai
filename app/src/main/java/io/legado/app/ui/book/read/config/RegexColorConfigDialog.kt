@@ -213,25 +213,11 @@ class RegexColorRuleAdapter(
         val btnSelectFont = itemView.findViewById<MaterialButton>(R.id.btn_select_font)
         val btnSelectColor = itemView.findViewById<MaterialButton>(R.id.btn_select_color)
         val btnDelete = itemView.findViewById<ImageButton>(R.id.btn_delete)
-        val colorPreview = itemView.findViewById<View>(R.id.color_preview)
-        val tvColorHex = itemView.findViewById<TextView>(R.id.tv_color_hex)
-        val colorPreviewContainer = itemView.findViewById<View>(R.id.color_preview_container)
 
         fun bind(item: RegexColorRule, position: Int) {
             tvRuleName.text = item.name
             tvRulePattern.text = item.pattern
-            
-            // Set color preview
-            val colorValue = item.color or 0xFF000000.toInt()
-            colorPreview.setBackgroundColor(colorValue)
-            tvColorHex.text = String.format("#%06X", 0xFFFFFF and colorValue)
-            
-            // Remove old background from button
-            btnSelectColor.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            
-            colorPreviewContainer.setOnClickListener {
-                onColorClick?.invoke(position)
-            }
+            btnSelectColor.setBackgroundColor(item.color or 0xFF000000.toInt())
             btnSelectFont.setOnClickListener {
                 onFontClick?.invoke(position)
             }
