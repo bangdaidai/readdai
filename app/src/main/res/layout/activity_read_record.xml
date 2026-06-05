@@ -41,6 +41,12 @@
 
             </androidx.cardview.widget.CardView>
 
+            <!-- Compose容器用于阅读概览卡片 -->
+            <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/compose_summary_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_view"
                 android:layout_width="match_parent"

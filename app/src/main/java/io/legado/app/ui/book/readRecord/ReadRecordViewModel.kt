@@ -34,6 +34,8 @@ data class ReadRecordUiState(
         val timelineRecords: Map<String, List<ReadSession>> = emptyMap(),
         //最后阅读列表
         val latestRecords: List<ReadRecord> = emptyList(),
+        //累计阅读时长列表
+        val totalTimeRecords: List<ReadRecord> = emptyList(),
         val selectedDate: LocalDate? = null,
         val searchKey: String? = null,
         val displayMode: DisplayMode = DisplayMode.AGGREGATE,
@@ -43,7 +45,8 @@ data class ReadRecordUiState(
 enum class DisplayMode {
     AGGREGATE,
     TIMELINE,
-    LATEST
+    LATEST,
+    TOTAL_TIME
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -89,6 +92,9 @@ class ReadRecordViewModel(
 
         // 从过滤后的sessions生成latestRecords
         val latestRecords = generateLatestRecords(filteredSessions)
+        
+        // 从过滤后的sessions生成totalTimeRecords
+        val totalTimeRecords = generateTotalTimeRecords(filteredSessions)
 
         // 计算过滤后的总阅读时间
         val filteredTotalTime = calculateTotalReadTime(filteredSessions)
@@ -99,6 +105,7 @@ class ReadRecordViewModel(
             groupedRecords = groupedRecords,
             timelineRecords = timelineMap,
             latestRecords = latestRecords,
+            totalTimeRecords = totalTimeRecords,
             selectedDate = selectedDate,
             searchKey = searchKey,
             displayMode = displayMode,
@@ -181,6 +188,22 @@ class ReadRecordViewModel(
                 )
             }
             .sortedByDescending { it.lastRead }
+    }
+    
+    private fun generateTotalTimeRecords(sessions: List<ReadSession>): List<ReadRecord> {
+        val mergedByBook = mergeContinuousByBook(sessions)
+        return mergedByBook.flatMap { (_, bookMergedSessions) -> bookMergedSessions }
+            .groupBy { it.bookName }
+            .map { (bookName, bookSessions) ->
+                ReadRecord(
+                    deviceId = "local",
+                    bookName = bookName,
+                    readTime = bookSessions.sumOf { it.duration },
+                    lastRead = bookSessions.maxByOrNull { it.endTime }?.endTime ?: 0,
+                    coverUrl = bookSessions.lastOrNull()?.coverUrl ?: ""
+                )
+            }
+            .sortedByDescending { it.readTime }
     }
 
     /**

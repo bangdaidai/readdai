@@ -62,6 +62,23 @@
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         android:background="@drawable/bg_reading_tab_unselected"
+        android:layout_marginEnd="4dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- 累计时长按钮 -->
+    <io.legado.app.ui.widget.text.SecondaryTextView
+        android:id="@+id/btn_total_time"
+        android:layout_width="0dp"
+        android:layout_height="28dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="累计时长"
+        android:textColor="@android:color/black"
+        android:textSize="14sp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:background="@drawable/bg_reading_tab_unselected"
         android:clickable="true"
         android:focusable="true" />
 

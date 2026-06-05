@@ -169,8 +169,7 @@ class CoverCalendarView @JvmOverloads constructor(
                 prevMonth.get(Calendar.YEAR),
                 prevMonth.get(Calendar.MONTH) + 1,
                 i + 1)
-            val dayOfMonth = i + 1
-            result.add(CoverCalendarDayData(dateStr, dayOfMonth, "", "", false))
+            result.add(CoverCalendarDayData(dateStr, 0, "", "", false))
         }
         for (day in 1..daysInMonth) {
             val dateStr = String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month, day)
@@ -187,8 +186,7 @@ class CoverCalendarView @JvmOverloads constructor(
                 nextMonth.get(Calendar.YEAR),
                 nextMonth.get(Calendar.MONTH) + 1,
                 i + 1)
-            val dayOfMonth = i + 1
-            result.add(CoverCalendarDayData(dateStr, dayOfMonth, "", "", false))
+            result.add(CoverCalendarDayData(dateStr, 0, "", "", false))
         }
         return result
     }

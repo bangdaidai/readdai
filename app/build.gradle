@@ -101,6 +101,11 @@ android {
     buildFeatures {
         buildConfig = true
         viewBinding = true
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 
     buildTypes {
@@ -212,6 +217,7 @@ dependencies {
     implementation(libs.core.ktx)
     implementation(libs.appcompat.appcompat)
     implementation(libs.activity.ktx)
+    implementation(libs.activity.compose)
     implementation(libs.fragment.ktx)
     implementation(libs.preference.ktx)
     implementation(libs.androidx.constraintlayout)
@@ -220,6 +226,19 @@ dependencies {
     implementation(libs.androidx.viewpager2)
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.documentfile)
+
+    // Compose
+    def composeBom = platform('androidx.compose:compose-bom:2024.10.01')
+    implementation(composeBom)
+    implementation('androidx.compose.ui:ui')
+    implementation('androidx.compose.ui:ui-graphics')
+    implementation('androidx.compose.ui:ui-tooling-preview')
+    implementation('androidx.compose.material3:material3')
+    implementation('androidx.compose.material:material-icons-extended')
+    implementation('androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7')
+    implementation('androidx.lifecycle:lifecycle-runtime-compose:2.8.7')
+    implementation('androidx.activity:activity-compose:1.9.3')
+    implementation('io.coil-kt:coil-compose:2.7.0')
 
     // Google
     implementation(libs.material)

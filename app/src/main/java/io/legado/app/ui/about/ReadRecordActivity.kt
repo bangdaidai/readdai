@@ -94,12 +94,14 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         initView()
+        initComposeView()
         // 初始化视图模式
         viewModel.setDisplayMode(DisplayMode.values()[displayMode])
         // 监听 UI 状态变化
         lifecycleScope.launch {
             viewModel.uiState.collectLatest {
                 updateUI(it)
+                updateComposeSummary(it)
             }
         }
         
@@ -216,6 +218,81 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                     return false
                 }
             })
+        }
+    }
+
+    private fun initComposeView() {
+        val composeView = binding.root.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.compose_summary_container)
+        composeView?.apply {
+            setContent {
+                io.legado.app.ui.book.readRecord.component.ReadingSummaryCard(
+                    title = "加载中...",
+                    bookCount = 0,
+                    totalTime = "0分钟",
+                    bookNames = emptyList()
+                )
+            }
+        }
+    }
+
+    private fun updateComposeSummary(state: io.legado.app.ui.book.readRecord.ReadRecordUiState) {
+        val composeView = binding.root.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.compose_summary_container) ?: return
+        
+        val selectedDate = state.selectedDate
+        val readType = state.readType
+        
+        val (title, readTypeText, bookCount, totalTime, bookNames) = if (selectedDate != null) {
+            val dateKey = selectedDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+            val dailyDetails = state.groupedRecords[dateKey] ?: emptyList()
+            if (dailyDetails.isNotEmpty()) {
+                val distinctBooks = dailyDetails.map { it.bookName }.distinct()
+                val dailyTime = dailyDetails.sumOf { it.readTime }
+                val titleText = when (readType) {
+                    BookType.text -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
+                    BookType.audio -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日听书概览"))
+                    BookType.video -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日看剧概览"))
+                    else -> selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
+                }
+                val readTypeTextVal = when (readType) {
+                    BookType.text -> "阅读"
+                    BookType.audio -> "听"
+                    BookType.video -> "观看"
+                    else -> "阅读"
+                }
+                val totalTimeText = formatDuring(dailyTime)
+                val bookNamesList = distinctBooks.take(3)
+                io.legado.app.ui.book.readRecord.component.SummaryCardData(titleText, readTypeTextVal, distinctBooks.size, totalTimeText, bookNamesList)
+            } else {
+                io.legado.app.ui.book.readRecord.component.SummaryCardData("无阅读记录", "阅读", 0, "0分钟", emptyList())
+            }
+        } else {
+            val allBooksCount = state.latestRecords.size
+            val totalTime = state.totalReadTime
+            val titleText = when (readType) {
+                BookType.text -> "累计阅读成就"
+                BookType.audio -> "累计听书成就"
+                BookType.video -> "累计观看成就"
+                else -> "累计阅读成就"
+            }
+            val readTypeTextVal = when (readType) {
+                BookType.text -> "阅读"
+                BookType.audio -> "听"
+                BookType.video -> "观看"
+                else -> "阅读"
+            }
+            val totalTimeText = formatDuring(totalTime)
+            val bookNamesList = state.latestRecords.take(5).map { it.bookName }
+            io.legado.app.ui.book.readRecord.component.SummaryCardData(titleText, readTypeTextVal, allBooksCount, totalTimeText, bookNamesList)
+        }
+        
+        composeView.setContent {
+            io.legado.app.ui.book.readRecord.component.ReadingSummaryCard(
+                title = title,
+                bookCount = bookCount,
+                totalTime = totalTime,
+                readTypeText = readTypeText,
+                bookNames = bookNames
+            )
         }
     }
 
@@ -379,101 +456,37 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             notifyDataSetChanged()
         }
 
-        private fun bindSummaryCard(itemView: View) {
-            val tvTitle = itemView.findViewById<TextView>(R.id.tv_title)
-            val tvBookCountPrefix = itemView.findViewById<TextView>(R.id.tv_book_count_prefix)
-            val tvBookCount = itemView.findViewById<TextView>(R.id.tv_book_count)
-            val tvBookCountSuffix = itemView.findViewById<TextView>(R.id.tv_book_count_suffix)
-            val tvTotalTime = itemView.findViewById<TextView>(R.id.tv_total_time)
-            if (tvTitle == null || tvBookCount == null || tvTotalTime == null) return
-
-            // 设置卡片背景色为主题设置的背景色
-            val cardColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(itemView.context)
-            if (itemView is com.google.android.material.card.MaterialCardView) {
-                itemView.setCardBackgroundColor(cardColor)
-            }
-
-            val selectedDate = viewModel.uiState.value.selectedDate
-            val readType = viewModel.uiState.value.readType
+        private fun loadBookStack(context: android.content.Context, bookNames: List<String>, container: LinearLayout) {
+            container.removeAllViews()
+            val coverSize = context.resources.getDimension(io.legado.app.R.dimen.cover_height).toInt()
+            val overlapSize = 12.dpToPx()
             
-            if (selectedDate != null) {
-                val dateKey = selectedDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-                val dailyDetails = viewModel.uiState.value.groupedRecords[dateKey] ?: emptyList()
-                if (dailyDetails.isNotEmpty()) {
-                    val distinctBooks = dailyDetails.map { it.bookName }.distinct()
-                    val dailyTime = dailyDetails.sumOf { it.readTime }
-                    when (readType) {
-                        BookType.text -> {
-                            tvTitle?.text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
-                            tvBookCountPrefix?.text = "已读"
-                            tvBookCount?.text = distinctBooks.size.toString()
-                            tvBookCountSuffix?.text = "本书"
-                            tvTotalTime?.text = "共阅读 ${formatDuring(dailyTime)}"
-                        }
-                        BookType.audio -> {
-                            tvTitle?.text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日听书概览"))
-                            tvBookCountPrefix?.text = "已听"
-                            tvBookCount?.text = distinctBooks.size.toString()
-                            tvBookCountSuffix?.text = "本书"
-                            tvTotalTime?.text = "共听 ${formatDuring(dailyTime)}"
-                        }
-                        BookType.video -> {
-                            tvTitle?.text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日看剧概览"))
-                            tvBookCountPrefix?.text = "已看"
-                            tvBookCount?.text = distinctBooks.size.toString()
-                            tvBookCountSuffix?.text = "部剧"
-                            tvTotalTime?.text = "共观看 ${formatDuring(dailyTime)}"
-                        }
-                        else -> {
-                            tvTitle?.text = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
-                            tvBookCountPrefix?.text = "已读"
-                            tvBookCount?.text = distinctBooks.size.toString()
-                            tvBookCountSuffix?.text = "本书"
-                            tvTotalTime?.text = "共阅读 ${formatDuring(dailyTime)}"
-                        }
+            bookNames.reversed().forEachIndexed { index, bookName ->
+                lifecycleScope.launch {
+                    val book = withContext(IO) {
+                        appDb.bookDao.findByName(bookName).firstOrNull()
                     }
-                }
-            } else {
-                val allBooksCount = viewModel.uiState.value.latestRecords.size
-                val totalTime = viewModel.uiState.value.totalReadTime
-                when (readType) {
-                BookType.text -> {
-                    tvTitle?.text = "累计阅读成就"
-                    tvBookCountPrefix?.text = "已读"
-                    tvBookCount?.text = allBooksCount.toString()
-                    tvBookCountSuffix?.text = "本书"
-                    tvTotalTime?.text = "共阅读 ${formatDuring(totalTime)}"
-                }
-                BookType.audio -> {
-                    tvTitle?.text = "累计听书成就"
-                    tvBookCountPrefix?.text = "已听"
-                    tvBookCount?.text = allBooksCount.toString()
-                    tvBookCountSuffix?.text = "本书"
-                    tvTotalTime?.text = "共听 ${formatDuring(totalTime)}"
-                }
-                BookType.video -> {
-                    tvTitle?.text = "累计观看成就"
-                    tvBookCountPrefix?.text = "已看"
-                    tvBookCount?.text = allBooksCount.toString()
-                    tvBookCountSuffix?.text = "部剧"
-                    tvTotalTime?.text = "共观看 ${formatDuring(totalTime)}"
-                }
-                    else -> {
-                        tvTitle?.text = "累计阅读成就"
-                        tvBookCountPrefix?.text = "已读"
-                        tvBookCount?.text = allBooksCount.toString()
-                        tvBookCountSuffix?.text = "本书"
-                        tvTotalTime?.text = "共阅读 ${formatDuring(totalTime)}"
+                    val coverUrl = book?.coverUrl ?: ""
+                    val author = book?.author
+                    
+                    val coverView = io.legado.app.ui.widget.image.CoverImageView(context).apply {
+                        val size = (coverSize * 0.7).toInt()
+                        layoutParams = LinearLayout.LayoutParams(size, (size * 1.33).toInt()).apply {
+                            marginEnd = index * overlapSize
+                        }
+                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
                     }
+                    coverView.load(coverUrl, bookName, author)
+                    container.addView(coverView)
                 }
             }
-
         }
 
         private fun bindViewSwitchCard(itemView: View) {
             val btnAggregate = itemView.findViewById<TextView>(R.id.btn_aggregate)
             val btnTimeline = itemView.findViewById<TextView>(R.id.btn_timeline)
             val btnLatest = itemView.findViewById<TextView>(R.id.btn_latest)
+            val btnTotalTime = itemView.findViewById<TextView>(R.id.btn_total_time)
 
             val currentMode = viewModel.uiState.value.displayMode
             val selectedColor = itemView.context.accentColor
@@ -533,6 +546,23 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                 it.setOnClickListener {
                     viewModel.setDisplayMode(DisplayMode.LATEST)
                     displayMode = DisplayMode.LATEST.ordinal
+                }
+            }
+            
+            // 设置累计时长按钮
+            btnTotalTime?.let {
+                if (currentMode == DisplayMode.TOTAL_TIME) {
+                    it.setTextColor(android.graphics.Color.WHITE)
+                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
+                    bgDrawable.setTint(selectedColor)
+                    it.background = bgDrawable
+                } else {
+                    it.setTextColor(io.legado.app.lib.theme.ThemeStore.textColorSecondary(itemView.context))
+                    it.setBackgroundResource(R.drawable.bg_reading_tab_unselected)
+                }
+                it.setOnClickListener {
+                    viewModel.setDisplayMode(DisplayMode.TOTAL_TIME)
+                    displayMode = DisplayMode.TOTAL_TIME.ordinal
                 }
             }
         }
@@ -996,10 +1026,8 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         // 根据当前显示模式更新列表
         val items = mutableListOf<Any>()
 
-        // 添加阅读概览卡片
+        // 添加视图切换胶囊卡片
         if (state.latestRecords.isNotEmpty()) {
-            items.add("summary_card")
-            // 添加视图切换胶囊卡片
             items.add("view_switch_card")
         }
 
@@ -1032,6 +1060,14 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                     items.add("无阅读记录")
                 } else {
                     items.addAll(state.latestRecords)
+                }
+            }
+            DisplayMode.TOTAL_TIME -> {
+                // 显示累计阅读时长视图
+                if (state.totalTimeRecords.isEmpty()) {
+                    items.add("无阅读记录")
+                } else {
+                    items.addAll(state.totalTimeRecords)
                 }
             }
         }

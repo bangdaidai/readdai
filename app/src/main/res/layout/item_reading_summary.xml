@@ -4,17 +4,20 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginTop="12dp"
-    android:layout_marginBottom="12dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
     app:cardBackgroundColor="?attr/backgroundCard"
     app:cardElevation="0dp"
-    app:cardCornerRadius="12dp">
+    app:cardCornerRadius="16dp"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:gravity="center_vertical">
 
         <!-- 左侧内容 -->
         <LinearLayout
@@ -23,68 +26,73 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <io.legado.app.ui.widget.text.PrimaryTextView
+            <!-- 标题 -->
+            <TextView
                 android:id="@+id/tv_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
+                android:textColor="?attr/colorPrimary"
                 android:text="累计阅读成就" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:gravity="bottom">
 
-                <io.legado.app.ui.widget.text.SecondaryTextView
-                    android:id="@+id/tv_book_count_prefix"
+                <TextView
+                    android:id="@+id/tv_read_prefix"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
+                    android:textSize="16sp"
                     android:text="已读"
-                    android:layout_gravity="bottom"
-                    android:layout_marginBottom="1dp" />
+                    android:textColor="?android:attr/textColorPrimary" />
 
-                <io.legado.app.ui.widget.text.PrimaryTextView
+                <TextView
                     android:id="@+id/tv_book_count"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="24sp"
+                    android:textSize="48sp"
                     android:textStyle="bold"
                     android:text="0"
-                    android:layout_marginLeft="4dp"
-                    android:layout_gravity="bottom" />
+                    android:textColor="?attr/colorPrimary"
+                    android:layout_marginStart="4dp"
+                    android:lineSpacingExtra="-8dp" />
 
-                <io.legado.app.ui.widget.text.SecondaryTextView
-                    android:id="@+id/tv_book_count_suffix"
+                <TextView
+                    android:id="@+id/tv_book_suffix"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:text="本书"
-                    android:layout_marginLeft="2dp"
-                    android:layout_gravity="bottom"
-                    android:layout_marginBottom="1dp" />
+                    android:textSize="16sp"
+                    android:text=" 本书"
+                    android:textColor="?android:attr/textColorPrimary"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginBottom="4dp" />
 
             </LinearLayout>
 
-            <io.legado.app.ui.widget.text.SecondaryTextView
+            <TextView
                 android:id="@+id/tv_total_time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:layout_marginTop="4dp"
-                android:text="共阅读 0 分钟" />
+                android:textColor="?android:attr/textColorSecondary"
+                android:text="共阅读 0分钟" />
 
         </LinearLayout>
 
-
+        <!-- 右侧书籍堆叠封面 -->
+        <LinearLayout
+            android:id="@+id/book_stack_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end" />
 
     </LinearLayout>
-
-
 
 </com.google.android.material.card.MaterialCardView>
