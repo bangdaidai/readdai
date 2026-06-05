@@ -253,36 +253,49 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         
         val selectedDate = state.selectedDate
         
-        val (title, bookCount, totalTimeMillis, bookNamesForCover) = if (selectedDate != null) {
+        val summaryData = if (selectedDate != null) {
             val dateKey = selectedDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
             val dailyDetails = state.groupedRecords[dateKey] ?: emptyList()
             if (dailyDetails.isNotEmpty()) {
-                val distinctBooks = dailyDetails.map { it.bookName to it.bookAuthor }.distinct()
+                val distinctBooks = dailyDetails.map { it.bookName to "" }.distinct()
                 val dailyTime = dailyDetails.sumOf { it.readTime }
                 val titleText = selectedDate.format(java.time.format.DateTimeFormatter.ofPattern("M月d日阅读概览"))
                 io.legado.app.ui.book.readRecord.component.SummaryCardData(
-                    titleText,
-                    distinctBooks.size,
-                    dailyTime,
-                    distinctBooks.take(3)
+                    title = titleText,
+                    readTypeText = "",
+                    bookCount = distinctBooks.size,
+                    totalTimeMillis = dailyTime,
+                    bookNamesForCover = distinctBooks.take(3)
                 )
             } else {
-                io.legado.app.ui.book.readRecord.component.SummaryCardData("无阅读记录", 0, 0L, emptyList())
+                io.legado.app.ui.book.readRecord.component.SummaryCardData(
+                    title = "无阅读记录",
+                    readTypeText = "",
+                    bookCount = 0,
+                    totalTimeMillis = 0L,
+                    bookNamesForCover = emptyList()
+                )
             }
         } else {
             val allBooksCount = state.latestRecords.size
             val totalTime = state.totalReadTime
             val titleText = "累计阅读成就"
-            val bookNamesList = state.latestRecords.take(5).map { it.bookName to it.bookAuthor }
-            io.legado.app.ui.book.readRecord.component.SummaryCardData(titleText, allBooksCount, totalTime, bookNamesList)
+            val bookNamesList = state.latestRecords.take(5).map { it.bookName to "" }
+            io.legado.app.ui.book.readRecord.component.SummaryCardData(
+                title = titleText,
+                readTypeText = "",
+                bookCount = allBooksCount,
+                totalTimeMillis = totalTime,
+                bookNamesForCover = bookNamesList
+            )
         }
         
         composeView.setContent {
             io.legado.app.ui.book.readRecord.component.ReadingSummaryCard(
-                title = title,
-                bookCount = bookCount,
-                totalTimeMillis = totalTimeMillis,
-                bookNamesForCover = bookNamesForCover
+                title = summaryData.title,
+                bookCount = summaryData.bookCount,
+                totalTimeMillis = summaryData.totalTimeMillis,
+                bookNamesForCover = summaryData.bookNamesForCover
             )
         }
     }
@@ -295,7 +308,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         val rankingData = top10.map { record ->
             io.legado.app.ui.book.readRecord.component.BookRankingData(
                 bookName = record.bookName,
-                bookAuthor = record.bookAuthor ?: "",
+                bookAuthor = "",
                 readTime = record.readTime
             )
         }
@@ -394,7 +407,6 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             val inflater = LayoutInflater.from(parent.context)
             val view = when (viewType) {
-                1 -> inflater.inflate(R.layout.item_reading_summary, parent, false)
                 2 -> inflater.inflate(R.layout.item_empty_read_time_top10, parent, false)
                 3 -> inflater.inflate(R.layout.item_date_header, parent, false)
                 4 -> inflater.inflate(R.layout.item_read_record_detail, parent, false)
