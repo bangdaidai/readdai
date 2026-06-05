@@ -362,9 +362,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             val item = items.getOrNull(position) ?: return 0
             return when (item) {
                 is String -> {
-                    if (item == "summary_card") {
-                        1 // 阅读概览卡片
-                    } else if (item == "view_switch_card") {
+                    if (item == "view_switch_card") {
                         7 // 视图切换胶囊卡片
                     } else if (item == "无阅读记录") {
                         2 // 空状态
@@ -398,9 +396,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             val item = items.getOrNull(position) ?: return
             when (item) {
                 is String -> {
-                    if (item == "summary_card") {
-                        bindSummaryCard(holder.itemView)
-                    } else if (item == "view_switch_card") {
+                    if (item == "view_switch_card") {
                         bindViewSwitchCard(holder.itemView)
                     } else if (item == "无阅读记录") {
                         bindEmpty(holder.itemView)
@@ -454,32 +450,6 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             items.clear()
             items.addAll(newItems)
             notifyDataSetChanged()
-        }
-
-        private fun loadBookStack(context: android.content.Context, bookNames: List<String>, container: LinearLayout) {
-            container.removeAllViews()
-            val coverSize = context.resources.getDimension(io.legado.app.R.dimen.cover_height).toInt()
-            val overlapSize = 12.dpToPx()
-            
-            bookNames.reversed().forEachIndexed { index, bookName ->
-                lifecycleScope.launch {
-                    val book = withContext(IO) {
-                        appDb.bookDao.findByName(bookName).firstOrNull()
-                    }
-                    val coverUrl = book?.coverUrl ?: ""
-                    val author = book?.author
-                    
-                    val coverView = io.legado.app.ui.widget.image.CoverImageView(context).apply {
-                        val size = (coverSize * 0.7).toInt()
-                        layoutParams = LinearLayout.LayoutParams(size, (size * 1.33).toInt()).apply {
-                            marginEnd = index * overlapSize
-                        }
-                        scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-                    }
-                    coverView.load(coverUrl, bookName, author)
-                    container.addView(coverView)
-                }
-            }
         }
 
         private fun bindViewSwitchCard(itemView: View) {
