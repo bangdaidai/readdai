@@ -18,7 +18,7 @@ jobs:
 
       - name: Setup Keystore
         env:
-          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE_BASE64 }}
         run: |
           # 调试：检查 secret 是否被正确读取
           echo "📌 检查 secret 配置..."
