@@ -3,7 +3,6 @@
     <!-- 阅读统计相关字符串 -->
     <string name="reading_statistics">阅读统计</string>
     <string name="total_read_time">总阅读时间</string>
-    <string name="total_reading_days">总阅读天数</string>
     <string name="reading_progress">阅读进度</string>
     <string name="read_time_ranking">阅读时长排行</string>
     <string name="read_time_ranking_top10">阅读时长排行 TOP10</string>
@@ -13,12 +12,8 @@
     <string name="minute_unit">分钟</string>
     <string name="books_read">读过</string>
     <string name="books_finished">读完</string>
-    <string name="reading_days">阅读天数</string>
     <string name="notes">笔记</string>
     <string name="abandoned_books">弃文</string>
     <string name="ten_thousand_words">万字</string>
-    <string name="book">书</string>
-    <string name="video">影</string>
-    <string name="audio">音</string>
     <string name="no_reading_data">暂无阅读数据</string>
 </resources>
