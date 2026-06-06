@@ -24,7 +24,6 @@ import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.utils.GSON
 import io.legado.app.utils.getClipText
-import io.legado.app.utils.launch
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -288,10 +287,12 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
 
     // Adapter Callbacks
     override fun update(vararg rule: HighlightRule) = syncRules()
-    override fun delete(rule: HighlightRule) = alert("删除") {
-        setMessage("确定删除 \"${rule.name}\" 吗？")
-        okButton { rules.removeAll { it.id == rule.id }; syncRules() }
-        cancelButton()
+    override fun delete(rule: HighlightRule) {
+        alert("删除") {
+            setMessage("确定删除 \"${rule.name}\" 吗？")
+            okButton { rules.removeAll { it.id == rule.id }; syncRules() }
+            cancelButton()
+        }
     }
     override fun edit(rule: HighlightRule) = editRule(rule)
     override fun switchEnable(rule: HighlightRule, enabled: Boolean) {

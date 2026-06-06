@@ -103,9 +103,8 @@ class HighlightRuleGroupManageDialog(
     }
 
     private fun showGroupOptionsDialog(group: String) {
-        val items = arrayOf("重命名", "导出", "删除")
         alert("分组操作") {
-            items(items) { _, index ->
+            items(listOf("重命名", "导出", "删除")) { _, index ->
                 when (index) {
                     0 -> showGroupInputDialog(group)
                     1 -> exportGroup(group)

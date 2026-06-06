@@ -1248,7 +1248,7 @@ class TextChapterLayout(
 //            }
 
             else -> {
-                val highlightInfo = getHighlightInfo(char, isTitle)
+                val highlightInfo = getHighlightInfo(char, textLine.isTitle)
                 TextColumn(
                     start = absStartX + xStart,
                     end = absStartX + xEnd,
