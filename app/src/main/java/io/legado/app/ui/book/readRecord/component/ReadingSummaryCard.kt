@@ -115,28 +115,34 @@ fun ReadingSummaryCard(
             Column {
                 Text(
                     text = title,
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color(textColorSecondary)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(verticalAlignment = Alignment.Bottom) {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier.alignBy { it.measured.height }
+                ) {
                     Text(
                         text = actionText,
                         fontSize = 16.sp,
-                        color = Color(textColorPrimary)
+                        color = Color(textColorPrimary),
+                        modifier = Modifier.padding(bottom = (16.sp.value - 16.sp.value) / 2)
                     )
                     Text(
                         text = " $bookCount ",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(primaryColor)
+                        color = Color(primaryColor),
+                        modifier = Modifier.padding(bottom = (32.sp.value - 16.sp.value) / 2)
                     )
                     Text(
                         text = measureWord,
                         fontSize = 16.sp,
-                        color = Color(textColorPrimary)
+                        color = Color(textColorPrimary),
+                        modifier = Modifier.padding(bottom = (16.sp.value - 16.sp.value) / 2)
                     )
                 }
 
@@ -144,7 +150,7 @@ fun ReadingSummaryCard(
 
                 Text(
                     text = "总时长 $timeString",
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     color = Color(textColorSecondary)
                 )
             }

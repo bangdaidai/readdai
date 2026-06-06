@@ -3,11 +3,8 @@ package io.legado.app.ui.book.read.page.entities.column
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.os.Build
-import android.text.Spanned
-import android.text.style.ForegroundColorSpan
 import androidx.annotation.Keep
 import io.legado.app.help.config.ReadBookConfig
-import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.book.read.page.ContentTextView
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.ui.book.read.page.entities.TextLine.Companion.emptyTextLine
@@ -28,6 +25,25 @@ data class TextColumn(
 
     override var textLine: TextLine = emptyTextLine
 
+    /** TextBaseColumn 实现 */
+    override val textColor: Int? get() = highlightColor
+
+    override val underlineMode: Int get() = highlightStyle?.underlineMode ?: 0
+
+    override val underlineColor: Int? get() = highlightStyle?.underlineColor
+
+    override val underlineWidth: Float get() = highlightStyle?.underlineWidth ?: 1f
+
+    override val underlineOffset: Float get() = highlightStyle?.underlineOffset ?: 2f
+
+    override val underlineSvgPath: String get() = highlightStyle?.underlineSvgPath ?: ""
+
+    override val bgImage: String get() = highlightStyle?.bgImage ?: ""
+
+    override val bgImageFit: Int get() = highlightStyle?.bgImageFit ?: 0
+
+    override val bgImageScale: Float get() = highlightStyle?.bgImageScale ?: 1f
+
     override var selected: Boolean = false
         set(value) {
             if (field != value) {
@@ -47,6 +63,13 @@ data class TextColumn(
             }
             field = value
         }
+    override var isCurrentSearchResult: Boolean = false
+        set(value) {
+            if (field != value) {
+                textLine.invalidate()
+            }
+            field = value
+        }
 
     override fun draw(view: ContentTextView, canvas: Canvas) {
         val textPaint = if (textLine.isTitle) {
@@ -62,10 +85,10 @@ data class TextColumn(
         if (textPaint.color != textColor) {
             textPaint.color = textColor
         }
-        
+
         val originalStrokeWidth = textPaint.strokeWidth
         val originalStrokeCap = textPaint.strokeCap
-        
+
         highlightStyle?.let { style ->
             when (style.underlineMode) {
                 1 -> drawSolidUnderline(canvas, textPaint, style)
@@ -74,10 +97,10 @@ data class TextColumn(
                 4 -> drawDoubleUnderline(canvas, textPaint, style)
             }
         }
-        
+
         textPaint.strokeWidth = originalStrokeWidth
         textPaint.strokeCap = originalStrokeCap
-        
+
         val y = textLine.lineBase - textLine.lineTop
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             val letterSpacing = textPaint.letterSpacing * textPaint.textSize
@@ -86,8 +109,8 @@ data class TextColumn(
         } else {
             canvas.drawText(charData, start, y, textPaint)
         }
-        
-        if (selected) {
+
+        if (selected && !isSearchResult) {
             canvas.drawRect(start, 0f, end, textLine.height, view.selectedPaint)
         }
     }

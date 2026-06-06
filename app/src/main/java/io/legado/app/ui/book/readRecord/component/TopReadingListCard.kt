@@ -67,7 +67,7 @@ fun TopReadingListCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(cardColor)
         ),
@@ -98,11 +98,11 @@ fun TopReadingListCard(
             
             // 书籍列表
             topBooks.forEachIndexed { index, book ->
-                var coverUrl by remember { mutableStateOf(book.coverUrl) }
+                var coverUrl by remember(book.bookName, book.bookAuthor) { mutableStateOf(book.coverUrl) }
                 
                 LaunchedEffect(book.bookName, book.bookAuthor) {
-                    if (coverUrl.isEmpty()) {
-                        withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.IO) {
+                        if (coverUrl.isEmpty()) {
                             val session = appDb.readRecordDao.getSessionsByBook(book.bookName).firstOrNull()
                             if (session?.coverUrl?.isNotEmpty() == true) {
                                 coverUrl = session.coverUrl

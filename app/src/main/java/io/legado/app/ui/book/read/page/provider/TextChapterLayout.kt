@@ -14,6 +14,7 @@ import io.legado.app.help.book.BookContent
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.help.highlight.HighlightRuleStore
 import io.legado.app.model.ImageProvider
 import io.legado.app.model.ReadBook
 import io.legado.app.ui.book.read.page.entities.TextChapter
@@ -37,6 +38,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import java.util.LinkedList
 import kotlin.math.roundToInt
+import splitties.init.appCtx
 
 /**
  * Created by GKF on 2018/1/30.
@@ -95,6 +97,17 @@ class TextChapterLayout(
     private val textFullJustify get() = ReadBookConfig.textFullJustify
 
     private val pageAnim = book.getPageAnim()
+
+    private val compiledHighlightRules by lazy {
+        HighlightRuleStore.loadEnabled(appCtx).mapNotNull { rule ->
+            kotlin.runCatching {
+                CompiledHighlightRule(
+                    rule = rule,
+                    regex = Regex(rule.pattern)
+                )
+            }.getOrNull()
+        }
+    }
 
     private var pendingTextPage = TextPage()
 
@@ -336,13 +349,13 @@ class TextChapterLayout(
         srcList: LinkedList<String>? = null,
         clickList: LinkedList<String?>? = null
     ) {
-        val styledText = SpannableStringBuilder(text)
+        val styledText = applyHighlightRules(SpannableStringBuilder(text), isTitle)
         val widthsArray = allocateFloatArray(text.length)
         textPaint.getTextWidthsCompat(text, widthsArray, reviewCharWidth)
         val layout = if (useZhLayout) {
             val (words, widths) = measureTextSplit(text, widthsArray)
             val indentSize = if (isFirstLine) paragraphIndent.length else 0
-            ZhLayout(text, textPaint, visibleWidth, words, widths, indentSize)
+            ZhLayout(styledText, textPaint, visibleWidth, words, widths, indentSize)
         } else {
             StaticLayout(styledText, textPaint, visibleWidth, Layout.Alignment.ALIGN_NORMAL, 0f, 0f, true)
         }
@@ -630,10 +643,12 @@ class TextChapterLayout(
         styledText: CharSequence,
         textIndex: Int,
     ) {
-        val textColor = (styledText as? Spanned)?.let { spanned ->
-            val spans = spanned.getSpans(textIndex, textIndex + 1, ForegroundColorSpan::class.java)
+        val spanned = styledText as? Spanned
+        val textColor = spanned?.let {
+            val spans = it.getSpans(textIndex, textIndex + 1, ForegroundColorSpan::class.java)
             spans.firstOrNull()?.foregroundColor
         }
+        val highlightStyle = spanned?.let { extractHighlightStyle(it, textIndex) }
         val column = when {
             !srcList.isNullOrEmpty() && (char == srcReplaceStr || char == reviewStr) -> {
                 val src = srcList.removeFirst()
@@ -652,7 +667,8 @@ class TextChapterLayout(
                     start = absStartX + xStart,
                     end = absStartX + xEnd,
                     charData = char,
-                    highlightColor = textColor
+                    highlightColor = textColor,
+                    highlightStyle = highlightStyle
                 )
             }
         }
@@ -744,5 +760,121 @@ class TextChapterLayout(
     private fun isZeroWidthChar(char: Char): Boolean {
         val code = char.code
         return code == 8203 || code == 8204 || code == 8205 || code == 8288
+    }
+
+    /**
+     * 应用高亮规则到文本
+     */
+    private fun applyHighlightRules(
+        spannable: SpannableStringBuilder,
+        isTitle: Boolean = false
+    ): SpannableStringBuilder {
+        compiledHighlightRules.forEach { compiled ->
+            if (!compiled.rule.appliesTo(isTitle)) return@forEach
+            applyRuleSpans(spannable, compiled.rule, compiled.regex)
+        }
+        return spannable
+    }
+
+    /**
+     * 应用规则到Spannable
+     */
+    private fun applyRuleSpans(
+        spannable: SpannableStringBuilder,
+        rule: io.legado.app.data.entities.HighlightRule,
+        regex: Regex
+    ) {
+        regex.findAll(spannable).forEach { match ->
+            val start = match.range.first
+            val end = match.range.last + 1
+            if (start >= end) return@forEach
+            rule.textColor?.let { color ->
+                spannable.setSpan(
+                    ForegroundColorSpan(color),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            if (rule.underlineMode != 0 || !rule.bgImage.isNullOrBlank()) {
+                spannable.setSpan(
+                    HighlightStyleSpan(
+                        underlineMode = rule.underlineMode,
+                        underlineColor = rule.underlineColor ?: rule.textColor ?: 0xFF63C37D.toInt(),
+                        underlineWidth = rule.underlineWidth,
+                        underlineOffset = rule.underlineOffset,
+                        underlineSvgPath = rule.underlineSvgPath.orEmpty(),
+                        bgImage = rule.bgImage.orEmpty(),
+                        bgImageFit = rule.bgImageFit,
+                        bgImageScale = rule.bgImageScale
+                    ),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+        }
+    }
+
+    /**
+     * 提取高亮样式
+     */
+    private fun extractHighlightStyle(spanned: Spanned, index: Int): HighlightStyleSpan? {
+        val spans = spanned.getSpans(
+            index,
+            index + 1,
+            HighlightStyleSpan::class.java
+        ) ?: return null
+        if (spans.isEmpty()) return null
+        var underlineMode = 0
+        var underlineColor = 0xFF63C37D.toInt()
+        var underlineWidth = 1f
+        var underlineOffset = 2f
+        var underlineSvgPath = ""
+        var bgImage = ""
+        var bgImageFit = 0
+        var bgImageScale = 1f
+        var hasUnderline = false
+        var hasBgImage = false
+        spans.forEach { span ->
+            if (span.underlineMode != 0) {
+                underlineMode = span.underlineMode
+                underlineColor = span.underlineColor
+                underlineWidth = span.underlineWidth
+                underlineOffset = span.underlineOffset
+                underlineSvgPath = span.underlineSvgPath
+                hasUnderline = true
+            }
+            if (span.bgImage.isNotEmpty()) {
+                bgImage = span.bgImage
+                bgImageFit = span.bgImageFit
+                bgImageScale = span.bgImageScale
+                hasBgImage = true
+            }
+        }
+        if (!hasUnderline && !hasBgImage) return null
+        return HighlightStyleSpan(
+            underlineMode = if (hasUnderline) underlineMode else 0,
+            underlineColor = underlineColor,
+            underlineWidth = underlineWidth,
+            underlineOffset = underlineOffset,
+            underlineSvgPath = if (hasUnderline) underlineSvgPath else "",
+            bgImage = if (hasBgImage) bgImage else "",
+            bgImageFit = if (hasBgImage) bgImageFit else 0,
+            bgImageScale = if (hasBgImage) bgImageScale else 1f,
+        )
+    }
+
+    private data class CompiledHighlightRule(
+        val rule: io.legado.app.data.entities.HighlightRule,
+        val regex: Regex,
+    )
+
+    private fun io.legado.app.data.entities.HighlightRule.appliesTo(isTitle: Boolean): Boolean {
+        return when (targetScope) {
+            io.legado.app.data.entities.HighlightRule.TARGET_TITLE -> isTitle
+            io.legado.app.data.entities.HighlightRule.TARGET_BODY -> !isTitle
+            else -> true
+        }
     }
 }

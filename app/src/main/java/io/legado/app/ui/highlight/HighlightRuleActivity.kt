@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.reflect.TypeToken
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
+import io.legado.app.constant.EventBus
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.databinding.ActivityHighlightRuleBinding
 import io.legado.app.help.highlight.HighlightRuleGroupStore
@@ -24,6 +25,7 @@ import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 import io.legado.app.utils.GSON
 import io.legado.app.utils.getClipText
+import io.legado.app.utils.postEvent
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
@@ -151,6 +153,7 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
     private fun syncRules() {
         HighlightRuleStore.save(this, rules)
         applyGroupFilter()
+        postEvent(EventBus.UP_CONFIG, arrayListOf(5))
     }
 
     // SelectActionBar

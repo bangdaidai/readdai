@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.base.adapter.ItemViewHolder
+import io.legado.app.constant.EventBus
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.databinding.DialogRecyclerViewBinding
@@ -22,6 +23,7 @@ import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
+import io.legado.app.utils.postEvent
 import io.legado.app.utils.requestInputMethod
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.toastOnUi
@@ -126,6 +128,7 @@ class HighlightRuleGroupManageDialog(
                     }
                     HighlightRuleGroupStore.save(requireContext(), currentGroups)
                     HighlightRuleStore.save(requireContext(), rules)
+                    postEvent(EventBus.UP_CONFIG, arrayListOf(5))
                     loadData()
                     onChanged(group, newName)
                 }
@@ -150,6 +153,7 @@ class HighlightRuleGroupManageDialog(
                 }
                 HighlightRuleGroupStore.save(requireContext(), currentGroups)
                 HighlightRuleStore.save(requireContext(), rules)
+                postEvent(EventBus.UP_CONFIG, arrayListOf(5))
                 loadData()
                 onChanged(group, null)
             }

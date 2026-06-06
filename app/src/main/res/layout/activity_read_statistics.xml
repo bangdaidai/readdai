@@ -275,8 +275,8 @@
                 android:id="@+id/composeTop10Container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp" />
+                android:layout_marginStart="@dimen/card_margin"
+                android:layout_marginEnd="@dimen/card_margin" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
