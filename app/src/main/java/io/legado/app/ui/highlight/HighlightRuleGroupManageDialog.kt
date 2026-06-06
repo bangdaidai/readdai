@@ -1,137 +1,153 @@
 package io.legado.app.ui.highlight
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.LinearLayout
+import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
-import io.legado.app.data.entities.HighlightRule
-import io.legado.app.databinding.DialogHighlightRuleGroupManageBinding
-import io.legado.app.databinding.ItemHighlightRuleGroupBinding
+import io.legado.app.databinding.DialogEditTextBinding
+import io.legado.app.databinding.DialogRecyclerViewBinding
+import io.legado.app.databinding.ItemGroupManageBinding
 import io.legado.app.help.highlight.HighlightRuleGroupStore
 import io.legado.app.help.highlight.HighlightRuleStore
 import io.legado.app.lib.dialogs.alert
-import io.legado.app.utils.GSON
-import io.legado.app.utils.dpToPx
-import io.legado.app.utils.sendToClip
+import io.legado.app.lib.theme.backgroundColor
+import io.legado.app.lib.theme.primaryColor
+import io.legado.app.ui.widget.recycler.VerticalDivider
+import io.legado.app.utils.applyTint
+import io.legado.app.utils.requestInputMethod
 import io.legado.app.utils.setLayout
-import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 
 class HighlightRuleGroupManageDialog(
     private val onChanged: (oldGroup: String?, newGroup: String?) -> Unit = { _, _ -> },
     private val onSelectGroup: (String?) -> Unit = {},
-) : BaseDialogFragment(R.layout.dialog_highlight_rule_group_manage) {
+) : BaseDialogFragment(R.layout.dialog_recycler_view),
+    Toolbar.OnMenuItemClickListener {
 
-    private val binding by viewBinding(DialogHighlightRuleGroupManageBinding::bind)
+    private val binding by viewBinding(DialogRecyclerViewBinding::bind)
     private val adapter by lazy { GroupAdapter(requireContext()) }
-    private val groups = ArrayList<String>()
-    private val rules = ArrayList<HighlightRule>()
+    private var groups = listOf<String>()
 
     override fun onStart() {
         super.onStart()
-        setLayout(ViewGroup.LayoutParams.MATCH_PARENT, 0.85f)
+        setLayout(ViewGroup.LayoutParams.MATCH_PARENT, 0.9f)
     }
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.adapter = adapter
-        binding.btnBack.setOnClickListener { dismissAllowingStateLoss() }
-        binding.btnAddGroup.setOnClickListener { showGroupInputDialog(null) }
-        binding.llViewAll.setOnClickListener {
-            onSelectGroup(null)
-            dismissAllowingStateLoss()
-        }
+        view.setBackgroundColor(backgroundColor)
+        initView()
         loadData()
     }
 
-    private fun loadData() {
-        groups.clear()
-        groups.addAll(HighlightRuleGroupStore.load(requireContext()))
-        rules.clear()
-        rules.addAll(HighlightRuleStore.load(requireContext()))
-        adapter.setItems(groups.toList())
+    private fun initView() = binding.run {
+        toolBar.setBackgroundColor(primaryColor)
+        toolBar.title = "分组管理"
+        toolBar.inflateMenu(R.menu.group_manage)
+        toolBar.menu.applyTint(requireContext())
+        toolBar.menu.findItem(R.id.menu_add)?.icon?.setTint(io.legado.app.lib.theme.ThemeStore.titleBarTextIconColor(requireContext()))
+        toolBar.setOnMenuItemClickListener(this@HighlightRuleGroupManageDialog)
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.addItemDecoration(VerticalDivider(requireContext()))
+        recyclerView.adapter = adapter
     }
 
-    private fun showGroupInputDialog(source: String?) {
-        val editText = EditText(requireContext()).apply {
-            setText(source.orEmpty())
-            setSelection(text.length)
-            hint = "输入分组名称"
+    private fun loadData() {
+        groups = HighlightRuleGroupStore.load(requireContext())
+        adapter.setItems(groups)
+    }
+
+    override fun onMenuItemClick(item: MenuItem?): Boolean {
+        when (item?.itemId) {
+            R.id.menu_add -> addGroup()
         }
-        val container = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(20.dpToPx(), 8.dpToPx(), 20.dpToPx(), 0)
-            addView(editText)
-        }
-        alert(if (source == null) "新增分组" else "重命名分组") {
-            customView { container }
+        return true
+    }
+
+    @SuppressLint("InflateParams")
+    private fun addGroup() {
+        alert(title = "新增分组") {
+            val alertBinding = DialogEditTextBinding.inflate(layoutInflater).apply {
+                editView.setHint("分组名称")
+            }
+            customView { alertBinding.root }
             okButton {
-                val newName = editText.text?.toString()?.trim().orEmpty()
-                if (newName.isBlank()) {
-                    toastOnUi("分组名称不能为空")
-                    return@okButton
-                }
-                if (groups.contains(newName) && newName != source) {
-                    toastOnUi("分组名称已存在")
-                    return@okButton
-                }
-                if (source == null) {
-                    groups.add(newName)
-                    HighlightRuleGroupStore.save(requireContext(), groups)
-                    loadData()
-                    onChanged(null, null)
-                } else {
-                    val index = groups.indexOf(source)
-                    if (index >= 0) groups[index] = newName
-                    rules.replaceAll { rule ->
-                        if (rule.group == source) rule.copy(group = newName) else rule
+                alertBinding.editView.text?.toString()?.let {
+                    if (it.isNotBlank()) {
+                        val currentGroups = HighlightRuleGroupStore.load(requireContext()).toMutableList()
+                        if (currentGroups.contains(it)) {
+                            io.legado.app.utils.toastOnUi("分组已存在")
+                            return@okButton
+                        }
+                        currentGroups.add(it)
+                        HighlightRuleGroupStore.save(requireContext(), currentGroups)
+                        loadData()
+                        onChanged(null, null)
                     }
-                    HighlightRuleGroupStore.save(requireContext(), groups)
+                }
+            }
+            cancelButton()
+        }.requestInputMethod()
+    }
+
+    @SuppressLint("InflateParams")
+    private fun editGroup(group: String) {
+        alert(title = "编辑分组") {
+            val alertBinding = DialogEditTextBinding.inflate(layoutInflater).apply {
+                editView.setHint("分组名称")
+                editView.setText(group)
+            }
+            customView { alertBinding.root }
+            okButton {
+                val newName = alertBinding.editView.text?.toString().orEmpty()
+                if (newName.isBlank()) {
+                    io.legado.app.utils.toastOnUi("分组名称不能为空")
+                    return@okButton
+                }
+                val currentGroups = HighlightRuleGroupStore.load(requireContext()).toMutableList()
+                if (currentGroups.contains(newName) && newName != group) {
+                    io.legado.app.utils.toastOnUi("分组名称已存在")
+                    return@okButton
+                }
+                val index = currentGroups.indexOf(group)
+                if (index >= 0) {
+                    currentGroups[index] = newName
+                    val rules = HighlightRuleStore.load(requireContext()).toMutableList()
+                    rules.replaceAll { rule ->
+                        if (rule.group == group) rule.copy(group = newName) else rule
+                    }
+                    HighlightRuleGroupStore.save(requireContext(), currentGroups)
                     HighlightRuleStore.save(requireContext(), rules)
                     loadData()
-                    onChanged(source, newName)
+                    onChanged(group, newName)
                 }
             }
             cancelButton()
-        }
-    }
-
-    private fun showGroupOptionsDialog(group: String) {
-        alert("分组操作") {
-            items(listOf("重命名", "导出", "删除")) { _, index ->
-                when (index) {
-                    0 -> showGroupInputDialog(group)
-                    1 -> exportGroup(group)
-                    2 -> deleteGroup(group)
-                }
-            }
-            cancelButton()
-        }
+        }.requestInputMethod()
     }
 
     private fun deleteGroup(group: String) {
         if (group == HighlightRuleGroupStore.DEFAULT_GROUP) {
-            toastOnUi("默认分组不能删除")
+            io.legado.app.utils.toastOnUi("默认分组不能删除")
             return
         }
-        alert("删除分组") {
+        alert(title = "删除分组") {
             setMessage("删除后，该分组下的规则会移动到默认分组。")
             okButton {
-                groups.remove(group)
+                val currentGroups = HighlightRuleGroupStore.load(requireContext()).toMutableList()
+                currentGroups.remove(group)
+                val rules = HighlightRuleStore.load(requireContext()).toMutableList()
                 rules.replaceAll { rule ->
-                    if (rule.group == group) {
-                        rule.copy(group = HighlightRuleGroupStore.DEFAULT_GROUP)
-                    } else {
-                        rule
-                    }
+                    if (rule.group == group) rule.copy(group = HighlightRuleGroupStore.DEFAULT_GROUP) else rule
                 }
-                HighlightRuleGroupStore.save(requireContext(), groups)
+                HighlightRuleGroupStore.save(requireContext(), currentGroups)
                 HighlightRuleStore.save(requireContext(), rules)
                 loadData()
                 onChanged(group, null)
@@ -140,59 +156,39 @@ class HighlightRuleGroupManageDialog(
         }
     }
 
-    private fun exportGroup(group: String) {
-        val targetRules = rules.filter { it.group == group }
-        if (targetRules.isEmpty()) {
-            toastOnUi("该分组暂无规则可导出")
-            return
-        }
-        requireContext().sendToClip(GSON.toJson(targetRules))
-        toastOnUi("已复制 ${targetRules.size} 条规则")
-    }
+    private inner class GroupAdapter(context: Context) :
+        RecyclerAdapter<String, ItemGroupManageBinding>(context) {
 
-    private fun groupCount(group: String): Int {
-        return rules.count { it.group == group }
-    }
-
-    private inner class GroupAdapter(context: android.content.Context) :
-        RecyclerAdapter<String, ItemHighlightRuleGroupBinding>(context) {
-
-        override fun getViewBinding(parent: ViewGroup): ItemHighlightRuleGroupBinding {
-            return ItemHighlightRuleGroupBinding.inflate(inflater, parent, false)
-        }
-
-        override fun registerListener(holder: ItemViewHolder, binding: ItemHighlightRuleGroupBinding) {
-            binding.itemRoot.setOnClickListener {
-                getItem(holder.layoutPosition)?.let { group ->
-                    onSelectGroup(group)
-                    dismissAllowingStateLoss()
-                }
-            }
-            binding.itemRoot.setOnLongClickListener {
-                getItem(holder.layoutPosition)?.let { group ->
-                    showGroupOptionsDialog(group)
-                }
-                true
-            }
-            binding.tvEdit.setOnClickListener {
-                getItem(holder.layoutPosition)?.let(::showGroupInputDialog)
-            }
-            binding.tvDelete.setOnClickListener {
-                getItem(holder.layoutPosition)?.let { group ->
-                    deleteGroup(group)
-                }
-            }
+        override fun getViewBinding(parent: ViewGroup): ItemGroupManageBinding {
+            return ItemGroupManageBinding.inflate(inflater, parent, false)
         }
 
         override fun convert(
             holder: ItemViewHolder,
-            binding: ItemHighlightRuleGroupBinding,
+            binding: ItemGroupManageBinding,
             item: String,
             payloads: MutableList<Any>
         ) {
-            binding.tvTitle.text = item
-            binding.tvCount.text = "${groupCount(item)} 条规则"
-            binding.tvDelete.visibility = if (item == HighlightRuleGroupStore.DEFAULT_GROUP) View.GONE else View.VISIBLE
+            binding.run {
+                root.setBackgroundColor(context.backgroundColor)
+                tvGroup.text = item
+            }
+        }
+
+        override fun registerListener(holder: ItemViewHolder, binding: ItemGroupManageBinding) {
+            binding.apply {
+                tvEdit.setOnClickListener {
+                    getItem(holder.layoutPosition)?.let {
+                        editGroup(it)
+                    }
+                }
+
+                tvDel.setOnClickListener {
+                    getItem(holder.layoutPosition)?.let {
+                        deleteGroup(it)
+                    }
+                }
+            }
         }
     }
 }

@@ -6,7 +6,6 @@
     android:layout_height="48dp"
     android:gravity="center"
     android:orientation="horizontal"
-    android:padding="0dp"
     android:paddingStart="16dp"
     android:paddingEnd="8dp">
 
@@ -14,27 +13,12 @@
         android:id="@+id/cb_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:scrollbars="none"
+        android:ellipsize="end"
         android:singleLine="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@+id/tv_desc"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="RtlSymmetry" />
-
-    <TextView
-        android:id="@+id/tv_desc"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textColor="@color/secondaryText"
-        android:textSize="12sp"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toLeftOf="@+id/swt_enabled"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="作用于全部"
         tools:ignore="RtlSymmetry" />
 
     <io.legado.app.lib.theme.view.ThemeSwitch
@@ -58,20 +42,6 @@
         android:contentDescription="@string/edit"
         android:padding="6dp"
         android:src="@drawable/ic_edit"
-        android:tint="@color/primaryText"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/iv_menu_more"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_menu_more"
-        android:layout_width="36dp"
-        android:layout_height="36dp"
-        android:layout_gravity="center"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/more_menu"
-        android:padding="6dp"
-        android:src="@drawable/ic_more_vert"
         android:tint="@color/primaryText"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent"

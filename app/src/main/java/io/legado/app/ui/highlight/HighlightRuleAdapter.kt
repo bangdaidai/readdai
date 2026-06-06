@@ -101,20 +101,16 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
     ) {
         binding.run {
             if (payloads.isEmpty()) {
-                cbName.text = item.getDisplayNameGroup()
+                cbName.text = item.name.ifBlank { item.pattern.ifBlank { "未命名规则" } }
                 swtEnabled.isChecked = item.enabled
                 cbName.isChecked = selected.contains(item)
-                tvDesc.text = item.styleSummary()
             } else {
                 for (i in payloads.indices) {
                     val bundle = payloads[i] as Bundle
                     bundle.keySet().forEach {
                         when (it) {
                             "selected" -> cbName.isChecked = selected.contains(item)
-                            "upName" -> {
-                                cbName.text = item.getDisplayNameGroup()
-                                tvDesc.text = item.styleSummary()
-                            }
+                            "upName" -> cbName.text = item.name.ifBlank { item.pattern.ifBlank { "未命名规则" } }
                             "enabled" -> swtEnabled.isChecked = item.enabled
                         }
                     }
@@ -146,27 +142,7 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
                 }
                 callBack.upCountView()
             }
-            ivMenuMore.setOnClickListener {
-                showMenu(ivMenuMore, holder.layoutPosition)
-            }
         }
-    }
-
-    private fun showMenu(view: View, position: Int) {
-        val item = getItem(position) ?: return
-        val popupMenu = PopupMenu(context, view)
-        popupMenu.inflate(R.menu.highlight_rule_item)
-        popupMenu.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menu_edit -> callBack.edit(item)
-                R.id.menu_delete -> {
-                    callBack.delete(item)
-                    selected.remove(item)
-                }
-            }
-            true
-        }
-        popupMenu.show()
     }
 
     override fun swap(srcPosition: Int, targetPosition: Int): Boolean {
