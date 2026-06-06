@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.toDp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.Card
@@ -123,26 +125,26 @@ fun ReadingSummaryCard(
 
                 Row(
                     verticalAlignment = Alignment.Bottom,
-                    modifier = Modifier.alignBy { it.measured.height }
+                    modifier = Modifier.alignBy { it.size.height.toDp() }
                 ) {
                     Text(
                         text = actionText,
                         fontSize = 16.sp,
                         color = Color(textColorPrimary),
-                        modifier = Modifier.padding(bottom = (16.sp.value - 16.sp.value) / 2)
+                        modifier = Modifier.padding(bottom = ((16.sp.value - 16.sp.value) / 2).dp)
                     )
                     Text(
                         text = " $bookCount ",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(primaryColor),
-                        modifier = Modifier.padding(bottom = (32.sp.value - 16.sp.value) / 2)
+                        modifier = Modifier.padding(bottom = ((32.sp.value - 16.sp.value) / 2).dp)
                     )
                     Text(
                         text = measureWord,
                         fontSize = 16.sp,
                         color = Color(textColorPrimary),
-                        modifier = Modifier.padding(bottom = (16.sp.value - 16.sp.value) / 2)
+                        modifier = Modifier.padding(bottom = ((16.sp.value - 16.sp.value) / 2).dp)
                     )
                 }
 
