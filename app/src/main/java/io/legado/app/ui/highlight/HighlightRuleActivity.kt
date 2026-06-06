@@ -27,6 +27,7 @@ import io.legado.app.utils.getClipText
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
+import kotlinx.coroutines.launch
 
 class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
     SearchView.OnQueryTextListener,
