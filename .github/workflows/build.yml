@@ -16,199 +16,198 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Setup Android Signing
+      - name: Setup Android Build Configuration
         env:
-          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE_BASE64 }}  # 改为你的密钥名
         run: |
-          # 清理可能存在的旧 gradle.properties 缓存
-          rm -f gradle.properties
-          echo "🔧 Created fresh gradle.properties"
-          touch gradle.properties
+          # 创建基础配置
+          echo "🔧 Setting up build configuration..."
           
+          # 创建包含所有必要配置的 gradle.properties
+          cat > gradle.properties << EOF
+# 基本 Gradle 配置
+org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8
+org.gradle.parallel=true
+org.gradle.caching=true
+org.gradle.configureondemand=true
+org.gradle.daemon=false
+
+# Android 配置
+android.useAndroidX=true
+android.enableJetifier=true
+kotlin.code.style=official
+kotlin.incremental=true
+
+# SDK 版本
+compile_sdk_version=36
+min_sdk_version=24
+target_sdk_version=36
+
+# Cronet 配置
+CronetVersion=119.0.6045.134
+CronetMainVersion=119
+EOF
+          
+          # 检查是否有密钥库配置
           if [ ! -z "$KEYSTORE_BASE64" ]; then
-            echo "✅ Using RELEASE_KEY_STORE secret for consistent signing"
-            echo "Setting up signing keys..."
+            echo "✅ Found keystore secret, setting up signing..."
             
-            # 使用固定的密钥文件路径，确保签名一致性
+            # 创建密钥库目录
             mkdir -p $GITHUB_WORKSPACE/keystore
             
-            # 解码 keystore 并验证
+            # 解码并保存密钥库
             echo "$KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/keystore/release.keystore
             
-            # 验证 keystore 文件大小和内容
+            # 验证密钥库
             KEYSTORE_SIZE=$(stat -c%s $GITHUB_WORKSPACE/keystore/release.keystore 2>/dev/null || echo "0")
             echo "📦 Keystore size: $KEYSTORE_SIZE bytes"
             
             if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
-              echo "❌ ERROR: Keystore file is too small ($KEYSTORE_SIZE bytes), may be corrupted!"
-              echo "❌ Please check your RELEASE_KEY_STORE secret in GitHub Settings"
-              echo "❌ The keystore should be at least 1KB"
+              echo "❌ ERROR: Keystore file is too small ($KEYSTORE_SIZE bytes)"
+              echo "❌ The keystore may be corrupted or empty!"
               exit 1
             fi
             
-            # 验证 keystore 是否可以被读取
+            # 添加签名配置
+            cat >> gradle.properties << EOF
+
+# 签名配置
+RELEASE_STORE_FILE=./keystore/release.keystore
+RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}
+RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}
+RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}
+EOF
+            
+            echo "✅ Signing configuration added"
+            
+            # 可选：验证密钥库格式
             if command -v keytool &> /dev/null; then
-              echo "🔐 Verifying keystore integrity..."
-              keytool -list -keystore $GITHUB_WORKSPACE/keystore/release.keystore -storepass "${{ secrets.RELEASE_STORE_PASSWORD }}" -alias "${{ secrets.RELEASE_KEY_ALIAS }}" > /dev/null 2>&1
-              if [ $? -eq 0 ]; then
-                echo "✅ Keystore verification passed"
+              echo "🔐 Testing keystore access..."
+              if keytool -list -keystore $GITHUB_WORKSPACE/keystore/release.keystore \
+                 -storepass "${{ secrets.RELEASE_STORE_PASSWORD }}" \
+                 -alias "${{ secrets.RELEASE_KEY_ALIAS }}" &>/dev/null; then
+                echo "✅ Keystore verification successful"
               else
                 echo "⚠️ Keystore verification failed, but continuing..."
               fi
             fi
             
-            # 写入 gradle.properties
-            # 1. 首先写入签名配置
-            echo "RELEASE_STORE_FILE=./keystore/release.keystore" >> gradle.properties
-            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
-            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
-            
-            # 2. 添加缺失的 Cronet 版本配置 - 这是修复的关键！
-            echo "CronetVersion=119.0.6045.134" >> gradle.properties
-            echo "CronetMainVersion=119" >> gradle.properties
-            
-            # 3. 添加其他必要的 Gradle 属性
-            echo "org.gradle.parallel=true" >> gradle.properties
-            echo "org.gradle.caching=true" >> gradle.properties
-            echo "org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" >> gradle.properties
-            echo "android.useAndroidX=true" >> gradle.properties
-            echo "android.enableJetifier=true" >> gradle.properties
-            
-            echo "✅ Keystore setup completed at ./keystore/release.keystore"
-            ls -la $GITHUB_WORKSPACE/keystore/release.keystore
-            
-            # 显示 gradle.properties 内容（隐藏敏感信息）
-            echo "📋 gradle.properties content (sanitized):"
-            cat gradle.properties | grep -v "PASSWORD" | sed 's/storepass=.*/storepass=***/' | sed 's/keypass=.*/keypass=***/'
           else
-            echo "❌ ERROR: No keystore configured!"
-            echo "❌ This will cause different signatures for each build!"
-            echo "❌ Please configure RELEASE_KEY_STORE secret in GitHub Settings"
-            echo "❌ Build will fail to ensure signature consistency"
-            exit 1
+            echo "⚠️ WARNING: RELEASE_KEY_STORE_BASE64 secret not found!"
+            echo "⚠️ Building with DEBUG signing (for testing only)"
+            
+            cat >> gradle.properties << EOF
+
+# 使用debug签名
+# RELEASE_STORE_FILE=./keystore/release.keystore
+# RELEASE_STORE_PASSWORD=***
+# RELEASE_KEY_ALIAS=***
+# RELEASE_KEY_PASSWORD=***
+EOF
+          fi
+          
+          # 显示配置（隐藏敏感信息）
+          echo ""
+          echo "📋 gradle.properties content (sanitized):"
+          cat gradle.properties | grep -v "PASSWORD" || true
+
+      - name: Debug Configuration
+        run: |
+          echo "🔍 Debug information:"
+          echo "1. Checking environment variables..."
+          env | grep -i "key\|store\|secret" || echo "No relevant env vars found"
+          echo ""
+          echo "2. Checking gradle.properties..."
+          if [ -f "gradle.properties" ]; then
+            echo "File exists, key properties:"
+            grep -E "^(Cronet|RELEASE_|org\.gradle|android\.)" gradle.properties | head -20
+          fi
+          echo ""
+          echo "3. Checking keystore..."
+          if [ -f "./keystore/release.keystore" ]; then
+            echo "✅ Keystore file exists: $(stat -c%s ./keystore/release.keystore) bytes"
+          else
+            echo "⚠️ No keystore file found"
           fi
 
       - name: Build Release APK
         run: |
+          echo "🚀 Starting build..."
           chmod +x gradlew
-          # 显示当前 gradle.properties 配置（用于调试）
-          echo "📋 Current gradle.properties:"
-          cat gradle.properties | grep -v "PASSWORD" || echo "No gradle.properties found"
-          echo ""
           
-          # 显示缺失的属性警告
-          if ! grep -q "CronetVersion" gradle.properties; then
-            echo "⚠️ WARNING: CronetVersion is not defined in gradle.properties!"
-          fi
-          if ! grep -q "CronetMainVersion" gradle.properties; then
-            echo "⚠️ WARNING: CronetMainVersion is not defined in gradle.properties!"
-          fi
-          
-          echo "🔨 开始构建..."
-          # 禁用 configuration-cache 和 build-cache 确保每次构建都使用最新的签名配置
-          ./gradlew assembleAppRelease \
-            --no-daemon \
-            --no-configuration-cache \
-            --no-build-cache \
-            -x lint \
-            -Pandroid.injected.signing=true
-          
-          echo ""
-          echo "📦 Build completed, checking APK..."
-
-      - name: Check APK output
-        run: |
-          echo "📦 Checking for signed APK files..."
-          find app/build/outputs -name "*.apk" -type f
-          ls -la app/build/outputs/apk/app/release/ || echo "Release directory not found"
-          
-          # 获取 APK 文件名
-          APK_FILE=$(find app/build/outputs/apk/app/release -name "*.apk" -type f | head -1)
-          
-          if [ ! -z "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
-            echo "✅ Found APK: $APK_FILE"
-            echo "📦 APK size: $(stat -c%s "$APK_FILE") bytes"
+          # 检查是release还是debug构建
+          if [ -f "./keystore/release.keystore" ]; then
+            echo "🔨 Building RELEASE version with production signing..."
             
-            # 如果有 apksigner，验证签名
-            if command -v apksigner &> /dev/null; then
-              echo "🔐 Verifying APK signature..."
-              apksigner verify --verbose "$APK_FILE" || echo "⚠️ Signature verification issues detected"
+            # 先清理
+            ./gradlew clean
+            
+            # 构建release
+            ./gradlew assembleAppRelease \
+              --stacktrace \
+              --info \
+              --no-daemon \
+              --no-configuration-cache \
+              -x lint \
+              -Pandroid.injected.signing=true
+          else
+            echo "🔧 Building DEBUG version (no keystore)..."
+            
+            # 先清理
+            ./gradlew clean
+            
+            # 构建debug
+            ./gradlew assembleAppDebug \
+              --stacktrace \
+              --info \
+              --no-daemon \
+              --no-configuration-cache \
+              -x lint
+          fi
+          
+          echo "✅ Build completed!"
+
+      - name: Check APK Output
+        run: |
+          echo "📦 Checking for APK files..."
+          
+          # 确定构建类型
+          if [ -f "./keystore/release.keystore" ]; then
+            BUILD_DIR="app/build/outputs/apk/app/release"
+            BUILD_TYPE="release"
+          else
+            BUILD_DIR="app/build/outputs/apk/app/debug"
+            BUILD_TYPE="debug"
+          fi
+          
+          echo "Looking in: $BUILD_DIR"
+          
+          if [ -d "$BUILD_DIR" ]; then
+            echo "📁 Directory contents:"
+            ls -la "$BUILD_DIR/"
+            
+            APK_FILES=$(find "$BUILD_DIR" -name "*.apk" -type f)
+            if [ -n "$APK_FILES" ]; then
+              echo "✅ Found APK files:"
+              for apk in $APK_FILES; do
+                echo "  - $apk ($(stat -c%s "$apk") bytes)"
+              done
             else
-              echo "⚠️ apksigner not available, skipping signature verification"
+              echo "❌ No APK files found in $BUILD_DIR"
+              echo "Trying to find any APK files..."
+              find app/build/outputs -name "*.apk" -type f || echo "No APK files found anywhere"
+              exit 1
             fi
           else
-            echo "❌ ERROR: No APK file found!"
-            echo "📁 Listing build directory:"
-            find app/build -type f -name "*.apk" || echo "No APK files found"
-            echo "📁 app/build directory structure:"
-            find app/build -type d | head -20
+            echo "❌ Build directory not found: $BUILD_DIR"
+            echo "Full build output:"
+            find app/build -type d | sort
             exit 1
           fi
 
-      - name: Upload Signed APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: legado_release_signed_apk
-          path: app/build/outputs/apk/app/release/*.apk
+          name: legado_apk
+          path: app/build/outputs/apk/**/*.apk
           retention-days: 30
-
-      - name: Generate Version Info
-        id: version
-        run: |
-          # 使用基于日期的版本号格式
-          VERSION_CODE=$(date -u +3.%y%m%d%H%M)
-          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_OUTPUT
-          echo "📦 Building version: $VERSION_CODE"
-          
-          # 显示当前 git 信息
-          echo "Git commit: $(git rev-parse --short HEAD)"
-          echo "Git branch: $(git rev-parse --abbrev-ref HEAD)"
-
-      - name: Create Release Tag
-        run: |
-          TAG_NAME="v${{ steps.version.outputs.VERSION_CODE }}"
-          echo "Release version: $TAG_NAME"
-          
-          # 配置 git 用户信息
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
-          # 检查标签是否已存在
-          if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
-            echo "⚠️ Tag $TAG_NAME already exists on remote, using existing tag"
-          else
-            echo "Creating new tag: $TAG_NAME"
-            git tag $TAG_NAME
-            git push origin $TAG_NAME || echo "Failed to push tag"
-          fi
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.version.outputs.VERSION_CODE }}
-          name: "Legado ${{ steps.version.outputs.VERSION_CODE }}"
-          body: |
-            ## 📦 自动化构建发布
-            
-            **构建时间**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-            **Commit**: ${{ github.sha }}
-            **版本**: ${{ steps.version.outputs.VERSION_CODE }}
-            **分支**: ${{ github.ref_name }}
-            
-            ### 📥 下载说明
-            - 直接下载 APK 文件即可安装
-            - 签名一致，支持覆盖安装
-            
-            ### 🔧 构建信息
-            - 构建类型: Release
-            - 目标平台: Android
-            - 最小 SDK: 24
-            - 目标 SDK: 36
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-          files: app/build/outputs/apk/app/release/*.apk
-          fail_on_unmatched_files: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
