@@ -79,6 +79,14 @@ data class HighlightRule(
         return name.ifBlank { pattern.ifBlank { "未命名规则" } }
     }
 
+    fun appliesTo(isTitle: Boolean): Boolean {
+        return when (targetScope) {
+            TARGET_TITLE -> isTitle
+            TARGET_BODY -> !isTitle
+            else -> true
+        }
+    }
+
     companion object {
         const val TARGET_ALL = 0
         const val TARGET_TITLE = 1

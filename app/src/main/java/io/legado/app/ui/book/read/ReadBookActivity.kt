@@ -100,7 +100,6 @@ import io.legado.app.ui.book.read.config.BgTextConfigDialog.Companion.TEXT_COLOR
 import io.legado.app.ui.book.read.config.MoreConfigDialog
 import io.legado.app.ui.book.read.config.ReadAloudDialog
 import io.legado.app.ui.book.read.config.ReadStyleDialog
-import io.legado.app.ui.book.read.config.RegexColorConfigDialog
 import io.legado.app.ui.book.read.config.TipConfigDialog.Companion.TIP_COLOR
 import io.legado.app.ui.book.read.config.TipConfigDialog.Companion.TIP_DIVIDER_COLOR
 import io.legado.app.ui.book.read.page.ContentTextView
@@ -2024,16 +2023,6 @@ $content
                 ReadTipConfig.tipDividerColor = color
                 postEvent(EventBus.TIP_COLOR, "")
                 postEvent(EventBus.UP_CONFIG, arrayListOf(2))
-            }
-
-            RegexColorConfigDialog.REGEX_RULE_COLOR -> {
-                val position = RegexColorConfigDialog.pendingColorPosition
-                if (position in ReadBookConfig.regexColorRules.indices) {
-                    ReadBookConfig.regexColorRules[position].color = color
-                    ReadBookConfig.saveRegexColorRules()
-                    TextChapterLayout.invalidateRegexCache()
-                    postEvent(EventBus.UP_CONFIG, arrayListOf(8, 5))
-                }
             }
         }
     }
