@@ -103,7 +103,7 @@ fun TopReadingListCard(
                 LaunchedEffect(book.bookName, book.bookAuthor) {
                     if (coverUrl.isEmpty()) {
                         withContext(Dispatchers.IO) {
-                            val session = appDb.readSessionDao.getSessionsByBook(book.bookName).firstOrNull()
+                            val session = appDb.readRecordDao.getSessionsByBook(book.bookName).firstOrNull()
                             if (session?.coverUrl?.isNotEmpty() == true) {
                                 coverUrl = session.coverUrl
                             } else {

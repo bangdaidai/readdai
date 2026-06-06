@@ -262,7 +262,8 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                     .filter { session ->
                         val sessionDate = java.time.Instant.ofEpochMilli(session.startTime)
                             .atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-                            .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE) == dateKey
+                            .format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+                        sessionDate == dateKey
                     }
                     .map { it.type }
                     .reduceOrNull { acc, type -> acc or type } ?: io.legado.app.constant.BookType.text
@@ -311,7 +312,8 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
                 totalTimeMillis = summaryData.totalTimeMillis,
                 bookCovers = summaryData.bookCovers,
                 onClick = {
-                    startActivity<io.legado.app.ui.about.ReadStatisticsActivity>()
+                    val intent = android.content.Intent(this, io.legado.app.ui.about.ReadStatisticsActivity::class.java)
+                    startActivity(intent)
                 }
             )
         }
