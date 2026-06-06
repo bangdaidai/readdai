@@ -70,7 +70,7 @@ fun ReadingSummaryCard(
 ) {
     val context = LocalContext.current
     val isNightTheme = AppConfig.isNightTheme
-    val cardColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(context)
+    val cardBgColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(context)
     val primaryColor = io.legado.app.lib.theme.ThemeStore.accentColor(context)
     val textColorPrimary = io.legado.app.lib.theme.ThemeStore.textColorPrimary(context)
     val textColorSecondary = io.legado.app.lib.theme.ThemeStore.textColorSecondary(context)
@@ -87,7 +87,7 @@ fun ReadingSummaryCard(
         else -> "已读" to "本"
     }
 
-    val bgColor = Color(cardColor)
+    val bgColor = Color(cardBgColor)
     val isDarkBackground = bgColor.luminance() < 0.18f
     val shape = RoundedCornerShape(16.dp)
     val cardColor = if (isDarkBackground) {

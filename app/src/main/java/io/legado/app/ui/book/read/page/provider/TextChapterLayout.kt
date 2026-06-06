@@ -1,9 +1,6 @@
 package io.legado.app.ui.book.read.page.provider
 
-import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.Typeface
 import android.text.Layout
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -11,39 +8,35 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.style.ForegroundColorSpan
 import io.legado.app.constant.AppLog
-import io.legado.app.constant.EventBus
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.help.book.BookContent
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.ReadBookConfig
-import io.legado.app.help.highlight.HighlightRuleStore
-import io.legado.app.lib.core.Coroutine
-import io.legado.app.model.analyzeRule.AnalyzeUrl
-import io.legado.app.model.read.ReadBook
-import io.legado.app.ui.book.read.ReadMendBottomSheet
+import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.model.ImageProvider
+import io.legado.app.model.ReadBook
+import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.ui.book.read.page.entities.TextPage
-import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.column.ImageColumn
-import io.legado.app.ui.book.read.page.entities.column.TextBaseColumn
 import io.legado.app.ui.book.read.page.entities.column.TextColumn
-import io.legado.app.ui.book.read.page.provider.ChapterProvider.reviewChar
 import io.legado.app.ui.book.read.page.provider.ChapterProvider.reviewStr
 import io.legado.app.ui.book.read.page.provider.ChapterProvider.srcReplaceStr
-import io.legado.app.ui.book.read.page.provider.ImageProvider.isGif
+import io.legado.app.utils.dpToPx
 import io.legado.app.utils.fastSum
+import io.legado.app.utils.getTextWidthsCompat
 import io.legado.app.utils.splitNotBlank
-import io.legado.app.utils.toastOnUi
+import io.legado.app.utils.textHeight
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import splitties.init.appCtx
 import java.util.LinkedList
+import kotlin.math.roundToInt
 
 /**
  * Created by GKF on 2018/1/30.
@@ -59,116 +52,18 @@ class TextChapterLayout(
 
     private val contentPaint: TextPaint = ChapterProvider.contentPaint
     private val stringBuilder = StringBuilder()
-    private var durY: Float = 0f
-    private val channel = Channel<TextPage>(Channel.UNLIMITED)
 
-    companion object {
-        private val compiledHighlightRules by lazy {
-            HighlightRuleStore.loadEnabled(appCtx).mapNotNull { rule ->
-                kotlin.runCatching {
-                    object {
-                        val rule = rule
-                        val regex = Regex(rule.pattern)
-                    }
-                }.getOrNull()
-            }
-        }
-
-        fun invalidateCompiledHighlightRulesCache() {
-            // trigger re-initialization
-        }
-    }
-
-    private val paragraphIndent = if (ReadBookConfig.config.paragraphIndent.isBlank()) {
-        ChapterProvider.indentCharFull
-    } else {
-        ReadBookConfig.config.paragraphIndent
-    }
-    private val indentCharWidth by lazy {
-        contentPaint.measureText(ChapterProvider.indentCharFull)
-    }
-
-    private val lineSpacingExtra: Float
-        get() = ReadBookConfig.config.lineSpacingExtra / 10f
-
-    private val isMiddleTitle: Boolean
-        get() = ReadBookConfig.config.titleMode == 1
-
-    private val isRightTitle: Boolean
-        get() = ReadBookConfig.config.titleMode == 2
-
-    private val titleTopSpacing: Int
-        get() = ReadBookConfig.config.titleBottomSpacing
-
-    private val textFullJustify get() = ReadBookConfig.textFullJustify
-
-    private val pageAnim = book.getPageAnim()
-
-    private fun applyRuleSpans(
-        spannable: SpannableStringBuilder,
-        rule: io.legado.app.data.entities.HighlightRule,
-        regex: Regex
-    ) {
-        regex.findAll(spannable).forEach { match ->
-            val start = match.range.first
-            val end = match.range.last + 1
-            if (start >= end) return@forEach
-            rule.textColor?.let { color ->
-                spannable.setSpan(
-                    ForegroundColorSpan(color),
-                    start,
-                    end,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
-            if (rule.underlineMode != 0 || !rule.bgImage.isNullOrBlank()) {
-                spannable.setSpan(
-                    HighlightStyleSpan(
-                        underlineMode = rule.underlineMode,
-                        underlineColor = rule.underlineColor ?: rule.textColor ?: 0xFF63C37D.toInt(),
-                        underlineWidth = rule.underlineWidth,
-                        underlineOffset = rule.underlineOffset,
-                        underlineSvgPath = rule.underlineSvgPath.orEmpty(),
-                        bgImage = rule.bgImage.orEmpty(),
-                        bgImageFit = rule.bgImageFit,
-                        bgImageScale = rule.bgImageScale
-                    ),
-                    start,
-                    end,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
-        }
-    }
-
-    private fun applyHighlightRules(
-        spannable: SpannableStringBuilder,
-        isTitle: Boolean = false
-    ): SpannableStringBuilder {
-        if (!book.getUseHighlightRule()) return spannable
-        
-        compiledHighlightRules.forEach { compiled ->
-            if (!compiled.rule.appliesTo(isTitle)) return@forEach
-            kotlin.runCatching {
-                applyRuleSpans(spannable, compiled.rule, compiled.regex)
-            }.onFailure {
-                AppLog.put("高亮规则应用失败: ${compiled.rule.name}, 错误: ${it.localizedMessage}")
-            }
-        }
-        return spannable
-    }
-
-    private fun extractTextColor(spanned: Spanned, textIndex: Int): Int? {
-        val spans = spanned.getSpans(textIndex, textIndex + 1, ForegroundColorSpan::class.java)
-        return spans.firstOrNull()?.color
-    }
-
-    private fun extractHighlightStyle(spanned: Spanned, textIndex: Int): HighlightStyleSpan? {
-        val spans = spanned.getSpans(textIndex, textIndex + 1, HighlightStyleSpan::class.java)
-        return spans.firstOrNull()
-    }
-
-    private var pendingTextPage = TextPage()
+    private val paddingLeft = ChapterProvider.paddingLeft
+    private val paddingRight = ChapterProvider.paddingRight
+    private val paddingTop = ChapterProvider.paddingTop
+    private val paragraphSpacing = ChapterProvider.paragraphSpacing
+    private val visibleWidth = ChapterProvider.visibleWidth
+    private val visibleHeight = ChapterProvider.visibleHeight
+    private val viewWidth = ChapterProvider.viewWidth
+    private val doublePage = ChapterProvider.doublePage
+    private val useZhLayout = ReadBookConfig.useZhLayout
+    private val fontMetrics = contentPaint.fontMetrics
+    private val reviewCharWidth by lazy { contentPaint.measureText(srcReplaceStr) * 1.5556f }
 
     private val bookChapter inline get() = textChapter.chapter
     private val displayTitle inline get() = textChapter.title
@@ -188,19 +83,20 @@ class TextChapterLayout(
     @Volatile
     private var listener: LayoutProgressListener? = textChapter
 
-    private val bookChapter inline get() = textChapter.chapter
-    private val displayTitle inline get() = textChapter.title
-    private val chaptersSize inline get() = textChapter.chaptersSize
+    private val paragraphIndent = ReadBookConfig.paragraphIndent
+    private val lineSpacingExtra: Float
+        get() = ReadBookConfig.lineSpacingExtra / 10f
+    private val isMiddleTitle: Boolean
+        get() = ReadBookConfig.titleMode == 1
+    private val isRightTitle: Boolean
+        get() = ReadBookConfig.titleMode == 2
+    private val titleTopSpacing: Int
+        get() = ReadBookConfig.titleTopSpacing.dpToPx()
+    private val textFullJustify get() = ReadBookConfig.textFullJustify
 
-    private val paddingLeft = ChapterProvider.paddingLeft
-    private val paragraphSpacing = ChapterProvider.paragraphSpacing
-    private val visibleWidth = ChapterProvider.visibleWidth
-    private val visibleHeight = ChapterProvider.visibleHeight
-    private val viewWidth = ChapterProvider.viewWidth
-    private val doublePage = ChapterProvider.doublePage
-    private val useZhLayout = ReadBookConfig.useZhLayout
-    private val fontMetrics = contentPaint.fontMetrics
-    private val reviewCharWidth by lazy { contentPaint.measureText(srcReplaceStr) * 1.5556f }
+    private val pageAnim = book.getPageAnim()
+
+    private var pendingTextPage = TextPage()
 
     private fun onException(e: Throwable) {
         listener?.onLayoutException(e)
@@ -215,7 +111,6 @@ class TextChapterLayout(
         listener?.onLayoutCompleted()
         listener = null
     }
-
 
     init {
         job = Coroutine.async(
@@ -239,8 +134,6 @@ class TextChapterLayout(
         job.start()
     }
 
-
-
     fun cancel() {
         job.cancel()
         listener = null
@@ -249,102 +142,143 @@ class TextChapterLayout(
     private fun onPageCompleted() {
         val textPage = pendingTextPage
         textPage.index = textPages.size
+        textPage.chapterIndex = bookChapter.index
+        textPage.chapterSize = chaptersSize
+        textPage.title = displayTitle
+        textPage.doublePage = doublePage
+        textPage.paddingTop = paddingTop
+        textPage.isCompleted = true
+        textPage.textChapter = textChapter
+        textPage.upLinesPosition()
+        textPage.upRenderHeight()
         textPages.add(textPage)
         val msg = channel.trySend(textPage)
         if (!msg.isSuccess) {
-            onException(msg.exceptionOrNull())
+            onException(msg.exceptionOrNull()!!)
             throw msg.exceptionOrNull()!!
+        }
+        try {
+            listener?.onLayoutPageCompleted(textPages.lastIndex, textPage)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            AppLog.put("调用布局进度监听回调出错\n${e.localizedMessage}", e)
         }
     }
 
+    private fun onCompleted() {
+        channel.close()
+        try {
+            listener?.onLayoutCompleted()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            AppLog.put("调用布局进度监听回调出错\n${e.localizedMessage}", e)
+        } finally {
+            listener = null
+        }
+    }
+
+    /**
+     * 获取拆分完的章节数据
+     */
     private suspend fun getTextChapter(
         book: Book,
-        chapter: BookChapter,
-        chapterTitle: String,
-        bookContent: String,
+        bookChapter: BookChapter,
+        displayTitle: String,
+        bookContent: BookContent,
     ) {
-        val textPages = ArrayList<TextPage>()
-        durY = 0f
+        val contents = bookContent.textList
+        val imageStyle = book.getImageStyle()
+        val textHeight = ChapterProvider.contentPaintTextHeight
+        contentPaint.fontMetrics = fontMetrics
         stringBuilder.clear()
         pendingTextPage = TextPage()
+        durY = 0f
         textPaintInit(contentPaint)
-        val imageStyle = book.getImageStyle()
-        val textHeight = contentPaint.textHeight(ReadBookConfig.config.lineSpacingMultiplier)
-        contentPaint.fontMetrics = fontMetrics
-        val paragraphs = bookContent.splitNotBlank("\n")
-        onMeasureStart(textPages.size)
-        val srcList = LinkedList<String>()
-        val clickList = LinkedList<String?>()
-        for (index in paragraphs.indices) {
-            val paragraph0 = paragraphs[index]
-            srcList.clear()
-            clickList.clear()
-            val paragraph = ChapterProvider.getDisplayContents(
-                paragraph0, srcList, clickList, chapter.getUseReplaceRule(), chapter.url
-            )
-            val paragraphText = paragraph.text
-            val isTitle = paragraph.isTitle || chapter.isVolume && index == 0
-            val text = if (isTitle && chapter.isVolume) {
-                chapterTitle + paragraphText
-            } else {
-                paragraphText
+
+        // 标题排版
+        if (isMiddleTitle || isRightTitle || bookChapter.isVolume || contents.isEmpty()) {
+            var firstLine = true
+            displayTitle.splitNotBlank("\n").forEach { titleText ->
+                val srcList = LinkedList<String>()
+                val clickList = LinkedList<String?>()
+                val titleImg = if (firstLine) {
+                    firstLine = false
+                    bookChapter.imgUrl
+                } else {
+                    null
+                }
+                val imgText = if (titleImg.isNullOrEmpty()) {
+                    null
+                } else {
+                    srcList.add(titleImg)
+                    clickList.add(null)
+                    srcReplaceStr
+                }
+                setTypeText(
+                    book,
+                    if (imgText != null) titleText + imgText else titleText,
+                    ChapterProvider.titlePaint,
+                    ChapterProvider.titlePaintTextHeight,
+                    ChapterProvider.titlePaintFontMetrics,
+                    imageStyle,
+                    srcList = srcList,
+                    clickList = clickList,
+                    isTitle = true,
+                    emptyContent = contents.isEmpty(),
+                    isVolumeTitle = bookChapter.isVolume
+                )
+                pendingTextPage.lines.lastOrNull()?.isParagraphEnd = true
+                stringBuilder.append("\n")
             }
+            durY += titleTopSpacing.dpToPx()
+        }
+
+        contents.forEach { content ->
             currentCoroutineContext().ensureActive()
-            if (text.isEmpty()) {
+            if (content.isEmpty()) {
                 setTypeEmptyText(
                     book, textPages, textHeight,
-                    imageStyle, isTitle, index == 0,
-                    chapter.isVolume
+                    imageStyle, false, false
                 )
-                continue
+                return@forEach
             }
-            if (chapter.getUseImageReplace() && text.contains("<img", true)) {
-                setTypeHtml(imageStyle, book, text)
-                continue
+            if (content.contains("<img", true)) {
+                setTypeHtml(imageStyle, book, content)
+                return@forEach
             }
             setTypeText(
                 book, text, contentPaint, textHeight, contentPaint.fontMetrics,
-                imageStyle, isTitle,
-                index == 0, text.length < 4,
-                chapter.isVolume,
-                srcList,
-                clickList
+                imageStyle, false,
+                text.length < 4,
+                bookChapter.isVolume,
+                null,
+                null
             )
-            if (paragraph.isImage) {
-                textPages.lastOrNull()?.apply {
-                    addImageLine(textHeight * 0.7f, text)
-                    calcTextLinePosition(textPages, this.lines.last(), stringBuilder.length)
-                    stringBuilder.append(text)
-                }
-            }
-            if (chapter.isVolume && index == 0) {
-                listener?.onChapterTitleUpdate(text)
-            }
+            pendingTextPage.lines.lastOrNull()?.isParagraphEnd = true
+            stringBuilder.append("\n")
         }
-        //最后一页
+
         val textPage = pendingTextPage
-        textPage.text = stringBuilder.toString()
-        textPages.add(textPage)
-        textPage.index = textPages.size
-        channel.trySend(textPage)
-        //计算页长度
-        textPages.forEach {
-            textChapter.addPage(it)
+        val endPadding = 20.dpToPx()
+        val durYPadding = durY + endPadding
+        if (textPage.height < durYPadding) {
+            textPage.height = durYPadding
+        } else {
+            textPage.height += endPadding
         }
-        //更新字数统计
-        ReadMendBottomSheet.updateWordCount()
-        onMeasureComplete(textPages)
-        EventBus.mPost(EventBus.UP_CONTENT_VIEW)
+        textPage.text = stringBuilder.toString()
+        onPageCompleted()
+        pendingTextPage = TextPage()
+        stringBuilder.clear()
+        durY = 0f
+        absStartX = paddingLeft
+        onCompleted()
     }
 
     private fun textPaintInit(textPaint: TextPaint) {
-        textPaint.typeface = getTypeface(ReadBookConfig.config.fontName)
-        textPaint.letterSpacing = ReadBookConfig.config.letterSpacing
+        textPaint.typeface = ChapterProvider.typeface
+        textPaint.letterSpacing = ReadBookConfig.letterSpacing
         textPaint.isAntiAlias = true
-    }
-
-    private fun getTypeface(typefaceName: String?): Typeface? {
-        return ReadBookConfig.getTypeface(typefaceName)
     }
 
     /**
@@ -357,11 +291,9 @@ class TextChapterLayout(
         imageStyle: String?,
         isTitle: Boolean,
         isFirstLine: Boolean,
-        isVolume: Boolean,
     ) {
         val textLine = TextLine(isTitle = isTitle)
         textLine.isParagraphEnd = true
-        textLine.isVolumeEnd = isVolume
         prepareNextPageIfNeed(durY + textHeight)
         textLine.upTopBottom(durY, textHeight, contentPaint.fontMetrics)
         calcTextLinePosition(textPages, textLine, stringBuilder.length)
@@ -389,6 +321,7 @@ class TextChapterLayout(
         pendingTextPage.addLine(textLine)
     }
 
+    @Suppress("DEPRECATION")
     private suspend fun setTypeText(
         book: Book,
         text: String,
@@ -400,10 +333,10 @@ class TextChapterLayout(
         isFirstLine: Boolean = true,
         emptyContent: Boolean = false,
         isVolumeTitle: Boolean = false,
-        srcList: LinkedList<String>?,
-        clickList: LinkedList<String?>?
+        srcList: LinkedList<String>? = null,
+        clickList: LinkedList<String?>? = null
     ) {
-        val styledText = applyHighlightRules(SpannableStringBuilder(text), isTitle)
+        val styledText = SpannableStringBuilder(text)
         val widthsArray = allocateFloatArray(text.length)
         textPaint.getTextWidthsCompat(text, widthsArray, reviewCharWidth)
         val layout = if (useZhLayout) {
@@ -555,6 +488,7 @@ class TextChapterLayout(
             return
         }
         val bodyIndent = paragraphIndent
+        val indentCharWidth = ChapterProvider.indentCharWidth
         repeat(bodyIndent.length) {
             val x1 = x + indentCharWidth
             textLine.addColumn(
@@ -663,8 +597,17 @@ class TextChapterLayout(
             val cw = textWidths[index]
             val x1 = x + cw
             addCharToLine(
-                book, absStartX, textLine, char, x, x1, index + 1 == words.size,
-                srcList, clickList, styledText, lineStart + index
+                book,
+                absStartX,
+                textLine,
+                char,
+                x,
+                x1,
+                index + 1 == words.size,
+                srcList,
+                clickList,
+                styledText,
+                lineStart + index
             )
             x = x1
             if (hasIndent && index == indentLength - 1) {
@@ -687,17 +630,10 @@ class TextChapterLayout(
         styledText: CharSequence,
         textIndex: Int,
     ) {
-        val textColor = extractTextColor(styledText as Spanned, textIndex)
-        val highlightStyle = extractHighlightStyle(styledText, textIndex)
-        val underlineMode = highlightStyle?.underlineMode ?: 0
-        val underlineColor = highlightStyle?.underlineColor
-        val underlineWidth = highlightStyle?.underlineWidth ?: 1f
-        val underlineOffset = highlightStyle?.underlineOffset ?: 2f
-        val underlineSvgPath = highlightStyle?.underlineSvgPath ?: ""
-        val bgImage = highlightStyle?.bgImage ?: ""
-        val bgImageFit = highlightStyle?.bgImageFit ?: 0
-        val bgImageScale = highlightStyle?.bgImageScale ?: 1f
-        
+        val textColor = (styledText as? Spanned)?.let { spanned ->
+            val spans = spanned.getSpans(textIndex, textIndex + 1, ForegroundColorSpan::class.java)
+            spans.firstOrNull()?.foregroundColor
+        }
         val column = when {
             !srcList.isNullOrEmpty() && (char == srcReplaceStr || char == reviewStr) -> {
                 val src = srcList.removeFirst()
@@ -716,17 +652,7 @@ class TextChapterLayout(
                     start = absStartX + xStart,
                     end = absStartX + xEnd,
                     charData = char,
-                    textColor = textColor,
-                    highlightColor = textColor,
-                    highlightStyle = highlightStyle,
-                    underlineMode = underlineMode,
-                    underlineColor = underlineColor,
-                    underlineWidth = underlineWidth,
-                    underlineOffset = underlineOffset,
-                    underlineSvgPath = underlineSvgPath,
-                    bgImage = bgImage,
-                    bgImageFit = bgImageFit,
-                    bgImageScale = bgImageScale
+                    highlightColor = textColor
                 )
             }
         }
@@ -805,29 +731,12 @@ class TextChapterLayout(
         val stringList = ArrayList<String>(clusterCount)
         var i = 0
         while (i < length) {
-            val codePoint = text.codePointAt(i)
-            val charCount = Character.charCount(codePoint)
-            val clusterIndex = start + i
-            var clusterWidth = widthsArray[clusterIndex]
-            if (charCount == 1 && isZeroWidthChar(text[i])) {
-                clusterWidth = 0f
-            } else if (charCount > 1) {
-                for (j in 1..<charCount) {
-                    val nextIndex = start + i + j
-                    clusterWidth += widthsArray.getOrNull(nextIndex) ?: 0f
-                }
+            val clusterBaseIndex = i++
+            widths.add(widthsArray[start + clusterBaseIndex])
+            while (i < length && widthsArray[start + i] == 0f && !isZeroWidthChar(text[i])) {
+                i++
             }
-            if (clusterWidth == 0f && !isZeroWidthChar(text[i])) {
-                clusterWidth = 0f
-            }
-            val clusterStr = if (charCount == 1) {
-                text[i].toString()
-            } else {
-                text.substring(i, i + charCount)
-            }
-            stringList.add(clusterStr)
-            widths.add(clusterWidth)
-            i += charCount
+            stringList.add(text.substring(clusterBaseIndex, i))
         }
         return stringList to widths
     }
