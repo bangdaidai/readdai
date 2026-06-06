@@ -2,6 +2,15 @@ import java.security.MessageDigest
 
 apply plugin: 'de.undercouch.download'
 
+// 从 gradle.properties 读取 cronet 版本
+def propertiesFile = new File(project.rootDir, 'gradle.properties')
+def props = new Properties()
+if (propertiesFile.exists()) {
+    propertiesFile.withInputStream { props.load(it) }
+}
+def CronetVersion = props.getProperty('CronetVersion', '128.0.6613.40')
+def CronetMainVersion = props.getProperty('CronetMainVersion', '128.0.0.0')
+
 def BASE_PATH = "https://storage.googleapis.com/chromium-cronet/android/" + CronetVersion + "/Release/cronet/"
 def assetsDir = projectDir.toString() + "/src/main/assets"
 def libPath = projectDir.toString() + "/cronetlib"
