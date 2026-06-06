@@ -31,6 +31,7 @@ import io.legado.app.service.BaseReadAloudService
 import io.legado.app.service.CacheBookService
 import io.legado.app.service.DataSyncService
 import io.legado.app.ui.book.read.page.entities.TextChapter
+import io.legado.app.ui.book.read.page.entities.TextPage
 import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.book.read.page.provider.LayoutProgressListener
 import io.legado.app.model.SourceCallBack
@@ -819,7 +820,7 @@ object ReadBook : CoroutineScope by MainScope() {
                         ensureActive()
                         prevTextChapter = textChapter
                     }
-                    textChapter.layoutChannel.receiveAsFlow().collect()
+                    textChapter.layoutChannel.receiveAsFlow().collect { }
                     if (upContent) callBack?.upContent(offset, resetPageOffset)
                 }
 
@@ -920,7 +921,7 @@ object ReadBook : CoroutineScope by MainScope() {
                     withContext(Main) {
                         prevTextChapter = textChapter
                     }
-                    textChapter.layoutChannel.receiveAsFlow().collect()
+                    textChapter.layoutChannel.receiveAsFlow().collect { }
                     if (upContent) callBack?.upContent(offset, resetPageOffset)
                 }
 

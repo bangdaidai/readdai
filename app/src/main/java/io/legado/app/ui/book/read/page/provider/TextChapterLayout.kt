@@ -14,6 +14,8 @@ import io.legado.app.constant.AppLog
 import io.legado.app.constant.EventBus
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.help.book.BookContent
+import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.highlight.HighlightRuleStore
 import io.legado.app.lib.core.Coroutine
@@ -21,6 +23,8 @@ import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.read.ReadBook
 import io.legado.app.ui.book.read.ReadMendBottomSheet
 import io.legado.app.ui.book.read.page.entities.TextLine
+import io.legado.app.ui.book.read.page.entities.TextPage
+import io.legado.app.ui.book.read.page.entities.TextChapter
 import io.legado.app.ui.book.read.page.entities.column.ImageColumn
 import io.legado.app.ui.book.read.page.entities.column.TextBaseColumn
 import io.legado.app.ui.book.read.page.entities.column.TextColumn
@@ -30,10 +34,14 @@ import io.legado.app.ui.book.read.page.provider.ChapterProvider.srcReplaceStr
 import io.legado.app.ui.book.read.page.provider.ImageProvider.isGif
 import io.legado.app.utils.fastSum
 import io.legado.app.utils.splitNotBlank
+import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
 import splitties.init.appCtx
 import java.util.LinkedList
 
@@ -42,11 +50,17 @@ import java.util.LinkedList
  * 文本段排版
  */
 class TextChapterLayout(
-    private val book: Book,
-    textChapter: TextChapter,
-    bookContent: String,
     scope: CoroutineScope,
-) : BaseLayout(book, textChapter, bookContent, scope) {
+    private val textChapter: TextChapter,
+    private val textPages: ArrayList<TextPage>,
+    private val book: Book,
+    private val bookContent: BookContent,
+) {
+
+    private val contentPaint: TextPaint = ChapterProvider.contentPaint
+    private val stringBuilder = StringBuilder()
+    private var durY: Float = 0f
+    private val channel = Channel<TextPage>(Channel.UNLIMITED)
 
     companion object {
         private val compiledHighlightRules by lazy {
@@ -170,6 +184,37 @@ class TextChapterLayout(
     var exception: Throwable? = null
 
     var channel = Channel<TextPage>(Channel.UNLIMITED)
+
+    @Volatile
+    private var listener: LayoutProgressListener? = textChapter
+
+    private val bookChapter inline get() = textChapter.chapter
+    private val displayTitle inline get() = textChapter.title
+    private val chaptersSize inline get() = textChapter.chaptersSize
+
+    private val paddingLeft = ChapterProvider.paddingLeft
+    private val paragraphSpacing = ChapterProvider.paragraphSpacing
+    private val visibleWidth = ChapterProvider.visibleWidth
+    private val visibleHeight = ChapterProvider.visibleHeight
+    private val viewWidth = ChapterProvider.viewWidth
+    private val doublePage = ChapterProvider.doublePage
+    private val useZhLayout = ReadBookConfig.useZhLayout
+    private val fontMetrics = contentPaint.fontMetrics
+    private val reviewCharWidth by lazy { contentPaint.measureText(srcReplaceStr) * 1.5556f }
+
+    private fun onException(e: Throwable) {
+        listener?.onLayoutException(e)
+        listener = null
+    }
+
+    private fun onMeasureStart(size: Int) {
+        // 排版开始回调
+    }
+
+    private fun onMeasureComplete(pages: ArrayList<TextPage>) {
+        listener?.onLayoutCompleted()
+        listener = null
+    }
 
 
     init {

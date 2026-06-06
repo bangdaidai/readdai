@@ -24,6 +24,7 @@ import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.requestInputMethod
 import io.legado.app.utils.setLayout
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 
 class HighlightRuleGroupManageDialog(
@@ -83,7 +84,7 @@ class HighlightRuleGroupManageDialog(
                     if (it.isNotBlank()) {
                         val currentGroups = HighlightRuleGroupStore.load(requireContext()).toMutableList()
                         if (currentGroups.contains(it)) {
-                            io.legado.app.utils.toastOnUi("分组已存在")
+                            requireContext().toastOnUi("分组已存在")
                             return@okButton
                         }
                         currentGroups.add(it)
@@ -108,12 +109,12 @@ class HighlightRuleGroupManageDialog(
             okButton {
                 val newName = alertBinding.editView.text?.toString().orEmpty()
                 if (newName.isBlank()) {
-                    io.legado.app.utils.toastOnUi("分组名称不能为空")
+                    requireContext().toastOnUi("分组名称不能为空")
                     return@okButton
                 }
                 val currentGroups = HighlightRuleGroupStore.load(requireContext()).toMutableList()
                 if (currentGroups.contains(newName) && newName != group) {
-                    io.legado.app.utils.toastOnUi("分组名称已存在")
+                    requireContext().toastOnUi("分组名称已存在")
                     return@okButton
                 }
                 val index = currentGroups.indexOf(group)
@@ -135,7 +136,7 @@ class HighlightRuleGroupManageDialog(
 
     private fun deleteGroup(group: String) {
         if (group == HighlightRuleGroupStore.DEFAULT_GROUP) {
-            io.legado.app.utils.toastOnUi("默认分组不能删除")
+            requireContext().toastOnUi("默认分组不能删除")
             return
         }
         alert(title = "删除分组") {

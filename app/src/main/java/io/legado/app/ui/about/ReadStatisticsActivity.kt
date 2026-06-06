@@ -195,7 +195,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         binding.navigationCard?.setCardBackgroundColor(cardColor)
         binding.overviewCard?.setCardBackgroundColor(cardColor)
         binding.heatmapCard?.setCardBackgroundColor(cardColor)
-        binding.top10Card?.setCardBackgroundColor(cardColor)
     }
 
     private fun updateNavigationButtonColors() {
@@ -381,9 +380,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
     // 更新热力图可见性
     private fun updateHeatmapVisibility() {
-        // TOP10卡片在所有统计类型下都可见
-        binding.top10Card?.visibility = View.VISIBLE
-
         when (currentType) {
             2 -> { // 月度统计
                 binding.heatmapCard?.visibility = View.VISIBLE

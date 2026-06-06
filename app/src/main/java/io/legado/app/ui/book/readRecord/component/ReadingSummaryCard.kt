@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import io.legado.app.constant.BookType
+import io.legado.app.help.config.AppConfig
 import io.legado.app.help.glide.ImageLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -68,7 +69,7 @@ fun ReadingSummaryCard(
     onClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val isNightTheme = io.legado.app.utils.ConfigUtils.isNightTheme(context)
+    val isNightTheme = AppConfig.isNightTheme
     val cardColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(context)
     val primaryColor = io.legado.app.lib.theme.ThemeStore.accentColor(context)
     val textColorPrimary = io.legado.app.lib.theme.ThemeStore.textColorPrimary(context)
