@@ -20,9 +20,23 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
         run: |
+          # 调试：检查 secret 是否被正确读取
+          echo "📌 检查 secret 配置..."
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "❌ 错误：RELEASE_KEY_STORE secret 为空！"
+            echo "❌ 请在 GitHub Settings → Secrets and variables → Actions 中配置 RELEASE_KEY_STORE"
+            echo "❌ 注意：GitHub Secrets 名称区分大小写"
+            exit 1
+          fi
+          
+          echo "✅ Secret 已读取，长度：${#KEYSTORE_BASE64} 字符"
+          echo "   （出于安全考虑，不显示内容）"
+          
           mkdir -p keystore
+          
+          # 移除所有空白字符后解码
           echo "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > keystore/release.keystore
-          echo "Keystore 已创建"
+          echo "✅ Keystore 已创建"
           
           # 验证 keystore 文件
           KEYSTORE_SIZE=$(stat -c%s keystore/release.keystore 2>/dev/null || echo "0")
@@ -30,7 +44,13 @@ jobs:
           
           if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
             echo "❌ 错误：Keystore 文件过小，可能已损坏！"
+            echo "   实际大小：$KEYSTORE_SIZE bytes"
+            echo "   预期大小：至少 1KB"
             echo "❌ 请检查 GitHub Settings 中的 RELEASE_KEY_STORE secret 配置"
+            echo ""
+            echo "📝 如何生成正确的 secret："
+            echo "   1. 在本地终端运行：base64 -w 0 release.keystore | xclip -selection clipboard"
+            echo "   2. 将输出粘贴到 GitHub Secrets"
             exit 1
           fi
           
@@ -40,6 +60,7 @@ jobs:
           echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
           echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
           echo "✅ 签名配置已完成"
+          cat gradle.properties
 
       - name: Build Release APK
         run: |
