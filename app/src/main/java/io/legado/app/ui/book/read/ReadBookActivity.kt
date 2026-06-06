@@ -1653,13 +1653,6 @@ $content
     }
 
     /**
-     * 替换
-     */
-    override fun openReplaceRule() {
-        replaceActivity.launch(Intent(this, ReplaceRuleActivity::class.java))
-    }
-
-    /**
      * 打开目录
      */
     override fun openChapterList() {

@@ -80,7 +80,7 @@ class HighlightRuleEditDialog(
         val density = resources.displayMetrics.density
 
         binding.tvPageTitle.setTextColor(primaryTextColor)
-        binding.tvSaveAction.setTextColor(
+        binding.btnSave.setTextColor(
             if (ColorUtils.isColorLight(accentColor)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
         )
 
@@ -386,13 +386,13 @@ class HighlightRuleEditDialog(
         )
     }
 
-    private fun buildPreviewText(rule: HighlightRule): android.text.SpannedString {
+    private fun buildPreviewText(rule: HighlightRule): android.text.Spannable {
         val pattern = rule.pattern
         val sampleText = rule.sampleText.ifBlank { rule.normalizedSampleText() }
         val spannable = android.text.SpannableString(sampleText)
         
         if (pattern.isBlank()) {
-            return android.text.SpannableString(sampleText)
+            return spannable
         }
         
         return kotlin.runCatching {
@@ -419,7 +419,7 @@ class HighlightRuleEditDialog(
                 }
             }
             spannable
-        }.getOrDefault(android.text.SpannableString(sampleText))
+        }.getOrDefault(spannable)
     }
 
     private fun validatePattern(pattern: String): String? {
