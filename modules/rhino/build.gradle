@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    compileSdk = compile_sdk_version
+    compileSdk = compile_sdk_version as Integer
     namespace = 'com.script'
     kotlin {
         jvmToolchain {
