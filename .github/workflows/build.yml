@@ -16,63 +16,78 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Setup Keystore
+      - name: Setup Android Signing
         env:
-          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
         run: |
-          # 调试：检查 secret 是否被正确读取
-          echo "📌 检查 secret 配置..."
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "❌ 错误：RELEASE_KEY_STORE_BASE64 secret 为空！"
-            echo "❌ 请在 GitHub Settings → Secrets and variables → Actions 中配置 RELEASE_KEY_STORE_BASE64"
-            echo "❌ 注意：GitHub Secrets 名称区分大小写"
-            echo ""
-            echo "📝 如何生成正确的 secret："
-            echo "   1. 在本地终端运行（Linux/macOS）："
-            echo "      base64 -w 0 release.keystore | xclip -selection clipboard"
-            echo "      或 macOS: base64 -i release.keystore | pbcopy"
-            echo "   2. Windows PowerShell:"
-            echo "      [Convert]::ToBase64String([IO.File]::ReadAllBytes('release.keystore')) | Set-Clipboard"
-            echo "   3. 将输出粘贴到 GitHub Secrets"
+          # 清理可能存在的旧 gradle.properties 缓存
+          rm -f gradle.properties
+          echo "🔧 Created fresh gradle.properties"
+          touch gradle.properties
+          
+          if [ ! -z "$KEYSTORE_BASE64" ]; then
+            echo "✅ Using RELEASE_KEY_STORE secret for consistent signing"
+            echo "Setting up signing keys..."
+            
+            # 使用固定的密钥文件路径，确保签名一致性
+            mkdir -p $GITHUB_WORKSPACE/keystore
+            
+            # 解码 keystore 并验证
+            echo "$KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/keystore/release.keystore
+            
+            # 验证 keystore 文件大小和内容
+            KEYSTORE_SIZE=$(stat -c%s $GITHUB_WORKSPACE/keystore/release.keystore 2>/dev/null || echo "0")
+            echo "📦 Keystore size: $KEYSTORE_SIZE bytes"
+            
+            if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
+              echo "❌ ERROR: Keystore file is too small ($KEYSTORE_SIZE bytes), may be corrupted!"
+              echo "❌ Please check your RELEASE_KEY_STORE secret in GitHub Settings"
+              echo "❌ The keystore should be at least 1KB"
+              exit 1
+            fi
+            
+            # 验证 keystore 是否可以被读取
+            if command -v keytool &> /dev/null; then
+              echo "🔐 Verifying keystore integrity..."
+              keytool -list -keystore $GITHUB_WORKSPACE/keystore/release.keystore -storepass "${{ secrets.RELEASE_STORE_PASSWORD }}" -alias "${{ secrets.RELEASE_KEY_ALIAS }}" > /dev/null 2>&1
+              if [ $? -eq 0 ]; then
+                echo "✅ Keystore verification passed"
+              else
+                echo "⚠️ Keystore verification failed, but continuing..."
+              fi
+            fi
+            
+            # 写入 gradle.properties
+            # 1. 首先写入签名配置
+            echo "RELEASE_STORE_FILE=./keystore/release.keystore" >> gradle.properties
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
+            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+            
+            # 2. 添加缺失的 Cronet 版本配置 - 这是修复的关键！
+            echo "CronetVersion=119.0.6045.134" >> gradle.properties
+            echo "CronetMainVersion=119" >> gradle.properties
+            
+            # 3. 添加其他必要的 Gradle 属性
+            echo "org.gradle.parallel=true" >> gradle.properties
+            echo "org.gradle.caching=true" >> gradle.properties
+            echo "org.gradle.jvmargs=-Xmx4096m -Dfile.encoding=UTF-8" >> gradle.properties
+            echo "android.useAndroidX=true" >> gradle.properties
+            echo "android.enableJetifier=true" >> gradle.properties
+            
+            echo "✅ Keystore setup completed at ./keystore/release.keystore"
+            ls -la $GITHUB_WORKSPACE/keystore/release.keystore
+            
+            # 显示 gradle.properties 内容（隐藏敏感信息）
+            echo "📋 gradle.properties content (sanitized):"
+            cat gradle.properties | grep -v "PASSWORD" | sed 's/storepass=.*/storepass=***/' | sed 's/keypass=.*/keypass=***/'
+          else
+            echo "❌ ERROR: No keystore configured!"
+            echo "❌ This will cause different signatures for each build!"
+            echo "❌ Please configure RELEASE_KEY_STORE secret in GitHub Settings"
+            echo "❌ Build will fail to ensure signature consistency"
             exit 1
           fi
-          
-          echo "✅ Secret 已读取，长度：${#KEYSTORE_BASE64} 字符"
-          
-          mkdir -p keystore
-          
-          # 移除所有空白字符后解码
-          echo "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > keystore/release.keystore
-          echo "✅ Keystore 已创建"
-          
-          # 验证 keystore 文件
-          KEYSTORE_SIZE=$(stat -c%s keystore/release.keystore 2>/dev/null || echo "0")
-          echo "📦 Keystore 文件大小：$KEYSTORE_SIZE bytes"
-          
-          if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
-            echo "❌ 错误：Keystore 文件过小，可能已损坏！"
-            echo "   实际大小：$KEYSTORE_SIZE bytes"
-            echo "   预期大小：至少 1KB"
-            echo "❌ 请检查 GitHub Settings 中的 RELEASE_KEY_STORE_BASE64 secret 配置"
-            echo ""
-            echo "📝 如何生成正确的 secret："
-            echo "   1. 在本地终端运行（Linux/macOS）："
-            echo "      base64 -w 0 release.keystore | xclip -selection clipboard"
-            echo "      或 macOS: base64 -i release.keystore | pbcopy"
-            echo "   2. Windows PowerShell:"
-            echo "      [Convert]::ToBase64String([IO.File]::ReadAllBytes('release.keystore')) | Set-Clipboard"
-            echo "   3. 确保复制完整内容，不要有遗漏"
-            echo "   4. 将输出粘贴到 GitHub Secrets"
-            exit 1
-          fi
-          
-          # 创建 gradle.properties
-          echo "RELEASE_STORE_FILE=./keystore/release.keystore" > gradle.properties
-          echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
-          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
-          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
-          echo "✅ 签名配置已完成"
-          cat gradle.properties
 
       - name: Build Release APK
         run: |
@@ -82,26 +97,25 @@ jobs:
           cat gradle.properties | grep -v "PASSWORD" || echo "No gradle.properties found"
           echo ""
           
-          # 显示构建错误详情
+          # 显示缺失的属性警告
+          if ! grep -q "CronetVersion" gradle.properties; then
+            echo "⚠️ WARNING: CronetVersion is not defined in gradle.properties!"
+          fi
+          if ! grep -q "CronetMainVersion" gradle.properties; then
+            echo "⚠️ WARNING: CronetMainVersion is not defined in gradle.properties!"
+          fi
+          
           echo "🔨 开始构建..."
+          # 禁用 configuration-cache 和 build-cache 确保每次构建都使用最新的签名配置
           ./gradlew assembleAppRelease \
             --no-daemon \
             --no-configuration-cache \
             --no-build-cache \
             -x lint \
-            --warning-mode all \
-            2>&1 | tee build.log
-          
-          # 如果构建失败，显示详细错误
-          if [ ${PIPESTATUS[0]} -ne 0 ]; then
-            echo ""
-            echo "❌ 构建失败！查看错误摘要："
-            grep -A 10 "BUILD FAILED" build.log || tail -50 build.log
-            exit 1
-          fi
+            -Pandroid.injected.signing=true
           
           echo ""
-          echo "✅ 构建成功！"
+          echo "📦 Build completed, checking APK..."
 
       - name: Check APK output
         run: |
@@ -125,6 +139,10 @@ jobs:
             fi
           else
             echo "❌ ERROR: No APK file found!"
+            echo "📁 Listing build directory:"
+            find app/build -type f -name "*.apk" || echo "No APK files found"
+            echo "📁 app/build directory structure:"
+            find app/build -type d | head -20
             exit 1
           fi
 
