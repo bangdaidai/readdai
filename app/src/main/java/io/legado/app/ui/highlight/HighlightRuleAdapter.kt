@@ -13,7 +13,6 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.databinding.ItemHighlightRuleBinding
-import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 
@@ -106,7 +105,6 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
                 swtEnabled.isChecked = item.enabled
                 cbName.isChecked = selected.contains(item)
                 tvDesc.text = item.styleSummary()
-                tvPattern.text = "${item.group} / ${item.targetScopeLabel()} / ${item.displayPattern()}"
             } else {
                 for (i in payloads.indices) {
                     val bundle = payloads[i] as Bundle
@@ -116,7 +114,6 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
                             "upName" -> {
                                 cbName.text = item.getDisplayNameGroup()
                                 tvDesc.text = item.styleSummary()
-                                tvPattern.text = "${item.group} / ${item.targetScopeLabel()} / ${item.displayPattern()}"
                             }
                             "enabled" -> swtEnabled.isChecked = item.enabled
                         }

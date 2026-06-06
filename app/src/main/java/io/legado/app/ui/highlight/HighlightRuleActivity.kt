@@ -10,6 +10,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.gson.reflect.TypeToken
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
 import io.legado.app.data.entities.HighlightRule
@@ -68,7 +69,6 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
     }
 
     private fun initRecyclerView() {
-        binding.recyclerView.setEdgeEffectColor(primaryColor)
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
         val itemTouchCallback = ItemTouchCallback(adapter)
@@ -88,7 +88,6 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
     private fun initSelectActionView() {
         binding.selectActionBar.setMainActionText(R.string.delete)
         binding.selectActionBar.inflateMenu(R.menu.highlight_rule_sel)
-        binding.selectActionBar.setOnMenuItemClickListener(this)
         binding.selectActionBar.setCallBack(this)
     }
 
@@ -144,7 +143,7 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
 
     private fun upGroupMenu() = groupMenu?.let { menu ->
         menu.removeGroup(R.id.highlight_group)
-        groups.forEach {
+        HighlightRuleGroupStore.load(this).forEach {
             menu.add(R.id.highlight_group, Menu.NONE, Menu.NONE, it)
         }
     }
@@ -154,49 +153,36 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
         applyGroupFilter()
     }
 
+    // SelectActionBar
     override fun selectAll(selectAll: Boolean) {
-        if (selectAll) {
-            adapter.selectAll()
-        } else {
-            adapter.revertSelection()
-        }
+        if (selectAll) adapter.selectAll() else adapter.revertSelection()
     }
-
-    override fun revertSelection() {
-        adapter.revertSelection()
-    }
-
+    override fun revertSelection() = adapter.revertSelection()
     override fun onClickSelectBarMainAction() {
-        alert(titleResource = R.string.draw, messageResource = R.string.sure_del) {
-            yesButton { 
-                val selectedRules = adapter.selection.toTypedArray()
-                rules.removeAll(selectedRules)
+        alert(R.string.draw, R.string.sure_del) {
+            yesButton {
+                rules.removeAll(adapter.selection.toSet())
                 syncRules()
             }
             noButton()
         }
     }
+    override fun upCountView() = binding.selectActionBar.upCountView(
+        adapter.selection.size, adapter.itemCount
+    )
 
+    // Search
     override fun onQueryTextChange(newText: String?): Boolean {
         val filtered = getFilteredRules()
-        val searchKey = newText?.trim()
-        if (searchKey.isNullOrBlank()) {
-            adapter.setItems(filtered)
-        } else {
-            val searchResult = filtered.filter {
-                it.name.contains(searchKey, true) ||
-                it.pattern.contains(searchKey, true) ||
-                it.group.contains(searchKey, true)
-            }
-            adapter.setItems(searchResult)
-        }
+        val key = newText?.trim()
+        adapter.setItems(if (key.isNullOrBlank()) filtered else filtered.filter {
+            it.name.contains(key, true) || it.pattern.contains(key, true) || it.group.contains(key, true)
+        })
         return false
     }
+    override fun onQueryTextSubmit(query: String?) = false
 
-    override fun onQueryTextSubmit(query: String?): Boolean {
-        return false
-    }
-
+    // Menu
     override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_add -> editRule(null)
@@ -220,35 +206,14 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
         return super.onCompatOptionsItemSelected(item)
     }
 
-    override fun onMenuItemClick(item: MenuItem?): Boolean {
-        when (item?.itemId) {
-            R.id.menu_enable_selection -> enableSelection(adapter.selection)
-            R.id.menu_disable_selection -> disableSelection(adapter.selection)
-            R.id.menu_export_selection -> exportRulesToClipboard(adapter.selection)
+    private fun resetRules() = alert("恢复默认") {
+        setMessage("恢复后会重新生成预置规则，自定义规则会被覆盖。")
+        okButton {
+            rules.clear()
+            rules.addAll(HighlightRuleStore.reset(this@HighlightRuleActivity))
+            syncRules()
         }
-        return false
-    }
-
-    private fun enableSelection(selection: List<HighlightRule>) {
-        selection.forEach { it.enabled = true }
-        syncRules()
-    }
-
-    private fun disableSelection(selection: List<HighlightRule>) {
-        selection.forEach { it.enabled = false }
-        syncRules()
-    }
-
-    private fun resetRules() {
-        alert("恢复默认") {
-            setMessage("恢复后会重新生成预置规则，自定义规则会被覆盖。")
-            okButton {
-                rules.clear()
-                rules.addAll(HighlightRuleStore.reset(this@HighlightRuleActivity))
-                syncRules()
-            }
-            cancelButton()
-        }
+        cancelButton()
     }
 
     private fun editRule(rule: HighlightRule?) {
@@ -284,7 +249,8 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
             toastOnUi("剪贴板为空")
             return
         }
-        val imported = GSON.fromJsonArray<HighlightRule>(clip).getOrNull()
+        val type = object : TypeToken<List<HighlightRule>>() {}.type
+        val imported: List<HighlightRule>? = GSON.fromJson(clip, type)
         if (imported.isNullOrEmpty()) {
             toastOnUi("导入格式错误")
             return
@@ -310,34 +276,26 @@ class HighlightRuleActivity : BaseActivity<ActivityHighlightRuleBinding>(),
         toastOnUi("已复制 ${targetRules.size} 条规则")
     }
 
-    override fun update(vararg rule: HighlightRule) {
+    private fun enableSelection(selection: List<HighlightRule>) {
+        selection.forEach { it.enabled = true }
         syncRules()
     }
 
-    override fun delete(rule: HighlightRule) {
-        alert("删除") {
-            setMessage("确定删除\"${rule.name}\"吗？")
-            okButton {
-                rules.removeAll { it.id == rule.id }
-                syncRules()
-            }
-            cancelButton()
-        }
+    private fun disableSelection(selection: List<HighlightRule>) {
+        selection.forEach { it.enabled = false }
+        syncRules()
     }
 
-    override fun edit(rule: HighlightRule) {
-        editRule(rule)
+    // Adapter Callbacks
+    override fun update(vararg rule: HighlightRule) = syncRules()
+    override fun delete(rule: HighlightRule) = alert("删除") {
+        setMessage("确定删除 \"${rule.name}\" 吗？")
+        okButton { rules.removeAll { it.id == rule.id }; syncRules() }
+        cancelButton()
     }
-
+    override fun edit(rule: HighlightRule) = editRule(rule)
     override fun switchEnable(rule: HighlightRule, enabled: Boolean) {
         rule.enabled = enabled
         syncRules()
-    }
-
-    override fun upCountView() {
-        binding.selectActionBar.upCountView(
-            adapter.selection.size,
-            adapter.itemCount
-        )
     }
 }

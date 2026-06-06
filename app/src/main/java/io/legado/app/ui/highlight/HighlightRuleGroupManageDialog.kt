@@ -42,7 +42,7 @@ class HighlightRuleGroupManageDialog(
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
         binding.btnBack.setOnClickListener { dismissAllowingStateLoss() }
-        binding.btnaddGroup.setOnClickListener { showGroupInputDialog(null) }
+        binding.btnAddGroup.setOnClickListener { showGroupInputDialog(null) }
         binding.llViewAll.setOnClickListener {
             onSelectGroup(null)
             dismissAllowingStateLoss()
@@ -96,6 +96,20 @@ class HighlightRuleGroupManageDialog(
                     HighlightRuleStore.save(requireContext(), rules)
                     loadData()
                     onChanged(source, newName)
+                }
+            }
+            cancelButton()
+        }
+    }
+
+    private fun showGroupOptionsDialog(group: String) {
+        val items = arrayOf("重命名", "导出", "删除")
+        alert("分组操作") {
+            items(items) { _, index ->
+                when (index) {
+                    0 -> showGroupInputDialog(group)
+                    1 -> exportGroup(group)
+                    2 -> deleteGroup(group)
                 }
             }
             cancelButton()
@@ -157,17 +171,7 @@ class HighlightRuleGroupManageDialog(
             }
             binding.itemRoot.setOnLongClickListener {
                 getItem(holder.layoutPosition)?.let { group ->
-                    alert("分组操作") {
-                        val items = arrayOf("重命名", "导出", "删除")
-                        itemsChoice(items) { _, i ->
-                            when (i) {
-                                0 -> showGroupInputDialog(group)
-                                1 -> exportGroup(group)
-                                2 -> deleteGroup(group)
-                            }
-                        }
-                        cancelButton()
-                    }
+                    showGroupOptionsDialog(group)
                 }
                 true
             }

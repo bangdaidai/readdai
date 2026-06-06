@@ -15,8 +15,8 @@ import io.legado.app.databinding.DialogHighlightRuleEditBinding
 import io.legado.app.help.highlight.HighlightRuleGroupStore
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.accentColor
-import io.legado.app.lib.theme.getPrimaryTextColor
-import io.legado.app.lib.theme.getSecondaryTextColor
+import io.legado.app.lib.theme.primaryTextColor
+import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.toastOnUi
@@ -52,8 +52,8 @@ class HighlightRuleEditDialog(
     }
 
     private fun initTheme() {
-        primaryTextColor = requireContext().getPrimaryTextColor()
-        secondaryTextColor = requireContext().getSecondaryTextColor()
+        primaryTextColor = requireContext().primaryTextColor
+        secondaryTextColor = requireContext().secondaryTextColor
         accentColor = requireContext().accentColor
     }
 
