@@ -86,9 +86,6 @@ data class TextLine(
         if (column !is TextColumn) {
             onlyTextColumn = false
         }
-        if (column is ImageColumn && column.isAnimated) {
-            hasAnimatedColumn = true
-        }
         column.textLine = this
         textColumns.add(column)
     }
@@ -99,9 +96,6 @@ data class TextLine(
     fun addColumns(columns: Collection<BaseColumn>) {
         onlyTextColumn = false
         columns.forEach { column ->
-            if (column is ImageColumn && column.isAnimated) {
-                hasAnimatedColumn = true
-            }
             column.textLine = this
         }
         textColumns.addAll(columns)
@@ -283,15 +277,15 @@ data class TextLine(
      * 绘制全局下划线（朗读标记除外），支持实线/虚线/波浪线/点线
      */
     private fun drawUnderline(canvas: Canvas, underlineMode: Int) {
-        val underlineWidth = ReadBookConfig.durConfig.underlineWidth
-        val underlineColor = ReadBookConfig.durConfig.underlineColor.toColorInt()
+        val underlineWidth = 1f
+        val underlineColor = ReadBookConfig.textColor
         val paint = PaintPool.obtain()
         paint.set(ChapterProvider.contentPaint)
         paint.color = underlineColor
         paint.strokeWidth = underlineWidth.dpToPx().toFloat()
         paint.style = android.graphics.Paint.Style.STROKE
         paint.isAntiAlias = true
-        val underlineOffset = ReadBookConfig.durConfig.underlineOffset
+        val underlineOffset = 2f
         val lineY = height + underlineOffset.dpToPx()
         val startX = lineStart + indentWidth
         val endX = lineEnd

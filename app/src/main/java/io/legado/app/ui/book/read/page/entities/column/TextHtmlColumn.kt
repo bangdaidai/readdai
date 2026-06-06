@@ -27,6 +27,16 @@ data class TextHtmlColumn(
 
     override var textLine: TextLine = emptyTextLine
 
+    override val textColor: Int? get() = mTextColor
+    override val underlineMode: Int get() = 0
+    override val underlineColor: Int? get() = null
+    override val underlineWidth: Float get() = 1f
+    override val underlineOffset: Float get() = 2f
+    override val underlineSvgPath: String get() = ""
+    override val bgImage: String get() = ""
+    override val bgImageFit: Int get() = 0
+    override val bgImageScale: Float get() = 1f
+
     private val textPaint: TextPaint by lazy {
         TextPaint(ChapterProvider.contentPaint).apply {
             textSize = mTextSize
@@ -50,6 +60,14 @@ data class TextHtmlColumn(
                 } else {
                     textLine.searchResultColumnCount--
                 }
+            }
+            field = value
+        }
+
+    override var isCurrentSearchResult: Boolean = false
+        set(value) {
+            if (field != value) {
+                textLine.invalidate()
             }
             field = value
         }
