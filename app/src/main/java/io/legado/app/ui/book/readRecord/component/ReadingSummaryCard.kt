@@ -33,23 +33,30 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import io.legado.app.data.appDb
+import io.legado.app.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 data class SummaryCardData(
     val title: String,
-    val readTypeText: String,
+    val bookType: Int = io.legado.app.constant.BookType.text,
     val bookCount: Int,
     val totalTimeMillis: Long,
-    val bookNamesForCover: List<Pair<String, String>>
+    val bookCovers: List<BookCoverData>
+)
+
+data class BookCoverData(
+    val bookName: String,
+    val coverUrl: String
 )
 
 @Composable
 fun ReadingSummaryCard(
     title: String,
+    bookType: Int = io.legado.app.constant.BookType.text,
     bookCount: Int,
     totalTimeMillis: Long,
-    bookNamesForCover: List<Pair<String, String>>,
+    bookCovers: List<BookCoverData>,
     onClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -58,8 +65,20 @@ fun ReadingSummaryCard(
     val textColorPrimary = io.legado.app.lib.theme.ThemeStore.textColorPrimary(context)
     val textColorSecondary = io.legado.app.lib.theme.ThemeStore.textColorSecondary(context)
     
-    val totalDurationMinutes = totalTimeMillis / 60000
-
+    val hours = totalTimeMillis / (1000 * 60 * 60)
+    val minutes = (totalTimeMillis / (1000 * 60)) % 60
+    val timeString = if (hours > 0) {
+        "${hours}小时${minutes}分钟"
+    } else {
+        "${minutes}分钟"
+    }
+    
+    val (actionText, measureWord) = when {
+        bookType and io.legado.app.constant.BookType.audio != 0 -> "已听" to "部"
+        bookType and io.legado.app.constant.BookType.video != 0 -> "已看" to "部"
+        else -> "已读" to "本"
+    }
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -78,40 +97,45 @@ fun ReadingSummaryCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            Column(modifier = Modifier.weight(1f)) {
-
+            Column {
                 Text(
                     text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = androidx.compose.ui.graphics.Color(primaryColor)
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = androidx.compose.ui.graphics.Color(textColorSecondary)
                 )
-
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = "已读 ",
+                        text = actionText,
                         fontSize = 16.sp,
                         color = androidx.compose.ui.graphics.Color(textColorPrimary)
                     )
                     Text(
-                        text = "$bookCount",
-                        fontSize = 16.sp,
+                        text = " $bookCount ",
+                        fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
-                        color = androidx.compose.ui.graphics.Color(textColorPrimary)
+                        color = androidx.compose.ui.graphics.Color(primaryColor)
                     )
                     Text(
-                        text = " 本书，时长 ${formatMinutes(totalDurationMinutes)}",
+                        text = measureWord,
                         fontSize = 16.sp,
-                        color = androidx.compose.ui.graphics.Color(textColorSecondary)
+                        color = androidx.compose.ui.graphics.Color(textColorPrimary)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "总时长 $timeString",
+                    fontSize = 12.sp,
+                    color = androidx.compose.ui.graphics.Color(textColorSecondary)
+                )
             }
             
             BookStackView(
-                bookNamesForCover = bookNamesForCover
+                bookCovers = bookCovers
             )
         }
     }
@@ -119,25 +143,15 @@ fun ReadingSummaryCard(
 
 @Composable
 fun BookStackView(
-    bookNamesForCover: List<Pair<String, String>>
+    bookCovers: List<BookCoverData>
 ) {
     Box(contentAlignment = Alignment.CenterEnd) {
-        bookNamesForCover.reversed().forEachIndexed { index, (name, author) ->
-            var coverUrl by remember { mutableStateOf<String?>(null) }
-            
-            LaunchedEffect(name, author) {
-                withContext(Dispatchers.IO) {
-                    val book = appDb.bookDao.findByName(name).firstOrNull()
-                        ?: appDb.bookDao.findByName(author).firstOrNull()
-                    coverUrl = book?.coverUrl
-                }
-            }
-            
+        bookCovers.reversed().forEachIndexed { index, bookCover ->
             BookCoverItem(
-                coverUrl = coverUrl ?: "",
-                bookName = name,
+                coverUrl = bookCover.coverUrl,
+                bookName = bookCover.bookName,
                 index = index,
-                total = bookNamesForCover.size
+                total = bookCovers.size
             )
         }
     }
@@ -154,6 +168,8 @@ fun BookCoverItem(
         painter = rememberAsyncImagePainter(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(coverUrl)
+                .placeholder(R.drawable.ic_book)
+                .error(R.drawable.ic_book)
                 .crossfade(true)
                 .build()
         ),

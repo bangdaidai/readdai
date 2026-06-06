@@ -47,14 +47,6 @@
             android:title="@string/read_record"
             app:iconSpaceReserved="false" />
 
-        <io.legado.app.lib.prefs.Preference
-            android:icon="@drawable/ic_pie_chart"
-            android:key="readStatistics"
-            android:summary="@string/read_statistics_summary"
-            android:title="@string/read_statistics"
-            app:allowDividerBelow="false"
-            app:iconSpaceReserved="false" />
-
     </io.legado.app.lib.prefs.PreferenceCategory>
 
     <!-- 2. 配置 -->

@@ -616,6 +616,15 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+    /**
+     * 高亮规则变化
+     */
+    fun highlightRuleChanged() {
+        execute {
+            ReadBook.loadContent(resetPageOffset = false)
+        }
+    }
+
     fun disableSource() {
         execute {
             ReadBook.bookSource?.let {

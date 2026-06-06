@@ -45,7 +45,8 @@ import kotlinx.coroutines.withContext
 data class BookRankingData(
     val bookName: String,
     val bookAuthor: String,
-    val readTime: Long
+    val readTime: Long,
+    val coverUrl: String = ""
 )
 
 /**
@@ -97,11 +98,19 @@ fun TopReadingListCard(
             
             // 书籍列表
             topBooks.forEachIndexed { index, book ->
-                var coverPath by remember { mutableStateOf<String?>(null) }
+                var coverUrl by remember { mutableStateOf(book.coverUrl) }
                 
                 LaunchedEffect(book.bookName, book.bookAuthor) {
-                    withContext(Dispatchers.IO) {
-                        coverPath = getBookCover(book.bookName, book.bookAuthor)
+                    if (coverUrl.isEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            val session = appDb.readSessionDao.getSessionsByBook(book.bookName).firstOrNull()
+                            if (session?.coverUrl?.isNotEmpty() == true) {
+                                coverUrl = session.coverUrl
+                            } else {
+                                val bookEntity = appDb.bookDao.findByName(book.bookName).firstOrNull()
+                                coverUrl = bookEntity?.coverUrl ?: ""
+                            }
+                        }
                     }
                 }
 
@@ -109,14 +118,16 @@ fun TopReadingListCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onBookClick(book.bookName, book.bookAuthor) }
-                        .padding(vertical = 8.dp, horizontal = 8.dp),
+                        .padding(vertical = 8.dp, horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // 排名数字
                     Text(
                         text = "${index + 1}",
                         fontSize = 16.sp,
-                        modifier = Modifier.padding(start = 12.dp, end = 16.dp),
+                        modifier = Modifier
+                            .width(24.dp)
+                            .padding(end = 12.dp),
                         textAlign = TextAlign.Center,
                         color = if (index < 3) Color(primaryColor) else Color(textColorSecondary)
                     )
@@ -125,13 +136,18 @@ fun TopReadingListCard(
                     Image(
                         painter = rememberAsyncImagePainter(
                             model = ImageRequest.Builder(LocalContext.current)
-                                .data(coverPath)
+                                .data(coverUrl)
+                                .placeholder(io.legado.app.R.drawable.ic_book)
+                                .error(io.legado.app.R.drawable.ic_book)
                                 .crossfade(true)
                                 .build()
                         ),
                         contentDescription = book.bookName,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.width(40.dp)
+                        modifier = Modifier
+                            .width(40.dp)
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(4.dp))
                     )
                     
                     Spacer(modifier = Modifier.width(12.dp))
@@ -164,13 +180,6 @@ fun TopReadingListCard(
                 }
             }
         }
-    }
-}
-
-private suspend fun getBookCover(name: String, author: String): String? {
-    return withContext(Dispatchers.IO) {
-        appDb.bookDao.findByName(name).firstOrNull()?.coverUrl
-            ?: appDb.bookDao.findByName(author).firstOrNull()?.coverUrl
     }
 }
 

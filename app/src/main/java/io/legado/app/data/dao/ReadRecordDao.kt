@@ -22,6 +22,9 @@ interface ReadRecordDao {
     @Delete
     fun delete(vararg record: ReadRecord)
 
+    @Query("SELECT * FROM readRecord WHERE bookName = :bookName LIMIT 1")
+    suspend fun getByName(bookName: String): ReadRecord?
+
     @Query("delete from readRecord")
     fun clear()
 

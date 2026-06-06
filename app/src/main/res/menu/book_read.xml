@@ -85,7 +85,29 @@
         android:id="@+id/menu_enable_replace"
         android:checkable="true"
         android:checked="true"
-        android:title="@string/replace_rule_title"
+        android:title="启用替换净化"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_enable_highlight"
+        android:checkable="true"
+        android:checked="true"
+        android:title="启用高亮规则"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_effective_replaces"
+        android:title="@string/effective_replaces"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_effective_highlights"
+        android:title="生效的高亮规则"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_highlight_rule"
+        android:title="高亮规则管理"
         app:showAsAction="never" />
 
     <item
@@ -144,7 +166,7 @@
 
     <item
         android:id="@+id/menu_replace_rule"
-        android:title="@string/replace_rule_title"
+        android:title="替换规则管理"
         app:showAsAction="never" />
 
     <item

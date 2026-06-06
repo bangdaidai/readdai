@@ -20,6 +20,15 @@ jobs:
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
         run: |
+          # 清理可能存在的旧 gradle.properties 缓存
+          if [ -f gradle.properties ]; then
+            echo "清理旧的签名配置..."
+            sed -i '/^RELEASE_STORE_FILE/d' gradle.properties
+            sed -i '/^RELEASE_STORE_PASSWORD/d' gradle.properties
+            sed -i '/^RELEASE_KEY_ALIAS/d' gradle.properties
+            sed -i '/^RELEASE_KEY_PASSWORD/d' gradle.properties
+          fi
+          
           if [ ! -z "$KEYSTORE_BASE64" ]; then
             echo "✅ Using RELEASE_KEY_STORE secret for consistent signing"
             echo "Setting up signing keys..."
@@ -41,7 +50,12 @@ jobs:
       - name: Build Release APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleAppRelease --no-daemon -x lint
+          # 禁用 configuration-cache 和 build-cache 确保每次构建都使用最新的签名配置
+          ./gradlew assembleAppRelease \
+            --no-daemon \
+            --no-configuration-cache \
+            --no-build-cache \
+            -x lint
 
       - name: Check APK output
         run: |

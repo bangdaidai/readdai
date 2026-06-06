@@ -338,6 +338,22 @@ data class Book(
         return config.reSegment
     }
 
+    fun setUseHighlightRule(useHighlightRule: Boolean) {
+        config.useHighlightRule = useHighlightRule
+    }
+
+    fun getUseHighlightRule(): Boolean {
+        val useHighlightRule = config.useHighlightRule
+        if (useHighlightRule != null) {
+            return useHighlightRule
+        }
+        // 图片类书源 epub本地 默认关闭高亮
+        if (isImage || isEpub) {
+            return false
+        }
+        return true
+    }
+
     fun setPageAnim(pageAnim: Int?) {
         config.pageAnim = pageAnim
     }
@@ -598,6 +614,7 @@ data class Book(
         var reSegment: Boolean = false,
         var imageStyle: String? = null,
         var useReplaceRule: Boolean? = null,// 正文使用净化替换规则
+        var useHighlightRule: Boolean? = null,// 正文使用高亮规则
         var delTag: Long = 0L,//去除标签
         var ttsEngine: String? = null,
         var splitLongChapter: Boolean = true,

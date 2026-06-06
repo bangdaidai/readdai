@@ -681,6 +681,8 @@ class ReadMenu @JvmOverloads constructor(
     interface CallBack {
         fun autoPage()
         fun openReplaceRule()
+        fun openHighlightRule()
+        fun changeHighlightRuleState()
         fun openChapterList()
         fun openSearchActivity(searchWord: String?)
         fun openSourceEditActivity()

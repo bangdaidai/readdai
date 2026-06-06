@@ -28,13 +28,13 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.model.local.ReadStatisticsViewModel
 import io.legado.app.ui.widget.MonthlyHeatmapView
 import io.legado.app.ui.widget.YearlyHeatmapView
+import io.legado.app.ui.book.readRecord.component.BookRankingData
 import io.legado.app.lib.dialogs.alert
 
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.HeatmapCacheManager
 import io.legado.app.utils.StatisticsCacheManager
-import io.legado.app.ui.book.read.ReadTimeTop10Adapter
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -46,7 +46,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
     override val viewModel = ReadStatisticsViewModel()
 
     private val statisticsAdapter by lazy { ReadStatisticsAdapter(this) }
-    private val top10Adapter by lazy { ReadTimeTop10Adapter(this) }
     private var currentType = 0 // 0:总计, 1:每日, 2:每月, 3:每年
     // 为每种统计类型维护独立的日期变量，避免日期联动
     private var currentDate: Calendar = Calendar.getInstance()
@@ -64,14 +63,15 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
     private lateinit var monthlyHeatmapView: MonthlyHeatmapView
     private lateinit var yearlyHeatmapView: YearlyHeatmapView
     private lateinit var heatmapContainer: LinearLayout
+    private var currentTop10Data: List<BookReadTimeRank> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding.titleBar.title = getString(R.string.read_statistics)
         initView()
+        initComposeTop10()
         // 确保 RecyclerView 的布局管理器已正确设置
         binding.recyclerView!!.layoutManager = LinearLayoutManager(this)
-        binding.recyclerViewTop10!!.layoutManager = LinearLayoutManager(this)
         // 确保初始状态下导航可见性正确（总计模式应隐藏导航）
         currentType = 0
         currentReadType = null
@@ -111,6 +111,23 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 目前不需要特殊处理
     }
 
+    private fun initComposeTop10() {
+        binding.composeTop10Container?.setContent {
+            io.legado.app.ui.book.readRecord.component.TopReadingListCard(
+                topBooks = currentTop10Data.map { rank ->
+                    BookRankingData(
+                        bookName = rank.bookName,
+                        bookAuthor = "",
+                        readTime = rank.readTime
+                    )
+                }.take(10),
+                onBookClick = { bookName, bookAuthor ->
+                    // 点击书籍可以跳转到对应阅读记录或详情页
+                }
+            )
+        }
+    }
+
     private fun initView() {
         binding.recyclerView?.setEdgeEffectColor(primaryColor)
         binding.recyclerView?.layoutManager = LinearLayoutManager(this)
@@ -135,34 +152,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 为阅读总览添加行间距
         val spacing = resources.getDimensionPixelSize(R.dimen.dimen_spacing_5dp) // 5dp的行间距
         binding.recyclerView?.addItemDecoration(object : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
-            override fun getItemOffsets(outRect: android.graphics.Rect, view: android.view.View, parent: androidx.recyclerview.widget.RecyclerView, state: androidx.recyclerview.widget.RecyclerView.State) {
-                val position = parent.getChildAdapterPosition(view)
-                val itemCount = parent.adapter?.itemCount ?: 0
-
-                // 为第一项添加顶部间距
-                if (position == 0) {
-                    outRect.top = spacing
-                }
-
-                // 为所有项添加底部间距，包括最后一项
-                outRect.bottom = spacing
-            }
-        })
-
-        // 初始化TOP10 RecyclerView
-        binding.recyclerViewTop10?.setEdgeEffectColor(primaryColor)
-        binding.recyclerViewTop10?.layoutManager = LinearLayoutManager(this)
-        binding.recyclerViewTop10?.adapter = top10Adapter
-        binding.recyclerViewTop10?.itemAnimator = null
-        // 禁用RecyclerView的嵌套滚动，使其在NestedScrollView中正常滚动
-        binding.recyclerViewTop10?.isNestedScrollingEnabled = false
-        // 禁用RecyclerView的滚动条，避免与NestedScrollView冲突
-        binding.recyclerViewTop10?.isVerticalScrollBarEnabled = false
-        // 设置RecyclerView的高度为wrap_content，确保内容完全显示
-        binding.recyclerViewTop10?.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
-
-        // 为阅读时长排行TOP10添加行间距
-        binding.recyclerViewTop10?.addItemDecoration(object : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
             override fun getItemOffsets(outRect: android.graphics.Rect, view: android.view.View, parent: androidx.recyclerview.widget.RecyclerView, state: androidx.recyclerview.widget.RecyclerView.State) {
                 val position = parent.getChildAdapterPosition(view)
                 val itemCount = parent.adapter?.itemCount ?: 0
@@ -521,39 +510,56 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
     }
 
     private suspend fun loadTop10Data() {
-        val top10Data = if (currentReadType != null) {
+        currentTop10Data = if (currentReadType != null) {
             StatisticsService.getTotalReadTimeTop10ByType(currentReadType!!)
         } else {
             StatisticsService.getTotalReadTimeTop10()
         }
-        top10Adapter.setData(top10Data)
+        updateComposeTop10()
     }
 
     private suspend fun loadTop10DataForDate(dateStr: String) {
-        val top10Data = if (currentReadType != null) {
+        currentTop10Data = if (currentReadType != null) {
             StatisticsService.getDailyReadTimeTop10ByType(dateStr, currentReadType!!)
         } else {
             StatisticsService.getDailyReadTimeTop10(dateStr)
         }
-        top10Adapter.setData(top10Data)
+        updateComposeTop10()
     }
 
     private suspend fun loadTop10DataForMonth(monthStr: String) {
-        val top10Data = if (currentReadType != null) {
+        currentTop10Data = if (currentReadType != null) {
             StatisticsService.getMonthlyReadTimeTop10ByType(monthStr, currentReadType!!)
         } else {
             StatisticsService.getMonthlyReadTimeTop10(monthStr)
         }
-        top10Adapter.setData(top10Data)
+        updateComposeTop10()
     }
 
     private suspend fun loadTop10DataForYear(yearStr: String) {
-        val top10Data = if (currentReadType != null) {
+        currentTop10Data = if (currentReadType != null) {
             StatisticsService.getYearlyReadTimeTop10ByType(yearStr, currentReadType!!)
         } else {
             StatisticsService.getYearlyReadTimeTop10(yearStr)
         }
-        top10Adapter.setData(top10Data)
+        updateComposeTop10()
+    }
+
+    private fun updateComposeTop10() {
+        binding.composeTop10Container?.setContent {
+            io.legado.app.ui.book.readRecord.component.TopReadingListCard(
+                topBooks = currentTop10Data.map { rank ->
+                    BookRankingData(
+                        bookName = rank.bookName,
+                        bookAuthor = "",
+                        readTime = rank.readTime
+                    )
+                }.take(10),
+                onBookClick = { bookName, bookAuthor ->
+                    // 点击书籍可以跳转到对应阅读记录或详情页
+                }
+            )
+        }
     }
 
     private suspend fun loadDailyStatistics() {
@@ -986,80 +992,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     // 设置RecyclerView的高度为wrap_content，让它根据内容自动调整
                     recyclerView.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
                     recyclerView.requestLayout()
-                }
-            })
-        }
-
-        // 刷新TOP10 RecyclerView
-        binding.recyclerViewTop10?.post {
-            val recyclerView = binding.recyclerViewTop10 ?: return@post
-            val adapter = recyclerView.adapter ?: return@post
-
-            // 即使没有数据，也保持RecyclerView可见以显示空数据提示
-            // 设置RecyclerView的高度为wrap_content，让它根据内容自动调整
-            recyclerView.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
-            recyclerView.requestLayout()
-
-            // 确保RecyclerView已经布局完成
-            recyclerView.measure(
-                View.MeasureSpec.makeMeasureSpec(recyclerView.width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.UNSPECIFIED
-            )
-
-            // 使用ViewTreeObserver确保在布局完成后计算高度
-            recyclerView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-                override fun onGlobalLayout() {
-                    recyclerView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-
-                    // 计算实际高度
-                    val layoutManager = recyclerView.layoutManager as LinearLayoutManager
-                    var totalHeight = 0
-
-                    for (i in 0 until adapter.itemCount) {
-                        val view = layoutManager.findViewByPosition(i)
-                        if (view != null) {
-                            totalHeight += view.height
-                        } else {
-                            // 如果视图还没有创建，使用测量方法
-                            val holder = recyclerView.adapter!!.createViewHolder(recyclerView, recyclerView.adapter!!.getItemViewType(i))
-                            holder.itemView.measure(
-                                View.MeasureSpec.makeMeasureSpec(recyclerView.width, View.MeasureSpec.EXACTLY),
-                                View.MeasureSpec.UNSPECIFIED
-                            )
-                            totalHeight += holder.itemView.measuredHeight
-                        }
-                    }
-
-                    // 添加间距
-                    val spacing = resources.getDimensionPixelSize(R.dimen.dimen_spacing_5dp)
-                    totalHeight += spacing * (adapter.itemCount + 1) // 顶部和每个项目的底部间距
-
-                    // 设置RecyclerView的高度为wrap_content，让它根据内容自动调整
-                    recyclerView.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    recyclerView.requestLayout()
-
-                    // 确保NestedScrollView始终可以滚动
-                    // 添加一个小的底部边距，确保即使内容填满屏幕也能滚动
-                    val parentScrollView = recyclerView.parent as? androidx.core.widget.NestedScrollView
-                    parentScrollView?.post {
-                        val child = parentScrollView.getChildAt(0) as? LinearLayout
-                        if (child != null) {
-                            // 检查内容高度是否小于屏幕高度
-                            val screenHeight = resources.displayMetrics.heightPixels
-                            val contentHeight = child.measuredHeight
-
-                            if (contentHeight < screenHeight) {
-                                // 如果内容高度小于屏幕高度，添加底部边距确保可以滚动
-                            val bottomMargin = (screenHeight * 0.1).toInt() // 屏幕高度的10%
-                            val layoutParams = child.layoutParams as? ViewGroup.MarginLayoutParams
-                            if (layoutParams != null) {
-                                layoutParams.setMargins(layoutParams.leftMargin, layoutParams.topMargin, layoutParams.rightMargin, bottomMargin)
-                                child.layoutParams = layoutParams
-                                child.requestLayout()
-                            }
-                            }
-                        }
-                    }
                 }
             })
         }

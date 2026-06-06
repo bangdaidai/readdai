@@ -672,6 +672,7 @@ $content
                 R.id.menu_group_epub -> item.isVisible = book.isEpub
                 else -> when (item.itemId) {
                     R.id.menu_enable_replace -> item.isChecked = book.getUseReplaceRule()
+                    R.id.menu_enable_highlight -> item.isChecked = book.getUseHighlightRule()
                     R.id.menu_re_segment -> item.isChecked = book.getReSegment()
 //                    R.id.menu_enable_review -> {
 //                        item.isVisible = BuildConfig.DEBUG
@@ -789,6 +790,8 @@ $content
 
             R.id.menu_enable_replace -> changeReplaceRuleState()
             R.id.menu_replace_rule -> openReplaceRule()
+            R.id.menu_enable_highlight -> changeHighlightRuleState()
+            R.id.menu_highlight_rule -> openHighlightRule()
             R.id.menu_re_segment -> ReadBook.book?.let {
                 it.setReSegment(!it.getReSegment())
                 item.isChecked = it.getReSegment()
@@ -2217,6 +2220,23 @@ $content
             menu?.findItem(R.id.menu_enable_replace)?.isChecked = it.getUseReplaceRule()
             viewModel.replaceRuleChanged()
         }
+    }
+
+    override fun changeHighlightRuleState() {
+        ReadBook.book?.let {
+            it.setUseHighlightRule(!it.getUseHighlightRule())
+            ReadBook.saveRead()
+            menu?.findItem(R.id.menu_enable_highlight)?.isChecked = it.getUseHighlightRule()
+            viewModel.highlightRuleChanged()
+        }
+    }
+
+    override fun openReplaceRule() {
+        startActivity<ReplaceRuleActivity>()
+    }
+
+    override fun openHighlightRule() {
+        startActivity<io.legado.app.ui.highlight.HighlightRuleActivity>()
     }
 
     private fun startBackupJob() {

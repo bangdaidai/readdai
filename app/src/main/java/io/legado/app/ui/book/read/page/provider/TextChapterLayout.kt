@@ -118,13 +118,17 @@ class TextChapterLayout(
     )
 
     private val compiledHighlightRules by lazy {
-        HighlightRuleStore.loadEnabled(splitties.init.appCtx).mapNotNull { rule ->
-            kotlin.runCatching {
-                CompiledHighlightRule(
-                    rule = rule,
-                    regex = Regex(rule.pattern)
-                )
-            }.getOrNull()
+        if (book.getUseHighlightRule()) {
+            HighlightRuleStore.loadEnabled(splitties.init.appCtx).mapNotNull { rule ->
+                kotlin.runCatching {
+                    CompiledHighlightRule(
+                        rule = rule,
+                        regex = Regex(rule.pattern)
+                    )
+                }.getOrNull()
+            }
+        } else {
+            emptyList()
         }
     }
 
@@ -1364,7 +1368,7 @@ class TextChapterLayout(
         for (compiled in compiledHighlightRules) {
             val rule = compiled.rule
             if (!rule.appliesTo(isTitle)) continue
-            if (compiled.regex.matches(char)) {
+            if (compiled.regex.containsMatchIn(char)) {
                 return HighlightInfo(
                     color = rule.textColor,
                     style = if (rule.underlineMode != 0 || !rule.bgImage.isNullOrBlank()) {

@@ -23,7 +23,6 @@ import io.legado.app.lib.theme.primaryColor
 import io.legado.app.service.WebService
 import io.legado.app.ui.about.AboutActivity
 import io.legado.app.ui.about.ReadRecordActivity
-import io.legado.app.ui.about.ReadStatisticsActivity
 import io.legado.app.ui.book.annotation.AllAnnotationActivity
 import io.legado.app.ui.book.bookmark.AllBookmarkActivity
 import io.legado.app.ui.book.readingmemory.ReadingMemoryActivity
@@ -188,7 +187,6 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
 
                 "fileManage" -> startActivity<FileManageActivity>()
                 "readRecord" -> startActivity<ReadRecordActivity>()
-                "readStatistics" -> startActivity(Intent(requireContext(), ReadStatisticsActivity::class.java))
                 "about" -> startActivity<AboutActivity>()
                 "exit" -> activity?.finish()
             }
