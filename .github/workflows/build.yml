@@ -21,47 +21,105 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
         run: |
           # 清理可能存在的旧 gradle.properties 缓存
-          if [ -f gradle.properties ]; then
-            echo "清理旧的签名配置..."
-            sed -i '/^RELEASE_STORE_FILE/d' gradle.properties
-            sed -i '/^RELEASE_STORE_PASSWORD/d' gradle.properties
-            sed -i '/^RELEASE_KEY_ALIAS/d' gradle.properties
-            sed -i '/^RELEASE_KEY_PASSWORD/d' gradle.properties
-          fi
+          rm -f gradle.properties
+          echo "🔧 Created fresh gradle.properties"
+          touch gradle.properties
           
           if [ ! -z "$KEYSTORE_BASE64" ]; then
             echo "✅ Using RELEASE_KEY_STORE secret for consistent signing"
             echo "Setting up signing keys..."
+            
             # 使用固定的密钥文件路径，确保签名一致性
             mkdir -p $GITHUB_WORKSPACE/keystore
+            
+            # 解码 keystore 并验证
             echo "$KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/keystore/release.keystore
+            
+            # 验证 keystore 文件大小和内容
+            KEYSTORE_SIZE=$(stat -c%s $GITHUB_WORKSPACE/keystore/release.keystore 2>/dev/null || echo "0")
+            echo "📦 Keystore size: $KEYSTORE_SIZE bytes"
+            
+            if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
+              echo "❌ ERROR: Keystore file is too small ($KEYSTORE_SIZE bytes), may be corrupted!"
+              echo "❌ Please check your RELEASE_KEY_STORE secret in GitHub Settings"
+              echo "❌ The keystore should be at least 1KB"
+              exit 1
+            fi
+            
+            # 验证 keystore 是否可以被读取
+            if command -v keytool &> /dev/null; then
+              echo "🔐 Verifying keystore integrity..."
+              keytool -list -keystore $GITHUB_WORKSPACE/keystore/release.keystore -storepass "${{ secrets.RELEASE_STORE_PASSWORD }}" -alias "${{ secrets.RELEASE_KEY_ALIAS }}" > /dev/null 2>&1
+              if [ $? -eq 0 ]; then
+                echo "✅ Keystore verification passed"
+              else
+                echo "⚠️ Keystore verification failed, but continuing..."
+              fi
+            fi
+            
+            # 写入 gradle.properties
             echo "RELEASE_STORE_FILE=./keystore/release.keystore" >> gradle.properties
             echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
             echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
             echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+            
             echo "✅ Keystore setup completed at ./keystore/release.keystore"
             ls -la $GITHUB_WORKSPACE/keystore/release.keystore
+            
+            # 显示 gradle.properties 内容（隐藏敏感信息）
+            echo "📋 gradle.properties content (sanitized):"
+            cat gradle.properties | grep -v "PASSWORD" | sed 's/storepass=.*/storepass=***/' | sed 's/keypass=.*/keypass=***/'
           else
-            echo "⚠️ No keystore configured, using debug signing"
-            echo "⚠️ This will cause different signatures for each build!"
-            echo "⚠️ Please configure RELEASE_KEY_STORE secret in GitHub Settings"
+            echo "❌ ERROR: No keystore configured!"
+            echo "❌ This will cause different signatures for each build!"
+            echo "❌ Please configure RELEASE_KEY_STORE secret in GitHub Settings"
+            echo "❌ Build will fail to ensure signature consistency"
+            exit 1
           fi
 
       - name: Build Release APK
         run: |
           chmod +x gradlew
+          # 显示当前 gradle.properties 配置（用于调试）
+          echo "📋 Current gradle.properties:"
+          cat gradle.properties | grep -v "PASSWORD" || echo "No gradle.properties found"
+          echo ""
+          
           # 禁用 configuration-cache 和 build-cache 确保每次构建都使用最新的签名配置
           ./gradlew assembleAppRelease \
             --no-daemon \
             --no-configuration-cache \
             --no-build-cache \
-            -x lint
+            -x lint \
+            -Pandroid.injected.signing=true
+          
+          echo ""
+          echo "📦 Build completed, checking APK..."
 
       - name: Check APK output
         run: |
           echo "📦 Checking for signed APK files..."
           find app/build/outputs -name "*.apk" -type f
           ls -la app/build/outputs/apk/app/release/ || echo "Release directory not found"
+          
+          # 获取 APK 文件名
+          APK_FILE=$(find app/build/outputs/apk/app/release -name "*.apk" -type f | head -1)
+          
+          if [ ! -z "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
+            echo "✅ Found APK: $APK_FILE"
+            echo "📦 APK size: $(stat -c%s "$APK_FILE") bytes"
+            
+            # 如果有 apksigner，验证签名
+            if command -v apksigner &> /dev/null; then
+              echo "🔐 Verifying APK signature..."
+              apksigner verify --verbose "$APK_FILE" || echo "⚠️ Signature verification issues detected"
+            else
+              echo "⚠️ apksigner not available, skipping signature verification"
+            fi
+          else
+            echo "❌ ERROR: No APK file found!"
+            exit 1
+          fi
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v6
