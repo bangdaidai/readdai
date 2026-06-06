@@ -51,7 +51,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                 // 显示书影音三列布局
                 llBookMediaStats.visibility = View.VISIBLE
                 
-                // 隐藏整个传统统计数据布局容器
+                // 隐藏传统统计数据布局
                 llDataStats.visibility = View.GONE
                 
                 // 加载书影音数据
@@ -74,15 +74,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                 llBookMediaStats.visibility = View.GONE
                 llDataStats.visibility = View.VISIBLE
                 
-                // 设置简短标签
-                tvBookCount.text = "读过"
-                tvFinishedBookCount.text = "读完"
-                tvReadDays.text = "阅读"
-                tvReviewCount.text = "笔记"
-                tvAbandonedBookCount.text = "弃文"
-                tvTotalWords.text = "读了"
-                
-                // 设置数据值，只显示数字，单位由布局文件单独显示
+                // 设置数据值，只显示数字
                 tvBookCountValue.text = "${item.bookCount}"
                 tvBookCountValue.setTextColor(otherColor)
                 tvFinishedBookCountValue.text = "${item.finishedBookCount}"
@@ -127,8 +119,6 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
             tvReadMinutesUnit.visibility = View.VISIBLE
             tvReadMinutesValue.text = "${minutes}"
             tvReadMinutesValue.setTextColor(otherColor)
-            
-            // 原来的时间显示组件已移除
             
             // 处理始于日期标签，仅在总计统计时显示
             if (item.date.isEmpty()) {

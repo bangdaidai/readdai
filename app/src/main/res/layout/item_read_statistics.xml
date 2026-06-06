@@ -9,82 +9,460 @@
     android:layout_marginBottom="10dp"
     android:orientation="vertical">
 
-    <!-- 阅读时间 -->
-    <LinearLayout
+    <!-- 卡片容器 - 使用新的现代化设计 -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:orientation="horizontal"
-        android:gravity="bottom">
-        <!-- 天数 -->
-        <TextView
-            android:id="@+id/tvReadDaysValueLarge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="0"
-            android:textColor="@color/secondaryText"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_gravity="bottom"
-            android:visibility="gone" />
-        <TextView
-            android:id="@+id/tvReadDaysUnit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="天"
-            android:textColor="@color/secondaryText"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginLeft="2dp"
-            android:layout_gravity="bottom"
-            android:layout_marginBottom="1dp"
-            android:visibility="gone" />
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="?attr/backgroundCard"
+        app:strokeWidth="1dp"
+        app:strokeColor="?attr/dividerDefault">
 
-        <!-- 小时 -->
-        <TextView
-            android:id="@+id/tvReadHoursValue"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="0"
-            android:textColor="@color/secondaryText"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_gravity="bottom"
-            android:visibility="gone" />
-        <TextView
-            android:id="@+id/tvReadHoursUnit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="小时"
-            android:textColor="@color/secondaryText"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginLeft="2dp"
-            android:layout_gravity="bottom"
-            android:layout_marginBottom="1dp"
-            android:visibility="gone" />
+            android:orientation="vertical"
+            android:padding="20dp">
 
-        <!-- 分钟 -->
+            <!-- 顶部：阅读时间统计 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center_horizontal"
+                android:layout_marginBottom="16dp">
+
+                <!-- 标题 -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="累计阅读"
+                    android:textColor="?attr/textColorSecondary"
+                    android:textSize="14sp"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- 时间显示 -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <!-- 天数 -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="bottom"
+                        android:layout_marginEnd="8dp">
+                        <TextView
+                            android:id="@+id/tvReadDaysValueLarge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="?attr/textColorPrimary"
+                            android:textSize="40sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-light"
+                            android:visibility="gone" />
+                        <TextView
+                            android:id="@+id/tvReadDaysUnit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="天"
+                            android:textColor="?attr/textColorSecondary"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginBottom="6dp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <!-- 小时 -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="bottom"
+                        android:layout_marginEnd="8dp">
+                        <TextView
+                            android:id="@+id/tvReadHoursValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="?attr/textColorPrimary"
+                            android:textSize="40sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-light"
+                            android:visibility="gone" />
+                        <TextView
+                            android:id="@+id/tvReadHoursUnit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="小时"
+                            android:textColor="?attr/textColorSecondary"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginBottom="6dp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <!-- 分钟 -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="bottom">
+                        <TextView
+                            android:id="@+id/tvReadMinutesValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0"
+                            android:textColor="?attr/textColorPrimary"
+                            android:textSize="40sp"
+                            android:textStyle="bold"
+                            android:fontFamily="sans-serif-light" />
+                        <TextView
+                            android:id="@+id/tvReadMinutesUnit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="分钟"
+                            android:textColor="?attr/textColorSecondary"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginBottom="6dp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <!-- 始于日期标签 -->
+                <TextView
+                    android:id="@+id/tvStartDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="始于 2023 年 1 月 1 日"
+                    android:textColor="?attr/textColorTertiary"
+                    android:textSize="13sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- 分隔线 -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?attr/dividerDefault"
+                android:layout_marginBottom="16dp" />
+
+            <!-- 统计数据网格布局 -->
+            <GridLayout
+                android:id="@+id/llDataStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:rowCount="3"
+                android:alignmentMode="alignMargins">
+
+                <!-- 读过本数 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="8dp"
+                    android:layout_row="0"
+                    android:layout_column="0"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvBookCountValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="读过"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- 读完本数 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_row="0"
+                    android:layout_column="1"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvFinishedBookCountValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="读完"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- 阅读天数 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="8dp"
+                    android:layout_row="1"
+                    android:layout_column="0"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvReadDaysValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="阅读天数"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- 笔记条数 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_row="1"
+                    android:layout_column="1"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvReviewCountValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="笔记"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- 弃文数量 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="8dp"
+                    android:layout_row="2"
+                    android:layout_column="0"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvAbandonedBookCountValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="弃文"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- 阅读字数 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_row="2"
+                    android:layout_column="1"
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvTotalWordsValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="万字"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+            </GridLayout>
+
+            <!-- 书影音三列布局 - 当类型是全部时显示 -->
+            <LinearLayout
+                android:id="@+id/llBookMediaStats"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:weightSum="3"
+                android:visibility="gone">
+
+                <!-- 书 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvBookMediaBookCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="书"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- 影 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvBookMediaVideoCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="影"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+                <!-- 音 -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/tvBookMediaAudioCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textColor="?attr/textColorPrimary"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="音"
+                        android:textColor="?attr/textColorSecondary"
+                        android:textSize="13sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 空数据布局 -->
+    <LinearLayout
+        android:id="@+id/llEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="200dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
         <TextView
-            android:id="@+id/tvReadMinutesValue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0"
-            android:textColor="@color/secondaryText"
-            android:textSize="32sp"
-            android:textStyle="bold"
-            android:layout_gravity="bottom" />
-        <TextView
-            android:id="@+id/tvReadMinutesUnit"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="分"
-            android:textColor="@color/secondaryText"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:layout_marginLeft="2dp"
-            android:layout_gravity="bottom"
-            android:layout_marginBottom="1dp" />
+            android:text="暂无阅读数据"
+            android:textColor="?attr/textColorSecondary"
+            android:textSize="14sp" />
+
     </LinearLayout>
+
+</LinearLayout>
 
     <!-- 始于日期标签 -->
     <TextView
