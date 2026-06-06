@@ -18,7 +18,7 @@ jobs:
 
       - name: Setup Android Signing
         env:
-          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE64 }}
         run: |
           if [ ! -z "$KEYSTORE_BASE64" ]; then
             echo "✅ Using RELEASE_KEY_STORE secret for consistent signing"
