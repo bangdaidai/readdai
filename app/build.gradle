@@ -43,7 +43,7 @@ try {
 }
 
 android {
-    compileSdk = compile_sdk_version
+    compileSdk = compile_sdk_version as Integer
     namespace = 'io.legado.app'
 
     // 增加 R8 优化器的内存配置
