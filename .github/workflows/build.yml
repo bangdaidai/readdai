@@ -82,16 +82,26 @@ jobs:
           cat gradle.properties | grep -v "PASSWORD" || echo "No gradle.properties found"
           echo ""
           
-          # 禁用 configuration-cache 和 build-cache 确保每次构建都使用最新的签名配置
+          # 显示构建错误详情
+          echo "🔨 开始构建..."
           ./gradlew assembleAppRelease \
             --no-daemon \
             --no-configuration-cache \
             --no-build-cache \
             -x lint \
-            -Pandroid.injected.signing=true
+            --warning-mode all \
+            2>&1 | tee build.log
+          
+          # 如果构建失败，显示详细错误
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo ""
+            echo "❌ 构建失败！查看错误摘要："
+            grep -A 10 "BUILD FAILED" build.log || tail -50 build.log
+            exit 1
+          fi
           
           echo ""
-          echo "📦 Build completed, checking APK..."
+          echo "✅ 构建成功！"
 
       - name: Check APK output
         run: |
