@@ -87,7 +87,30 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
             try {
                 val memories = withContext(Dispatchers.IO) {
                     // 获取所有我的阅读记录，包括已删除书籍的记忆
-                    appDb.readingMemoryDao.all
+                    var allMemories = appDb.readingMemoryDao.all
+                    
+                    // 为没有 lastReadTime 的记录补充最后阅读时间
+                    allMemories = allMemories.map { memory ->
+                        if (memory.lastReadTime == 0L) {
+                            try {
+                                val sessions = appDb.readSessionDao.getByBook(memory.bookName, memory.bookAuthor)
+                                val lastRead = sessions.maxOfOrNull { it.endTime } ?: 0L
+                                if (lastRead > 0) {
+                                    val updated = memory.copy(lastReadTime = lastRead)
+                                    appDb.readingMemoryDao.update(updated)
+                                    updated
+                                } else {
+                                    memory
+                                }
+                            } catch (e: Exception) {
+                                memory
+                            }
+                        } else {
+                            memory
+                        }
+                    }
+                    
+                    allMemories
                 }
                 allReadingMemories = memories
                 // 重新应用筛选，包括搜索关键词
@@ -439,8 +462,8 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
      */
     private fun sortMemories(memories: List<ReadingMemory>, sortBy: String, ratingSort: String): List<ReadingMemory> {
         return when (sortBy) {
-            "lastRead_desc" -> memories.sortedByDescending { it.updateTime }
-            "lastRead_asc" -> memories.sortedBy { it.updateTime }
+            "lastRead_desc" -> memories.sortedByDescending { it.lastReadTime }
+            "lastRead_asc" -> memories.sortedBy { it.lastReadTime }
             "added_desc" -> memories.sortedByDescending { it.createTime }
             "added_asc" -> memories.sortedBy { it.createTime }
             else -> {
@@ -547,6 +570,14 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                     0L
                 }
 
+                // 获取最后阅读时间
+                val lastReadTime = try {
+                    val sessions = appDb.readSessionDao.getByBook(book.name, book.author)
+                    sessions.maxOfOrNull { it.endTime } ?: 0L
+                } catch (e: Exception) {
+                    0L
+                }
+
                 // 获取书摘数量，包括相同书名和作者的书摘
                 val annotations = appDb.bookAnnotationDao.getByBook(book.name, book.author)
 
@@ -583,7 +614,8 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         annotationCount = annotations.size,
                         readingStatus = finalReadingStatus,
                         type = book.type, // 更新书籍类型
-                        updateTime = book.durChapterTime
+                        updateTime = book.durChapterTime,
+                        lastReadTime = lastReadTime
                     )
                     appDb.readingMemoryDao.update(updatedMemory)
 
@@ -611,7 +643,8 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         readingStatus = readingStatus,
                         type = book.type, // 设置书籍类型
                         createTime = book.durChapterTime,
-                        updateTime = book.durChapterTime
+                        updateTime = book.durChapterTime,
+                        lastReadTime = lastReadTime
                     )
                     appDb.readingMemoryDao.insert(memory)
 
