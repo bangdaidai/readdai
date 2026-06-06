@@ -7,7 +7,7 @@ import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.style.ForegroundColorSpan
-import io.legado.app.constant.AppLog
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.help.book.BookContent
@@ -119,7 +119,7 @@ class TextChapterLayout(
             executeContext = IO
         ) {
             launch {
-                val bookSource = book.getBookSource() ?: return@launch
+                val bookSource = appDb.bookSourceDao.getBookSource(book.origin) ?: return@launch
                 BookHelp.saveImages(bookSource, book, bookChapter, bookContent.toString())
             }
             getTextChapter(book, bookChapter, displayTitle, bookContent)
@@ -189,7 +189,6 @@ class TextChapterLayout(
         val contents = bookContent.textList
         val imageStyle = book.getImageStyle()
         val textHeight = ChapterProvider.contentPaintTextHeight
-        contentPaint.fontMetrics = fontMetrics
         stringBuilder.clear()
         pendingTextPage = TextPage()
         durY = 0f
@@ -247,11 +246,11 @@ class TextChapterLayout(
                 return@forEach
             }
             setTypeText(
-                book, text, contentPaint, textHeight, contentPaint.fontMetrics,
+                book, content, contentPaint, textHeight, contentPaint.fontMetrics,
                 imageStyle, false,
-                text.length < 4,
+                content.length < 4,
                 bookChapter.isVolume,
-                null,
+                false,
                 null
             )
             pendingTextPage.lines.lastOrNull()?.isParagraphEnd = true
