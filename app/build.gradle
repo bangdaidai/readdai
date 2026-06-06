@@ -15,16 +15,6 @@ room {
 
 apply from: 'download.gradle'
 
-// 从 gradle.properties 读取配置
-def propertiesFile = new File(project.rootDir, 'gradle.properties')
-def props = new Properties()
-if (propertiesFile.exists()) {
-    propertiesFile.withInputStream { props.load(it) }
-}
-def compile_sdk_version = props.getProperty('compile_sdk_version', '35').toInteger()
-def CronetVersion = props.getProperty('CronetVersion', '128.0.6613.40')
-def CronetMainVersion = props.getProperty('CronetMainVersion', '128.0.0.0')
-
 // 🕐 版本时间（东八区）
 static def releaseTime() {
     return new Date().format("yy.MMddHH", TimeZone.getTimeZone("GMT+8"))
