@@ -16,66 +16,30 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Setup Android Signing
+      - name: Setup Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE }}
         run: |
-          # 清理可能存在的旧 gradle.properties 缓存
-          rm -f gradle.properties
-          echo "🔧 Created fresh gradle.properties"
-          touch gradle.properties
+          mkdir -p keystore
+          echo "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > keystore/release.keystore
+          echo "Keystore 已创建"
           
-          if [ ! -z "$KEYSTORE_BASE64" ]; then
-            echo "✅ Using RELEASE_KEY_STORE secret for consistent signing"
-            echo "Setting up signing keys..."
-            
-            # 使用固定的密钥文件路径，确保签名一致性
-            mkdir -p $GITHUB_WORKSPACE/keystore
-            
-            # 解码 keystore 并验证
-            echo "$KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/keystore/release.keystore
-            
-            # 验证 keystore 文件大小和内容
-            KEYSTORE_SIZE=$(stat -c%s $GITHUB_WORKSPACE/keystore/release.keystore 2>/dev/null || echo "0")
-            echo "📦 Keystore size: $KEYSTORE_SIZE bytes"
-            
-            if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
-              echo "❌ ERROR: Keystore file is too small ($KEYSTORE_SIZE bytes), may be corrupted!"
-              echo "❌ Please check your RELEASE_KEY_STORE secret in GitHub Settings"
-              echo "❌ The keystore should be at least 1KB"
-              exit 1
-            fi
-            
-            # 验证 keystore 是否可以被读取
-            if command -v keytool &> /dev/null; then
-              echo "🔐 Verifying keystore integrity..."
-              keytool -list -keystore $GITHUB_WORKSPACE/keystore/release.keystore -storepass "${{ secrets.RELEASE_STORE_PASSWORD }}" -alias "${{ secrets.RELEASE_KEY_ALIAS }}" > /dev/null 2>&1
-              if [ $? -eq 0 ]; then
-                echo "✅ Keystore verification passed"
-              else
-                echo "⚠️ Keystore verification failed, but continuing..."
-              fi
-            fi
-            
-            # 写入 gradle.properties
-            echo "RELEASE_STORE_FILE=./keystore/release.keystore" >> gradle.properties
-            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
-            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
-            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
-            
-            echo "✅ Keystore setup completed at ./keystore/release.keystore"
-            ls -la $GITHUB_WORKSPACE/keystore/release.keystore
-            
-            # 显示 gradle.properties 内容（隐藏敏感信息）
-            echo "📋 gradle.properties content (sanitized):"
-            cat gradle.properties | grep -v "PASSWORD" | sed 's/storepass=.*/storepass=***/' | sed 's/keypass=.*/keypass=***/'
-          else
-            echo "❌ ERROR: No keystore configured!"
-            echo "❌ This will cause different signatures for each build!"
-            echo "❌ Please configure RELEASE_KEY_STORE secret in GitHub Settings"
-            echo "❌ Build will fail to ensure signature consistency"
+          # 验证 keystore 文件
+          KEYSTORE_SIZE=$(stat -c%s keystore/release.keystore 2>/dev/null || echo "0")
+          echo "📦 Keystore 文件大小：$KEYSTORE_SIZE bytes"
+          
+          if [ "$KEYSTORE_SIZE" -lt 1000 ]; then
+            echo "❌ 错误：Keystore 文件过小，可能已损坏！"
+            echo "❌ 请检查 GitHub Settings 中的 RELEASE_KEY_STORE secret 配置"
             exit 1
           fi
+          
+          # 创建 gradle.properties
+          echo "RELEASE_STORE_FILE=./keystore/release.keystore" > gradle.properties
+          echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
+          echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
+          echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
+          echo "✅ 签名配置已完成"
 
       - name: Build Release APK
         run: |
