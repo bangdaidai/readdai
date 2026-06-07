@@ -799,8 +799,9 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         }
 
         private fun sureDelAlert(item: ReadRecordDetail, viewHolder: RecyclerView.ViewHolder) {
+            val bookName = item.bookName ?: ""
             alert(R.string.delete) {
-                setMessage(getString(R.string.sure_del_any, item.bookName))
+                setMessage(getString(R.string.sure_del_any, bookName))
                 yesButton {
                     lifecycleScope.launch {
                         viewModel.deleteDetail(item)
@@ -827,8 +828,9 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         }
 
         private fun sureDelAlert(item: ReadRecord, viewHolder: RecyclerView.ViewHolder) {
+            val bookName = item.bookName ?: ""
             alert(R.string.delete) {
-                setMessage(getString(R.string.sure_del_any, item.bookName))
+                setMessage(getString(R.string.sure_del_any, bookName))
                 yesButton {
                     lifecycleScope.launch {
                         viewModel.deleteReadRecord(item)
