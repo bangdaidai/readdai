@@ -28,18 +28,6 @@ import io.legado.app.data.entities.RemovedAutoTag
 import io.legado.app.data.entities.TagMapping
 import io.legado.app.data.entities.readRecord.ReadSession
 import io.legado.app.data.entities.ReadingMemory
-
-/**
- * 旧版阅读记录数据类，用于兼容备份恢复
- * 定义为文件级别类，防止 R8 混淆导致 Gson 反序列化失败
- */
-data class OldReadRecord(
-    val bookName: String,
-    val author: String,
-    val bookUrl: String,
-    val readTime: Long,
-    val lastRead: Long
-)
 import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.data.entities.RssSource
 import io.legado.app.data.entities.RssStar
@@ -86,6 +74,18 @@ import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 import java.io.File
 import java.io.FileInputStream
+
+/**
+ * 旧版阅读记录数据类，用于兼容备份恢复
+ * 定义为文件级别类，防止 R8 混淆导致 Gson 反序列化失败
+ */
+data class OldReadRecord(
+    val bookName: String,
+    val author: String,
+    val bookUrl: String,
+    val readTime: Long,
+    val lastRead: Long
+)
 
 /**
  * 恢复
