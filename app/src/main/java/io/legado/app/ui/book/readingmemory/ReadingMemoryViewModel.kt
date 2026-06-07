@@ -136,24 +136,24 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
         // 先按照状态进行排序
         val sortedMemories = when (status) {
             "在读" -> {
-                // 在读按照开始阅读时间排序（使用updateTime，因为开始阅读时间没有直接字段）
-                memories.sortedByDescending { it.updateTime }
+                // 在读按照最后阅读时间排序
+                memories.sortedByDescending { it.lastReadTime }
             }
             "待读" -> {
                 // 待读按照加入书架时间排序（使用createTime）
                 memories.sortedByDescending { it.createTime }
             }
             "弃文" -> {
-                // 弃文按照弃文时间排序（使用updateTime）
-                memories.sortedByDescending { it.updateTime }
+                // 弃文按照最后阅读时间排序
+                memories.sortedByDescending { it.lastReadTime }
             }
             "读完" -> {
-                // 读完按照读完时间排序（使用updateTime）
-                memories.sortedByDescending { it.updateTime }
+                // 读完按照最后阅读时间排序
+                memories.sortedByDescending { it.lastReadTime }
             }
             else -> {
-                // 全部默认按照更新时间排序
-                memories.sortedByDescending { it.updateTime }
+                // 全部默认按照最后阅读时间排序
+                memories.sortedByDescending { it.lastReadTime }
             }
         }
 
@@ -427,7 +427,7 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
      */
     private fun groupByYear(memories: List<ReadingMemory>): Map<String, List<ReadingMemory>> {
         return memories.groupBy { memory ->
-            val date = java.util.Date(memory.updateTime)
+            val date = java.util.Date(memory.lastReadTime)
             val calendar = java.util.Calendar.getInstance()
             calendar.time = date
             calendar.get(java.util.Calendar.YEAR).toString()
