@@ -107,7 +107,7 @@
             </LinearLayout>
 
             <!-- 时间导航卡片 -->
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/navigationCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -181,7 +181,7 @@
                 android:scrollbars="none" />
 
             <!-- 热力图卡片 -->
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/heatmapCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
