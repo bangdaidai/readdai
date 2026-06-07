@@ -168,7 +168,7 @@
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- 阅读总览卡片 -->
             <androidx.recyclerview.widget.RecyclerView
