@@ -116,7 +116,7 @@
                 app:cardCornerRadius="8dp"
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="?attr/backgroundCard"
-                app:strokeWidth="1dp"
+                app:strokeWidth="2dp"
                 app:strokeColor="?attr/divider">
 
                 <LinearLayout
@@ -190,7 +190,7 @@
                 app:cardCornerRadius="8dp"
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="?attr/backgroundCard"
-                app:strokeWidth="1dp"
+                app:strokeWidth="2dp"
                 app:strokeColor="?attr/divider">
 
                 <LinearLayout

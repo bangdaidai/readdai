@@ -238,7 +238,7 @@
         app:cardElevation="0dp"
         app:cardCornerRadius="16dp"
         app:cardBackgroundColor="?attr/backgroundCard"
-        app:strokeWidth="1dp"
+        app:strokeWidth="2dp"
         app:strokeColor="?attr/divider"
         app:contentPadding="0dp">
 

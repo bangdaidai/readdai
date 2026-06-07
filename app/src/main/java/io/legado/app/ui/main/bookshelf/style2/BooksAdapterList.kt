@@ -108,7 +108,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                     // 设置边框
                     if (AppConfig.showCardBorder) {
                         val dividerColor = ThemeStore.dividerColor(context)
-                        background.setStroke(1, dividerColor)
+                        background.setStroke(2, dividerColor)
                     } else {
                         background.setStroke(0, 0)
                     }
@@ -446,7 +446,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                     // 设置边框
                     if (AppConfig.showCardBorder) {
                         val dividerColor = ThemeStore.dividerColor(context)
-                        background.setStroke(1, dividerColor)
+                        background.setStroke(2, dividerColor)
                     } else {
                         background.setStroke(0, 0)
                     }
@@ -617,7 +617,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                     // 设置边框
                     if (AppConfig.showCardBorder) {
                         val dividerColor = ThemeStore.dividerColor(context)
-                        background.setStroke(1, dividerColor)
+                        background.setStroke(2, dividerColor)
                     } else {
                         background.setStroke(0, 0)
                     }
