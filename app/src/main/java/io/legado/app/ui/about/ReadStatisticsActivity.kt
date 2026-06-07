@@ -193,7 +193,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
         // 设置卡片背景色为主题设置的背景色
         binding.navigationCard?.setCardBackgroundColor(cardColor)
-        binding.overviewCard?.setCardBackgroundColor(cardColor)
         binding.heatmapCard?.setCardBackgroundColor(cardColor)
     }
 
