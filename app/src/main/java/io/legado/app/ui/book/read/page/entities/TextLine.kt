@@ -331,25 +331,29 @@ data class TextLine(
 
     /**
      * 绘制波浪线下划线，使用贝塞尔曲线实现
+     * 修复：根据startX计算初始相位，使跨行波浪线连贯
      */
     private fun drawWavyLine(canvas: Canvas, paint: Paint, startX: Float, y: Float, endX: Float, underlineWidth: Float) {
         paint.strokeWidth = underlineWidth.dpToPx()
         val path = Path()
         val waveAmplitude = 3.dpToPx().toFloat()
         val waveLength = 12.dpToPx().toFloat()
+        
+        // 计算startX相对于波浪周期的相位偏移，使跨行波浪线连贯
+        val phaseOffset = startX % waveLength
         path.moveTo(startX, y)
         var currentX = startX
+        var isGoingDown = phaseOffset < waveLength / 2
         while (currentX < endX) {
             val nextX = (currentX + waveLength).coerceAtMost(endX)
             val midX = (currentX + nextX) / 2
-            path.quadTo(midX, y - waveAmplitude, nextX, y)
-            currentX = nextX
-            if (currentX < endX) {
-                val nextX2 = (currentX + waveLength).coerceAtMost(endX)
-                val midX2 = (currentX + nextX2) / 2
-                path.quadTo(midX2, y + waveAmplitude, nextX2, y)
-                currentX = nextX2
+            if (isGoingDown) {
+                path.quadTo(midX, y + waveAmplitude, nextX, y)
+            } else {
+                path.quadTo(midX, y - waveAmplitude, nextX, y)
             }
+            currentX = nextX
+            isGoingDown = !isGoingDown
         }
         canvas.drawPath(path, paint)
     }

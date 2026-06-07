@@ -29,6 +29,7 @@ import io.legado.app.utils.observeEvent
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
+import io.legado.app.ui.book.read.config.HighlightRulePreview
 
 class HighlightRuleEditDialog(
     private val sourceRule: HighlightRule? = null,
@@ -378,48 +379,12 @@ class HighlightRuleEditDialog(
             binding.tvPatternError.visibility = View.VISIBLE
             binding.tvPatternError.text = patternError
         }
-        binding.tvPreview.text = buildPreviewText(
+        binding.tvPreview.text = HighlightRulePreview.build(
             editingRule.copy(
                 pattern = pattern,
                 sampleText = binding.etSampleText.text?.toString().orEmpty()
             )
         )
-    }
-
-    private fun buildPreviewText(rule: HighlightRule): android.text.Spannable {
-        val pattern = rule.pattern
-        val sampleText = rule.sampleText.ifBlank { rule.normalizedSampleText() }
-        val spannable = android.text.SpannableString(sampleText)
-        
-        if (pattern.isBlank()) {
-            return spannable
-        }
-        
-        return kotlin.runCatching {
-            val regex = Regex(pattern)
-            val matches = regex.findAll(sampleText)
-            for (match in matches) {
-                val start = match.range.first
-                val end = match.range.last + 1
-                
-                rule.textColor?.let { color ->
-                    spannable.setSpan(
-                        android.text.style.ForegroundColorSpan(color),
-                        start, end,
-                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                }
-                
-                if (rule.underlineMode in 1..4) {
-                    spannable.setSpan(
-                        android.text.style.UnderlineSpan(),
-                        start, end,
-                        android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
-                }
-            }
-            spannable
-        }.getOrDefault(spannable)
     }
 
     private fun validatePattern(pattern: String): String? {

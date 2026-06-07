@@ -595,7 +595,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:background="@drawable/shape_edit_text"
+                        android:background="@drawable/shape_highlight_rule_preview"
                         android:lineSpacingExtra="4dp"
                         android:minHeight="70dp"
                         android:padding="12dp"

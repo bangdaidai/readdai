@@ -77,29 +77,14 @@ data class TextColumn(
         } else {
             ChapterProvider.contentPaint
         }
-        val textColor = when {
-            textLine.isReadAloud || isSearchResult -> ReadBookConfig.textAccentColor
-            highlightColor != null -> highlightColor
-            else -> ReadBookConfig.textColor
+        val drawColor = if (textLine.isReadAloud || isSearchResult) {
+            ReadBookConfig.textAccentColor
+        } else {
+            textColor ?: ReadBookConfig.textColor
         }
-        if (textPaint.color != textColor) {
-            textPaint.color = textColor
+        if (textPaint.color != drawColor) {
+            textPaint.color = drawColor
         }
-
-        val originalStrokeWidth = textPaint.strokeWidth
-        val originalStrokeCap = textPaint.strokeCap
-
-        highlightStyle?.let { style ->
-            when (style.underlineMode) {
-                1 -> drawSolidUnderline(canvas, textPaint, style)
-                2 -> drawDashedUnderline(canvas, textPaint, style)
-                3 -> drawWavyUnderline(canvas, textPaint, style)
-                4 -> drawDoubleUnderline(canvas, textPaint, style)
-            }
-        }
-
-        textPaint.strokeWidth = originalStrokeWidth
-        textPaint.strokeCap = originalStrokeCap
 
         val y = textLine.lineBase - textLine.lineTop
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
@@ -113,56 +98,6 @@ data class TextColumn(
         if (selected && !isSearchResult) {
             canvas.drawRect(start, 0f, end, textLine.height, view.selectedPaint)
         }
-    }
-
-    private fun drawSolidUnderline(canvas: Canvas, paint: Paint, style: HighlightStyleSpan) {
-        paint.strokeWidth = style.underlineWidth
-        paint.strokeCap = Paint.Cap.BUTT
-        paint.color = style.underlineColor
-        val y = (textLine.lineBase - textLine.lineTop + style.underlineOffset).coerceAtMost(textLine.height)
-        canvas.drawLine(start, y, end, y, paint)
-    }
-
-    private fun drawDashedUnderline(canvas: Canvas, paint: Paint, style: HighlightStyleSpan) {
-        paint.strokeWidth = style.underlineWidth
-        paint.strokeCap = Paint.Cap.BUTT
-        paint.color = style.underlineColor
-        val y = (textLine.lineBase - textLine.lineTop + style.underlineOffset).coerceAtMost(textLine.height)
-        val dashLength = 4f * style.underlineWidth
-        var x = start
-        while (x < end) {
-            val nextX = (x + dashLength).coerceAtMost(end)
-            canvas.drawLine(x, y, nextX, y, paint)
-            x += dashLength * 2
-        }
-    }
-
-    private fun drawWavyUnderline(canvas: Canvas, paint: Paint, style: HighlightStyleSpan) {
-        paint.strokeWidth = style.underlineWidth
-        paint.strokeCap = Paint.Cap.ROUND
-        paint.color = style.underlineColor
-        val y = (textLine.lineBase - textLine.lineTop + style.underlineOffset).coerceAtMost(textLine.height)
-        val amplitude = style.underlineWidth * 1.5f
-        val halfWidth = amplitude * 2
-        var x = start
-        var goingUp = true
-        while (x < end) {
-            val nextX = (x + halfWidth).coerceAtMost(end)
-            val endY = if (goingUp) y - amplitude else y + amplitude
-            canvas.drawLine(x, y, nextX, endY, paint)
-            x = nextX
-            goingUp = !goingUp
-        }
-    }
-
-    private fun drawDoubleUnderline(canvas: Canvas, paint: Paint, style: HighlightStyleSpan) {
-        paint.strokeWidth = style.underlineWidth
-        paint.strokeCap = Paint.Cap.BUTT
-        paint.color = style.underlineColor
-        val y1 = (textLine.lineBase - textLine.lineTop + style.underlineOffset - 1f).coerceAtMost(textLine.height)
-        val y2 = (textLine.lineBase - textLine.lineTop + style.underlineOffset + 2f).coerceAtMost(textLine.height)
-        canvas.drawLine(start, y1, end, y1, paint)
-        canvas.drawLine(start, y2, end, y2, paint)
     }
 
 }

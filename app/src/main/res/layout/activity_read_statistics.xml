@@ -22,7 +22,9 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
 
             <!-- 统计类型选择按钮组 -->
             <LinearLayout
@@ -35,9 +37,6 @@
                 android:paddingTop="4dp"
                 android:paddingBottom="4dp"
                 android:background="@drawable/bg_reading_filter_container"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="12dp"
-                android:layout_marginTop="12dp"
                 android:layout_marginBottom="12dp">
 
                 <!-- 总计按钮 -->
@@ -111,8 +110,6 @@
                 android:id="@+id/navigationCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/card_margin"
-                android:layout_marginEnd="@dimen/card_margin"
                 android:layout_marginBottom="@dimen/card_margin"
                 android:visibility="visible"
                 app:cardCornerRadius="8dp"
@@ -171,45 +168,15 @@
             </androidx.cardview.widget.CardView>
 
             <!-- 阅读总览卡片 -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/overviewCard"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/card_margin"
-                android:layout_marginEnd="@dimen/card_margin"
                 android:layout_marginBottom="@dimen/card_margin"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="?attr/backgroundCard">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <!-- 阅读总览标题 -->
-                    <io.legado.app.ui.widget.text.PrimaryTextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="阅读总览"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="8dp" />
-
-                    <!-- 阅读总览内容 -->
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerView"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:clipToPadding="false"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        android:scrollbars="none" />
-
-                </LinearLayout>
-
-            </androidx.cardview.widget.CardView>
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
+                android:scrollbars="none" />
 
             <!-- 热力图卡片 -->
             <androidx.cardview.widget.CardView
@@ -274,9 +241,7 @@
             <androidx.compose.ui.platform.ComposeView
                 android:id="@+id/composeTop10Container"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/card_margin"
-                android:layout_marginEnd="@dimen/card_margin" />
+                android:layout_height="wrap_content" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
