@@ -160,11 +160,6 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/menu_effective_replaces"
-        android:title="@string/effective_replaces"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/menu_replace_rule"
         android:title="替换规则管理"
         app:showAsAction="never" />

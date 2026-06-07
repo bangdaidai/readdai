@@ -21,21 +21,23 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEY_STORE_BASE64 }}
         run: |
           if [ ! -z "$KEYSTORE_BASE64" ]; then
-            echo "✅ Using RELEASE_KEY_STORE secret for consistent signing"
+            echo "✅ Using RELEASE_KEY_STORE_BASE64 secret for consistent signing"
             echo "Setting up signing keys..."
-            # 使用固定的密钥文件路径，确保签名一致性
-            mkdir -p $GITHUB_WORKSPACE/keystore
-            echo "$KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/keystore/release.keystore
-            echo "RELEASE_STORE_FILE=./keystore/release.keystore" >> gradle.properties
+            printf '%s' "$KEYSTORE_BASE64" | base64 --decode > $GITHUB_WORKSPACE/release.keystore
+            echo "RELEASE_STORE_FILE=$GITHUB_WORKSPACE/release.keystore" >> gradle.properties
             echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
             echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
             echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
-            echo "✅ Keystore setup completed at ./keystore/release.keystore"
-            ls -la $GITHUB_WORKSPACE/keystore/release.keystore
+            echo "✅ Keystore setup completed at $GITHUB_WORKSPACE/release.keystore"
+            echo "📊 Keystore file size: $(stat -c%s $GITHUB_WORKSPACE/release.keystore) bytes"
+            ls -la $GITHUB_WORKSPACE/release.keystore
+            echo ""
+            echo "📋 Gradle properties configured:"
+            cat gradle.properties | grep -E "RELEASE_"
           else
             echo "⚠️ No keystore configured, using debug signing"
             echo "⚠️ This will cause different signatures for each build!"
-            echo "⚠️ Please configure RELEASE_KEY_STORE secret in GitHub Settings"
+            echo "⚠️ Please configure RELEASE_KEY_STORE_BASE64 secret in GitHub Settings"
           fi
 
       - name: Build Release APK
