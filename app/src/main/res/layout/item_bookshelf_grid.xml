@@ -73,6 +73,7 @@
             android:scrollbars="none"
             android:text="@string/book_name"
             android:textSize="12sp"
+            android:textStyle="bold"
             tools:ignore="RtlHardcoded,RtlSymmetry" />
 
     </LinearLayout>

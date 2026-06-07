@@ -101,6 +101,7 @@
                 android:scrollbars="none"
                 android:singleLine="true"
                 android:textSize="15sp"
+                android:textStyle="bold"
                 app:layout_constraintLeft_toRightOf="@+id/iv_cover"
                 app:layout_constraintRight_toLeftOf="@id/fl_has_new"
                 app:layout_constraintTop_toTopOf="parent"
