@@ -653,7 +653,8 @@ interface ReadSessionDao {
     
     // 获取总阅读时间排行TOP10 - 从readSession表获取数据，基于真实的阅读会�?
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         GROUP BY bookName 
         ORDER BY readTime DESC
@@ -663,7 +664,8 @@ interface ReadSessionDao {
 
     // 获取总阅读时间排行TOP10 - 按类型筛�?
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         WHERE type = :type
         GROUP BY bookName 
@@ -674,7 +676,8 @@ interface ReadSessionDao {
     
     // 获取特定日期阅读时间排行TOP10 - 从readSession表获取数据，基于真实的阅读会�?
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         WHERE CASE WHEN endTime = 0 THEN '未知日期' ELSE DATE(endTime / 1000, 'unixepoch', 'localtime') END = :date
         GROUP BY bookName 
@@ -685,7 +688,8 @@ interface ReadSessionDao {
     
     // 获取特定月份阅读时间排行TOP10 - 从readSession表获取数据，基于真实的阅读会�?
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         WHERE CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%m', endTime / 1000, 'unixepoch', 'localtime') END = :month
         GROUP BY bookName 
@@ -696,7 +700,8 @@ interface ReadSessionDao {
 
     // 获取特定年份阅读时间排行TOP10 - 从readSession表获取数据，基于真实的阅读会�?
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         WHERE CASE WHEN endTime = 0 THEN '0000' ELSE strftime('%Y', endTime / 1000, 'unixepoch', 'localtime') END = :year
         GROUP BY bookName 
@@ -706,7 +711,8 @@ interface ReadSessionDao {
     suspend fun getYearlyReadTimeTop10(year: String): List<BookReadTimeRank>
 
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         WHERE CASE WHEN endTime = 0 THEN '未知日期' ELSE DATE(endTime / 1000, 'unixepoch', 'localtime') END = :date
           AND type = :type
@@ -717,7 +723,8 @@ interface ReadSessionDao {
     suspend fun getDailyReadTimeTop10ByType(date: String, type: Int): List<BookReadTimeRank>
 
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         WHERE CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%m', endTime / 1000, 'unixepoch', 'localtime') END = :month
           AND type = :type
@@ -728,7 +735,8 @@ interface ReadSessionDao {
     suspend fun getMonthlyReadTimeTop10ByType(month: String, type: Int): List<BookReadTimeRank>
 
     @Query("""
-        SELECT bookName, SUM(duration) as readTime 
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
         FROM readSession 
         WHERE CASE WHEN endTime = 0 THEN '0000' ELSE strftime('%Y', endTime / 1000, 'unixepoch', 'localtime') END = :year
           AND type = :type

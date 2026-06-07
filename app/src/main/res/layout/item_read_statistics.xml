@@ -8,6 +8,7 @@
 
     <!-- 卡片容器 - 使用新的现代化设计 -->
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/materialCardView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardCornerRadius="16dp"

@@ -38,6 +38,10 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
         payloads: MutableList<Any>
     ) {
         binding.apply {
+            // 动态设置卡片背景色，确保使用主题设置的卡片背景色
+            val cardColor = ThemeStore.backgroundCard(context)
+            materialCardView.setCardBackgroundColor(cardColor)
+            
             // 隐藏空数据视图
             llEmpty.visibility = View.GONE
 
