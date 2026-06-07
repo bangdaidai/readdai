@@ -23,6 +23,7 @@ import io.legado.app.data.entities.HeatmapDayData
 import io.legado.app.data.entities.ReadStatistics
 import io.legado.app.service.StatisticsService
 import io.legado.app.databinding.ActivityReadStatisticsBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.model.local.ReadStatisticsViewModel
@@ -195,6 +196,18 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 设置卡片背景色为主题设置的背景色
         binding.navigationCard?.setCardBackgroundColor(cardColor)
         binding.heatmapCard?.setCardBackgroundColor(cardColor)
+        
+        // 设置卡片边框
+        val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
+        if (AppConfig.showCardBorder) {
+            binding.navigationCard?.strokeWidth = 1
+            binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
+            binding.heatmapCard?.strokeWidth = 1
+            binding.heatmapCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
+        } else {
+            binding.navigationCard?.strokeWidth = 0
+            binding.heatmapCard?.strokeWidth = 0
+        }
     }
 
     private fun updateNavigationButtonColors() {

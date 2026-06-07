@@ -40,6 +40,13 @@ class BooksAdapterGrid(context: Context, private val callBack: CallBack) :
             val background = holder.itemView.background
             if (background is android.graphics.drawable.GradientDrawable) {
                 background.setColor(cardColor)
+                // 设置边框
+                if (AppConfig.showCardBorder) {
+                    val dividerColor = ThemeStore.dividerColor(context)
+                    background.setStroke(1, dividerColor)
+                } else {
+                    background.setStroke(0, 0)
+                }
             }
             holder.itemView.setPadding(8, 8, 8, 8)
         } else {

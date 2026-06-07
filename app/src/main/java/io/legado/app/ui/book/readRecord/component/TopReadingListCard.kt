@@ -1,5 +1,6 @@
 package io.legado.app.ui.book.readRecord.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 
 data class BookRankingData(
@@ -58,6 +60,13 @@ fun TopReadingListCard(
     val primaryColor = ThemeStore.accentColor(context)
     val textColorPrimary = ThemeStore.textColorPrimary(context)
     val textColorSecondary = ThemeStore.textColorSecondary(context)
+    val dividerColor = ThemeStore.dividerColor(context)
+
+    val borderStroke = if (AppConfig.showCardBorder) {
+        BorderStroke(1.dp, Color(dividerColor))
+    } else {
+        null
+    }
 
     Card(
         modifier = Modifier
@@ -67,7 +76,8 @@ fun TopReadingListCard(
         colors = CardDefaults.cardColors(
             containerColor = Color(cardColor)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = borderStroke
     ) {
         Column(modifier = Modifier.padding(vertical = 16.dp)) {
             // 标题行：图标 + "阅读时长榜"

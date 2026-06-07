@@ -11,6 +11,7 @@ import io.legado.app.constant.BookType
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.ReadStatistics
 import io.legado.app.databinding.ItemReadStatisticsBinding
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 import kotlinx.coroutines.runBlocking
 
@@ -41,6 +42,15 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
             // 动态设置卡片背景色，确保使用主题设置的卡片背景色
             val cardColor = ThemeStore.backgroundCard(context)
             materialCardView.setCardBackgroundColor(cardColor)
+            
+            // 动态设置边框
+            val dividerColor = ThemeStore.dividerColor(context)
+            if (AppConfig.showCardBorder) {
+                materialCardView.strokeWidth = 1
+                materialCardView.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
+            } else {
+                materialCardView.strokeWidth = 0
+            }
             
             // 隐藏空数据视图
             llEmpty.visibility = View.GONE

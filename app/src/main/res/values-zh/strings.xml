@@ -972,6 +972,8 @@
     <string name="summary">注释</string>
     <string name="cover_config">封面设置</string>
     <string name="cover_config_summary">通用封面规则及默认封面样式</string>
+    <string name="show_card_border">显示卡片边框</string>
+    <string name="show_card_border_summary">在阅读统计、书架等页面显示卡片边框</string>
     <string name="cover_show_name">显示书名</string>
     <string name="cover_show_name_summary">封面上显示书名</string>
     <string name="cover_show_author">显示作者</string>

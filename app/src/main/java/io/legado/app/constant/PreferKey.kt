@@ -194,6 +194,7 @@ object PreferKey {
     const val showBookReview = "showBookReview"
     const val showBookIntro = "showBookIntro"
     const val showReadingMemoryIntro = "showReadingMemoryIntro"
+    const val showCardBorder = "showCardBorder"
 
     const val aiSettings = "aiSettings"
 
