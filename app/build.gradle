@@ -57,22 +57,17 @@ android {
         }
     }
 
-    // 🔐 签名配置：支持环境变量 + 降级 debug 签名
+    // 🔐 签名配置：必须配置 RELEASE_STORE_FILE，否则构建失败
     signingConfigs {
-        if (project.hasProperty("RELEASE_STORE_FILE")) {
-            release {
-                storeFile file(RELEASE_STORE_FILE)
-                storePassword RELEASE_STORE_PASSWORD
-                keyAlias RELEASE_KEY_ALIAS
-                keyPassword RELEASE_KEY_PASSWORD
-                enableV1Signing = true
-                enableV2Signing = true
-                enableV3Signing = true
-                enableV4Signing = true
-            }
-        }
-        debug {
-            // 使用 Gradle 内置 debug 签名，不需要 keystore 文件
+        release {
+            storeFile file(RELEASE_STORE_FILE)
+            storePassword RELEASE_STORE_PASSWORD
+            keyAlias RELEASE_KEY_ALIAS
+            keyPassword RELEASE_KEY_PASSWORD
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = true
         }
     }
 
@@ -107,13 +102,7 @@ android {
 
     buildTypes {
         release {
-            // ✅ 只在配置了签名时才使用 release signingConfig
-            if (project.hasProperty("RELEASE_STORE_FILE")) {
-                signingConfig signingConfigs.release
-            } else {
-                // 降级到 debug 签名（用于 CI/CD 测试构建）
-                signingConfig signingConfigs.debug
-            }
+            signingConfig signingConfigs.release
             applicationIdSuffix '.release'
 
             // 多渠道名称配置
