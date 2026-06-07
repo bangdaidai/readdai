@@ -36,10 +36,10 @@ jobs:
             echo ""
             
             echo "📋 写入 gradle.properties:"
-            echo "   RELEASE_STORE_FILE=$GITHUB_WORKSPACE/release.keystore" >> gradle.properties
-            echo "   RELEASE_STORE_PASSWORD=***" >> gradle.properties
-            echo "   RELEASE_KEY_ALIAS=***" >> gradle.properties
-            echo "   RELEASE_KEY_PASSWORD=***" >> gradle.properties
+            echo "RELEASE_STORE_FILE=$GITHUB_WORKSPACE/release.keystore" >> gradle.properties
+            echo "RELEASE_STORE_PASSWORD=${{ secrets.RELEASE_STORE_PASSWORD }}" >> gradle.properties
+            echo "RELEASE_KEY_ALIAS=${{ secrets.RELEASE_KEY_ALIAS }}" >> gradle.properties
+            echo "RELEASE_KEY_PASSWORD=${{ secrets.RELEASE_KEY_PASSWORD }}" >> gradle.properties
           else
             echo "❌ RELEASE_KEY_STORE_BASE64 未设置，将使用 debug 签名"
           fi
