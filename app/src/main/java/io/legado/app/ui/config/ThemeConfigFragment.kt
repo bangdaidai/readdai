@@ -152,12 +152,14 @@ class ThemeConfigFragment : PreferenceFragment(),
             PreferKey.cBackground,
             PreferKey.cBBackground,
             PreferKey.cBackgroundCard,
+            PreferKey.cDivider,
             PreferKey.cTitleBarTextIcon,
             PreferKey.cBottomNavIconUnselected,
             PreferKey.cTextPrimary,
             PreferKey.cTextSecondary,
             PreferKey.tNavBar-> {
                 upTheme(false)
+                postEvent(EventBus.THEME_CHANGED, "")
             }
 
             PreferKey.cNPrimary,
@@ -165,12 +167,14 @@ class ThemeConfigFragment : PreferenceFragment(),
             PreferKey.cNBackground,
             PreferKey.cNBBackground,
             PreferKey.cNBackgroundCard,
+            PreferKey.cNDivider,
             PreferKey.cNTitleBarTextIcon,
             PreferKey.cNBottomNavIconUnselected,
             PreferKey.cNTextPrimary,
             PreferKey.cNTextSecondary,
             PreferKey.tNavBarN -> {
                 upTheme(true)
+                postEvent(EventBus.THEME_CHANGED, "")
             }
 
             PreferKey.bgImage,
