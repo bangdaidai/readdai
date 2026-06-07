@@ -282,7 +282,6 @@ object Restore {
         
         // 先导入readRecord，转换为ReadSession
         // 使用临时数据类来解析旧的ReadRecord结构
-        data class OldReadRecord(val bookName: String, val author: String, val bookUrl: String, val readTime: Long, val lastRead: Long)
         fileToListT<OldReadRecord>(path, "readRecord.json")?.let {
             it.forEach { oldRecord ->
                 // 将旧的ReadRecord转换为ReadSession
