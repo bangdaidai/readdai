@@ -237,7 +237,7 @@
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- 阅读时长排行TOP10卡片 -->
             <androidx.compose.ui.platform.ComposeView
