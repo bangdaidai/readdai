@@ -118,7 +118,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     BookRankingData(
                         bookName = rank.bookName,
                         bookAuthor = "",
-                        readTime = rank.readTime
+                        readTime = rank.readTime,
+                        coverUrl = rank.coverUrl
                     )
                 }.take(10),
                 onBookClick = { bookName, bookAuthor ->
@@ -547,7 +548,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     BookRankingData(
                         bookName = rank.bookName,
                         bookAuthor = "",
-                        readTime = rank.readTime
+                        readTime = rank.readTime,
+                        coverUrl = rank.coverUrl
                     )
                 }.take(10),
                 onBookClick = { bookName, bookAuthor ->
