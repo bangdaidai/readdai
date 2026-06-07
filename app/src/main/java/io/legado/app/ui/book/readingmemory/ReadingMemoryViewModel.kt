@@ -462,8 +462,13 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
      */
     private fun sortMemories(memories: List<ReadingMemory>, sortBy: String, ratingSort: String): List<ReadingMemory> {
         return when (sortBy) {
-            "lastRead_desc" -> memories.sortedByDescending { it.lastReadTime }
-            "lastRead_asc" -> memories.sortedBy { it.lastReadTime }
+            "lastRead_desc" -> memories.sortedByDescending { 
+                // 如果 lastReadTime 为 0，尝试从 updateTime 获取
+                if (it.lastReadTime > 0) it.lastReadTime else it.updateTime 
+            }
+            "lastRead_asc" -> memories.sortedBy { 
+                if (it.lastReadTime > 0) it.lastReadTime else it.updateTime 
+            }
             "added_desc" -> memories.sortedByDescending { it.createTime }
             "added_asc" -> memories.sortedBy { it.createTime }
             else -> {
