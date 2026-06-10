@@ -59,7 +59,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
             // 获取主题自定义的其他文字颜色
             val otherColor = ThemeStore.textColorOther(context)
             // 获取主题强调色
-            val accentCol = accentColor(context)
+            val accentCol = ThemeStore.accentColor(context)
             
             // 判断是否是"全部"类型（仅在总计统计且没有筛选类型时显示书影音三列布局）
             val isAllType = currentType == 0 && currentReadType == null && item.date.isEmpty()
