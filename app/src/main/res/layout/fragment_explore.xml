@@ -108,8 +108,6 @@
                 android:id="@+id/rv_find"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="16dp"
-                android:clipToPadding="false"
                 tools:listitem="@layout/item_find_book" />
 
             <TextView
