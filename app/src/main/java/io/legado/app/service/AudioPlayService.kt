@@ -136,6 +136,9 @@ class AudioPlayService : BaseService(),
         initBroadcastReceiver()
         upMediaSessionPlaybackState(PlaybackStateCompat.STATE_PLAYING)
         doDs()
+        // 立即启动前台服务，避免超时
+        startForegroundNotification()
+        // 异步加载封面图片
         execute {
             ImageLoader
                 .loadBitmap(this@AudioPlayService, AudioPlay.book?.getDisplayCover())

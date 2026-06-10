@@ -187,6 +187,9 @@ class VideoPlayService : BaseService() {
         initBroadcastReceiver()
         application.registerActivityLifecycleCallbacks(activityLifecycleCallbacks)
         ProcessLifecycleOwner.get().lifecycle.addObserver(appLifecycleObserver)
+        // 立即启动前台服务，避免超时
+        startForegroundNotification()
+        // 异步加载封面图片
         execute {
             ImageLoader
                 .loadBitmap(this@VideoPlayService, VideoPlay.getDisplayCover())
