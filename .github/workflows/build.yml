@@ -151,3 +151,44 @@ jobs:
           name: legado_release_signed_apk
           path: app/build/outputs/apk/app/release/*.apk
           retention-days: 30
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Download Release APK
+        uses: actions/download-artifact@v6
+        with:
+          name: legado_release_signed_apk
+          path: artifacts
+
+      - name: Get version info
+        id: version
+        run: |
+          VERSION=$(grep -oP 'def version = "\K[^"]+' app/build.gradle || echo "1.0.0")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+      - name: Generate Release Notes
+        run: |
+          echo "## 🚀 Release v${{ steps.version.outputs.version }}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "**Build Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> RELEASE_NOTES.md
+          echo "**Commit:** ${{ github.sha }}" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### 📦 Downloads" >> RELEASE_NOTES.md
+          echo "- **APK:** 直接安装到 Android 设备" >> RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body_path: RELEASE_NOTES.md
+          files: artifacts/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
