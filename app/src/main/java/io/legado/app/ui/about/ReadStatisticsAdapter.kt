@@ -13,6 +13,7 @@ import io.legado.app.data.entities.ReadStatistics
 import io.legado.app.databinding.ItemReadStatisticsBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.lib.theme.accentColor
 import kotlinx.coroutines.runBlocking
 
 
@@ -57,6 +58,8 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
 
             // 获取主题自定义的其他文字颜色
             val otherColor = ThemeStore.textColorOther(context)
+            // 获取主题强调色
+            val accentCol = accentColor(context)
             
             // 判断是否是"全部"类型（仅在总计统计且没有筛选类型时显示书影音三列布局）
             val isAllType = currentType == 0 && currentReadType == null && item.date.isEmpty()
@@ -111,7 +114,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                 tvReadDaysValueLarge.visibility = View.VISIBLE
                 tvReadDaysUnit.visibility = View.VISIBLE
                 tvReadDaysValueLarge.text = "${days}"
-                tvReadDaysValueLarge.setTextColor(otherColor)
+                tvReadDaysValueLarge.setTextColor(accentCol)
             } else {
                 tvReadDaysValueLarge.visibility = View.GONE
                 tvReadDaysUnit.visibility = View.GONE
@@ -122,7 +125,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                 tvReadHoursValue.visibility = View.VISIBLE
                 tvReadHoursUnit.visibility = View.VISIBLE
                 tvReadHoursValue.text = "${hours}"
-                tvReadHoursValue.setTextColor(otherColor)
+                tvReadHoursValue.setTextColor(accentCol)
             } else {
                 tvReadHoursValue.visibility = View.GONE
                 tvReadHoursUnit.visibility = View.GONE
@@ -132,7 +135,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
             tvReadMinutesValue.visibility = View.VISIBLE
             tvReadMinutesUnit.visibility = View.VISIBLE
             tvReadMinutesValue.text = "${minutes}"
-            tvReadMinutesValue.setTextColor(otherColor)
+            tvReadMinutesValue.setTextColor(accentCol)
             
             // 处理始于日期标签，仅在总计统计时显示
             if (item.date.isEmpty()) {
