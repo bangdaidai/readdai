@@ -292,6 +292,7 @@ object HighlightRuleStore {
             targetScope = normalizeTargetScope(runCatching { rule.targetScope }.getOrDefault(HighlightRule.TARGET_ALL)),
             enabled = runCatching { rule.enabled }.getOrDefault(true),
             textColor = runCatching { rule.textColor }.getOrNull(),
+            bgColor = runCatching { rule.bgColor }.getOrNull(),
             underlineMode = runCatching { rule.underlineMode }.getOrDefault(0).coerceIn(0, 5),
             underlineColor = runCatching { rule.underlineColor }.getOrNull(),
             underlineWidth = runCatching { rule.underlineWidth }.getOrDefault(1f).coerceIn(0.1f, 10f),

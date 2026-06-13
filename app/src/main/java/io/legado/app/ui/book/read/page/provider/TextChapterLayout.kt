@@ -6,6 +6,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
@@ -794,6 +795,14 @@ class TextChapterLayout(
             rule.textColor?.let { color ->
                 spannable.setSpan(
                     ForegroundColorSpan(color),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            rule.bgColor?.let { color ->
+                spannable.setSpan(
+                    BackgroundColorSpan(color),
                     start,
                     end,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE

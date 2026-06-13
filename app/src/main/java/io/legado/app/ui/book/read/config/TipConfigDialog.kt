@@ -13,7 +13,6 @@ import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.config.ReadTipConfig
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.utils.checkByIndex
-import io.legado.app.utils.getCheckedIndex
 import io.legado.app.utils.getIndexById
 import io.legado.app.utils.hexString
 import io.legado.app.utils.observeEvent
@@ -46,8 +45,7 @@ class TipConfigDialog : BaseDialogFragment(R.layout.dialog_tip_config) {
     }
 
     private fun initView() {
-        val titleMode = ReadBookConfig.titleMode
-        if (titleMode !in 0 until binding.rgTitleMode.childCount) {
+        if (ReadBookConfig.titleMode !in binding.rgTitleMode.indices) {
             ReadBookConfig.titleMode = 0
         }
         binding.rgTitleMode.checkByIndex(ReadBookConfig.titleMode)
@@ -100,12 +98,9 @@ class TipConfigDialog : BaseDialogFragment(R.layout.dialog_tip_config) {
     }
 
     private fun initEvent() = binding.run {
-        rgTitleMode.setOnCheckedChangeListener { _, _ ->
-            val index = rgTitleMode.getCheckedIndex()
-            if (index in rgTitleMode.indices) {
-                ReadBookConfig.titleMode = index
-                postEvent(EventBus.UP_CONFIG, arrayListOf(5))
-            }
+        rgTitleMode.setOnCheckedChangeListener { _, checkedId ->
+            ReadBookConfig.titleMode = rgTitleMode.getIndexById(checkedId)
+            postEvent(EventBus.UP_CONFIG, arrayListOf(5))
         }
         dsbTitleSize.onChanged = {
             ReadBookConfig.titleSize = it

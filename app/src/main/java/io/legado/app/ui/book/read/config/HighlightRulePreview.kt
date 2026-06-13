@@ -103,7 +103,7 @@ object HighlightRulePreview {
                         }
                     }
                 }
-                if (index == 0 && rule.bgColor != null && rule.underlineMode != 4 && rule.underlineMode != 5) {
+                if (index == 0 && rule.bgColor != null) {
                     spannable.setSpan(
                         BackgroundColorSpan(rule.bgColor!!),
                         start,

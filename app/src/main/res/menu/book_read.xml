@@ -106,6 +106,16 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/menu_highlight_rule"
+        android:title="高亮规则管理"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/menu_replace_rule"
+        android:title="替换规则管理"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/menu_same_title_removed"
         android:checkable="true"
         android:title="@string/same_title_removed"
@@ -152,16 +162,6 @@
     <item
         android:id="@+id/menu_update_toc"
         android:title="@string/update_toc"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/menu_highlight_rule"
-        android:title="高亮规则管理"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/menu_replace_rule"
-        android:title="替换规则管理"
         app:showAsAction="never" />
 
     <item
