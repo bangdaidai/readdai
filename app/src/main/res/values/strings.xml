@@ -776,6 +776,7 @@
     <string name="title">Title</string>
     <string name="title_left">Left</string>
     <string name="title_center">Center</string>
+    <string name="title_right">Right</string>
     <string name="title_hide">Hide</string>
     <string name="add_to_group">Add to Group</string>
     <string name="save_image">Save image</string>
