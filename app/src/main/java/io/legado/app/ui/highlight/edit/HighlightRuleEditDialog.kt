@@ -436,7 +436,7 @@ class HighlightRuleEditDialog(
         val dialog = ColorPickerDialog.newBuilder()
             .setDialogType(ColorPickerDialog.TYPE_CUSTOM)
             .setColor(currentColor)
-            .setShowAlphaSlider(false)
+            .setShowAlphaSlider(true)
             .setAllowPresets(true)
             .setAllowCustom(true)
             .setDialogId(dialogId)
