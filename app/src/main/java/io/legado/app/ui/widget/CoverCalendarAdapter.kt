@@ -79,7 +79,6 @@ class CoverCalendarAdapter : RecyclerView.Adapter<CoverCalendarAdapter.ViewHolde
             if (isCurrentMonth && data.coverUrl.isNotEmpty()) {
                 coverView.visibility = View.VISIBLE
                 coverView.load(data.coverUrl, data.bookName, null)
-                tvDay.visibility = View.GONE
             } else {
                 coverView.visibility = View.GONE
                 coverView.setImageDrawable(null)

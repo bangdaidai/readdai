@@ -79,7 +79,6 @@
     <string name="content_cannot_be_empty">Content cannot be empty</string>
     <string name="enable">Enable</string>
     <string name="replace_purify_search">Search Replacement</string>
-    <string name="all">All</string>
     <string name="sort_rule">Sort Rules</string>
     <string name="sort_new_first">New First</string>
     <string name="sort_old_first">Old First</string>
