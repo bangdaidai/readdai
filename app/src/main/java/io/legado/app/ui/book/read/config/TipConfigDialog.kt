@@ -13,6 +13,7 @@ import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.config.ReadTipConfig
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.utils.checkByIndex
+import io.legado.app.utils.getCheckedIndex
 import io.legado.app.utils.getIndexById
 import io.legado.app.utils.hexString
 import io.legado.app.utils.observeEvent
@@ -46,10 +47,10 @@ class TipConfigDialog : BaseDialogFragment(R.layout.dialog_tip_config) {
 
     private fun initView() {
         val titleMode = ReadBookConfig.titleMode
-        if (titleMode !in 0 until rgTitleMode.childCount) {
+        if (titleMode !in 0 until binding.rgTitleMode.childCount) {
             ReadBookConfig.titleMode = 0
         }
-        rgTitleMode.checkByIndex(ReadBookConfig.titleMode)
+        binding.rgTitleMode.checkByIndex(ReadBookConfig.titleMode)
         binding.dsbTitleSize.progress = ReadBookConfig.titleSize
         binding.dsbTitleTop.progress = ReadBookConfig.titleTopSpacing
         binding.dsbTitleBottom.progress = ReadBookConfig.titleBottomSpacing

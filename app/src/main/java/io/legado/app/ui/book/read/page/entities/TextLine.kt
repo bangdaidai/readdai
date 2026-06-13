@@ -289,7 +289,7 @@ data class TextLine(
         val underlineOffset = config.underlineOffset
         val lineY = height + underlineOffset.dpToPx()
         val startX = if (config.underlineExtend) 0f else lineStart + indentWidth
-        val endX = if (config.underlineExtend) width.toFloat() else lineEnd
+        val endX = if (config.underlineExtend) (ChapterProvider.paddingLeft + ChapterProvider.visibleWidth).toFloat() else lineEnd
         when (underlineMode) {
             1 -> canvas.drawLine(startX, lineY, endX, lineY, paint)
             2 -> drawDashedLine(canvas, paint, startX, lineY, endX, underlineWidth)

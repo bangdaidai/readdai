@@ -771,7 +771,7 @@ class TextChapterLayout(
         spannable: SpannableStringBuilder,
         isTitle: Boolean = false
     ): SpannableStringBuilder {
-        if (!ReadBook.book?.getUseHighlightRule()) return spannable
+        if (ReadBook.book?.getUseHighlightRule() != true) return spannable
         compiledHighlightRules.forEach { compiled ->
             if (!compiled.rule.appliesTo(isTitle)) return@forEach
             applyRuleSpans(spannable, compiled.rule, compiled.regex)
