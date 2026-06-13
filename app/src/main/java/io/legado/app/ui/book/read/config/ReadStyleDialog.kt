@@ -112,7 +112,7 @@ class ReadStyleDialog : BaseDialogFragment(R.layout.dialog_read_book_style),
             ChineseUtils.unLoad(*TransType.entries.toTypedArray())
             postEvent(EventBus.UP_CONFIG, arrayListOf(5))
         }
-        dsbTextWeight.onChanged { progress ->
+        dsbTextWeight.onChanged = { progress ->
             ReadBookConfig.textBold = progress + 100
             postEvent(EventBus.UP_CONFIG, arrayListOf(8, 9, 6))
         }
