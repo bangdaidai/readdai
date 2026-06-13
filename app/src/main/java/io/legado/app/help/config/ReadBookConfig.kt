@@ -557,7 +557,7 @@ object ReadBookConfig {
         private var pageAnim: Int = 0,//翻页动画
         private var pageAnimEInk: Int = 4,
         var textFont: String = "",//字体
-        var textBold: Int = 0,//是否粗体字 0:正常, 1:粗体, 2:细体
+        var textBold: Int = 400,//字重 100-900 (100=极细, 400=正常, 700=粗体)
         var textSize: Int = 20,//文字大小
         var letterSpacing: Float = 0.1f,//字间距
         var lineSpacingExtra: Int = 12,//行间距
@@ -567,7 +567,12 @@ object ReadBookConfig {
         var titleTopSpacing: Int = 0,
         var titleBottomSpacing: Int = 0,
         var paragraphIndent: String = "　　",//段落缩进
-        var underlineMode: Int = 0, //下划线
+        var underlineMode: Int = 0, //下划线 0:无 1:实线 2:虚线 3:波浪 4:点线
+        var underlineColor: String = "#3E3D3B",//下划线颜色
+        var underlineColorNight: String = "#ADADAD",//下划线颜色-夜间
+        var underlineWidth: Float = 1f,//下划线粗细
+        var underlineOffset: Float = 2f,//下划线与文字的距离
+        var underlineExtend: Boolean = false,//下划线延伸至整行
         var paddingBottom: Int = 6,
         var paddingLeft: Int = 16,
         var paddingRight: Int = 16,
@@ -605,6 +610,15 @@ object ReadBookConfig {
 
         @Transient
         private var initColorInt = false
+
+        @Transient
+        private var underlineColorInt = -1
+
+        @Transient
+        private var underlineColorNightInt = -1
+
+        @Transient
+        private var initUnderlineColorInt = false
 
         private fun initColorInt() {
             textColorIntEInk = textColorEInk.toColorInt()
@@ -705,6 +719,33 @@ object ReadBookConfig {
                 AppConfig.isEInkMode -> darkStatusIconEInk
                 AppConfig.isNightTheme -> darkStatusIconNight
                 else -> darkStatusIcon
+            }
+        }
+
+        fun setCurUnderlineColor(color: Int) {
+            when {
+                AppConfig.isEInkMode -> underlineColor = "#${color.hexString}"
+                AppConfig.isNightTheme -> {
+                    underlineColorNight = "#${color.hexString}"
+                    underlineColorNightInt = color
+                }
+                else -> {
+                    underlineColor = "#${color.hexString}"
+                    underlineColorInt = color
+                }
+            }
+        }
+
+        fun curUnderlineColor(): Int {
+            if (!initUnderlineColorInt) {
+                underlineColorInt = underlineColor.toColorInt()
+                underlineColorNightInt = underlineColorNight.toColorInt()
+                initUnderlineColorInt = true
+            }
+            return when {
+                AppConfig.isEInkMode -> underlineColorInt
+                AppConfig.isNightTheme -> underlineColorNightInt
+                else -> underlineColorInt
             }
         }
 
@@ -857,6 +898,11 @@ object ReadBookConfig {
             "titleBottomSpacing" to titleBottomSpacing,
             "paragraphIndent" to paragraphIndent,
             "underlineMode" to underlineMode,
+            "underlineColor" to underlineColor,
+            "underlineColorNight" to underlineColorNight,
+            "underlineWidth" to underlineWidth,
+            "underlineOffset" to underlineOffset,
+            "underlineExtend" to underlineExtend,
             "paddingBottom" to paddingBottom,
             "paddingLeft" to paddingLeft,
             "paddingRight" to paddingRight,

@@ -79,6 +79,12 @@
     <string name="content_cannot_be_empty">Content cannot be empty</string>
     <string name="enable">Enable</string>
     <string name="replace_purify_search">Search Replacement</string>
+    <string name="all">All</string>
+    <string name="sort_rule">Sort Rules</string>
+    <string name="sort_new_first">New First</string>
+    <string name="sort_old_first">Old First</string>
+    <string name="sort_name_asc">Name (A-Z)</string>
+    <string name="sort_name_desc">Name (Z-A)</string>
     <string name="bookshelf">Bookshelf</string>
     <string name="favorites">Favorites</string>
     <string name="favorite">Favorite</string>
@@ -1297,6 +1303,10 @@
     <string name="create_folder">Create Folder</string>
     <string name="allow_drop_down_refresh">Allow drop-down refresh</string>
     <string name="text_underline">Text underline</string>
+    <string name="underline_color">Underline color</string>
+    <string name="underline_width">Underline width</string>
+    <string name="underline_offset">Underline offset</string>
+    <string name="underline_extend">Extend underline to full width</string>
     <string name="select_new_source">Select new source</string>
     <string name="select_update_source">Select update source</string>
     <string name="set_local_password">Setting the local password</string>

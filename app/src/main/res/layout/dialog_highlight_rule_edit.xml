@@ -261,6 +261,42 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
+                        android:text="背景颜色"
+                        android:textColor="@color/primaryText"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:id="@+id/ll_bg_color"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:id="@+id/view_bg_color_preview"
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:background="@drawable/shape_edit_text" />
+
+                        <EditText
+                            android:id="@+id/et_bg_color"
+                            android:layout_width="0dp"
+                            android:layout_height="42dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/shape_edit_text"
+                            android:hint="未设置"
+                            android:inputType="textCapCharacters"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
                         android:text="下划线颜色"
                         android:textColor="@color/primaryText"
                         android:textSize="13sp" />

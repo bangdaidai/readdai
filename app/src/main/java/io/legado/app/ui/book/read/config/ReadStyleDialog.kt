@@ -83,6 +83,7 @@ class ReadStyleDialog : BaseDialogFragment(R.layout.dialog_read_book_style),
         }
         dsbLineSize.valueFormat = { ((it - 10) / 10f).toString() }
         dsbParagraphSpacing.valueFormat = { (it / 10f).toString() }
+        dsbTextWeight.valueFormat = { "${it + 100}" }
         styleAdapter = StyleAdapter()
         rvStyle.adapter = styleAdapter
         styleAdapter.addFooterView {
@@ -111,7 +112,8 @@ class ReadStyleDialog : BaseDialogFragment(R.layout.dialog_read_book_style),
             ChineseUtils.unLoad(*TransType.entries.toTypedArray())
             postEvent(EventBus.UP_CONFIG, arrayListOf(5))
         }
-        textFontWeightConverter.onChanged {
+        dsbTextWeight.onChanged {
+            ReadBookConfig.textBold = it + 100
             postEvent(EventBus.UP_CONFIG, arrayListOf(8, 9, 6))
         }
         tvTextFont.setOnClickListener {
@@ -184,7 +186,6 @@ class ReadStyleDialog : BaseDialogFragment(R.layout.dialog_read_book_style),
     }
 
     private fun upView() = binding.run {
-        textFontWeightConverter.upUi(ReadBookConfig.textBold)
         ReadBook.pageAnim().let {
             if (it >= 0 && it < rgPageAnim.childCount) {
                 rgPageAnim.check(rgPageAnim[it].id)
@@ -195,6 +196,7 @@ class ReadStyleDialog : BaseDialogFragment(R.layout.dialog_read_book_style),
             dsbTextLetterSpacing.progress = (it.letterSpacing * 100).toInt() + 50
             dsbLineSize.progress = it.lineSpacingExtra
             dsbParagraphSpacing.progress = it.paragraphSpacing
+            dsbTextWeight.progress = it.textBold - 100
         }
     }
 

@@ -12,6 +12,7 @@ import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.tabs.TabLayout
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppLog
@@ -72,6 +73,8 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
     private var groupMenu: SubMenu? = null
     private var replaceRuleFlowJob: Job? = null
     private var dataInit = false
+    private var currentGroup: String? = null
+    private var currentSortMode: String = "desc"
     private val qrCodeResult = registerForActivityResult(QrCodeResult()) {
         it ?: return@registerForActivityResult
         showDialogFragment(ImportReplaceRuleDialog(it))
@@ -109,6 +112,7 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
         initRecyclerView()
         initSearchView()
         initSelectActionView()
+        initTabLayout()
         observeReplaceRuleData()
         observeGroupData()
     }
@@ -149,6 +153,51 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
         searchView.setOnQueryTextListener(this)
     }
 
+    private fun initTabLayout() {
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                tab?.let {
+                    val position = it.position
+                    val tabTitles = binding.tabLayout.tabCount.let { count ->
+                        if (count > 0) {
+                            mutableListOf<String>().apply {
+                                add(getString(R.string.all))
+                                addAll(groups)
+                            }
+                        } else {
+                            mutableListOf(getString(R.string.all))
+                        }
+                    }
+                    if (position < tabTitles.size) {
+                        currentGroup = if (position == 0) null else tabTitles[position]
+                        observeReplaceRuleData(searchView.query?.toString())
+                    }
+                }
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+    }
+
+    private fun updateTabLayout() {
+        val tabTitles = mutableListOf<String>()
+        tabTitles.add(getString(R.string.all))
+        tabTitles.addAll(groups)
+
+        binding.tabLayout.removeAllTabs()
+        tabTitles.forEach { title ->
+            binding.tabLayout.addTab(binding.tabLayout.newTab().setText(title))
+        }
+
+        val selectIndex = if (currentGroup == null) 0 else {
+            groups.indexOf(currentGroup).takeIf { it >= 0 }?.let { it + 1 } ?: 0
+        }
+        if (selectIndex < binding.tabLayout.tabCount) {
+            binding.tabLayout.getTabAt(selectIndex)?.select()
+        }
+    }
+
     override fun selectAll(selectAll: Boolean) {
         if (selectAll) {
             adapter.selectAll()
@@ -179,41 +228,39 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
         dataInit = false
         replaceRuleFlowJob?.cancel()
         replaceRuleFlowJob = lifecycleScope.launch {
-            when {
-                searchKey.isNullOrEmpty() -> {
-                    appDb.replaceRuleDao.flowAll()
-                }
-
-                searchKey == getString(R.string.enabled) -> {
-                    appDb.replaceRuleDao.flowEnabled()
-                }
-
-                searchKey == getString(R.string.disabled) -> {
-                    appDb.replaceRuleDao.flowDisabled()
-                }
-
-                searchKey == getString(R.string.no_group) -> {
-                    appDb.replaceRuleDao.flowNoGroup()
-                }
-
-                searchKey.startsWith("group:") -> {
-                    val key = searchKey.substringAfter("group:")
-                    appDb.replaceRuleDao.flowGroupSearch("%$key%")
-                }
-
-                else -> {
+            val flow = when {
+                !searchKey.isNullOrEmpty() -> {
                     appDb.replaceRuleDao.flowSearch("%$searchKey%")
                 }
-            }.catch {
+                !currentGroup.isNullOrEmpty() -> {
+                    appDb.replaceRuleDao.flowGroupSearch("%$currentGroup%")
+                }
+                else -> {
+                    appDb.replaceRuleDao.flowAll()
+                }
+            }
+
+            flow.catch {
                 AppLog.put("替换规则管理界面更新数据出错", it)
             }.flowOn(IO).conflate().collect {
                 if (dataInit) {
                     setResult(RESULT_OK)
                 }
-                adapter.setItems(it, adapter.diffItemCallBack)
+                val sortedList = sortRules(it, currentSortMode)
+                adapter.setItems(sortedList, adapter.diffItemCallBack)
                 dataInit = true
                 delay(100)
             }
+        }
+    }
+
+    private fun sortRules(rules: List<ReplaceRule>, mode: String): List<ReplaceRule> {
+        return when (mode) {
+            "asc" -> rules.sortedBy { it.order.toLong() }
+            "desc" -> rules.sortedByDescending { it.order.toLong() }
+            "name_asc" -> rules.sortedBy { it.name.lowercase() }
+            "name_desc" -> rules.sortedByDescending { it.name.lowercase() }
+            else -> rules
         }
     }
 
@@ -232,6 +279,7 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
             appDb.replaceRuleDao.flowGroups().collect {
                 groups.clear()
                 groups.addAll(it)
+                updateTabLayout()
                 upGroupMenu()
             }
         }
@@ -284,8 +332,30 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
                     "application/json"
                 )
             }
+            R.id.menu_sort_new_first -> {
+                currentSortMode = "desc"
+                resortRules()
+            }
+            R.id.menu_sort_old_first -> {
+                currentSortMode = "asc"
+                resortRules()
+            }
+            R.id.menu_sort_name_asc -> {
+                currentSortMode = "name_asc"
+                resortRules()
+            }
+            R.id.menu_sort_name_desc -> {
+                currentSortMode = "name_desc"
+                resortRules()
+            }
         }
         return false
+    }
+
+    private fun resortRules() {
+        val currentItems = adapter.getItems()
+        val sortedList = sortRules(currentItems, currentSortMode)
+        adapter.setItems(sortedList, adapter.diffItemCallBack)
     }
 
     private fun upGroupMenu() = groupMenu?.transaction { menu ->

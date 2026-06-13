@@ -80,6 +80,7 @@ class BgTextConfigDialog : BaseDialogFragment(R.layout.dialog_read_bg_text) {
         const val TEXT_COLOR = 121
         const val BG_COLOR = 122
         const val TEXT_ACCENT_COLOR = 123
+        const val UNDERLINE_COLOR = 124
     }
 
     private val binding by viewBinding(DialogReadBgTextBinding::bind)
@@ -209,6 +210,11 @@ class BgTextConfigDialog : BaseDialogFragment(R.layout.dialog_read_bg_text) {
         binding.swDarkStatusIcon.isChecked = curStatusIconDark()
         binding.spUnderline.setSelectionSafely(underlineMode)
         binding.sbBgAlpha.progress = bgAlpha
+        binding.sbUnderlineWidth.progress = (underlineWidth * 10).toInt()
+        binding.tvUnderlineWidth.text = String.format("%.1f", underlineWidth)
+        binding.sbUnderlineOffset.progress = (underlineOffset * 10).toInt()
+        binding.tvUnderlineOffset.text = String.format("%.1f", underlineOffset)
+        binding.swUnderlineExtend.isChecked = underlineExtend
     }
 
     @SuppressLint("InflateParams")
@@ -260,6 +266,14 @@ class BgTextConfigDialog : BaseDialogFragment(R.layout.dialog_read_bg_text) {
                 .setDialogId(TEXT_ACCENT_COLOR)
                 .show(requireActivity())
         }
+        binding.tvUnderlineColor.setOnClickListener {
+            ColorPickerDialog.newBuilder()
+                .setColor(curUnderlineColor())
+                .setShowAlphaSlider(false)
+                .setDialogType(ColorPickerDialog.TYPE_CUSTOM)
+                .setDialogId(UNDERLINE_COLOR)
+                .show(requireActivity())
+        }
         binding.tvBgColor.setOnClickListener {
             val bgColor =
                 if (curBgType() == 0) curBgStr().toColorInt()
@@ -305,6 +319,34 @@ class BgTextConfigDialog : BaseDialogFragment(R.layout.dialog_read_bg_text) {
                 postEvent(EventBus.UP_CONFIG, arrayListOf(3))
             }
         })
+        binding.sbUnderlineWidth.setOnSeekBarChangeListener(object : SeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                val width = progress / 10f
+                ReadBookConfig.durConfig.underlineWidth = width
+                binding.tvUnderlineWidth.text = String.format("%.1f", width)
+                postEvent(EventBus.UP_CONFIG, arrayListOf(6, 9, 11))
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                postEvent(EventBus.UP_CONFIG, arrayListOf(6, 9, 11))
+            }
+        })
+        binding.sbUnderlineOffset.setOnSeekBarChangeListener(object : SeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                val offset = progress / 10f
+                ReadBookConfig.durConfig.underlineOffset = offset
+                binding.tvUnderlineOffset.text = String.format("%.1f", offset)
+                postEvent(EventBus.UP_CONFIG, arrayListOf(6, 9, 11))
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                postEvent(EventBus.UP_CONFIG, arrayListOf(6, 9, 11))
+            }
+        })
+        binding.swUnderlineExtend.setOnCheckedChangeListener { _, isChecked ->
+            ReadBookConfig.durConfig.underlineExtend = isChecked
+            postEvent(EventBus.UP_CONFIG, arrayListOf(6, 9, 11))
+        }
     }
 
     private fun exportConfig(uri: Uri) {

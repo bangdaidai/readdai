@@ -92,9 +92,11 @@ class TextChapterLayout(
     private val isMiddleTitle: Boolean
         get() = ReadBookConfig.titleMode == 1
     private val isRightTitle: Boolean
-        get() = ReadBookConfig.titleMode == 2
+        get() = ReadBookConfig.titleMode == 3
     private val titleTopSpacing: Int
         get() = ReadBookConfig.titleTopSpacing.dpToPx()
+    private val titleBottomSpacing: Int
+        get() = ReadBookConfig.titleBottomSpacing.dpToPx()
     private val textFullJustify get() = ReadBookConfig.textFullJustify
 
     private val pageAnim = book.getPageAnim()
@@ -243,7 +245,7 @@ class TextChapterLayout(
                 pendingTextPage.lines.lastOrNull()?.isParagraphEnd = true
                 stringBuilder.append("\n")
             }
-            durY += titleTopSpacing.dpToPx()
+            durY += titleBottomSpacing
         }
 
         contents.forEach { content ->
@@ -769,6 +771,7 @@ class TextChapterLayout(
         spannable: SpannableStringBuilder,
         isTitle: Boolean = false
     ): SpannableStringBuilder {
+        if (!ReadBook.book?.getUseHighlightRule()) return spannable
         compiledHighlightRules.forEach { compiled ->
             if (!compiled.rule.appliesTo(isTitle)) return@forEach
             applyRuleSpans(spannable, compiled.rule, compiled.regex)

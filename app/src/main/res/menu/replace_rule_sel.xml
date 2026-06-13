@@ -27,4 +27,29 @@
         android:title="@string/export_selection"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/menu_sort_rule"
+        android:title="@string/sort_rule"
+        app:showAsAction="never">
+
+        <menu>
+            <item
+                android:id="@+id/menu_sort_new_first"
+                android:title="@string/sort_new_first" />
+
+            <item
+                android:id="@+id/menu_sort_old_first"
+                android:title="@string/sort_old_first" />
+
+            <item
+                android:id="@+id/menu_sort_name_asc"
+                android:title="@string/sort_name_asc" />
+
+            <item
+                android:id="@+id/menu_sort_name_desc"
+                android:title="@string/sort_name_desc" />
+        </menu>
+
+    </item>
+
 </menu>

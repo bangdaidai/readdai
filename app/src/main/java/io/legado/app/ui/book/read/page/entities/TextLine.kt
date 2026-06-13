@@ -277,18 +277,19 @@ data class TextLine(
      * 绘制全局下划线（朗读标记除外），支持实线/虚线/波浪线/点线
      */
     private fun drawUnderline(canvas: Canvas, underlineMode: Int) {
-        val underlineWidth = 1f
-        val underlineColor = ReadBookConfig.textColor
+        val config = ReadBookConfig.durConfig
+        val underlineWidth = config.underlineWidth
+        val underlineColor = config.curUnderlineColor()
         val paint = PaintPool.obtain()
         paint.set(ChapterProvider.contentPaint)
         paint.color = underlineColor
         paint.strokeWidth = underlineWidth.dpToPx().toFloat()
         paint.style = android.graphics.Paint.Style.STROKE
         paint.isAntiAlias = true
-        val underlineOffset = 2f
+        val underlineOffset = config.underlineOffset
         val lineY = height + underlineOffset.dpToPx()
-        val startX = lineStart + indentWidth
-        val endX = lineEnd
+        val startX = if (config.underlineExtend) 0f else lineStart + indentWidth
+        val endX = if (config.underlineExtend) width.toFloat() else lineEnd
         when (underlineMode) {
             1 -> canvas.drawLine(startX, lineY, endX, lineY, paint)
             2 -> drawDashedLine(canvas, paint, startX, lineY, endX, underlineWidth)

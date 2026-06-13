@@ -9,6 +9,7 @@ data class HighlightRule(
     var targetScope: Int = TARGET_ALL,
     var enabled: Boolean = true,
     var textColor: Int? = null,
+    var bgColor: Int? = null,
     var underlineMode: Int = 0,
     var underlineColor: Int? = null,
     var underlineWidth: Float = 1f,
@@ -24,6 +25,9 @@ data class HighlightRule(
         parts.add(targetScopeLabel())
         textColor?.let {
             parts.add("字色 ${it.toHexColor()}")
+        }
+        bgColor?.let {
+            parts.add("背景色 ${it.toHexColor()}")
         }
         if (underlineMode != 0) {
             parts.add(

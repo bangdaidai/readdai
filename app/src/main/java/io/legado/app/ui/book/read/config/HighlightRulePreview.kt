@@ -103,10 +103,9 @@ object HighlightRulePreview {
                         }
                     }
                 }
-                if (index == 0 && rule.underlineMode != 4 && rule.underlineMode != 5) {
-                    val baseColor = rule.textColor ?: rule.underlineColor ?: 0xFF63C37D.toInt()
+                if (index == 0 && rule.bgColor != null && rule.underlineMode != 4 && rule.underlineMode != 5) {
                     spannable.setSpan(
-                        BackgroundColorSpan((0x33 shl 24) or (baseColor and 0x00FFFFFF)),
+                        BackgroundColorSpan(rule.bgColor!!),
                         start,
                         end,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE

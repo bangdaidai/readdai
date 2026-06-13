@@ -234,25 +234,25 @@ object ChapterProvider {
     }
 
     private fun getPaints(typeface: Typeface?): Pair<TextPaint, TextPaint> {
-        // 字体统一处理
-        val bold = Typeface.create(typeface, Typeface.BOLD)
-        val normal = Typeface.create(typeface, Typeface.NORMAL)
-        val (titleFont, textFont) = when (ReadBookConfig.textBold) {
-            1 -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                    Pair(Typeface.create(typeface, 900, false), bold)
-                else
-                    Pair(bold, bold)
+        val textBold = ReadBookConfig.textBold
+        val useVariableFont = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && textBold in 100..900
+        val titleFont = if (useVariableFont) {
+            Typeface.create(typeface, textBold, false)
+        } else {
+            when {
+                textBold >= 700 -> Typeface.create(typeface, Typeface.BOLD)
+                textBold <= 300 -> Typeface.create(typeface, Typeface.NORMAL)
+                else -> Typeface.create(typeface, Typeface.NORMAL)
             }
-
-            2 -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                    Pair(normal, Typeface.create(typeface, 300, false))
-                else
-                    Pair(normal, normal)
+        }
+        val textFont = if (useVariableFont) {
+            Typeface.create(typeface, textBold, false)
+        } else {
+            when {
+                textBold >= 700 -> Typeface.create(typeface, Typeface.BOLD)
+                textBold <= 300 -> Typeface.create(typeface, Typeface.NORMAL)
+                else -> Typeface.create(typeface, Typeface.NORMAL)
             }
-
-            else -> Pair(bold, normal)
         }
 
         //标题
@@ -274,6 +274,9 @@ object ChapterProvider {
         cPaint.isAntiAlias = true
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && AppConfig.optimizeRender) {
             cPaint.isLinearText = true
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && textBold in 100..900) {
+            cPaint.setFontVariationSettings("'wght' $textBold")
         }
         return Pair(tPaint, cPaint)
     }

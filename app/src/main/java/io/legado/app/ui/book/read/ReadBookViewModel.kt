@@ -74,13 +74,6 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
 
     fun initReadBookConfig(intent: Intent) {
         ReadBook.inBookshelf = intent.getBooleanExtra("inBookshelf", true)
-        val bookUrl = intent.getStringExtra("bookUrl")
-        val book = when {
-            bookUrl.isNullOrEmpty() -> appDb.bookDao.lastReadBook
-            else -> appDb.bookDao.getBook(bookUrl)
-        } ?: return
-        ReadBook.book = book  // 立即设置 book，避免异步执行时用户已翻到最后一页但 book 还未设置
-        ReadBook.upReadBookConfig(book)
     }
 
     /**
@@ -125,6 +118,7 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         } else {
             ReadBook.resetData(book)
         }
+        ReadBook.upReadBookConfig(book)
         isInitFinish = true
         if (!book.isLocal && book.tocUrl.isEmpty() && !loadBookInfo(book)) {
             return

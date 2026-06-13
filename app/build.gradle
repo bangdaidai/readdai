@@ -57,17 +57,68 @@ android {
         }
     }
 
-    // 🔐 签名配置：必须配置 RELEASE_STORE_FILE，否则构建失败
+    // 🔐 签名配置：只在 CI 环境或明确构建 release 时才检查签名
     signingConfigs {
         release {
-            storeFile file(RELEASE_STORE_FILE)
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
-            enableV4Signing = true
+            // 检查是否在 CI 环境（GitHub Actions）
+            def isCi = System.getenv('GITHUB_ACTIONS') == 'true'
+            def isReleaseBuild = gradle.startParameter.taskNames.any {
+                task -> task.toLowerCase().contains('release')
+            }
+
+            // 只有在 CI 环境或明确构建 release 时才需要签名配置
+            if (isCi || isReleaseBuild) {
+                def storeFileProp = findProperty('RELEASE_STORE_FILE')
+                def storePasswordProp = findProperty('RELEASE_STORE_PASSWORD')
+                def keyAliasProp = findProperty('RELEASE_KEY_ALIAS')
+                def keyPasswordProp = findProperty('RELEASE_KEY_PASSWORD')
+
+                // 如果缺少任何必需的签名配置，直接抛出错误
+                if (!storeFileProp || !storePasswordProp || !keyAliasProp || !keyPasswordProp) {
+                    throw new GradleException("""
+❌ 缺少必需的签名配置！请确保在 gradle.properties 中设置：
+   
+   RELEASE_STORE_FILE=你的keystore文件路径
+   RELEASE_STORE_PASSWORD=你的keystore密码
+   RELEASE_KEY_ALIAS=你的key别名
+   RELEASE_KEY_PASSWORD=你的key密码
+   
+或者在 GitHub Secrets 中设置相应的配置。
+当前环境: ${isCi ? 'GitHub Actions CI' : '本地'}，任务: ${gradle.startParameter.taskNames}
+""")
+                }
+
+                // 检查 keystore 文件是否存在
+                def keystoreFile = file(storeFileProp)
+                if (!keystoreFile.exists()) {
+                    throw new GradleException("""
+❌ Keystore 文件不存在：${keystoreFile.absolutePath}
+   
+请确保：
+1. 在 GitHub Actions workflow 中正确设置了 RELEASE_KEY_STORE_BASE64
+2. 或者手动创建了 keystore 文件
+""")
+                }
+
+                // 使用配置
+                storeFile keystoreFile
+                storePassword storePasswordProp
+                keyAlias keyAliasProp
+                keyPassword keyPasswordProp
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+
+                // 记录使用的配置（隐藏密码）
+                println "✅ 使用发布签名配置："
+                println "   文件: ${keystoreFile.name}"
+                println "   别名: ${keyAliasProp}"
+                println "   密码: *** (已设置)"
+            } else {
+                // 本地开发构建，跳过 release 签名配置
+                println "ℹ️ 本地开发构建，跳过 release 签名配置"
+            }
         }
     }
 
@@ -102,6 +153,7 @@ android {
 
     buildTypes {
         release {
+            // 必须使用 release 签名，否则失败
             signingConfig signingConfigs.release
             applicationIdSuffix '.release'
 

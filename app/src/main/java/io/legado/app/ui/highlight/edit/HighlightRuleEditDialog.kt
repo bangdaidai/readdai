@@ -94,6 +94,8 @@ class HighlightRuleEditDialog(
         binding.etName.setHintTextColor(secondaryTextColor)
         binding.etTextColor.setTextColor(primaryTextColor)
         binding.etTextColor.setHintTextColor(secondaryTextColor)
+        binding.etBgColor.setTextColor(primaryTextColor)
+        binding.etBgColor.setHintTextColor(secondaryTextColor)
         binding.etUnderlineColor.setTextColor(primaryTextColor)
         binding.etUnderlineColor.setHintTextColor(secondaryTextColor)
         binding.etUnderlineWidth.setTextColor(primaryTextColor)
@@ -146,6 +148,7 @@ class HighlightRuleEditDialog(
         binding.etName.setText(editingRule.name)
         binding.etPattern.setText(editingRule.pattern)
         binding.etTextColor.setText(editingRule.textColor?.toHexColor().orEmpty())
+        binding.etBgColor.setText(editingRule.bgColor?.toHexColor().orEmpty())
         binding.etUnderlineColor.setText(editingRule.underlineColor?.toHexColor().orEmpty())
         binding.etUnderlineWidth.setText(editingRule.underlineWidth.toString())
         binding.etUnderlineOffset.setText(editingRule.underlineOffset.formatDistance())
@@ -160,6 +163,7 @@ class HighlightRuleEditDialog(
         binding.spTarget.setSelection(editingRule.targetScope.coerceIn(0, 2))
         
         updateColorPreview(binding.viewTextColorPreview, editingRule.textColor)
+        updateColorPreview(binding.viewBgColorPreview, editingRule.bgColor)
         updateColorPreview(binding.viewUnderlineColorPreview, editingRule.underlineColor)
         
         updateSvgPathVisibility(editingRule.underlineMode)
@@ -174,6 +178,9 @@ class HighlightRuleEditDialog(
         }
         binding.llTextColor.setOnClickListener {
             showColorPicker(1, editingRule.textColor ?: Color.BLACK)
+        }
+        binding.llBgColor.setOnClickListener {
+            showColorPicker(3, editingRule.bgColor ?: Color.BLACK)
         }
         binding.llUnderlineColor.setOnClickListener {
             showColorPicker(2, editingRule.underlineColor ?: Color.BLACK)
@@ -207,6 +214,11 @@ class HighlightRuleEditDialog(
         binding.etTextColor.doAfterTextChanged {
             editingRule.textColor = parseColorOrNull(it?.toString().orEmpty())
             updateColorPreview(binding.viewTextColorPreview, editingRule.textColor)
+            updatePreview()
+        }
+        binding.etBgColor.doAfterTextChanged {
+            editingRule.bgColor = parseColorOrNull(it?.toString().orEmpty())
+            updateColorPreview(binding.viewBgColorPreview, editingRule.bgColor)
             updatePreview()
         }
         binding.etUnderlineColor.doAfterTextChanged {
@@ -358,6 +370,7 @@ class HighlightRuleEditDialog(
             targetScope = binding.spTarget.selectedItemPosition.coerceIn(0, 2),
             enabled = binding.switchEnable.isChecked,
             textColor = parseColorOrNull(binding.etTextColor.text?.toString().orEmpty()),
+            bgColor = parseColorOrNull(binding.etBgColor.text?.toString().orEmpty()),
             underlineMode = binding.spUnderlineMode.selectedItemPosition,
             underlineColor = parseColorOrNull(binding.etUnderlineColor.text?.toString().orEmpty()),
             underlineWidth = binding.etUnderlineWidth.text?.toString()?.toFloatOrNull()?.coerceIn(0.1f, 10f) ?: 1f,
@@ -447,6 +460,12 @@ class HighlightRuleEditDialog(
                 editingRule.underlineColor = color
                 binding.etUnderlineColor.setText(color.toHexColor())
                 updateColorPreview(binding.viewUnderlineColorPreview, color)
+                updatePreview()
+            }
+            3 -> {
+                editingRule.bgColor = color
+                binding.etBgColor.setText(color.toHexColor())
+                updateColorPreview(binding.viewBgColorPreview, color)
                 updatePreview()
             }
         }

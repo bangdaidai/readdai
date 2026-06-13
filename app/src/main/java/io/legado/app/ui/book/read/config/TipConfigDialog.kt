@@ -45,10 +45,11 @@ class TipConfigDialog : BaseDialogFragment(R.layout.dialog_tip_config) {
     }
 
     private fun initView() {
-        if (ReadBookConfig.titleMode !in binding.rgTitleMode.indices) {
+        val titleMode = ReadBookConfig.titleMode
+        if (titleMode !in 0 until rgTitleMode.childCount) {
             ReadBookConfig.titleMode = 0
         }
-        binding.rgTitleMode.checkByIndex(ReadBookConfig.titleMode)
+        rgTitleMode.checkByIndex(ReadBookConfig.titleMode)
         binding.dsbTitleSize.progress = ReadBookConfig.titleSize
         binding.dsbTitleTop.progress = ReadBookConfig.titleTopSpacing
         binding.dsbTitleBottom.progress = ReadBookConfig.titleBottomSpacing
@@ -98,9 +99,12 @@ class TipConfigDialog : BaseDialogFragment(R.layout.dialog_tip_config) {
     }
 
     private fun initEvent() = binding.run {
-        rgTitleMode.setOnCheckedChangeListener { _, checkedId ->
-            ReadBookConfig.titleMode = rgTitleMode.getIndexById(checkedId)
-            postEvent(EventBus.UP_CONFIG, arrayListOf(5))
+        rgTitleMode.setOnCheckedChangeListener { _, _ ->
+            val index = rgTitleMode.getCheckedIndex()
+            if (index in rgTitleMode.indices) {
+                ReadBookConfig.titleMode = index
+                postEvent(EventBus.UP_CONFIG, arrayListOf(5))
+            }
         }
         dsbTitleSize.onChanged = {
             ReadBookConfig.titleSize = it
