@@ -28,6 +28,7 @@ data class TextHtmlColumn(
     override var textLine: TextLine = emptyTextLine
 
     override val textColor: Int? get() = mTextColor
+    override val bgColor: Int? get() = null
     override val underlineMode: Int get() = 0
     override val underlineColor: Int? get() = null
     override val underlineWidth: Float get() = 1f
