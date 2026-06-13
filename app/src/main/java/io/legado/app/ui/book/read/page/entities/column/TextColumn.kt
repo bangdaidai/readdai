@@ -21,12 +21,15 @@ data class TextColumn(
     override val charData: String,
     val highlightColor: Int? = null,
     val highlightStyle: HighlightStyleSpan? = null,
+    val columnBgColor: Int? = null,
 ) : TextBaseColumn {
 
     override var textLine: TextLine = emptyTextLine
 
     /** TextBaseColumn 实现 */
     override val textColor: Int? get() = highlightColor
+
+    override val bgColor: Int? get() = columnBgColor
 
     override val underlineMode: Int get() = highlightStyle?.underlineMode ?: 0
 

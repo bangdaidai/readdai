@@ -38,8 +38,50 @@ object HighlightRulePreview {
                     end,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
+            }
+
+            if (rule.bgColor != null) {
+                spannable.setSpan(
+                    BackgroundColorSpan(rule.bgColor!!),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+
+            if (rule.underlineMode == 0 && !hasBgImage) {
+                spannable.setSpan(
+                    ForegroundColorSpan(textColor),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
             } else {
                 when (rule.underlineMode) {
+                    1 -> {
+                        spannable.setSpan(
+                            SolidUnderlineSpan(textColor, accentColor, underlineWidth, underlineOffset),
+                            start,
+                            end,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                    2 -> {
+                        spannable.setSpan(
+                            DashUnderlineSpan(textColor, accentColor, underlineWidth, underlineOffset),
+                            start,
+                            end,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                    3 -> {
+                        spannable.setSpan(
+                            WaveUnderlineSpan(textColor, accentColor, underlineWidth, underlineOffset),
+                            start,
+                            end,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
                     4 -> {
                         spannable.setSpan(
                             DoubleUnderlineSpan(textColor, accentColor, underlineWidth, underlineOffset),
@@ -57,59 +99,8 @@ object HighlightRulePreview {
                                 end,
                                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                             )
-                        } else {
-                            spannable.setSpan(
-                                ForegroundColorSpan(textColor),
-                                start,
-                                end,
-                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                            )
                         }
                     }
-                    else -> {
-                        when (rule.underlineMode) {
-                            1 -> {
-                                spannable.setSpan(
-                                    SolidUnderlineSpan(textColor, accentColor, underlineWidth, underlineOffset),
-                                    start,
-                                    end,
-                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                                )
-                            }
-                            2 -> {
-                                spannable.setSpan(
-                                    DashUnderlineSpan(textColor, accentColor, underlineWidth, underlineOffset),
-                                    start,
-                                    end,
-                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                                )
-                            }
-                            3 -> {
-                                spannable.setSpan(
-                                    WaveUnderlineSpan(textColor, accentColor, underlineWidth, underlineOffset),
-                                    start,
-                                    end,
-                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                                )
-                            }
-                            else -> {
-                                spannable.setSpan(
-                                    ForegroundColorSpan(textColor),
-                                    start,
-                                    end,
-                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                                )
-                            }
-                        }
-                    }
-                }
-                if (index == 0 && rule.bgColor != null) {
-                    spannable.setSpan(
-                        BackgroundColorSpan(rule.bgColor!!),
-                        start,
-                        end,
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
                 }
             }
         }

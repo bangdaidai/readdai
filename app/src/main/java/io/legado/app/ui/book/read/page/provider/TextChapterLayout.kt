@@ -212,7 +212,7 @@ class TextChapterLayout(
         textPaintInit(contentPaint)
 
         // 标题排版
-        if (isMiddleTitle || isRightTitle || bookChapter.isVolume || contents.isEmpty()) {
+        if (ReadBookConfig.titleMode != 2 || bookChapter.isVolume || contents.isEmpty()) {
             var firstLine = true
             displayTitle.splitNotBlank("\n").forEach { titleText ->
                 val srcList = LinkedList<String>()
@@ -419,6 +419,8 @@ class TextChapterLayout(
                                 || imageStyle?.uppercase() == Book.imgStyleSingle)
                     ) {
                         (visibleWidth - desiredWidth) / 2
+                    } else if (isTitle && isRightTitle) {
+                        visibleWidth - desiredWidth
                     } else {
                         0f
                     }
@@ -434,6 +436,12 @@ class TextChapterLayout(
                                 || imageStyle?.uppercase() == Book.imgStyleSingle)
                     ) {
                         val startX = (visibleWidth - desiredWidth) / 2
+                        addCharsToLineNatural(
+                            book, absStartX, textLine, words,
+                            startX, false, widths, srcList, clickList, styledText, lineStart
+                        )
+                    } else if (isTitle && isRightTitle) {
+                        val startX = visibleWidth - desiredWidth
                         addCharsToLineNatural(
                             book, absStartX, textLine, words,
                             startX, false, widths, srcList, clickList, styledText, lineStart
@@ -651,6 +659,10 @@ class TextChapterLayout(
             val spans = it.getSpans(textIndex, textIndex + 1, ForegroundColorSpan::class.java)
             spans.firstOrNull()?.foregroundColor
         }
+        val bgColor = spanned?.let {
+            val spans = it.getSpans(textIndex, textIndex + 1, BackgroundColorSpan::class.java)
+            spans.firstOrNull()?.backgroundColor
+        }
         val highlightStyle = spanned?.let { extractHighlightStyle(it, textIndex) }
         val column = when {
             !srcList.isNullOrEmpty() && (char == srcReplaceStr || char == reviewStr) -> {
@@ -671,7 +683,8 @@ class TextChapterLayout(
                     end = absStartX + xEnd,
                     charData = char,
                     highlightColor = textColor,
-                    highlightStyle = highlightStyle
+                    highlightStyle = highlightStyle,
+                    columnBgColor = bgColor
                 )
             }
         }

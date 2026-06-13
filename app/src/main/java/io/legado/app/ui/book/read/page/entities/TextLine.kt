@@ -207,6 +207,7 @@ data class TextLine(
     private fun drawTextLine(view: ContentTextView, canvas: Canvas) {
         drawCurrentSearchResultBackgrounds(canvas)
         drawStyledBackgrounds(canvas)
+        drawStyledBackgroundColors(canvas)
         if (checkFastDraw()) {
             fastDrawTextLine(view, canvas)
         } else {
@@ -424,6 +425,55 @@ data class TextLine(
                 drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale)
             }
         }
+    }
+
+    /**
+     * 绘制纯背景色
+     */
+    private fun drawStyledBackgroundColors(canvas: Canvas) {
+        if (isImage || columns.isEmpty()) return
+        if (columns.none { (it as? TextBaseColumn)?.bgColor != null }) return
+        var rangeStart = 0f
+        var rangeEnd = 0f
+        var currentBgColor: Int? = null
+        var active = false
+        columns.forEachIndexed { index, column ->
+            val textColumn = column as? TextBaseColumn
+            val bgColor = textColumn?.bgColor
+            when {
+                bgColor == null && active -> {
+                    drawBgColorSegment(canvas, rangeStart, rangeEnd, currentBgColor!!)
+                    active = false
+                }
+                bgColor != null && !active -> {
+                    rangeStart = textColumn!!.start
+                    rangeEnd = textColumn.end
+                    currentBgColor = bgColor
+                    active = true
+                }
+                bgColor != null && bgColor == currentBgColor -> {
+                    rangeEnd = textColumn!!.end
+                }
+                bgColor != null -> {
+                    drawBgColorSegment(canvas, rangeStart, rangeEnd, currentBgColor!!)
+                    rangeStart = textColumn!!.start
+                    rangeEnd = textColumn.end
+                    currentBgColor = bgColor
+                }
+            }
+            if (active && index == columns.lastIndex) {
+                drawBgColorSegment(canvas, rangeStart, rangeEnd, currentBgColor!!)
+            }
+        }
+    }
+
+    private fun drawBgColorSegment(canvas: Canvas, startX: Float, endX: Float, bgColor: Int) {
+        val lineHeight = height
+        val paint = PaintPool.obtain()
+        paint.color = bgColor
+        paint.style = Paint.Style.FILL
+        canvas.drawRect(startX, 0f, endX, lineHeight.toFloat(), paint)
+        PaintPool.recycle(paint)
     }
 
     /**

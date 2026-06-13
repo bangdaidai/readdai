@@ -253,6 +253,7 @@ object HighlightRuleStore {
                     group = normalizedGroup,
                     targetScope = normalizeTargetScope(safeRule.targetScope, builtin.targetScope),
                     textColor = safeRule.textColor ?: builtin.textColor,
+                    bgColor = safeRule.bgColor ?: builtin.bgColor,
                     underlineMode = safeRule.underlineMode.takeIf { it != 0 } ?: builtin.underlineMode,
                     underlineColor = safeRule.underlineColor ?: builtin.underlineColor,
                     underlineWidth = safeRule.underlineWidth.takeIf { it != 1f } ?: builtin.underlineWidth,
