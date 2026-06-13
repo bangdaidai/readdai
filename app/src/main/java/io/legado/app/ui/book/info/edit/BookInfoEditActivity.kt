@@ -190,9 +190,14 @@ class BookInfoEditActivity :
     }
 
     override fun coverChangeTo(coverUrl: String) {
-        viewModel.book?.customCoverUrl = coverUrl
-        binding.tieCoverUrl.setText(coverUrl)
-        upCover()
+        viewModel.book?.let { book ->
+            book.customCoverUrl = coverUrl
+            binding.tieCoverUrl.setText(coverUrl)
+            upCover()
+            lifecycleScope.launch(Dispatchers.IO) {
+                io.legado.app.help.book.BookInfoSyncHelper.updateBookCover(book.bookUrl, coverUrl)
+            }
+        }
     }
 
     private fun coverChangeTo(uri: Uri) {

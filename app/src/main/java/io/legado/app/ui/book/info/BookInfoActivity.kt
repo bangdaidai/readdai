@@ -846,8 +846,8 @@ class BookInfoActivity :
         viewModel.bookData.value?.let { book ->
             book.customCoverUrl = coverUrl
             showCover(book)
-            if (viewModel.inBookshelf) {
-                viewModel.saveBook(book)
+            lifecycleScope.launch(IO) {
+                io.legado.app.help.book.BookInfoSyncHelper.updateBookCover(book.bookUrl, coverUrl)
             }
         }
     }

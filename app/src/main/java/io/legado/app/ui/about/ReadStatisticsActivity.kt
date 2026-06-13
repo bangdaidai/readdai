@@ -36,7 +36,9 @@ import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.HeatmapCacheManager
 import io.legado.app.utils.StatisticsCacheManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -554,19 +556,37 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         updateComposeTop10()
     }
 
-    private fun updateComposeTop10() {
+    private suspend fun getBookCover(bookName: String): String? {
+        val coverFromSession = withContext(Dispatchers.IO) {
+            appDb.readSessionDao.getLatestByBookName(bookName)?.coverUrl?.ifEmpty { null }
+        }
+        if (coverFromSession != null) return coverFromSession
+        val coverFromBook = withContext(Dispatchers.IO) {
+            appDb.bookDao.findByName(bookName).firstOrNull()?.getDisplayCover()
+        }
+        if (coverFromBook != null) return coverFromBook
+        return withContext(Dispatchers.IO) {
+            appDb.readingMemoryDao.getByBookName(bookName).firstOrNull()?.coverUrl
+        }
+    }
+
+    private suspend fun updateComposeTop10() {
+        val rankingData = withContext(Dispatchers.IO) {
+            currentTop10Data.map { rank ->
+                val book = appDb.bookDao.findByName(rank.bookName).firstOrNull()
+                val coverUrl = rank.coverUrl.ifEmpty { getBookCover(rank.bookName) } ?: ""
+                BookRankingData(
+                    bookName = rank.bookName,
+                    bookAuthor = book?.author ?: "",
+                    readTime = rank.readTime,
+                    coverUrl = coverUrl
+                )
+            }.take(10)
+        }
         binding.composeTop10Container?.setContent {
             io.legado.app.ui.book.readRecord.component.TopReadingListCard(
-                topBooks = currentTop10Data.map { rank ->
-                    BookRankingData(
-                        bookName = rank.bookName,
-                        bookAuthor = "",
-                        readTime = rank.readTime,
-                        coverUrl = rank.coverUrl
-                    )
-                }.take(10),
+                topBooks = rankingData,
                 onBookClick = { bookName, bookAuthor ->
-                    // 点击书籍可以跳转到对应阅读记录或详情页
                 }
             )
         }
