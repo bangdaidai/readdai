@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 
-class CoverCalendarGridSpacingDecoration(private val spacing: Int, private val rowCountProvider: () -> Int) {
+class CoverCalendarGridSpacingDecoration(private val spacing: Int, private val rowCountProvider: () -> Int) : RecyclerView.ItemDecoration() {
 
     override fun getItemOffsets(
         outRect: Rect,
