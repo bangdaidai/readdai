@@ -35,6 +35,7 @@ class CoverCalendarView @JvmOverloads constructor(
     private var currentMonth = 0
     private val gridSpacing = 8.dpToPx()
     private var lastCellSize = 0
+    private var lastRowCount = 0
     private var isInitialized = false
 
     var onDateClickListener: ((year: Int, month: Int, dayOfMonth: Int) -> Unit)? = null
@@ -91,7 +92,7 @@ class CoverCalendarView @JvmOverloads constructor(
         recyclerView.apply {
             this.layoutManager = layoutManager
             adapter = this@CoverCalendarView.adapter
-            addItemDecoration(CoverCalendarGridSpacingDecoration(gridSpacing))
+            addItemDecoration(CoverCalendarGridSpacingDecoration(gridSpacing) { currentRowCount })
             overScrollMode = View.OVER_SCROLL_NEVER
             isNestedScrollingEnabled = false
         }
@@ -139,6 +140,8 @@ class CoverCalendarView @JvmOverloads constructor(
 
     var onMonthChanged: ((year: Int, month: Int) -> Unit)? = null
 
+    private var currentRowCount = 6
+
     private fun generateCalendarData(
         year: Int,
         month: Int,
@@ -157,7 +160,10 @@ class CoverCalendarView @JvmOverloads constructor(
         }
         val daysInMonth = targetMonth.getActualMaximum(Calendar.DAY_OF_MONTH)
         val prevMonthDays = firstDayIndex
-        val totalCells = 42
+        val totalCellsNeeded = prevMonthDays + daysInMonth
+        val rowCount = ((totalCellsNeeded + 6) / 7).coerceIn(5, 6)
+        currentRowCount = rowCount
+        val totalCells = rowCount * 7
         val nextMonthDays = totalCells - daysInMonth - prevMonthDays
         for (i in 0 until prevMonthDays) {
             val prevMonth = Calendar.getInstance().apply {
@@ -197,17 +203,19 @@ class CoverCalendarView @JvmOverloads constructor(
                 postDelayed({ updateCellSize() }, 50)
                 return@post
             }
-            // 每个格子左右各有 spacing/2 的外边距，所以总间距是 7 * spacing
             val totalSpacing = 7 * gridSpacing
             val availableWidth = recyclerView.width - totalSpacing
             val cellWidth = availableWidth / 7
             val cellHeight = (cellWidth * 4 / 3).toInt()
-            if (cellWidth > 0 && kotlin.math.abs(cellWidth - lastCellSize) > 1) {
+            val sizeChanged = cellWidth > 0 && kotlin.math.abs(cellWidth - lastCellSize) > 1
+            val rowChanged = currentRowCount != lastRowCount
+            if (sizeChanged || rowChanged) {
                 lastCellSize = cellWidth
+                lastRowCount = currentRowCount
                 adapter.setCellSize(cellWidth, cellHeight)
                 isInitialized = true
-                val totalVerticalSpacing = 5 * gridSpacing
-                val newHeight = 6 * cellHeight + totalVerticalSpacing
+                val totalVerticalSpacing = (currentRowCount - 1) * gridSpacing
+                val newHeight = currentRowCount * cellHeight + totalVerticalSpacing
                 val layoutParams = recyclerView.layoutParams
                 layoutParams.height = newHeight
                 recyclerView.layoutParams = layoutParams
@@ -218,6 +226,7 @@ class CoverCalendarView @JvmOverloads constructor(
 
     fun refreshLayout() {
         lastCellSize = 0
+        lastRowCount = 0
         updateCellSize()
     }
 

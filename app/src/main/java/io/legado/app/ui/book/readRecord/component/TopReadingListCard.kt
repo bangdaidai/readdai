@@ -191,13 +191,11 @@ fun BookCoverImage(
                         .submit()
                         .get()
                 } else {
-                    val defaultBitmap = BookCover.defaultDrawable.let { drawable ->
-                        val bmp = Bitmap.createBitmap(width * 3, height * 3, Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(bmp)
-                        drawable.setBounds(0, 0, canvas.width, canvas.height)
-                        drawable.draw(canvas)
-                        bmp
-                    }
+                    val defaultBitmap = com.bumptech.glide.Glide.with(context)
+                        .asBitmap()
+                        .load(BookCover.defaultDrawable)
+                        .submit(width * 3, height * 3)
+                        .get()
                     drawBookNameOnBitmap(defaultBitmap, bookName, primaryColor, backgroundColor)
                 }
             }.getOrNull()
