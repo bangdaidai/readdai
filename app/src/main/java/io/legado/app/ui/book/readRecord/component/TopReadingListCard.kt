@@ -2,6 +2,7 @@ package io.legado.app.ui.book.readRecord.component
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.text.TextPaint
 import androidx.compose.foundation.BorderStroke
