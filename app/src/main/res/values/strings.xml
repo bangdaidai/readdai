@@ -1086,6 +1086,7 @@
     <string name="hp_joined">Joined</string>
     <string name="hp_no_joined_modules">No joined modules</string>
     <string name="hp_source_modules">Source modules</string>
+    <string name="hp_module_count">%1$d modules</string>
     <string name="hp_explore">Explore</string>
     <string name="hp_delete_set">Delete set</string>
     <string name="hp_delete_set_confirm">Are you sure you want to delete this set and all its modules?</string>

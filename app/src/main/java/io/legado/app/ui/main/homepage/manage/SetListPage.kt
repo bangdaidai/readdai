@@ -81,7 +81,10 @@ fun SetListPage(
                     ) {
                         IconButton(
                             onClick = {},
-                            modifier = Modifier.draggableHandle(reorderableState),
+                            modifier = Modifier.draggableHandle(
+                                onDragStarted = {},
+                                onDragStopped = {},
+                            ),
                         ) {
                             Icon(
                                 Icons.Default.DragHandle,

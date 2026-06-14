@@ -113,7 +113,7 @@ fun AddCustomModuleDialog(
                 OutlinedTextField(
                     value = layoutConfig,
                     onValueChange = { layoutConfig = it },
-                    label = { Text("LayoutConfig (JSON)") },
+                    label = { Text(stringResource(R.string.hp_layout_config)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -121,10 +121,10 @@ fun AddCustomModuleDialog(
         confirmButton = {
             TextButton(onClick = {
                 onConfirm(ModuleDef(title = title, url = url, type = type, args = args, layoutConfig = layoutConfig))
-            }) { Text("确定") }
+            }) { Text(stringResource(R.string.hp_determine)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismissRequest) { Text("取消") }
+            TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.hp_cancel)) }
         },
     )
 }

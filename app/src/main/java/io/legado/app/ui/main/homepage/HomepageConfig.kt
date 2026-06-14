@@ -14,7 +14,7 @@ object HomepageConfig {
         set(value) = appCtx.putPrefInt(PreferKey.homepageLayoutMode, value)
 
     var homepageSourceHidden: String
-        get() = appCtx.getPrefString("homepageSourceHidden", "")
+        get() = appCtx.getPrefString("homepageSourceHidden", "") ?: ""
         set(value) = appCtx.putPrefString("homepageSourceHidden", value)
 
 }

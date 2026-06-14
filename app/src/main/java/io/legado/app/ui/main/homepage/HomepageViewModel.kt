@@ -752,7 +752,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     }
 
     fun onAddToShelf(book: SearchBook) {
-        execute { appDb.bookDao.insert(book) }
+        execute { appDb.bookDao.insert(book.toBook()) }
     }
 
     fun onBookClick(book: SearchBook, sharedCoverKey: String?) {

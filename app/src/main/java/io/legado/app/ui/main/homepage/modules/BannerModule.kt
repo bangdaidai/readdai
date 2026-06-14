@@ -1,6 +1,8 @@
 package io.legado.app.ui.main.homepage.modules
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,7 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BannerModule(
     books: List<HomepageBookItemUi>,
@@ -43,7 +46,7 @@ fun BannerModule(
         itemsIndexed(books, key = { index, item -> "${item.book.bookUrl}:$index" }) { index, item ->
             val book = item.book
             Column(
-                modifier = Modifier.width(96.dp).clickable(
+                modifier = Modifier.width(96.dp).combinedClickable(
                     onClick = { onClick(book, null) },
                     onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
                 ),

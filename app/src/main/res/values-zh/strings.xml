@@ -972,6 +972,7 @@
     <string name="hp_joined">已加入</string>
     <string name="hp_no_joined_modules">暂无已加入模块</string>
     <string name="hp_source_modules">书源模块</string>
+    <string name="hp_module_count">%1$d个模块</string>
     <string name="hp_explore">发现</string>
     <string name="hp_delete_set">删除集合</string>
     <string name="hp_delete_set_confirm">确定要删除此集合及其所有模块吗？</string>

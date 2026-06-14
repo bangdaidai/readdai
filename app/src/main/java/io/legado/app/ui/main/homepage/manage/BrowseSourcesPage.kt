@@ -16,8 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.legado.app.R
 import io.legado.app.ui.main.homepage.HomepageSourceManageUi
 
 @Composable
@@ -52,7 +54,7 @@ fun BrowseSourcesPage(
                             overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            "$moduleCount 个模块",
+                            stringResource(R.string.hp_module_count, moduleCount),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

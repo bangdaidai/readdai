@@ -44,8 +44,7 @@ fun GridModule(
                         book = item.book,
                         shelfState = item.shelfState,
                         onClick = { onClick(item.book, null) },
-                        onLongClick = onLongClick,
-                        modifier = Modifier.weight(1f),
+                        onLongClick = onLongClick ?: { _, _ -> },
                     )
                 }
                 repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }

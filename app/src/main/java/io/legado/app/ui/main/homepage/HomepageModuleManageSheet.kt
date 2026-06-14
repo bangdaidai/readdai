@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.legado.app.R
 import io.legado.app.ui.main.homepage.manage.AddCustomModuleDialog
 import io.legado.app.ui.main.homepage.manage.BrowseSourcesPage
 import io.legado.app.ui.main.homepage.manage.CustomSetAddModulesPage

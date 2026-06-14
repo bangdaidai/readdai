@@ -1,5 +1,7 @@
 package io.legado.app.ui.main.homepage
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -65,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import io.legado.app.R
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.domain.model.HomepageModuleType
@@ -277,7 +281,7 @@ private fun ModuleList(
                     is ModuleLoadState.Loading -> {
                         item(key = "loading_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
                             HomepageModuleSkeleton(
-                                type = HomepageModuleType.fromKey(moduleUi.type),
+                                type = moduleUi.type,
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }
@@ -432,6 +436,7 @@ private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GridBookItem(
     book: SearchBook,
@@ -440,7 +445,10 @@ fun GridBookItem(
     onLongClick: (SearchBook, String?) -> Unit = { _, _ -> },
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick, onLongClick = { onLongClick(book, null) }),
+        modifier = Modifier.fillMaxWidth().combinedClickable(
+            onClick = onClick,
+            onLongClick = { onLongClick(book, null) }
+        ),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         AsyncImage(
@@ -481,5 +489,3 @@ private fun AlertDialog(message: String, onDismiss: () -> Unit, onCopy: (String)
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.hp_cancel)) } },
     )
 }
-
-private fun Modifier.heightIn(max: Dp) = this.then(androidx.compose.foundation.layout.heightIn(max = max))
