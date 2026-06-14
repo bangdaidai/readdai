@@ -119,6 +119,7 @@ object NavigationBarIconConfig {
     )
 
     val items = listOf(
+        NavItem("homepage", R.string.home, R.id.menu_homepage, R.drawable.ic_bottom_home),
         NavItem("bookshelf", R.string.bookshelf, R.id.menu_bookshelf, R.drawable.ic_bottom_books),
         NavItem("discovery", R.string.discovery, R.id.menu_discovery, R.drawable.ic_bottom_explore),
         NavItem("rss", R.string.rss, R.id.menu_rss, R.drawable.ic_bottom_rss_feed),

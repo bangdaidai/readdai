@@ -22,7 +22,7 @@ object DatabaseMigrations {
             migration_35_36, migration_36_37, migration_37_38, migration_38_39,
             migration_39_40, migration_40_41, migration_41_42, migration_42_43,
             migration_88_89, migration_89_90, migration_93_94, migration_97_98,
-            migration_98_99, migration_99_100, migration_101_102, migration_102_103
+            migration_98_99, migration_99_100, migration_101_102, migration_102_103, migration_103_104
         )
     }
 
@@ -597,6 +597,26 @@ object DatabaseMigrations {
                     PRIMARY KEY(`id`)
                 )
             """.trimIndent())
+            db.execSQL("ALTER TABLE book_sources ADD COLUMN homepageModules TEXT")
+        }
+    }
+
+    val migration_103_104 = object : Migration(103, 104) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val cursor = db.query("PRAGMA table_info(book_sources)")
+            var hasHomepageModules = false
+            cursor.use {
+                val nameIndex = it.getColumnIndex("name")
+                while (it.moveToNext()) {
+                    if (it.getString(nameIndex) == "homepageModules") {
+                        hasHomepageModules = true
+                        break
+                    }
+                }
+            }
+            if (!hasHomepageModules) {
+                db.execSQL("ALTER TABLE book_sources ADD COLUMN homepageModules TEXT")
+            }
         }
     }
 }
