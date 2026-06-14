@@ -22,7 +22,7 @@ object DatabaseMigrations {
             migration_35_36, migration_36_37, migration_37_38, migration_38_39,
             migration_39_40, migration_40_41, migration_41_42, migration_42_43,
             migration_88_89, migration_89_90, migration_93_94, migration_97_98,
-            migration_98_99, migration_99_100, migration_102_103
+            migration_98_99, migration_99_100, migration_101_102, migration_102_103
         )
     }
 
@@ -557,11 +557,14 @@ object DatabaseMigrations {
     }
 
     @Suppress("ClassName")
-    @DeleteColumn(
-        tableName = "readingMemories",
-        columnName = "reviewContent"
-    )
-    class Migration_101_102 : AutoMigrationSpec
+    val migration_101_102 = object : Migration(101, 102) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `_tmp_readingMemories` (`id` TEXT NOT NULL, `bookUrl` TEXT NOT NULL, `bookName` TEXT NOT NULL, `bookAuthor` TEXT NOT NULL, `wordCount` TEXT, `kind` TEXT, `coverUrl` TEXT, `intro` TEXT, `rating` REAL NOT NULL, `totalChapterNum` INTEGER NOT NULL, `durChapterIndex` INTEGER NOT NULL, `durChapterTitle` TEXT, `durChapterPos` INTEGER NOT NULL, `progress` REAL NOT NULL, `readTime` INTEGER NOT NULL, `annotationCount` INTEGER NOT NULL, `readingStatus` TEXT NOT NULL, `userModifiedReadingStatus` INTEGER NOT NULL DEFAULT false, `createTime` INTEGER NOT NULL, `updateTime` INTEGER NOT NULL, `userModifiedRating` INTEGER NOT NULL DEFAULT false, `userModifiedIntro` INTEGER NOT NULL DEFAULT false, `userModifiedCover` INTEGER NOT NULL DEFAULT false, `userModifiedWordCount` INTEGER NOT NULL DEFAULT false, `userModifiedKind` INTEGER NOT NULL DEFAULT false, `finishReadTime` INTEGER NOT NULL DEFAULT 0, `firstReadTime` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))")
+            db.execSQL("INSERT INTO `_tmp_readingMemories` (`id`, `bookUrl`, `bookName`, `bookAuthor`, `wordCount`, `kind`, `coverUrl`, `intro`, `rating`, `totalChapterNum`, `durChapterIndex`, `durChapterTitle`, `durChapterPos`, `progress`, `readTime`, `annotationCount`, `readingStatus`, `userModifiedReadingStatus`, `createTime`, `updateTime`, `userModifiedRating`, `userModifiedIntro`, `userModifiedCover`, `userModifiedWordCount`, `userModifiedKind`, `finishReadTime`, `firstReadTime`) SELECT `id`, `bookUrl`, `bookName`, `bookAuthor`, `wordCount`, `kind`, `coverUrl`, `intro`, `rating`, `totalChapterNum`, `durChapterIndex`, `durChapterTitle`, `durChapterPos`, `progress`, `readTime`, `annotationCount`, `readingStatus`, `userModifiedReadingStatus`, `createTime`, `updateTime`, `userModifiedRating`, `userModifiedIntro`, `userModifiedCover`, `userModifiedWordCount`, `userModifiedKind`, `finishReadTime`, `firstReadTime` FROM `readingMemories`")
+            db.execSQL("DROP TABLE `readingMemories`")
+            db.execSQL("ALTER TABLE `_tmp_readingMemories` RENAME TO `readingMemories`")
+        }
+    }
 
     val migration_102_103 = object : Migration(102, 103) {
         override fun migrate(db: SupportSQLiteDatabase) {

@@ -34,8 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.legado.app.R
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
@@ -64,7 +66,8 @@ fun SourceBrowseDetailPage(
     var showKindSelect by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
     var showAddButtonGroupDialog by remember { mutableStateOf(false) }
-    var tempButtonGroupTitle by remember { mutableStateOf("快捷入口") }
+    val defaultButtonGroupTitle = stringResource(R.string.hp_create_button_group_title)
+    var tempButtonGroupTitle by remember { mutableStateOf(defaultButtonGroupTitle) }
 
     val displaySetUrl = selectingSetUrl ?: HomepageViewModel.customSetUrl("src_$browseUrl")
     val currentSetId = HomepageViewModel.customSetIdFromUrl(displaySetUrl)
@@ -84,7 +87,7 @@ fun SourceBrowseDetailPage(
     val joinedKeys = joinedModules.map { it.moduleKey }.toSet()
     val sourceModules = onGetSourceModules(browseUrl, currentSetId)
 
-    val tabTitles = listOf("已加入", "书源模块", "发现")
+    val tabTitles = listOf(stringResource(R.string.hp_joined), stringResource(R.string.hp_source_modules), stringResource(R.string.hp_explore))
 
     Column {
         TabRow(selectedTabIndex = browseTab) {
@@ -107,7 +110,7 @@ fun SourceBrowseDetailPage(
                         modifier = Modifier.fillMaxWidth().padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("暂无已加入模块", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.hp_no_joined_modules), style = MaterialTheme.typography.bodyMedium)
                     }
                 } else {
                     LazyColumn(
@@ -117,7 +120,7 @@ fun SourceBrowseDetailPage(
                         if (standardModules.isNotEmpty()) {
                             item(key = "header_standard") {
                                 Text(
-                                    "标准模块",
+                                    stringResource(R.string.hp_standard_modules),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -137,10 +140,10 @@ fun SourceBrowseDetailPage(
                                             Text(HomepageModuleType.fromKey(module.type).title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         IconButton(onClick = { onEditModule(module) }) {
-                                            Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.height(20.dp))
+                                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
                                         }
                                         IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                            Icon(Icons.Default.Delete, contentDescription = "删除", modifier = Modifier.height(20.dp))
+                                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
                                         }
                                         Switch(checked = module.isVisible, onCheckedChange = { onToggleModule(module.id, it) })
                                     }
@@ -151,7 +154,7 @@ fun SourceBrowseDetailPage(
                         if (infiniteModules.isNotEmpty()) {
                             item(key = "header_infinite") {
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("无限流模块（置底）", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                                Text(stringResource(R.string.hp_infinite_modules), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
                             }
                             items(infiniteModules, key = { it.id }) { module ->
                                 Card(
@@ -167,10 +170,10 @@ fun SourceBrowseDetailPage(
                                             Text(HomepageModuleType.fromKey(module.type).title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         IconButton(onClick = { onEditModule(module) }) {
-                                            Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.height(20.dp))
+                                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
                                         }
                                         IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                            Icon(Icons.Default.Delete, contentDescription = "删除", modifier = Modifier.height(20.dp))
+                                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
                                         }
                                         Switch(checked = module.isVisible, onCheckedChange = { onToggleModule(module.id, it) })
                                     }
@@ -187,7 +190,7 @@ fun SourceBrowseDetailPage(
                         modifier = Modifier.fillMaxWidth().padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("该书源无模块定义", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.hp_no_source_modules), style = MaterialTheme.typography.bodyMedium)
                     }
                 } else {
                     LazyColumn(
@@ -226,13 +229,13 @@ fun SourceBrowseDetailPage(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(module.title, style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(
-                                            module.moduleKey + if (isJoined) " (已加入)" else if (isBlocked) " (无限流冲突)" else "",
+                                            module.moduleKey + if (isJoined) " (${stringResource(R.string.hp_joined)})" else if (isBlocked) " (${stringResource(R.string.hp_infinite_conflict)})" else "",
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
                                     }
                                     if (isJoined) {
-                                        Icon(Icons.Default.Check, contentDescription = "已加入", tint = MaterialTheme.colorScheme.primary)
+                                        Icon(Icons.Default.Check, contentDescription = stringResource(R.string.hp_joined), tint = MaterialTheme.colorScheme.primary)
                                     }
                                 }
                             }
@@ -255,7 +258,7 @@ fun SourceBrowseDetailPage(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            Text("模块类型", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.hp_module_type), style = MaterialTheme.typography.labelMedium)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -284,7 +287,7 @@ fun SourceBrowseDetailPage(
 
                     val exploreKinds = onGetExploreKinds(browseUrl)
                     if (exploreKinds.isNotEmpty()) {
-                        Text("选择分类", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 8.dp))
+                        Text(stringResource(R.string.hp_select_category), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 8.dp))
                         LazyColumn(
                             modifier = Modifier.fillMaxWidth().height(200.dp),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -333,12 +336,12 @@ fun SourceBrowseDetailPage(
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 TextButton(onClick = { showAddButtonGroupDialog = true }) {
-                                    Text("创建按钮组 (${selectedKindTitles.size}个分类)")
+                                    Text(stringResource(R.string.hp_create_button_group, selectedKindTitles.size))
                                 }
                             }
                         }
                     } else {
-                        Text("该书源无发现分类", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.hp_no_explore_kinds), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -347,7 +350,7 @@ fun SourceBrowseDetailPage(
                         onClick = { showAddDialog = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("手动添加模块")
+                        Text(stringResource(R.string.hp_manual_add))
                     }
                 }
             }
@@ -368,15 +371,15 @@ fun SourceBrowseDetailPage(
     if (showAddButtonGroupDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showAddButtonGroupDialog = false },
-            title = { Text("创建按钮组") },
+            title = { Text(stringResource(R.string.hp_create_button_group_title)) },
             text = {
                 Column {
-                    Text("将 ${selectedKindTitles.size} 个分类创建为按钮组模块")
+                    Text(stringResource(R.string.hp_create_button_group_desc, selectedKindTitles.size))
                     Spacer(modifier = Modifier.height(8.dp))
                     androidx.compose.material3.OutlinedTextField(
                         value = tempButtonGroupTitle,
                         onValueChange = { tempButtonGroupTitle = it },
-                        label = { Text("标题") },
+                        label = { Text(stringResource(R.string.hp_title)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -386,10 +389,10 @@ fun SourceBrowseDetailPage(
                     onAddButtonGroupFromKinds(browseUrl, currentSetId, tempButtonGroupTitle, selectedKindTitles.toList())
                     showAddButtonGroupDialog = false
                     selectedKindTitles = emptySet()
-                }) { Text("确定") }
+                }) { Text(stringResource(R.string.hp_determine)) }
             },
             dismissButton = {
-                TextButton(onClick = { showAddButtonGroupDialog = false }) { Text("取消") }
+                TextButton(onClick = { showAddButtonGroupDialog = false }) { Text(stringResource(R.string.hp_cancel)) }
             },
         )
     }

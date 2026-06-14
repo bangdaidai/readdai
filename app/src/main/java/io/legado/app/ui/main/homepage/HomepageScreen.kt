@@ -58,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -67,6 +68,7 @@ import coil.compose.AsyncImage
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.domain.model.HomepageModuleType
+import io.legado.app.ui.main.homepage.modules.HomepageModuleSkeleton
 import io.legado.app.ui.main.homepage.modules.BannerModule
 import io.legado.app.ui.main.homepage.modules.ButtonGroupModule
 import io.legado.app.ui.main.homepage.modules.CardModule
@@ -98,7 +100,7 @@ fun HomepageScreen(
     }
     val pagerState = rememberPagerState(pageCount = { selectedSets.size.coerceAtLeast(1) })
 
-    val homeString = "首页"
+    val homeString = stringResource(R.string.home)
     val currentTitle by remember(layoutMode, selectedSets) {
         derivedStateOf {
             if (layoutMode == 1) homeString
@@ -128,10 +130,10 @@ fun HomepageScreen(
                 scrollBehavior = scrollBehavior,
                 actions = {
                     IconButton(onClick = { showConfigSheet = !showConfigSheet }) {
-                        Icon(Icons.Outlined.Info, contentDescription = "布局设置")
+                        Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.hp_layout_settings))
                     }
                     IconButton(onClick = { showManageSheet = !showManageSheet }) {
-                        Icon(Icons.Default.Settings, contentDescription = "管理模块")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.hp_manage_modules))
                     }
                 }
             )
@@ -144,7 +146,7 @@ fun HomepageScreen(
         ) {
             if (selectedSets.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                    Text("未选择任何书源集合，请点击右上角设置管理模块", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.hp_no_sets_selected), style = MaterialTheme.typography.bodyMedium)
                 }
             } else {
                 Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -211,6 +213,17 @@ fun HomepageScreen(
                 onDismiss = { showConfigSheet = false },
             )
         }
+
+        SearchBookPreviewSheet(
+            data = previewBook,
+            shelfState = previewBook?.let { viewModel.getCurrentBookShelfState(it) },
+            onDismissRequest = { previewBook = null },
+            onOpenDetail = { book ->
+                previewBook = null
+                onBookClick(book.name, book.author, book.bookUrl, book.origin, book.coverUrl, null)
+            },
+            onAddToShelf = { book -> viewModel.onAddToShelf(book) },
+        )
     }
 }
 
@@ -224,7 +237,7 @@ private fun ModuleList(
 ) {
     if (modules.isEmpty()) {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            Text("请添加模块定义到书源", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.hp_no_source_modules), style = MaterialTheme.typography.bodyMedium)
         }
     } else {
         val processedModules = remember(modules) {
@@ -263,9 +276,10 @@ private fun ModuleList(
                 when (val state = moduleUi.state) {
                     is ModuleLoadState.Loading -> {
                         item(key = "loading_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
-                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
-                            }
+                            HomepageModuleSkeleton(
+                                type = HomepageModuleType.fromKey(moduleUi.type),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
                     }
                     is ModuleLoadState.Error -> {
@@ -283,7 +297,7 @@ private fun ModuleList(
                                     TextButton(onClick = { viewModel.retryModule(moduleUi.globalId) }) {
                                         Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                         Spacer(modifier = Modifier.width(4.dp))
-                                        Text("重试", color = MaterialTheme.colorScheme.error)
+                                        Text(stringResource(R.string.hp_retry), color = MaterialTheme.colorScheme.error)
                                     }
                                 }
                             }
@@ -437,7 +451,7 @@ fun GridBookItem(
         )
         Text(book.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
         if (shelfState == BookShelfState.IN_SHELF) {
-            Text("已在书架", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.hp_already_in_shelf), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -447,8 +461,8 @@ fun LoadMoreFooter(isLoading: Boolean, isEnd: Boolean, onRetry: () -> Unit) {
     Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
         when {
             isLoading -> CircularProgressIndicator()
-            isEnd -> Text("没有更多了", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
-            else -> TextButton(onClick = onRetry) { Text("加载更多") }
+            isEnd -> Text(stringResource(R.string.hp_no_more), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.outline)
+            else -> TextButton(onClick = onRetry) { Text(stringResource(R.string.hp_load_more)) }
         }
     }
 }
@@ -457,14 +471,14 @@ fun LoadMoreFooter(isLoading: Boolean, isEnd: Boolean, onRetry: () -> Unit) {
 private fun AlertDialog(message: String, onDismiss: () -> Unit, onCopy: (String) -> Unit) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("模块错误") },
+        title = { Text(stringResource(R.string.hp_module_error)) },
         text = {
             SelectionContainer {
                 Text(message, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.verticalScroll(rememberScrollState()).heightIn(max = 400.dp))
             }
         },
-        confirmButton = { TextButton(onClick = { onCopy(message) }) { Text("关闭") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        confirmButton = { TextButton(onClick = { onCopy(message) }) { Text(stringResource(R.string.hp_close)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.hp_cancel)) } },
     )
 }
 

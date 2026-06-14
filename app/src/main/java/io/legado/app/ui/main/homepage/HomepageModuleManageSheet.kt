@@ -28,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.legado.app.ui.main.homepage.manage.AddCustomModuleDialog
 import io.legado.app.ui.main.homepage.manage.BrowseSourcesPage
@@ -89,11 +90,11 @@ fun HomepageModuleManageSheet(
                 }
                 Text(
                     when (currentPage) {
-                        is ManagePage.SetList -> "模块管理"
-                        is ManagePage.SetDetail -> "集合详情"
-                        is ManagePage.BrowseSources -> "浏览书源"
-                        is ManagePage.SourceDetail -> "书源详情"
-                        is ManagePage.AddModulesToSet -> "添加模块"
+                        is ManagePage.SetList -> stringResource(R.string.hp_manage_modules)
+                        is ManagePage.SetDetail -> stringResource(R.string.hp_set_detail)
+                        is ManagePage.BrowseSources -> stringResource(R.string.hp_browse_sources)
+                        is ManagePage.SourceDetail -> stringResource(R.string.hp_source_detail)
+                        is ManagePage.AddModulesToSet -> stringResource(R.string.hp_add_modules)
                     },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(start = if (currentPage is ManagePage.SetList) 0.dp else 0.dp, top = 12.dp, bottom = 8.dp),
@@ -192,10 +193,10 @@ fun HomepageModuleManageSheet(
         var name by remember { mutableStateOf("") }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showCreateSetDialog = false },
-            title = { Text("创建新集合") },
-            text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("名称") }, modifier = Modifier.fillMaxWidth()) },
-            confirmButton = { TextButton(onClick = { if (name.isNotBlank()) viewModel.createCustomSet(name); showCreateSetDialog = false }) { Text("确定") } },
-            dismissButton = { TextButton(onClick = { showCreateSetDialog = false }) { Text("取消") } },
+            title = { Text(stringResource(R.string.hp_create_new_set)) },
+            text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.hp_name)) }, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton(onClick = { if (name.isNotBlank()) viewModel.createCustomSet(name); showCreateSetDialog = false }) { Text(stringResource(R.string.hp_determine)) } },
+            dismissButton = { TextButton(onClick = { showCreateSetDialog = false }) { Text(stringResource(R.string.hp_cancel)) } },
         )
     }
 
@@ -203,10 +204,10 @@ fun HomepageModuleManageSheet(
         val id = deleteConfirmId!!
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { deleteConfirmId = null },
-            title = { Text("删除集合") },
-            text = { Text("确定要删除此集合及其所有模块吗？") },
-            confirmButton = { TextButton(onClick = { viewModel.deleteCustomSet(HomepageViewModel.customSetIdFromUrl(id)); deleteConfirmId = null }) { Text("删除") } },
-            dismissButton = { TextButton(onClick = { deleteConfirmId = null }) { Text("取消") } },
+            title = { Text(stringResource(R.string.hp_delete_set)) },
+            text = { Text(stringResource(R.string.hp_delete_set_confirm)) },
+            confirmButton = { TextButton(onClick = { viewModel.deleteCustomSet(HomepageViewModel.customSetIdFromUrl(id)); deleteConfirmId = null }) { Text(stringResource(R.string.hp_delete)) } },
+            dismissButton = { TextButton(onClick = { deleteConfirmId = null }) { Text(stringResource(R.string.hp_cancel)) } },
         )
     }
 
@@ -214,10 +215,10 @@ fun HomepageModuleManageSheet(
         val id = deleteModuleConfirmId!!
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { deleteModuleConfirmId = null },
-            title = { Text("删除模块") },
-            text = { Text("确定要删除此模块吗？") },
-            confirmButton = { TextButton(onClick = { viewModel.deleteModule(id); deleteModuleConfirmId = null }) { Text("删除") } },
-            dismissButton = { TextButton(onClick = { deleteModuleConfirmId = null }) { Text("取消") } },
+            title = { Text(stringResource(R.string.hp_delete_module)) },
+            text = { Text(stringResource(R.string.hp_delete_module_confirm)) },
+            confirmButton = { TextButton(onClick = { viewModel.deleteModule(id); deleteModuleConfirmId = null }) { Text(stringResource(R.string.hp_delete)) } },
+            dismissButton = { TextButton(onClick = { deleteModuleConfirmId = null }) { Text(stringResource(R.string.hp_cancel)) } },
         )
     }
 
@@ -227,10 +228,10 @@ fun HomepageModuleManageSheet(
         var name by remember { mutableStateOf("") }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { renameSetId = null },
-            title = { Text("重命名集合") },
-            text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("新名称") }, modifier = Modifier.fillMaxWidth()) },
-            confirmButton = { TextButton(onClick = { if (name.isNotBlank()) viewModel.renameCustomSet(setId, name); renameSetId = null }) { Text("确定") } },
-            dismissButton = { TextButton(onClick = { renameSetId = null }) { Text("取消") } },
+            title = { Text(stringResource(R.string.hp_rename_set)) },
+            text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.hp_new_name)) }, modifier = Modifier.fillMaxWidth()) },
+            confirmButton = { TextButton(onClick = { if (name.isNotBlank()) viewModel.renameCustomSet(setId, name); renameSetId = null }) { Text(stringResource(R.string.hp_determine)) } },
+            dismissButton = { TextButton(onClick = { renameSetId = null }) { Text(stringResource(R.string.hp_cancel)) } },
         )
     }
 

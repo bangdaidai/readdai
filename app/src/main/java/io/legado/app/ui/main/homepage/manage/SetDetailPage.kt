@@ -24,8 +24,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.legado.app.R
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
 import io.legado.app.ui.main.homepage.HomepageViewModel
@@ -58,13 +60,13 @@ fun SetDetailPage(
             modifier = Modifier.fillMaxWidth().padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("暂无模块", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.hp_no_modules), style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(12.dp))
             TextButton(onClick = {
                 if (setId.startsWith("src_")) onBrowseSourceModules()
                 else onAddModules()
             }) {
-                Text("浏览添加")
+                Text(stringResource(R.string.hp_browse_add))
             }
         }
     } else {
@@ -75,7 +77,7 @@ fun SetDetailPage(
             if (standardModules.isNotEmpty()) {
                 item(key = "header_std_detail") {
                     Text(
-                        "标准模块",
+                        stringResource(R.string.hp_standard_modules),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -105,10 +107,10 @@ fun SetDetailPage(
                                 )
                             }
                             IconButton(onClick = { onEditModule(module) }) {
-                                Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.height(20.dp))
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
                             }
                             IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "删除", modifier = Modifier.height(20.dp))
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
                             }
                             Switch(
                                 checked = module.isVisible,
@@ -123,7 +125,7 @@ fun SetDetailPage(
                 item(key = "header_inf_detail") {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "无限流模块（置底）",
+                        stringResource(R.string.hp_infinite_modules),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -153,10 +155,10 @@ fun SetDetailPage(
                                 )
                             }
                             IconButton(onClick = { onEditModule(module) }) {
-                                Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.height(20.dp))
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
                             }
                             IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "删除", modifier = Modifier.height(20.dp))
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
                             }
                             Switch(
                                 checked = module.isVisible,
@@ -175,7 +177,7 @@ fun SetDetailPage(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("浏览书源模块")
+                    Text(stringResource(R.string.hp_source_modules))
                 }
             }
         }

@@ -22,7 +22,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.legado.app.R
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
 import io.legado.app.ui.main.homepage.HomepageViewModel
@@ -55,7 +57,7 @@ fun AddCustomModuleDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(if (prefillTitle.isEmpty()) "添加模块" else "编辑模块") },
+        title = { Text(if (prefillTitle.isEmpty()) stringResource(R.string.hp_add_module) else stringResource(R.string.hp_edit_module)) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth().height(400.dp).verticalScroll(rememberScrollState()),
@@ -64,13 +66,13 @@ fun AddCustomModuleDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("标题") },
+                    label = { Text(stringResource(R.string.hp_title)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("URL") },
+                    label = { Text(stringResource(R.string.hp_url)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -80,7 +82,7 @@ fun AddCustomModuleDialog(
                         value = typeList.find { it.key == type }?.title ?: type,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("类型") },
+                        label = { Text(stringResource(R.string.hp_type)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor(),
                     )
@@ -95,18 +97,18 @@ fun AddCustomModuleDialog(
                 }
 
                 if (HomepageViewModel.isInfinite(type, null) && !canSelectInfinite) {
-                    Text("该集合已存在无限流模块", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.hp_infinite_conflict), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
 
                 OutlinedTextField(
                     value = args,
                     onValueChange = { args = it },
-                    label = { Text("Args (JSON)") },
+                    label = { Text(stringResource(R.string.hp_args)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("布局配置", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.hp_layout_config), style = MaterialTheme.typography.labelMedium)
 
                 OutlinedTextField(
                     value = layoutConfig,
