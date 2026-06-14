@@ -376,6 +376,6 @@ dependencies {
 
     // LangChain4j - AI Agent框架（支持Function Calling）
     // ✅ 使用 0.35.0 稳定版本（JDK 8+ 兼容，API 更稳定）
-    implementation 'dev.langchain4j:langchain4j:0.35.0'
-    implementation 'dev.langchain4j:langchain4j-open-ai:0.35.0'
+    implementation 'dev.langchain4j:langchain4j:1.16.2'
+    implementation 'dev.langchain4j:langchain4j-open-ai:1.16.2'
 }
