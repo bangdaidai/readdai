@@ -993,6 +993,8 @@
     <string name="hp_no_more">没有更多了</string>
     <string name="hp_load_more">加载更多</string>
     <string name="hp_already_in_shelf">已在书架</string>
+    <string name="hp_collapse">收起</string>
+    <string name="hp_expand_all">展开全部</string>
     <string name="drag_handle">拖拽手柄</string>
     <string name="rename">重命名</string>
     <string name="layout_mode">布局模式</string>

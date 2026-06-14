@@ -1109,6 +1109,8 @@
     <string name="hp_no_more">No more</string>
     <string name="hp_load_more">Load more</string>
     <string name="hp_already_in_shelf">Already in shelf</string>
+    <string name="hp_collapse">Collapse</string>
+    <string name="hp_expand_all">Expand all</string>
     <string name="drag_handle">Drag handle</string>
     <string name="rename">Rename</string>
     <string name="layout_mode">Layout mode</string>

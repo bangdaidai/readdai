@@ -1,10 +1,6 @@
 package io.legado.app.ui.book.readRecord.component
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Typeface
-import android.text.TextPaint
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -41,17 +37,17 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
+import io.legado.app.R
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.glide.ImageLoader
 import io.legado.app.lib.theme.ThemeStore
-import io.legado.app.model.BookCover
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -181,23 +177,6 @@ fun BookCoverImage(
 ) {
     val context = LocalContext.current
     val primaryColor = ThemeStore.accentColor(context)
-    val backgroundColor = ThemeStore.backgroundCard(context)
-    var coverBitmap by remember(coverUrl, bookName) { mutableStateOf<Bitmap?>(null) }
-
-    LaunchedEffect(coverUrl, bookName) {
-        withContext(Dispatchers.IO) {
-            coverBitmap = runCatching {
-                if (coverUrl.isNotEmpty()) {
-                    ImageLoader.loadBitmap(context, coverUrl)
-                        .submit()
-                        .get()
-                } else {
-                    val defaultBitmap = BookCover.defaultDrawable.toBitmap(width * 3, height * 3)
-                    drawBookNameOnBitmap(defaultBitmap, bookName, primaryColor, backgroundColor)
-                }
-            }.getOrNull()
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -205,15 +184,33 @@ fun BookCoverImage(
             .height(height.dp)
             .clip(RoundedCornerShape(4.dp))
     ) {
-        val bitmap = coverBitmap
-        if (bitmap != null) {
+        if (coverUrl.isNotEmpty()) {
+            var coverBitmap by remember(coverUrl) { mutableStateOf<Bitmap?>(null) }
+            LaunchedEffect(coverUrl) {
+                withContext(Dispatchers.IO) {
+                    coverBitmap = runCatching {
+                        ImageLoader.loadBitmap(context, coverUrl)
+                            .submit()
+                            .get()
+                    }.getOrNull()
+                }
+            }
+            val bitmap = coverBitmap
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = bookName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        } else {
             Image(
-                bitmap = bitmap.asImageBitmap(),
+                painter = painterResource(id = R.drawable.image_cover_default),
                 contentDescription = bookName,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-        } else {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -239,41 +236,6 @@ fun BookCoverImage(
             }
         }
     }
-}
-
-private fun drawBookNameOnBitmap(
-    bitmap: Bitmap,
-    bookName: String,
-    accentColor: Int,
-    backgroundColor: Int
-): Bitmap {
-    val canvas = Canvas(bitmap)
-    val namePaint = TextPaint().apply {
-        typeface = Typeface.DEFAULT_BOLD
-        isAntiAlias = true
-        textAlign = Paint.Align.CENTER
-    }
-    val viewWidth = bitmap.width.toFloat()
-    val viewHeight = bitmap.height.toFloat()
-    var startX = viewWidth * 0.5f
-    var startY = viewHeight * 0.2f
-    namePaint.textSize = viewWidth / 7
-    namePaint.strokeWidth = namePaint.textSize / 6
-    bookName.forEachIndexed { index, char ->
-        namePaint.color = backgroundColor
-        namePaint.style = Paint.Style.STROKE
-        canvas.drawText(char.toString(), startX, startY, namePaint)
-        namePaint.color = accentColor
-        namePaint.style = Paint.Style.FILL
-        canvas.drawText(char.toString(), startX, startY, namePaint)
-        startY += namePaint.textSize
-        if (startY > viewHeight * 0.9) {
-            startX += namePaint.textSize
-            namePaint.textSize = viewWidth / 10
-            startY = viewHeight * 0.2f
-        }
-    }
-    return bitmap
 }
 
 private fun formatDuration(millis: Long): String {

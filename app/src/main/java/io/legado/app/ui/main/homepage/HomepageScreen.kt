@@ -83,6 +83,7 @@ import io.legado.app.domain.model.BookShelfState
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
+import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.main.homepage.modules.HomepageModuleSkeleton
 import io.legado.app.ui.main.homepage.modules.BannerModule
@@ -131,7 +132,7 @@ fun HomepageScreen(
     val context = LocalContext.current
     val titleBarBgColor = remember { Color(context.primaryColor) }
     val titleBarTextColor = remember { Color(ThemeStore.titleBarTextIconColor(context)) }
-    val pageBgColor = remember { Color(ThemeStore.backgroundColor(context)) }
+    val pageBgColor = remember { Color(context.backgroundColor) }
     val accentColor = remember { Color(context.accentColor) }
 
     Column(modifier = Modifier.fillMaxSize().background(pageBgColor)) {

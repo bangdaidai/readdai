@@ -16,7 +16,8 @@ class HomepageFragment(override val position: Int?) : Fragment(), MainFragmentIn
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                HomepageScreen(
+                ReaddaiTheme {
+                    HomepageScreen(
                     onBookClick = { name, author, bookUrl, origin, coverPath, _ ->
                         startActivity<BookInfoActivity> {
                             putExtra("name", name)
@@ -36,6 +37,7 @@ class HomepageFragment(override val position: Int?) : Fragment(), MainFragmentIn
                         }
                     },
                 )
+                }
             }
         }
     }

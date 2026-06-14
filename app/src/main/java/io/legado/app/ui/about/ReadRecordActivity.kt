@@ -589,6 +589,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             // 再次检查tvDate是否为null，确保在调用setText()方法之前不会发生NullPointerException
             tvDate?.let {
                 it.text = dateText
+                it.setTypeface(it.typeface, android.graphics.Typeface.BOLD)
             }
             // 计算当日总阅读时间
             val state = viewModel.uiState.value
@@ -602,6 +603,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             // 再次检查tvDailyTotal是否为null，确保在调用setText()方法之前不会发生NullPointerException
             tvDailyTotal?.let {
                 it.text = "已读 ${formatDuring(totalTime)}"
+                it.setTypeface(it.typeface, android.graphics.Typeface.BOLD)
             }
         }
 

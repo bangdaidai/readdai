@@ -86,7 +86,7 @@ fun HomepageModuleManageSheet(
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 if (currentPage !is ManagePage.SetList) {
                     IconButton(onClick = { currentPage = ManagePage.SetList }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
                 Text(
