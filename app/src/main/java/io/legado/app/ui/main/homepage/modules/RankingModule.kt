@@ -2,6 +2,7 @@ package io.legado.app.ui.main.homepage.modules
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -93,6 +94,7 @@ fun RankingModule(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun RankingItem(
     rank: Int,

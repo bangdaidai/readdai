@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
@@ -30,8 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.ui.main.homepage.HomepageSourceManageUi
 import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.draggableHandle
-import sh.calvin.reorderable.rememberReorderableLazyColumnState
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun SetListPage(
@@ -49,7 +50,7 @@ fun SetListPage(
     val lazyListState = remember {
         androidx.compose.foundation.lazy.LazyListState(0)
     }
-    val reorderableState = rememberReorderableLazyColumnState(lazyListState) { from, to ->
+    val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
         val mutableList = distinctSets.map { it.sourceUrl }.toMutableList()
         if (from.index < mutableList.size && to.index < mutableList.size) {
             val item = mutableList.removeAt(from.index)
@@ -58,7 +59,7 @@ fun SetListPage(
         }
     }
 
-    androidx.compose.foundation.lazy.LazyColumn(
+    LazyColumn(
         state = lazyListState,
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -67,9 +68,7 @@ fun SetListPage(
             val set = distinctSets[index]
             ReorderableItem(reorderableState, key = set.sourceUrl) { isDragging ->
                 Card(
-                    modifier = Modifier.fillMaxWidth().then(
-                        if (isDragging) Modifier else Modifier
-                    ),
+                    modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isDragging) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceContainerLow
@@ -81,10 +80,7 @@ fun SetListPage(
                     ) {
                         IconButton(
                             onClick = {},
-                            modifier = Modifier.draggableHandle(
-                                onDragStarted = {},
-                                onDragStopped = {},
-                            ),
+                            modifier = Modifier.draggableHandle(),
                         ) {
                             Icon(
                                 Icons.Default.DragHandle,
@@ -112,7 +108,7 @@ fun SetListPage(
                             Icon(Icons.Default.DriveFileRenameOutline, contentDescription = stringResource(R.string.rename), modifier = Modifier.height(20.dp))
                         }
                         IconButton(onClick = { onDeleteSet(set.sourceUrl) }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), modifier = Modifier.height(20.dp))
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
                         }
                         Switch(
                             checked = set.isSelected,
