@@ -99,7 +99,8 @@ data class BookSource(
     @ColumnInfo(defaultValue = "0")
     var eventListener: Boolean = false, // 是否监听事件来执行回调规则
     @ColumnInfo(defaultValue = "0")
-    var customButton: Boolean = false //由书源控制的自定义按钮
+    var customButton: Boolean = false,
+    var homepageModules: String? = null
 ) : Parcelable, BaseSource {
 
     override fun getTag(): String {

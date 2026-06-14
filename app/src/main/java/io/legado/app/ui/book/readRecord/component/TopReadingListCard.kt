@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.glide.ImageLoader
 import io.legado.app.lib.theme.ThemeStore
@@ -191,11 +192,7 @@ fun BookCoverImage(
                         .submit()
                         .get()
                 } else {
-                    val defaultBitmap = com.bumptech.glide.Glide.with(context)
-                        .asBitmap()
-                        .load(BookCover.defaultDrawable)
-                        .submit(width * 3, height * 3)
-                        .get()
+                    val defaultBitmap = BookCover.defaultDrawable.toBitmap(width * 3, height * 3)
                     drawBookNameOnBitmap(defaultBitmap, bookName, primaryColor, backgroundColor)
                 }
             }.getOrNull()

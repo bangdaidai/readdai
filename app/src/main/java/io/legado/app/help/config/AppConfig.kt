@@ -385,6 +385,9 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     val showAI: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showAI, true)
 
+    val showHomepage: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.showHomepage, true)
+
     val autoRefreshBook: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.autoRefresh)
 

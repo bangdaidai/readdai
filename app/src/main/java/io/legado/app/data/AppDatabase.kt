@@ -29,17 +29,19 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 102,
+    version = 103,
     exportSchema = true,
     entities = [Book::class, BookGroup::class, BookSource::class, BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
         RssSource::class, Bookmark::class, BookAnnotation::class, BookReview::class, RssArticle::class, RssReadRecord::class,
         RssStar::class, TxtTocRule::class, ReadSession::class, HttpTTS::class, Cache::class,
         RuleSub::class, DictRule::class, KeyboardAssist::class, Server::class, BookTag::class, BookTagGroup::class, BookTagRelation::class, ReadingMemory::class, RemovedAutoTag::class, ExcludedTag::class, BookProtagonist::class, TagMapping::class,
-        ReadRecord::class, ReadRecordDetail::class, VectorEntity::class, ChunkEntity::class, VectorizedBookEntity::class, ReadingTicket::class],
+        ReadRecord::class, ReadRecordDetail::class, VectorEntity::class, ChunkEntity::class, VectorizedBookEntity::class, ReadingTicket::class,
+        HomepageModule::class, HomepageCustomSet::class],
     views = [BookSourcePart::class],
     autoMigrations = [
         AutoMigration(from = 101, to = 102, spec = DatabaseMigrations.Migration_101_102::class),
+        AutoMigration(from = 102, to = 103),
         AutoMigration(from = 43, to = 44),
         AutoMigration(from = 44, to = 45),
         AutoMigration(from = 45, to = 46),
@@ -131,6 +133,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val chunkDao: ChunkDao
     abstract val vectorizedBookDao: VectorizedBookDao
     abstract val readingTicketDao: ReadingTicketDao
+    abstract val homepageModuleDao: HomepageModuleDao
+    abstract val homepageCustomSetDao: HomepageCustomSetDao
 
     companion object {
 

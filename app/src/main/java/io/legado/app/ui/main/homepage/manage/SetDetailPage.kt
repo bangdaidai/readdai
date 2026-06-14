@@ -1,0 +1,183 @@
+package io.legado.app.ui.main.homepage.manage
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import io.legado.app.domain.model.HomepageModuleType
+import io.legado.app.ui.main.homepage.HomepageModuleManageUi
+import io.legado.app.ui.main.homepage.HomepageViewModel
+
+@Composable
+fun SetDetailPage(
+    setUrl: String,
+    allJoinedModules: List<HomepageModuleManageUi>,
+    onToggleModule: (String, Boolean) -> Unit,
+    onReorderModules: (List<String>) -> Unit,
+    onEditModule: (HomepageModuleManageUi) -> Unit,
+    onRequestDeleteModule: (String) -> Unit,
+    onBrowseSourceModules: () -> Unit,
+    onAddModules: () -> Unit,
+) {
+    val setId = HomepageViewModel.customSetIdFromUrl(setUrl)
+    val modules = remember(setId, allJoinedModules) {
+        allJoinedModules.filter { it.customSetId == setId }.distinctBy { it.id }
+    }
+
+    val standardModules = remember(modules) {
+        modules.filter { !HomepageViewModel.isInfinite(it.type, it.layoutConfig) }
+    }
+    val infiniteModules = remember(modules) {
+        modules.filter { HomepageViewModel.isInfinite(it.type, it.layoutConfig) }
+    }
+
+    if (modules.isEmpty()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("暂无模块", style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(onClick = {
+                if (setId.startsWith("src_")) onBrowseSourceModules()
+                else onAddModules()
+            }) {
+                Text("浏览添加")
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (standardModules.isNotEmpty()) {
+                item(key = "header_std_detail") {
+                    Text(
+                        "标准模块",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+                items(standardModules, key = { it.id }) { module ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    module.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    HomepageModuleType.fromKey(module.type).title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { onEditModule(module) }) {
+                                Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.height(20.dp))
+                            }
+                            IconButton(onClick = { onRequestDeleteModule(module.id) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "删除", modifier = Modifier.height(20.dp))
+                            }
+                            Switch(
+                                checked = module.isVisible,
+                                onCheckedChange = { enabled -> onToggleModule(module.id, enabled) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (infiniteModules.isNotEmpty()) {
+                item(key = "header_inf_detail") {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "无限流模块（置底）",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                }
+                items(infiniteModules, key = { it.id }) { module ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    module.title,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    HomepageModuleType.fromKey(module.type).title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { onEditModule(module) }) {
+                                Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.height(20.dp))
+                            }
+                            IconButton(onClick = { onRequestDeleteModule(module.id) }) {
+                                Icon(Icons.Default.Delete, contentDescription = "删除", modifier = Modifier.height(20.dp))
+                            }
+                            Switch(
+                                checked = module.isVisible,
+                                onCheckedChange = { enabled -> onToggleModule(module.id, enabled) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            item(key = "browse_from_set") {
+                TextButton(
+                    onClick = {
+                        if (setId.startsWith("src_")) onBrowseSourceModules()
+                        else onAddModules()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("浏览书源模块")
+                }
+            }
+        }
+    }
+}

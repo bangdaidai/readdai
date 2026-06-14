@@ -51,6 +51,7 @@ object PreferKey {
     const val enableReview = "enableReview"
     const val showRss = "showRss"
     const val showAI = "showAI"
+    const val showHomepage = "showHomepage"
     const val bookshelfLayout = "bookshelfLayout"
     const val bookshelfSort = "bookshelfSort"
     const val bookExportFileName = "bookExportFileName"
@@ -283,4 +284,6 @@ object PreferKey {
     const val highlightRuleDialog = "highlightRuleDialog"
     const val highlightRuleBookTitle = "highlightRuleBookTitle"
     const val highlightRuleBracketNote = "highlightRuleBracketNote"
+
+    const val homepageLayoutMode = "homepageLayoutMode"
 }
