@@ -1,8 +1,10 @@
 package io.legado.app.ui.main.homepage
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,9 +13,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -25,10 +29,13 @@ import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridS
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.DashboardCustomize
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Info
@@ -40,14 +47,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,12 +65,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -72,6 +81,9 @@ import io.legado.app.R
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.domain.model.HomepageModuleType
+import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.lib.theme.accentColor
+import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.main.homepage.modules.HomepageModuleSkeleton
 import io.legado.app.ui.main.homepage.modules.BannerModule
 import io.legado.app.ui.main.homepage.modules.ButtonGroupModule
@@ -83,7 +95,6 @@ import io.legado.app.ui.main.homepage.modules.WaterfallItem
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomepageScreen(
     viewModel: HomepageViewModel = viewModel(),
@@ -95,7 +106,6 @@ fun HomepageScreen(
     val scope = rememberCoroutineScope()
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var showManageSheet by remember { mutableStateOf(false) }
-    var showConfigSheet by remember { mutableStateOf(false) }
 
     val layoutMode = HomepageConfig.homepageLayoutMode
 
@@ -105,12 +115,6 @@ fun HomepageScreen(
     val pagerState = rememberPagerState(pageCount = { selectedSets.size.coerceAtLeast(1) })
 
     val homeString = stringResource(R.string.home)
-    val currentTitle by remember(layoutMode, selectedSets) {
-        derivedStateOf {
-            if (layoutMode == 1) homeString
-            else selectedSets.getOrNull(pagerState.currentPage)?.sourceName ?: homeString
-        }
-    }
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collectLatest { effect ->
@@ -124,111 +128,160 @@ fun HomepageScreen(
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val context = LocalContext.current
+    val titleBarBgColor = remember { Color(context.primaryColor) }
+    val titleBarTextColor = remember { Color(ThemeStore.titleBarTextIconColor(context)) }
+    val pageBgColor = remember { Color(ThemeStore.backgroundColor(context)) }
+    val accentColor = remember { Color(context.accentColor) }
 
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                title = { Text(currentTitle, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                scrollBehavior = scrollBehavior,
-                actions = {
-                    IconButton(onClick = { showConfigSheet = !showConfigSheet }) {
-                        Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.hp_layout_settings))
-                    }
-                    IconButton(onClick = { showManageSheet = !showManageSheet }) {
-                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.hp_manage_modules))
-                    }
-                }
-            )
-        },
-    ) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = { viewModel.onRefresh() },
-            modifier = Modifier.fillMaxSize(),
+    Column(modifier = Modifier.fillMaxSize().background(pageBgColor)) {
+        Surface(
+            color = titleBarBgColor,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            if (selectedSets.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                    Text(stringResource(R.string.hp_no_sets_selected), style = MaterialTheme.typography.bodyMedium)
-                }
-            } else {
-                Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-                    if (layoutMode == 1 && selectedSets.isNotEmpty()) {
-                        TabRow(selectedTabIndex = pagerState.currentPage.coerceIn(0, selectedSets.size - 1)) {
+            Column(modifier = Modifier.statusBarsPadding()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (layoutMode == 1 && selectedSets.size > 1) {
+                        ScrollableTabRow(
+                            selectedTabIndex = pagerState.currentPage.coerceIn(0, selectedSets.size - 1),
+                            containerColor = Color.Transparent,
+                            contentColor = titleBarTextColor,
+                            edgePadding = 12.dp,
+                            indicator = { tabPositions ->
+                                if (pagerState.currentPage < tabPositions.size) {
+                                    TabRowDefaults.SecondaryIndicator(
+                                        modifier = Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
+                                        height = 3.dp,
+                                        color = accentColor,
+                                    )
+                                }
+                            },
+                            divider = {},
+                            modifier = Modifier.weight(1f),
+                        ) {
                             selectedSets.forEachIndexed { index, set ->
                                 Tab(
                                     selected = pagerState.currentPage == index,
                                     onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
-                                    text = { Text(set.sourceName, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                    text = {
+                                        Text(
+                                            set.sourceName,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            fontSize = 14.sp,
+                                            color = if (pagerState.currentPage == index) titleBarTextColor else titleBarTextColor.copy(alpha = 0.6f),
+                                        )
+                                    },
                                 )
                             }
                         }
-                    }
-
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        key = { index -> selectedSets.getOrNull(index)?.sourceUrl ?: index }
-                    ) { pageIndex ->
-                        val source = selectedSets.getOrNull(pageIndex)
-                        val sourceModules = remember(uiState.modules, source) {
-                            uiState.modules.filter { module ->
-                                if (source?.isCustomSet == true) {
-                                    val setId = HomepageViewModel.customSetIdFromUrl(source.sourceUrl)
-                                    module.customSetId == setId
-                                } else {
-                                    module.sourceUrl == source?.sourceUrl
-                                }
-                            }
-                        }
-                        ModuleList(
-                            modules = sourceModules,
-                            viewModel = viewModel,
-                            modifier = Modifier.fillMaxSize(),
-                            onErrorClick = { errorMsg = it },
-                            onBookLongClick = { book, _ -> previewBook = book },
+                    } else {
+                        Text(
+                            homeString,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = titleBarTextColor,
+                            modifier = Modifier.weight(1f).padding(start = 12.dp),
                         )
+                    }
+                    IconButton(
+                        onClick = {
+                            val newMode = if (layoutMode == 0) 1 else 0
+                            viewModel.setLayoutMode(newMode)
+                        },
+                    ) {
+                        Icon(
+                            if (layoutMode == 0) Icons.Default.DashboardCustomize else Icons.Default.Dashboard,
+                            contentDescription = if (layoutMode == 0) stringResource(R.string.layout_tab) else stringResource(R.string.layout_mixed),
+                            tint = titleBarTextColor,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                    IconButton(onClick = { showManageSheet = !showManageSheet }) {
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.hp_manage_modules), tint = titleBarTextColor)
                     }
                 }
             }
         }
 
-        if (errorMsg != null) {
-            AlertDialog(
-                message = errorMsg!!,
-                onDismiss = { errorMsg = null },
-                onCopy = { errorMsg = null },
-            )
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { viewModel.onRefresh() },
+            modifier = Modifier.fillMaxSize().background(pageBgColor),
+        ) {
+            if (selectedSets.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.hp_no_sets_selected), style = MaterialTheme.typography.bodyMedium)
+                }
+            } else if (layoutMode == 1 && selectedSets.size > 1) {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    key = { index -> selectedSets.getOrNull(index)?.sourceUrl ?: index }
+                ) { pageIndex ->
+                    val source = selectedSets.getOrNull(pageIndex)
+                    val sourceModules = remember(uiState.modules, source) {
+                        uiState.modules.filter { module ->
+                            if (source?.isCustomSet == true) {
+                                val setId = HomepageViewModel.customSetIdFromUrl(source.sourceUrl)
+                                module.customSetId == setId
+                            } else {
+                                module.sourceUrl == source?.sourceUrl
+                            }
+                        }
+                    }
+                    ModuleList(
+                        modules = sourceModules,
+                        viewModel = viewModel,
+                        modifier = Modifier.fillMaxSize(),
+                        onErrorClick = { errorMsg = it },
+                        onBookLongClick = { book, _ -> previewBook = book },
+                    )
+                }
+            } else {
+                val allModules = remember(uiState.modules) { uiState.modules }
+                ModuleList(
+                    modules = allModules,
+                    viewModel = viewModel,
+                    modifier = Modifier.fillMaxSize(),
+                    onErrorClick = { errorMsg = it },
+                    onBookLongClick = { book, _ -> previewBook = book },
+                )
+            }
         }
+    }
 
-        if (showManageSheet) {
-            HomepageModuleManageSheet(
-                state = uiState.manageState,
-                viewModel = viewModel,
-                onDismiss = { showManageSheet = false },
-            )
-        }
-
-        if (showConfigSheet) {
-            HomepageLayoutSheet(
-                layoutMode = layoutMode,
-                onLayoutModeChange = { viewModel.setLayoutMode(it) },
-                onDismiss = { showConfigSheet = false },
-            )
-        }
-
-        SearchBookPreviewSheet(
-            data = previewBook,
-            shelfState = previewBook?.let { viewModel.getCurrentBookShelfState(it) },
-            onDismissRequest = { previewBook = null },
-            onOpenDetail = { book ->
-                previewBook = null
-                onBookClick(book.name, book.author, book.bookUrl, book.origin, book.coverUrl, null)
-            },
-            onAddToShelf = { book -> viewModel.onAddToShelf(book) },
+    if (errorMsg != null) {
+        AlertDialog(
+            message = errorMsg!!,
+            onDismiss = { errorMsg = null },
+            onCopy = { errorMsg = null },
         )
     }
+
+    if (showManageSheet) {
+        HomepageModuleManageSheet(
+            state = uiState.manageState,
+            viewModel = viewModel,
+            onDismiss = { showManageSheet = false },
+        )
+    }
+
+    SearchBookPreviewSheet(
+        data = previewBook,
+        shelfState = previewBook?.let { viewModel.getCurrentBookShelfState(it) },
+        onDismissRequest = { previewBook = null },
+        onOpenDetail = { book ->
+            previewBook = null
+            onBookClick(book.name, book.author, book.bookUrl, book.origin, book.coverUrl, null)
+        },
+        onAddToShelf = { book -> viewModel.onAddToShelf(book) },
+    )
 }
 
 @Composable
@@ -292,7 +345,7 @@ private fun ModuleList(
                                 modifier = Modifier.fillMaxWidth().clickable { onErrorClick(state.message) },
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                             ) {
-                                Column(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterVertically) {
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                         Text(state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))

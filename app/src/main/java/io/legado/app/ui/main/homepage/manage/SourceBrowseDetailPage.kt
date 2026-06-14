@@ -9,18 +9,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -35,13 +36,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
+import io.legado.app.data.entities.rule.ExploreKind
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
 import io.legado.app.ui.main.homepage.HomepageViewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun SourceBrowseDetailPage(
@@ -50,7 +55,7 @@ fun SourceBrowseDetailPage(
     allJoinedModules: List<HomepageModuleManageUi>,
     canSelectInfiniteGlobal: Boolean,
     onGetSourceModules: (String, String?) -> List<HomepageModuleManageUi>,
-    onGetExploreKinds: (String) -> List<Pair<String, String>>,
+    onGetExploreKinds: (String) -> List<ExploreKind>,
     onLoadExploreKinds: (String) -> Unit,
     onToggleModule: (String, Boolean) -> Unit,
     onJoinModule: (String, String?, ModuleDef) -> Unit,
@@ -113,7 +118,23 @@ fun SourceBrowseDetailPage(
                         Text(stringResource(R.string.hp_no_joined_modules), style = MaterialTheme.typography.bodyMedium)
                     }
                 } else {
+                    val lazyListState = remember {
+                        androidx.compose.foundation.lazy.LazyListState(0)
+                    }
+                    val allModuleIds = remember(standardModules, infiniteModules) {
+                        standardModules.map { it.id } + infiniteModules.map { it.id }
+                    }
+                    val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
+                        val mutableList = allModuleIds.toMutableList()
+                        if (from.index < mutableList.size && to.index < mutableList.size) {
+                            val item = mutableList.removeAt(from.index)
+                            mutableList.add(to.index, item)
+                            onReorderModules(mutableList)
+                        }
+                    }
+
                     LazyColumn(
+                        state = lazyListState,
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -127,26 +148,14 @@ fun SourceBrowseDetailPage(
                                 )
                             }
                             items(standardModules, key = { it.id }) { module ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(module.title, style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                            Text(HomepageModuleType.fromKey(module.type).title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                        IconButton(onClick = { onEditModule(module) }) {
-                                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
-                                        }
-                                        IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
-                                        }
-                                        Switch(checked = module.isVisible, onCheckedChange = { onToggleModule(module.id, it) })
-                                    }
+                                ReorderableItem(reorderableState, key = module.id) { isDragging ->
+                                    SourceModuleCard(
+                                        module = module,
+                                        isDragging = isDragging,
+                                        onToggle = { onToggleModule(module.id, it) },
+                                        onEdit = { onEditModule(module) },
+                                        onDelete = { onRequestDeleteModule(module.id) },
+                                    )
                                 }
                             }
                         }
@@ -157,26 +166,16 @@ fun SourceBrowseDetailPage(
                                 Text(stringResource(R.string.hp_infinite_modules), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
                             }
                             items(infiniteModules, key = { it.id }) { module ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(module.title, style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                            Text(HomepageModuleType.fromKey(module.type).title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                        IconButton(onClick = { onEditModule(module) }) {
-                                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
-                                        }
-                                        IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
-                                        }
-                                        Switch(checked = module.isVisible, onCheckedChange = { onToggleModule(module.id, it) })
-                                    }
+                                ReorderableItem(reorderableState, key = module.id) { isDragging ->
+                                    SourceModuleCard(
+                                        module = module,
+                                        isDragging = isDragging,
+                                        onToggle = { onToggleModule(module.id, it) },
+                                        onEdit = { onEditModule(module) },
+                                        onDelete = { onRequestDeleteModule(module.id) },
+                                        containerColor = if (isDragging) MaterialTheme.colorScheme.primaryContainer
+                                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    )
                                 }
                             }
                         }
@@ -227,7 +226,7 @@ fun SourceBrowseDetailPage(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(module.title, style = MaterialTheme.typography.bodyMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(module.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Text(
                                             module.moduleKey + if (isJoined) " (${stringResource(R.string.hp_joined)})" else if (isBlocked) " (${stringResource(R.string.hp_infinite_conflict)})" else "",
                                             style = MaterialTheme.typography.labelSmall,
@@ -269,9 +268,6 @@ fun SourceBrowseDetailPage(
                                             browseModuleType = moduleType.key
                                             selectedKindTitles = emptySet()
                                         },
-                                        modifier = Modifier.then(
-                                            if (browseModuleType == moduleType.key) Modifier else Modifier
-                                        ),
                                     ) {
                                         Text(
                                             moduleType.title,
@@ -287,58 +283,20 @@ fun SourceBrowseDetailPage(
 
                     val exploreKinds = onGetExploreKinds(browseUrl)
                     if (exploreKinds.isNotEmpty()) {
-                        Text(stringResource(R.string.hp_select_category), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 8.dp))
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth().height(200.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        TextButton(
+                            onClick = { showKindSelect = true },
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            items(exploreKinds) { (title, url) ->
-                                val isSelected = if (isButtonGroup) title in selectedKindTitles else selectedKindTitles.contains(title)
-                                Card(
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        if (isButtonGroup) {
-                                            selectedKindTitles = if (title in selectedKindTitles)
-                                                selectedKindTitles - title
-                                            else
-                                                selectedKindTitles + title
-                                        } else {
-                                            selectedKindTitles = setOf(title)
-                                            onAddCustomModule(
-                                                browseUrl, currentSetId, ModuleDef(
-                                                    title = title,
-                                                    url = url,
-                                                    type = browseModuleType,
-                                                    args = title,
-                                                    sourceUrl = browseUrl,
-                                                )
-                                            )
-                                        }
-                                    },
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                        else MaterialTheme.colorScheme.surfaceContainerLow
-                                    ),
-                                ) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(title, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                                        if (isSelected) {
-                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                        }
-                                    }
-                                }
-                            }
+                            Text(stringResource(R.string.hp_select_category))
                         }
 
-                        if (isButtonGroup && selectedKindTitles.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                TextButton(onClick = { showAddButtonGroupDialog = true }) {
-                                    Text(stringResource(R.string.hp_create_button_group, selectedKindTitles.size))
-                                }
-                            }
+                        if (selectedKindTitles.isNotEmpty()) {
+                            Text(
+                                stringResource(R.string.hp_selected_count, selectedKindTitles.size),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            )
                         }
                     } else {
                         Text(stringResource(R.string.hp_no_explore_kinds), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -355,6 +313,36 @@ fun SourceBrowseDetailPage(
                 }
             }
         }
+    }
+
+    if (showKindSelect) {
+        ExploreKindSelectSheet(
+            show = true,
+            onDismissRequest = { showKindSelect = false },
+            kinds = onGetExploreKinds(browseUrl),
+            onSelected = { selectedKinds ->
+                if (isButtonGroup) {
+                    selectedKindTitles = selectedKinds.map { it.title }.toSet()
+                    if (selectedKinds.size >= 2) {
+                        showAddButtonGroupDialog = true
+                    }
+                } else {
+                    selectedKinds.firstOrNull()?.let { kind ->
+                        onAddCustomModule(
+                            browseUrl, currentSetId, ModuleDef(
+                                title = kind.title,
+                                url = kind.url,
+                                type = browseModuleType,
+                                args = kind.title,
+                                sourceUrl = browseUrl,
+                            )
+                        )
+                    }
+                }
+            },
+            multiple = isButtonGroup,
+            initialSelectedTitles = selectedKindTitles,
+        )
     }
 
     if (showAddDialog) {
@@ -395,5 +383,48 @@ fun SourceBrowseDetailPage(
                 TextButton(onClick = { showAddButtonGroupDialog = false }) { Text(stringResource(R.string.hp_cancel)) }
             },
         )
+    }
+}
+
+@Composable
+private fun SourceModuleCard(
+    module: HomepageModuleManageUi,
+    isDragging: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    containerColor: androidx.compose.ui.graphics.Color = if (isDragging) MaterialTheme.colorScheme.primaryContainer
+    else MaterialTheme.colorScheme.surfaceContainerLow,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(
+                onClick = {},
+                modifier = Modifier.draggableHandle(),
+            ) {
+                Icon(
+                    Icons.Default.DragHandle,
+                    contentDescription = stringResource(R.string.drag_handle),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(module.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(HomepageModuleType.fromKey(module.type).title, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
+            }
+            Switch(checked = module.isVisible, onCheckedChange = onToggle)
+        }
     }
 }

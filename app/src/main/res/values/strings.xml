@@ -1071,6 +1071,8 @@
     <string name="hp_no_explore_kinds">This source has no explore categories</string>
     <string name="hp_module_type">Module type</string>
     <string name="hp_select_category">Select category</string>
+    <string name="hp_search_category">Search category</string>
+    <string name="hp_selected_count">Selected %1$d categories</string>
     <string name="hp_manual_add">Add module manually</string>
     <string name="hp_create_button_group">Create button group (%1$d categories)</string>
     <string name="hp_create_button_group_title">Create button group</string>

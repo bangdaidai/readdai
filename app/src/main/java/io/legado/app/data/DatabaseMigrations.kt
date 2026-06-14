@@ -603,20 +603,17 @@ object DatabaseMigrations {
 
     val migration_103_104 = object : Migration(103, 104) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            val cursor = db.query("PRAGMA table_info(book_sources)")
-            var hasHomepageModules = false
-            cursor.use {
-                val nameIndex = it.getColumnIndex("name")
-                while (it.moveToNext()) {
-                    if (it.getString(nameIndex) == "homepageModules") {
-                        hasHomepageModules = true
-                        break
-                    }
-                }
-            }
-            if (!hasHomepageModules) {
+            try {
                 db.execSQL("ALTER TABLE book_sources ADD COLUMN homepageModules TEXT")
+            } catch (_: Exception) {
             }
+            db.execSQL("DROP VIEW IF EXISTS book_sources_part")
+            db.execSQL("""
+                CREATE VIEW IF NOT EXISTS `book_sources_part` AS select bookSourceUrl, bookSourceName, bookSourceGroup, customOrder, enabled, enabledExplore, 
+                (loginUrl is not null and trim(loginUrl) <> '') hasLoginUrl, lastUpdateTime, respondTime, weight, 
+                (exploreUrl is not null and trim(exploreUrl) <> '') hasExploreUrl, eventListener, bookSourceType
+                from book_sources
+            """.trimIndent())
         }
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,12 +26,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
 import io.legado.app.ui.main.homepage.HomepageViewModel
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun SetDetailPage(
@@ -70,9 +74,27 @@ fun SetDetailPage(
             }
         }
     } else {
+        val lazyListState = remember {
+            androidx.compose.foundation.lazy.LazyListState(0)
+        }
+
+        val allModuleIds = remember(standardModules, infiniteModules) {
+            standardModules.map { it.id } + infiniteModules.map { it.id }
+        }
+
+        val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
+            val mutableList = allModuleIds.toMutableList()
+            if (from.index < mutableList.size && to.index < mutableList.size) {
+                val item = mutableList.removeAt(from.index)
+                mutableList.add(to.index, item)
+                onReorderModules(mutableList)
+            }
+        }
+
         LazyColumn(
+            state = lazyListState,
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (standardModules.isNotEmpty()) {
                 item(key = "header_std_detail") {
@@ -84,39 +106,14 @@ fun SetDetailPage(
                     )
                 }
                 items(standardModules, key = { it.id }) { module ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    module.title,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    HomepageModuleType.fromKey(module.type).title,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            IconButton(onClick = { onEditModule(module) }) {
-                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
-                            }
-                            IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
-                            }
-                            Switch(
-                                checked = module.isVisible,
-                                onCheckedChange = { enabled -> onToggleModule(module.id, enabled) },
-                            )
-                        }
+                    ReorderableItem(reorderableState, key = module.id) { isDragging ->
+                        ModuleCard(
+                            module = module,
+                            isDragging = isDragging,
+                            onToggle = { onToggleModule(module.id, it) },
+                            onEdit = { onEditModule(module) },
+                            onDelete = { onRequestDeleteModule(module.id) },
+                        )
                     }
                 }
             }
@@ -132,39 +129,16 @@ fun SetDetailPage(
                     )
                 }
                 items(infiniteModules, key = { it.id }) { module ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    module.title,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                                Text(
-                                    HomepageModuleType.fromKey(module.type).title,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            IconButton(onClick = { onEditModule(module) }) {
-                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
-                            }
-                            IconButton(onClick = { onRequestDeleteModule(module.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
-                            }
-                            Switch(
-                                checked = module.isVisible,
-                                onCheckedChange = { enabled -> onToggleModule(module.id, enabled) },
-                            )
-                        }
+                    ReorderableItem(reorderableState, key = module.id) { isDragging ->
+                        ModuleCard(
+                            module = module,
+                            isDragging = isDragging,
+                            onToggle = { onToggleModule(module.id, it) },
+                            onEdit = { onEditModule(module) },
+                            onDelete = { onRequestDeleteModule(module.id) },
+                            containerColor = if (isDragging) MaterialTheme.colorScheme.primaryContainer
+                            else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        )
                     }
                 }
             }
@@ -180,6 +154,62 @@ fun SetDetailPage(
                     Text(stringResource(R.string.hp_source_modules))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ModuleCard(
+    module: HomepageModuleManageUi,
+    isDragging: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+    containerColor: androidx.compose.ui.graphics.Color = if (isDragging) MaterialTheme.colorScheme.primaryContainer
+    else MaterialTheme.colorScheme.surfaceContainerLow,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(
+                onClick = {},
+                modifier = Modifier.draggableHandle(),
+            ) {
+                Icon(
+                    Icons.Default.DragHandle,
+                    contentDescription = stringResource(R.string.drag_handle),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    module.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    HomepageModuleType.fromKey(module.type).title,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.hp_edit_module), modifier = Modifier.height(20.dp))
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.hp_delete), modifier = Modifier.height(20.dp))
+            }
+            Switch(
+                checked = module.isVisible,
+                onCheckedChange = onToggle,
+            )
         }
     }
 }

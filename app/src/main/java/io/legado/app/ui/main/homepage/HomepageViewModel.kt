@@ -13,6 +13,7 @@ import io.legado.app.domain.model.CustomSetItem
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
 import io.legado.app.domain.model.ModuleItem
+import io.legado.app.data.entities.rule.ExploreKind
 import io.legado.app.help.source.exploreKinds
 import io.legado.app.model.webBook.WebBook
 import io.legado.app.utils.GSON
@@ -90,7 +91,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     private val _layoutConfigCache = MutableStateFlow<Map<String, Map<String, String>>>(emptyMap())
     private val _pendingEnabled = MutableStateFlow<Map<String, Boolean>>(emptyMap())
     private val _pendingUserModules = MutableStateFlow<List<ModuleItem>>(emptyList())
-    private val _exploreKindsCache = MutableStateFlow<Map<String, List<Pair<String, String>>>>(emptyMap())
+    private val _exploreKindsCache = MutableStateFlow<Map<String, List<ExploreKind>>>(emptyMap())
 
     private val localModulesFlow = gateway.flowEnabled()
     val allModulesCache =
@@ -772,7 +773,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
-    fun getSourceExploreKinds(sourceUrl: String): List<Pair<String, String>> {
+    fun getSourceExploreKinds(sourceUrl: String): List<ExploreKind> {
         return _exploreKindsCache.value[sourceUrl] ?: emptyList()
     }
 
@@ -780,7 +781,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         viewModelScope.launch {
             val source = resolveBookSource(sourceUrl) ?: return@launch
             val kinds = withContext(Dispatchers.IO) { source.exploreKinds() }
-            _exploreKindsCache.update { it + (sourceUrl to kinds.map { kind -> kind.title to (kind.url ?: "") }) }
+            _exploreKindsCache.update { it + (sourceUrl to kinds) }
         }
     }
 
