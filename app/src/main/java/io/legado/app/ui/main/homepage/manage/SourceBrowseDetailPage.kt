@@ -46,6 +46,7 @@ import io.legado.app.domain.model.ModuleDef
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
 import io.legado.app.ui.main.homepage.HomepageViewModel
 import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.draggableHandle
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
@@ -67,6 +68,7 @@ fun SourceBrowseDetailPage(
 ) {
     var browseTab by remember { mutableIntStateOf(0) }
     var browseModuleType by remember { mutableStateOf("card") }
+    val isButtonGroup = browseModuleType == "buttonGroup"
     var selectedKindTitles by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showKindSelect by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -244,7 +246,6 @@ fun SourceBrowseDetailPage(
             }
 
             2 -> {
-                val isButtonGroup = browseModuleType == "buttonGroup"
                 val typeList = remember(canSelectInfiniteGlobal) {
                     HomepageModuleType.entries.filter {
                         it != HomepageModuleType.Unknown && (canSelectInfiniteGlobal || !HomepageViewModel.isInfinite(it.key, null))

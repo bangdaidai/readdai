@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -231,9 +233,4 @@ private fun calculateKindRows(
         rows.add(currentRow)
     }
     return rows
-}
-
-@Composable
-private fun Spacer(modifier: Modifier = Modifier) {
-    androidx.compose.foundation.layout.Spacer(modifier = modifier)
 }

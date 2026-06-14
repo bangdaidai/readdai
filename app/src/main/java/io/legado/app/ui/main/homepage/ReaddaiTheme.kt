@@ -1,5 +1,6 @@
 package io.legado.app.ui.main.homepage
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -17,6 +18,7 @@ import io.legado.app.lib.theme.secondaryTextColor
 @Composable
 fun ReaddaiTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
+    val defaultScheme = MaterialTheme.colorScheme
     val colorScheme = remember(context) {
         val accent = Color(context.accentColor)
         val bg = Color(context.backgroundColor)
@@ -24,10 +26,9 @@ fun ReaddaiTheme(content: @Composable () -> Unit) {
         val textPrimary = Color(context.primaryTextColor)
         val textSecondary = Color(context.secondaryTextColor)
         val divider = Color(context.dividerColor)
-        val titleBar = Color(context.primaryColor)
         val titleBarTextIcon = Color(ThemeStore.titleBarTextIconColor(context))
 
-        MaterialTheme.colorScheme.copy(
+        defaultScheme.copy(
             primary = accent,
             onPrimary = titleBarTextIcon,
             primaryContainer = accent.copy(alpha = 0.25f),
