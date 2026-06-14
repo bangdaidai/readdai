@@ -151,7 +151,9 @@ fun SourceBrowseDetailPage(
                             }
                             items(standardModules, key = { it.id }) { module ->
                                 ReorderableItem(reorderableState, key = module.id) { isDragging ->
+                                    val dragModifier = this.draggableHandle()
                                     SourceModuleCard(
+                                        dragModifier = dragModifier,
                                         module = module,
                                         isDragging = isDragging,
                                         onToggle = { onToggleModule(module.id, it) },
@@ -169,7 +171,9 @@ fun SourceBrowseDetailPage(
                             }
                             items(infiniteModules, key = { it.id }) { module ->
                                 ReorderableItem(reorderableState, key = module.id) { isDragging ->
+                                    val dragModifier = this.draggableHandle()
                                     SourceModuleCard(
+                                        dragModifier = dragModifier,
                                         module = module,
                                         isDragging = isDragging,
                                         onToggle = { onToggleModule(module.id, it) },
@@ -389,6 +393,7 @@ fun SourceBrowseDetailPage(
 
 @Composable
 private fun SourceModuleCard(
+    dragModifier: Modifier,
     module: HomepageModuleManageUi,
     isDragging: Boolean,
     onToggle: (Boolean) -> Unit,
@@ -407,7 +412,7 @@ private fun SourceModuleCard(
         ) {
             IconButton(
                 onClick = {},
-                modifier = Modifier.draggableHandle(),
+                modifier = dragModifier,
             ) {
                 Icon(
                     Icons.Default.DragHandle,

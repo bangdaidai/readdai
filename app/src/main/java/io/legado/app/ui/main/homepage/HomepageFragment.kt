@@ -11,7 +11,15 @@ import io.legado.app.ui.book.explore.ExploreShowActivity
 import io.legado.app.ui.main.MainFragmentInterface
 import io.legado.app.utils.startActivity
 
-class HomepageFragment(override val position: Int?) : Fragment(), MainFragmentInterface {
+class HomepageFragment() : Fragment(), MainFragmentInterface {
+
+    constructor(position: Int) : this() {
+        val bundle = Bundle()
+        bundle.putInt("position", position)
+        arguments = bundle
+    }
+
+    override val position: Int? get() = arguments?.getInt("position")
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return ComposeView(requireContext()).apply {

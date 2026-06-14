@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.ui.main.homepage.HomepageSourceManageUi
 import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.draggableHandle
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
@@ -67,6 +68,7 @@ fun SetListPage(
         items(distinctSets.size, key = { index -> distinctSets[index].sourceUrl }) { index ->
             val set = distinctSets[index]
             ReorderableItem(reorderableState, key = set.sourceUrl) { isDragging ->
+                val dragModifier = this.draggableHandle()
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -80,7 +82,7 @@ fun SetListPage(
                     ) {
                         IconButton(
                             onClick = {},
-                            modifier = Modifier.draggableHandle(),
+                            modifier = dragModifier,
                         ) {
                             Icon(
                                 Icons.Default.DragHandle,

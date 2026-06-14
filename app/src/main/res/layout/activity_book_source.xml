@@ -14,6 +14,19 @@
         app:displayHomeAsUp="true"
         app:title="@string/book_source" />
 
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        app:tabBackground="@android:color/transparent"
+        app:tabGravity="fill"
+        app:tabIndicatorColor="?attr/colorAccent"
+        app:tabMode="scrollable"
+        app:tabRippleColor="@android:color/transparent"
+        app:tabSelectedTextColor="?attr/colorAccent"
+        app:tabTextColor="?attr/colorOnSurface" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"

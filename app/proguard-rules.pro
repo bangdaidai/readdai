@@ -235,3 +235,11 @@ cn.hutool.core.util.**{*;}
     <methods>;
 }
 -dontwarn com.qmdeve.liquidglass.**
+
+# Fragment - 保留无参构造函数，防止系统重建时崩溃
+-keep class * extends androidx.fragment.app.Fragment {
+    <init>();
+}
+-keep class * extends androidx.fragment.app.DialogFragment {
+    <init>();
+}

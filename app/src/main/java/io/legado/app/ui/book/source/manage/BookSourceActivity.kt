@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppLog
@@ -28,7 +29,6 @@ import io.legado.app.data.entities.BookSourcePart
 import io.legado.app.databinding.ActivityBookSourceBinding
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.DirectLinkUpload
-import io.legado.app.help.config.LocalConfig
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
@@ -96,6 +96,7 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
     private var checkMessageRefreshJob: Job? = null
     private val groups = linkedSetOf<String>()
     private var groupMenu: SubMenu? = null
+    private var currentGroup: String? = null
     override var sort = BookSourceSort.Default
         private set
     override var sortAscending = true
@@ -146,14 +147,11 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         initRecyclerView()
         initSearchView()
+        initTabLayout()
         upBookSource()
         initLiveDataGroup()
         initSelectActionBar()
         resumeCheckSource()
-        // 移除自动显示帮助的逻辑
-        // if (!LocalConfig.bookSourcesHelpVersionIsLast) {
-        //     showHelp("SourceMBookHelp")
-        // }
     }
 
     override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
@@ -265,7 +263,12 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
             R.id.menu_help -> showHelp("SourceMBookHelp")
         }
         if (item.groupId == R.id.source_group) {
-            searchView.setQuery("group:${item.title}", true)
+            val groupIndex = groups.indexOf(item.title)
+            if (groupIndex >= 0) {
+                binding.tabLayout.getTabAt(groupIndex + 1)?.select()
+            } else {
+                searchView.setQuery("group:${item.title}", true)
+            }
         }
         return super.onCompatOptionsItemSelected(item)
     }
@@ -290,46 +293,98 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
         searchView.setOnQueryTextListener(this)
     }
 
+    private fun initTabLayout() {
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                tab?.let {
+                    val position = it.position
+                    val tabTitles = binding.tabLayout.tabCount.let { count ->
+                        if (count > 0) {
+                            mutableListOf<String>().apply {
+                                add(getString(R.string.all))
+                                addAll(groups)
+                            }
+                        } else {
+                            mutableListOf(getString(R.string.all))
+                        }
+                    }
+                    if (position < tabTitles.size) {
+                        val newGroup = if (position == 0) null else tabTitles[position]
+                        if (newGroup != currentGroup) {
+                            currentGroup = newGroup
+                            upBookSource(searchView.query?.toString())
+                        }
+                    }
+                }
+            }
+
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+    }
+
+    private fun updateTabLayout() {
+        val tabTitles = mutableListOf<String>()
+        tabTitles.add(getString(R.string.all))
+        tabTitles.addAll(groups)
+
+        binding.tabLayout.removeAllTabs()
+        tabTitles.forEach { title ->
+            binding.tabLayout.addTab(binding.tabLayout.newTab().setText(title))
+        }
+
+        val selectIndex = if (currentGroup == null) 0 else {
+            groups.indexOf(currentGroup).takeIf { it >= 0 }?.let { it + 1 } ?: 0
+        }
+        if (selectIndex < binding.tabLayout.tabCount) {
+            binding.tabLayout.getTabAt(selectIndex)?.select()
+        }
+    }
+
 
     private fun upBookSource(searchKey: String? = null) {
         sourceFlowJob?.cancel()
         sourceFlowJob = lifecycleScope.launch {
             when {
-                searchKey.isNullOrEmpty() -> {
-                    appDb.bookSourceDao.flowAll()
-                }
-
-                searchKey == getString(R.string.enabled) -> {
+                !searchKey.isNullOrEmpty() && searchKey == getString(R.string.enabled) -> {
                     appDb.bookSourceDao.flowEnabled()
                 }
 
-                searchKey == getString(R.string.disabled) -> {
+                !searchKey.isNullOrEmpty() && searchKey == getString(R.string.disabled) -> {
                     appDb.bookSourceDao.flowDisabled()
                 }
 
-                searchKey == getString(R.string.need_login) -> {
+                !searchKey.isNullOrEmpty() && searchKey == getString(R.string.need_login) -> {
                     appDb.bookSourceDao.flowLogin()
                 }
 
-                searchKey == getString(R.string.no_group) -> {
+                !searchKey.isNullOrEmpty() && searchKey == getString(R.string.no_group) -> {
                     appDb.bookSourceDao.flowNoGroup()
                 }
 
-                searchKey == getString(R.string.enabled_explore) -> {
+                !searchKey.isNullOrEmpty() && searchKey == getString(R.string.enabled_explore) -> {
                     appDb.bookSourceDao.flowEnabledExplore()
                 }
 
-                searchKey == getString(R.string.disabled_explore) -> {
+                !searchKey.isNullOrEmpty() && searchKey == getString(R.string.disabled_explore) -> {
                     appDb.bookSourceDao.flowDisabledExplore()
                 }
 
-                searchKey.startsWith("group:") -> {
+                !searchKey.isNullOrEmpty() && searchKey.startsWith("group:") -> {
                     val key = searchKey.substringAfter("group:")
                     appDb.bookSourceDao.flowGroupSearch(key)
                 }
 
-                else -> {
+                !searchKey.isNullOrEmpty() -> {
                     appDb.bookSourceDao.flowSearch(searchKey)
+                }
+
+                !currentGroup.isNullOrEmpty() -> {
+                    appDb.bookSourceDao.flowGroupSearch(currentGroup!!)
+                }
+
+                else -> {
+                    appDb.bookSourceDao.flowAll()
                 }
             }.map { data ->
                 hostMap.clear()
@@ -420,6 +475,7 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
                 .collect {
                     groups.clear()
                     groups.addAll(it)
+                    updateTabLayout()
                     upGroupMenu()
                     delay(500)
                 }
@@ -709,6 +765,12 @@ class BookSourceActivity : VMBaseActivity<ActivityBookSourceBinding, BookSourceV
 
     override fun onQueryTextChange(newText: String?): Boolean {
         newText?.let {
+            if (it.isNotEmpty()) {
+                currentGroup = null
+                if (binding.tabLayout.selectedTabPosition != 0) {
+                    binding.tabLayout.getTabAt(0)?.select()
+                }
+            }
             upBookSource(it)
         }
         return false
