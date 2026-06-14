@@ -41,7 +41,6 @@ val appDb by lazy {
     views = [BookSourcePart::class],
     autoMigrations = [
         AutoMigration(from = 101, to = 102, spec = DatabaseMigrations.Migration_101_102::class),
-        AutoMigration(from = 102, to = 103),
         AutoMigration(from = 43, to = 44),
         AutoMigration(from = 44, to = 45),
         AutoMigration(from = 45, to = 46),

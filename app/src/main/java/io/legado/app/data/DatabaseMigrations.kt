@@ -22,7 +22,7 @@ object DatabaseMigrations {
             migration_35_36, migration_36_37, migration_37_38, migration_38_39,
             migration_39_40, migration_40_41, migration_41_42, migration_42_43,
             migration_88_89, migration_89_90, migration_93_94, migration_97_98,
-            migration_98_99, migration_99_100
+            migration_98_99, migration_99_100, migration_102_103
         )
     }
 
@@ -562,4 +562,38 @@ object DatabaseMigrations {
         columnName = "reviewContent"
     )
     class Migration_101_102 : AutoMigrationSpec
+
+    val migration_102_103 = object : Migration(102, 103) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `homepage_modules` (
+                    `id` TEXT NOT NULL,
+                    `sourceUrl` TEXT NOT NULL,
+                    `moduleKey` TEXT NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `title` TEXT NOT NULL,
+                    `args` TEXT,
+                    `layoutConfig` TEXT,
+                    `url` TEXT,
+                    `isEnabled` INTEGER NOT NULL,
+                    `sortOrder` INTEGER NOT NULL,
+                    `customSetId` TEXT,
+                    `isUserCreated` INTEGER NOT NULL,
+                    `customTitle` TEXT,
+                    `customSetTitle` TEXT,
+                    `sourceJsonHash` TEXT,
+                    `syncedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+            """.trimIndent())
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `homepage_custom_sets` (
+                    `id` TEXT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `sortOrder` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+            """.trimIndent())
+        }
+    }
 }
