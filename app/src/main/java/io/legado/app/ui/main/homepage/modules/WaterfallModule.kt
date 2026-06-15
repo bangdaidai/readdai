@@ -27,6 +27,7 @@ import coil.compose.AsyncImage
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
+import io.legado.app.ui.main.homepage.SearchBookCover
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -47,7 +48,7 @@ fun WaterfallItem(
                 onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
             ),
         ) {
-            AsyncImage(model = book.coverUrl, contentDescription = book.name, modifier = Modifier.fillMaxWidth().height(180.dp), contentScale = ContentScale.Crop)
+            SearchBookCover(book = book, contentDescription = book.name, modifier = Modifier.fillMaxWidth().height(180.dp), contentScale = ContentScale.Crop)
             Spacer(modifier = Modifier.height(8.dp))
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 8.dp)) {
                 Text(book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)

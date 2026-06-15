@@ -67,14 +67,7 @@ fun SourceBrowseDetailPage(
     onAddButtonGroupFromKinds: (String, String?, String, List<String>) -> Unit,
 ) {
     var browseTab by remember { mutableIntStateOf(0) }
-    var browseModuleType by remember { mutableStateOf("card") }
-    val isButtonGroup = browseModuleType == "buttonGroup"
-    var selectedKindTitles by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var showKindSelect by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
-    var showAddButtonGroupDialog by remember { mutableStateOf(false) }
-    val defaultButtonGroupTitle = stringResource(R.string.hp_create_button_group_title)
-    var tempButtonGroupTitle by remember { mutableStateOf(defaultButtonGroupTitle) }
 
     val displaySetUrl = selectingSetUrl ?: HomepageViewModel.customSetUrl("src_$browseUrl")
     val currentSetId = HomepageViewModel.customSetIdFromUrl(displaySetUrl)
@@ -247,141 +240,75 @@ fun SourceBrowseDetailPage(
             }
 
             2 -> {
-                val typeList = remember {
-                    HomepageModuleType.entries.filter { it != HomepageModuleType.Unknown }
-                }
+                val exploreKinds = onGetExploreKinds(browseUrl)
+                var editingKind by remember { mutableStateOf<ExploreKind?>(null) }
 
-                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                if (exploreKinds.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(stringResource(R.string.hp_module_type), style = MaterialTheme.typography.labelMedium)
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Text(stringResource(R.string.hp_no_explore_kinds), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(exploreKinds.filter { !it.url.isNullOrBlank() }, key = { it.title }) { kind ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth().clickable { editingKind = kind },
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                             ) {
-                                typeList.forEach { moduleType ->
-                                    TextButton(
-                                        onClick = {
-                                            browseModuleType = moduleType.key
-                                            selectedKindTitles = emptySet()
-                                        },
-                                    ) {
-                                        Text(
-                                            moduleType.title,
-                                            color = if (browseModuleType == moduleType.key) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(kind.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        kind.url?.takeIf { it.isNotBlank() }?.let {
+                                            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val exploreKinds = onGetExploreKinds(browseUrl)
-                    if (exploreKinds.isNotEmpty()) {
-                        TextButton(
-                            onClick = { showKindSelect = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.hp_select_category))
+                        item(key = "manual_add") {
+                            TextButton(
+                                onClick = { showAddDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.hp_manual_add))
+                            }
                         }
-
-                        if (selectedKindTitles.isNotEmpty()) {
-                            Text(
-                                stringResource(R.string.hp_selected_count, selectedKindTitles.size),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                            )
-                        }
-                    } else {
-                        Text(stringResource(R.string.hp_no_explore_kinds), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    TextButton(
-                        onClick = { showAddDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.hp_manual_add))
-                    }
+                if (editingKind != null) {
+                    AddCustomModuleDialog(
+                        sourceUrl = browseUrl,
+                        targetSetId = currentSetId,
+                        prefillTitle = editingKind!!.title,
+                        prefillUrl = editingKind!!.url ?: "",
+                        prefillType = "card",
+                        prefillArgs = editingKind!!.title,
+                        canSelectInfinite = canSelectInfiniteGlobal,
+                        onDismissRequest = { editingKind = null },
+                        onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); editingKind = null },
+                    )
                 }
             }
         }
-    }
-
-    if (showKindSelect) {
-        ExploreKindSelectSheet(
-            show = true,
-            onDismissRequest = { showKindSelect = false },
-            kinds = onGetExploreKinds(browseUrl),
-            onSelected = { selectedKinds ->
-                if (isButtonGroup) {
-                    selectedKindTitles = selectedKinds.map { it.title }.toSet()
-                    if (selectedKinds.size >= 2) {
-                        showAddButtonGroupDialog = true
-                    }
-                } else {
-                    selectedKinds.firstOrNull()?.let { kind ->
-                        onAddCustomModule(
-                            browseUrl, currentSetId, ModuleDef(
-                                title = kind.title,
-                                url = kind.url,
-                                type = browseModuleType,
-                                args = kind.title,
-                                sourceUrl = browseUrl,
-                            )
-                        )
-                    }
-                }
-            },
-            multiple = isButtonGroup,
-            initialSelectedTitles = selectedKindTitles,
-        )
     }
 
     if (showAddDialog) {
         AddCustomModuleDialog(
             sourceUrl = browseUrl,
             targetSetId = currentSetId,
-            prefillType = browseModuleType,
+            prefillType = "card",
             canSelectInfinite = canSelectInfiniteGlobal,
             onDismissRequest = { showAddDialog = false },
             onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); showAddDialog = false },
-        )
-    }
-
-    if (showAddButtonGroupDialog) {
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { showAddButtonGroupDialog = false },
-            title = { Text(stringResource(R.string.hp_create_button_group_title)) },
-            text = {
-                Column {
-                    Text(stringResource(R.string.hp_create_button_group_desc, selectedKindTitles.size))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    androidx.compose.material3.OutlinedTextField(
-                        value = tempButtonGroupTitle,
-                        onValueChange = { tempButtonGroupTitle = it },
-                        label = { Text(stringResource(R.string.hp_title)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    onAddButtonGroupFromKinds(browseUrl, currentSetId, tempButtonGroupTitle, selectedKindTitles.toList())
-                    showAddButtonGroupDialog = false
-                    selectedKindTitles = emptySet()
-                }) { Text(stringResource(R.string.hp_determine)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAddButtonGroupDialog = false }) { Text(stringResource(R.string.hp_cancel)) }
-            },
         )
     }
 }

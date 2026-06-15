@@ -77,11 +77,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+
 import io.legado.app.R
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.domain.model.HomepageModuleType
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
@@ -94,6 +95,7 @@ import io.legado.app.ui.main.homepage.modules.GridModule
 import io.legado.app.ui.main.homepage.modules.GridRankingModule
 import io.legado.app.ui.main.homepage.modules.RankingModule
 import io.legado.app.ui.main.homepage.modules.WaterfallItem
+import io.legado.app.ui.main.homepage.SearchBookCover
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -136,13 +138,14 @@ fun HomepageScreen(
     val titleBarTextColor = remember { Color(ThemeStore.titleBarTextIconColor(context)) }
     val pageBgColor = remember { Color(context.backgroundColor) }
     val accentColor = remember { Color(context.accentColor) }
+    val isTransparentStatusBar = remember { AppConfig.isTransparentStatusBar }
 
     Column(modifier = Modifier.fillMaxSize().background(pageBgColor)) {
         Surface(
             color = titleBarBgColor,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.statusBarsPadding()) {
+            Column(modifier = Modifier.then(if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier)) {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -509,8 +512,8 @@ fun GridBookItem(
         ),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        AsyncImage(
-            model = book.coverUrl,
+        SearchBookCover(
+            book = book,
             contentDescription = book.name,
             modifier = Modifier.fillMaxWidth().height(180.dp),
             contentScale = ContentScale.Crop,

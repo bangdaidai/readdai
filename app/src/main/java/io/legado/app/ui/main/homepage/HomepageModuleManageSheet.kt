@@ -149,6 +149,9 @@ fun HomepageModuleManageSheet(
 
                         is ManagePage.BrowseSources -> BrowseSourcesPage(
                             browseSources = state.browseSources,
+                            browseGroups = state.browseGroups,
+                            browseGroupFilter = state.browseGroupFilter,
+                            onGroupFilterChange = { viewModel.setBrowseGroupFilter(it) },
                             getSourceModules = { url, setId -> viewModel.getSourceModules(url, setId) },
                             onSelectSource = { sourceUrl -> currentPage = ManagePage.SourceDetail(sourceUrl) },
                         )

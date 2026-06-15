@@ -1100,6 +1100,8 @@
     <string name="hp_manage_modules">Manage modules</string>
     <string name="hp_set_detail">Set detail</string>
     <string name="hp_browse_sources">Browse sources</string>
+    <string name="hp_filter_group">Filter by group</string>
+    <string name="hp_all_groups">All groups</string>
     <string name="hp_source_detail">Source detail</string>
     <string name="hp_add_modules">Add modules</string>
     <string name="hp_create_new_set">Create new set</string>

@@ -26,6 +26,8 @@ data class HomepageUiState(
 data class HomepageManageUiState(
     val sets: List<HomepageSourceManageUi> = emptyList(),
     val browseSources: List<HomepageSourceManageUi> = emptyList(),
+    val browseGroups: List<String> = emptyList(),
+    val browseGroupFilter: String = "",
     val allJoinedModules: List<HomepageModuleManageUi> = emptyList(),
     val sourceNames: Map<String, String> = emptyMap()
 )

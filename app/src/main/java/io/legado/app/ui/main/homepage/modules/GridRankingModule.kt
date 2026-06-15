@@ -33,6 +33,7 @@ import coil.compose.AsyncImage
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
+import io.legado.app.ui.main.homepage.SearchBookCover
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -69,7 +70,7 @@ fun GridRankingModule(
                         ).padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AsyncImage(model = item.book.coverUrl, contentDescription = null, modifier = Modifier.width(48.dp).height(67.dp), contentScale = ContentScale.Crop)
+                        SearchBookCover(book = item.book, contentDescription = null, modifier = Modifier.width(48.dp).height(67.dp), contentScale = ContentScale.Crop)
                         Text(
                             "$rank", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black,
                             fontStyle = if (rank <= 3) FontStyle.Italic else FontStyle.Normal,

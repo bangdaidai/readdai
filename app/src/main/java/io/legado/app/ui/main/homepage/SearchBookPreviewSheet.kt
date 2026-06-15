@@ -33,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+
 import io.legado.app.R
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
@@ -72,8 +72,8 @@ fun SearchBookPreviewSheet(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.Top,
                 ) {
-                    AsyncImage(
-                        model = book.coverUrl,
+                    SearchBookCover(
+                        book = book,
                         contentDescription = null,
                         modifier = Modifier
                             .width(100.dp)

@@ -29,6 +29,7 @@ import coil.compose.AsyncImage
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
+import io.legado.app.ui.main.homepage.SearchBookCover
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -52,8 +53,8 @@ fun BannerModule(
                 ),
             ) {
                 Box {
-                    AsyncImage(
-                        model = book.coverUrl,
+                    SearchBookCover(
+                        book = book,
                         contentDescription = book.name,
                         modifier = Modifier.width(96.dp).height(134.dp),
                         contentScale = ContentScale.Crop,

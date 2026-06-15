@@ -984,6 +984,8 @@
     <string name="hp_manage_modules">模块管理</string>
     <string name="hp_set_detail">集合详情</string>
     <string name="hp_browse_sources">浏览书源</string>
+    <string name="hp_filter_group">分组筛选</string>
+    <string name="hp_all_groups">全部分组</string>
     <string name="hp_source_detail">书源详情</string>
     <string name="hp_add_modules">添加模块</string>
     <string name="hp_create_new_set">创建新集合</string>

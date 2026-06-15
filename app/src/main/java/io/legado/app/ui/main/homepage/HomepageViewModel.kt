@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
@@ -97,11 +98,11 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     val allModulesCache =
         gateway.flowAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val customSetsFlow = gateway.flowCustomSets()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val orderedModuleDefsFlow = combine(localModulesFlow, _configVersion) { modules, _ ->
         modules.groupBySourceOrdered()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
     val setsFlow = combine(
         localModulesFlow,
@@ -124,7 +125,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 isCustomSet = true,
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val browseSourcesFlow = combine(exploreSourcesFlow, _bookSourcesCache) { sourceParts, sourcesCache ->
         sourceParts.map { part ->
@@ -135,7 +136,27 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 sourceGroup = source?.bookSourceGroup,
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    val browseGroupsFlow = combine(browseSourcesFlow, _bookSourcesCache) { sources, _ ->
+        val groups = mutableSetOf<String>()
+        sources.forEach { source ->
+            source.sourceGroup?.split(",")?.forEach { g ->
+                val trimmed = g.trim()
+                if (trimmed.isNotBlank()) groups.add(trimmed)
+            }
+        }
+        groups.toList().sorted()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    private val _browseGroupFilter = MutableStateFlow("")
+
+    val browseFilteredSourcesFlow = combine(browseSourcesFlow, _browseGroupFilter) { sources, group ->
+        if (group.isBlank()) sources
+        else sources.filter { source ->
+            source.sourceGroup?.split(",")?.any { it.trim() == group } == true
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val uiFlagsFlow =
         combine(_isRefreshing, _isManageMode, _isConfigMode) { refreshing, manage, config ->
@@ -144,14 +165,18 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
 
     private val manageStateFlow = combine(
         setsFlow,
-        browseSourcesFlow,
+        browseFilteredSourcesFlow,
+        browseGroupsFlow,
+        _browseGroupFilter,
         allModulesCache,
         _bookSourcesCache,
         _pendingEnabled
-    ) { sets, browseSources, allModules, sourcesCache, pendingEnabled ->
+    ) { sets, browseSources, browseGroups, browseGroupFilter, allModules, sourcesCache, pendingEnabled ->
         HomepageManageUiState(
             sets = sets,
             browseSources = browseSources,
+            browseGroups = browseGroups,
+            browseGroupFilter = browseGroupFilter,
             allJoinedModules = allModules.map { module ->
                 HomepageModuleManageUi(
                     id = module.id,
@@ -264,7 +289,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             isConfigMode = flags.isConfigMode,
             manageState = manageState
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomepageUiState())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, HomepageUiState())
 
     init {
         viewModelScope.launch {
@@ -517,15 +542,20 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     fun onRefresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            loadJobs.values.forEach { it.cancel() }
-            loadJobs.clear()
-            uiState.value.modules.map { it.sourceUrl }.distinct().forEach { url ->
-                resolveBookSource(url)?.let { syncModulesFromSource(it) }
+            try {
+                loadJobs.values.forEach { it.cancel() }
+                loadJobs.clear()
+                uiState.value.modules.map { it.sourceUrl }.distinct().forEach { url ->
+                    kotlin.runCatching { resolveBookSource(url)?.let { syncModulesFromSource(it) } }
+                }
+                _moduleContentStates.value = emptyMap()
+                withTimeoutOrNull(30_000L) {
+                    uiState.map { it.modules }
+                        .first { modules -> modules.all { it.state !is ModuleLoadState.Loading } }
+                }
+            } finally {
+                _isRefreshing.value = false
             }
-            _moduleContentStates.value = emptyMap()
-            uiState.map { it.modules }
-                .first { modules -> modules.all { it.state !is ModuleLoadState.Loading } }
-            _isRefreshing.value = false
         }
     }
 
@@ -535,6 +565,10 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
 
     fun toggleManageMode() = _isManageMode.update { !it }
     fun toggleConfigMode() = _isConfigMode.update { !it }
+
+    fun setBrowseGroupFilter(group: String) {
+        _browseGroupFilter.value = group
+    }
 
     fun setModuleVisible(id: String, visible: Boolean) {
         _pendingEnabled.update { it + (id to visible) }

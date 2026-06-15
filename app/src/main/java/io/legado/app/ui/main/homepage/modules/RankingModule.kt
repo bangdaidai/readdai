@@ -42,6 +42,7 @@ import io.legado.app.R
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
+import io.legado.app.ui.main.homepage.SearchBookCover
 
 private const val INITIAL_COUNT = 5
 private const val MAX_COUNT = 20
@@ -122,8 +123,8 @@ private fun RankingItem(
             textAlign = TextAlign.Center,
             modifier = Modifier.width(42.dp).padding(start = 2.dp, end = 10.dp),
         )
-        AsyncImage(
-            model = book.coverUrl,
+        SearchBookCover(
+            book = book,
             contentDescription = null,
             modifier = Modifier.width(40.dp).height(56.dp),
             contentScale = ContentScale.Crop,
