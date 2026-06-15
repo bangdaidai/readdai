@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.legado.app.base.BaseViewModel
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.HomepageModule
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.data.repository.HomepageModulesRepository
 import io.legado.app.domain.gateway.HomepageModulesGateway
@@ -163,21 +164,30 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             HomepageUiFlags(refreshing, manage, config)
         }
 
+    private data class ManageModulesTuple(
+        val allModules: List<HomepageModule>,
+        val sourcesCache: Map<String, BookSource>,
+        val pendingEnabled: Map<String, Boolean>
+    )
+
     private val manageStateFlow = combine(
         setsFlow,
         browseFilteredSourcesFlow,
         browseGroupsFlow,
-        _browseGroupFilter,
-        allModulesCache,
-        _bookSourcesCache,
-        _pendingEnabled
-    ) { sets, browseSources, browseGroups, browseGroupFilter, allModules, sourcesCache, pendingEnabled ->
+        _browseGroupFilter
+    ) { sets, browseSources, browseGroups, browseGroupFilter ->
+        ManageBrowseTuple(sets, browseSources, browseGroups, browseGroupFilter)
+    }.combine(
+        combine(allModulesCache, _bookSourcesCache, _pendingEnabled) { allModules, sourcesCache, pendingEnabled ->
+            ManageModulesTuple(allModules, sourcesCache, pendingEnabled)
+        }
+    ) { browseTuple, modulesTuple ->
         HomepageManageUiState(
-            sets = sets,
-            browseSources = browseSources,
-            browseGroups = browseGroups,
-            browseGroupFilter = browseGroupFilter,
-            allJoinedModules = allModules.map { module ->
+            sets = browseTuple.sets,
+            browseSources = browseTuple.browseSources,
+            browseGroups = browseTuple.browseGroups,
+            browseGroupFilter = browseTuple.browseGroupFilter,
+            allJoinedModules = modulesTuple.allModules.map { module ->
                 HomepageModuleManageUi(
                     id = module.id,
                     sourceUrl = module.sourceUrl,
@@ -185,7 +195,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                     title = module.displayTitle,
                     customSetTitle = module.customSetTitle,
                     customSetId = module.customSetId,
-                    isVisible = pendingEnabled[module.id] ?: module.isEnabled,
+                    isVisible = modulesTuple.pendingEnabled[module.id] ?: module.isEnabled,
                     type = module.type,
                     url = module.url,
                     args = module.args,
@@ -193,9 +203,16 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                     originalTitle = module.title,
                 )
             },
-            sourceNames = sourcesCache.mapValues { it.value.bookSourceName }
+            sourceNames = modulesTuple.sourcesCache.mapValues { it.value.bookSourceName }
         )
     }
+
+    private data class ManageBrowseTuple(
+        val sets: List<HomepageSourceManageUi>,
+        val browseSources: List<HomepageSourceManageUi>,
+        val browseGroups: List<String>,
+        val browseGroupFilter: String
+    )
 
     private val rawModulesFlow = combine(
         orderedModuleDefsFlow,
