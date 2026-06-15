@@ -29,7 +29,7 @@ class HomepageFragment() : Fragment(), MainFragmentInterface {
         val activity = activity ?: return
         val primaryColor = activity.primaryColor
         val isTransparent = AppConfig.isTransparentStatusBar
-        setStatusBarColorAuto(primaryColor, isTransparent, false)
+        activity.setStatusBarColorAuto(primaryColor, isTransparent, false)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
