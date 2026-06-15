@@ -3,6 +3,7 @@ package io.legado.app.ui.book.readRecord.component
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,14 +38,12 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.legado.app.R
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.glide.ImageLoader
 import io.legado.app.lib.theme.ThemeStore
@@ -178,93 +177,63 @@ fun BookCoverImage(
     val context = LocalContext.current
     val primaryColor = ThemeStore.accentColor(context)
 
-    Box(
-        modifier = Modifier
-            .width(width.dp)
-            .height(height.dp)
-            .clip(RoundedCornerShape(4.dp))
-    ) {
+    var coverBitmap by remember(coverUrl) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(coverUrl) {
         if (coverUrl.isNotEmpty()) {
-            var coverBitmap by remember(coverUrl) { mutableStateOf<Bitmap?>(null) }
-            LaunchedEffect(coverUrl) {
-                withContext(Dispatchers.IO) {
-                    coverBitmap = runCatching {
-                        ImageLoader.loadBitmap(context, coverUrl)
-                            .submit()
-                            .get()
-                    }.getOrNull()
-                }
+            withContext(Dispatchers.IO) {
+                coverBitmap = runCatching {
+                    ImageLoader.loadBitmap(context, coverUrl)
+                        .submit()
+                        .get()
+                }.getOrNull()
             }
-            val bitmap = coverBitmap
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = bookName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                // coverUrl is not empty but bitmap failed to load, show placeholder with text
-                Image(
-                    painter = painterResource(id = R.drawable.image_cover_default),
-                    contentDescription = bookName,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(3.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = bookName,
-                        fontSize = 7.sp,
-                        color = Color(primaryColor),
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold,
-                        style = TextStyle(
-                            shadow = Shadow(
-                                color = Color.Black,
-                                blurRadius = 3f,
-                                offset = Offset(1f, 1f)
-                            )
-                        )
-                    )
-                }
-            }
-        } else {
+        }
+    }
+
+    val bitmap = coverBitmap
+    if (bitmap != null && coverUrl.isNotEmpty()) {
+        Box(
+            modifier = Modifier
+                .width(width.dp)
+                .height(height.dp)
+                .clip(RoundedCornerShape(4.dp))
+        ) {
             Image(
-                painter = painterResource(id = R.drawable.image_cover_default),
+                bitmap = bitmap.asImageBitmap(),
                 contentDescription = bookName,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(3.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = bookName,
-                    fontSize = 7.sp,
-                    color = Color(primaryColor),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
-                    style = TextStyle(
-                        shadow = Shadow(
-                            color = Color.Black,
-                            blurRadius = 3f,
-                            offset = Offset(1f, 1f)
-                        )
+        }
+    } else {
+        // 无封面或加载失败，使用 Compose 绘制的默认封面
+        val cardBgColor = ThemeStore.backgroundCard(context)
+        val textColor = primaryColor
+        Box(
+            modifier = Modifier
+                .width(width.dp)
+                .height(height.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color(cardBgColor))
+                .padding(3.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = bookName,
+                fontSize = 9.sp,
+                color = Color(textColor),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold,
+                style = TextStyle(
+                    shadow = Shadow(
+                        color = Color.Black,
+                        blurRadius = 3f,
+                        offset = Offset(1f, 1f)
                     )
                 )
-            }
+            )
         }
     }
 }
