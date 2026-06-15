@@ -165,7 +165,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         }
 
     private data class ManageModulesTuple(
-        val allModules: List<HomepageModule>,
+        val allModules: List<ModuleItem>,
         val sourcesCache: Map<String, BookSource>,
         val pendingEnabled: Map<String, Boolean>
     )
