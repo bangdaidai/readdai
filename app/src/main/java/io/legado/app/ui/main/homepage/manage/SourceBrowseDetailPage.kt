@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,8 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
@@ -22,6 +27,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -40,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.legado.app.R
 import io.legado.app.data.entities.rule.ExploreKind
 import io.legado.app.domain.model.HomepageModuleType
@@ -119,13 +127,40 @@ fun SourceBrowseDetailPage(
                     val allModuleIds = remember(standardModules, infiniteModules) {
                         standardModules.map { it.id } + infiniteModules.map { it.id }
                     }
+                    // Calculate section boundaries in LazyColumn
+                    // LazyColumn has: [standardModules..., header_std, ...header_inf..., infiniteModules...]
+                    val standardSectionStart = 0
+                    val standardSectionEnd = standardModules.size // exclusive, header at this position
+                    val infiniteSectionStart = if (standardModules.isEmpty()) 1 else standardModules.size + 2
+
                     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-                        val mutableList = allModuleIds.toMutableList()
-                        if (from.index < mutableList.size && to.index < mutableList.size) {
-                            val item = mutableList.removeAt(from.index)
-                            mutableList.add(to.index, item)
-                            onReorderModules(mutableList)
+                        // Determine actual module indices accounting for header offsets
+                        val fromModuleIndex = when {
+                            standardModules.isEmpty() -> {
+                                if (from.index >= 1 && from.index < infiniteSectionStart) from.index - 1
+                                else return@rememberReorderableLazyListState
+                            }
+                            from.index < standardSectionEnd -> from.index
+                            from.index >= infiniteSectionStart -> from.index - infiniteSectionStart + infiniteModules.size
+                            else -> return@rememberReorderableLazyListState
                         }
+                        val toModuleIndex = when {
+                            standardModules.isEmpty() -> {
+                                if (to.index >= 1 && to.index < infiniteSectionStart) to.index - 1
+                                else return@rememberReorderableLazyListState
+                            }
+                            to.index < standardSectionEnd -> to.index
+                            to.index >= infiniteSectionStart -> to.index - infiniteSectionStart + infiniteModules.size
+                            else -> return@rememberReorderableLazyListState
+                        }
+                        if (fromModuleIndex < 0 || fromModuleIndex >= allModuleIds.size ||
+                            toModuleIndex < 0 || toModuleIndex >= allModuleIds.size) {
+                            return@rememberReorderableLazyListState
+                        }
+                        val mutableList = allModuleIds.toMutableList()
+                        val item = mutableList.removeAt(fromModuleIndex)
+                        mutableList.add(toModuleIndex, item)
+                        onReorderModules(mutableList)
                     }
 
                     LazyColumn(
@@ -242,6 +277,16 @@ fun SourceBrowseDetailPage(
             2 -> {
                 val exploreKinds = onGetExploreKinds(browseUrl)
                 var editingKind by remember { mutableStateOf<ExploreKind?>(null) }
+                var query by remember { mutableStateOf("") }
+
+                val filteredKinds = remember(query, exploreKinds) {
+                    val baseList = exploreKinds.filter { !it.url.isNullOrBlank() }
+                    if (query.isBlank()) baseList
+                    else baseList.filter { kind ->
+                        kind.title.contains(query, ignoreCase = true) ||
+                                (kind.url?.contains(query, ignoreCase = true) == true)
+                    }
+                }
 
                 if (exploreKinds.isEmpty()) {
                     Box(
@@ -251,35 +296,56 @@ fun SourceBrowseDetailPage(
                         Text(stringResource(R.string.hp_no_explore_kinds), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(exploreKinds.filter { !it.url.isNullOrBlank() }, key = { it.title }) { kind ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth().clickable { editingKind = kind },
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            label = { Text(stringResource(R.string.hp_search_category)) },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            singleLine = true,
+                            trailingIcon = {
+                                if (query.isNotBlank()) {
+                                    IconButton(onClick = { query = "" }) {
+                                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
+                                    }
+                                }
+                            }
+                        )
+
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            filteredKinds.forEach { kind ->
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.clickable { editingKind = kind },
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(kind.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        kind.url?.takeIf { it.isNotBlank() }?.let {
-                                            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        }
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            kind.title,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            fontSize = 13.sp,
+                                        )
                                     }
                                 }
                             }
                         }
-                        item(key = "manual_add") {
-                            TextButton(
-                                onClick = { showAddDialog = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.hp_manual_add))
-                            }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = { showAddDialog = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.hp_manual_add))
                         }
                     }
                 }
