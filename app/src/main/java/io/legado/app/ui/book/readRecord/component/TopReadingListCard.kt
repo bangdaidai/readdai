@@ -203,6 +203,37 @@ fun BookCoverImage(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+            } else {
+                // coverUrl is not empty but bitmap failed to load, show placeholder with text
+                Image(
+                    painter = painterResource(id = R.drawable.image_cover_default),
+                    contentDescription = bookName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(3.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = bookName,
+                        fontSize = 7.sp,
+                        color = Color(primaryColor),
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold,
+                        style = TextStyle(
+                            shadow = Shadow(
+                                color = Color.Black,
+                                blurRadius = 3f,
+                                offset = Offset(1f, 1f)
+                            )
+                        )
+                    )
+                }
             }
         } else {
             Image(
