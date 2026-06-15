@@ -6,9 +6,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import io.legado.app.help.config.AppConfig
+import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.explore.ExploreShowActivity
 import io.legado.app.ui.main.MainFragmentInterface
+import io.legado.app.utils.setStatusBarColorAuto
 import io.legado.app.utils.startActivity
 
 class HomepageFragment() : Fragment(), MainFragmentInterface {
@@ -20,6 +23,14 @@ class HomepageFragment() : Fragment(), MainFragmentInterface {
     }
 
     override val position: Int? get() = arguments?.getInt("position")
+
+    override fun onResume() {
+        super.onResume()
+        val activity = activity ?: return
+        val primaryColor = activity.primaryColor
+        val isTransparent = AppConfig.isTransparentStatusBar
+        setStatusBarColorAuto(primaryColor, isTransparent, false)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return ComposeView(requireContext()).apply {

@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -221,10 +222,7 @@ fun SourceBrowseDetailPage(
                                         }
                                     } else Modifier
                                 ),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isJoined) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceContainerLow
-                                ),
+                                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -249,16 +247,14 @@ fun SourceBrowseDetailPage(
             }
 
             2 -> {
-                val typeList = remember(canSelectInfiniteGlobal) {
-                    HomepageModuleType.entries.filter {
-                        it != HomepageModuleType.Unknown && (canSelectInfiniteGlobal || !HomepageViewModel.isInfinite(it.key, null))
-                    }
+                val typeList = remember {
+                    HomepageModuleType.entries.filter { it != HomepageModuleType.Unknown }
                 }
 
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(stringResource(R.string.hp_module_type), style = MaterialTheme.typography.labelMedium)

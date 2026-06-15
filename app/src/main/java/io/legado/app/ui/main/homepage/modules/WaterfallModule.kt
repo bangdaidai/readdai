@@ -50,7 +50,7 @@ fun WaterfallItem(
             AsyncImage(model = book.coverUrl, contentDescription = book.name, modifier = Modifier.fillMaxWidth().height(180.dp), contentScale = ContentScale.Crop)
             Spacer(modifier = Modifier.height(8.dp))
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 8.dp)) {
-                Text(book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
                 val subTitle = buildString {
                     if (book.author.isNotBlank()) append(book.author)
                     val kind = book.kind?.split(",")?.firstOrNull()

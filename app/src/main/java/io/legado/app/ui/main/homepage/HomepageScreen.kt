@@ -59,6 +59,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -109,7 +110,7 @@ fun HomepageScreen(
     var errorMsg by remember { mutableStateOf<String?>(null) }
     var showManageSheet by remember { mutableStateOf(false) }
 
-    val layoutMode = HomepageConfig.homepageLayoutMode
+    var layoutMode by remember { mutableIntStateOf(HomepageConfig.homepageLayoutMode) }
 
     val selectedSets = remember(uiState.manageState.sets) {
         uiState.manageState.sets.filter { it.isSelected }
@@ -194,6 +195,7 @@ fun HomepageScreen(
                     IconButton(
                         onClick = {
                             val newMode = if (layoutMode == 0) 1 else 0
+                            layoutMode = newMode
                             viewModel.setLayoutMode(newMode)
                         },
                     ) {
@@ -481,6 +483,7 @@ private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
         if (onNavigate != null) {
@@ -512,7 +515,7 @@ fun GridBookItem(
             modifier = Modifier.fillMaxWidth().height(180.dp),
             contentScale = ContentScale.Crop,
         )
-        Text(book.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(book.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
         if (shelfState == BookShelfState.IN_SHELF) {
             Text(stringResource(R.string.hp_already_in_shelf), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         }

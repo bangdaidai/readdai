@@ -19,15 +19,15 @@ import io.legado.app.lib.theme.secondaryTextColor
 fun ReaddaiTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val defaultScheme = MaterialTheme.colorScheme
-    val colorScheme = remember(context) {
-        val accent = Color(context.accentColor)
-        val bg = Color(context.backgroundColor)
-        val cardBg = Color(context.backgroundCard)
-        val textPrimary = Color(context.primaryTextColor)
-        val textSecondary = Color(context.secondaryTextColor)
-        val divider = Color(context.dividerColor)
-        val titleBarTextIcon = Color(ThemeStore.titleBarTextIconColor(context))
+    val accent = Color(context.accentColor)
+    val bg = Color(context.backgroundColor)
+    val cardBg = Color(context.backgroundCard)
+    val textPrimary = Color(context.primaryTextColor)
+    val textSecondary = Color(context.secondaryTextColor)
+    val divider = Color(context.dividerColor)
+    val titleBarTextIcon = Color(ThemeStore.titleBarTextIconColor(context))
 
+    val colorScheme = remember(accent, bg, cardBg, textPrimary, textSecondary, divider, titleBarTextIcon) {
         defaultScheme.copy(
             primary = accent,
             onPrimary = titleBarTextIcon,
@@ -45,10 +45,10 @@ fun ReaddaiTheme(content: @Composable () -> Unit) {
             surfaceVariant = cardBg,
             onSurfaceVariant = textSecondary,
             surfaceContainerLowest = bg,
-            surfaceContainerLow = cardBg,
-            surfaceContainer = cardBg.copy(alpha = 0.95f),
-            surfaceContainerHigh = cardBg.copy(alpha = 0.9f),
-            surfaceContainerHighest = cardBg.copy(alpha = 0.85f),
+            surfaceContainerLow = bg,
+            surfaceContainer = bg,
+            surfaceContainerHigh = cardBg,
+            surfaceContainerHighest = cardBg,
             outline = divider,
             outlineVariant = divider.copy(alpha = 0.5f),
         )

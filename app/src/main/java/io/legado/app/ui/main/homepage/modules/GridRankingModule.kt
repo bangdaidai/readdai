@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +57,7 @@ fun GridRankingModule(
         val page = pages[pageIndex]
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 12.dp)) {
                 for ((rowIndex, item) in page.withIndex()) {
@@ -76,7 +77,7 @@ fun GridRankingModule(
                             modifier = Modifier.width(32.dp), textAlign = TextAlign.Center,
                         )
                         Column(modifier = Modifier.padding(start = 4.dp).weight(1f)) {
-                            Text(item.book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(item.book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
                             val sub = buildString {
                                 append(item.book.kind?.split(",")?.firstOrNull() ?: "")
                                 if (item.book.author.isNotBlank()) { if (isNotEmpty()) append(" · "); append(item.book.author) }
