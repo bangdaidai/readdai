@@ -81,7 +81,8 @@ fun HomepageModuleManageSheet(
         }
     }
 
-    val sheetBgColor = remember { Color(ThemeStore.backgroundColor(LocalContext.current)) }
+    val localContext = LocalContext.current
+    val sheetBgColor = remember { Color(ThemeStore.backgroundColor(localContext)) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
