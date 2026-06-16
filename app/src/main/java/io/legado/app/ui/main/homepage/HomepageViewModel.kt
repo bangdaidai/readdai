@@ -95,6 +95,11 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     private val _pendingUserModules = MutableStateFlow<List<ModuleItem>>(emptyList())
     private val _exploreKindsCache = MutableStateFlow<Map<String, List<ExploreKind>>>(emptyMap())
 
+    private val hiddenSetsFlow = _configVersion.map {
+        GSON.fromJsonArray<String>(HomepageConfig.homepageSourceHidden)
+            .getOrDefault(emptyList()).toSet()
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
     private val localModulesFlow = gateway.flowEnabled()
     val allModulesCache =
         gateway.flowAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -219,13 +224,15 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         _moduleContentStates,
         _bookSourcesCache,
         customSetsFlow,
-        _layoutConfigCache
-    ) { grouped, contentStates, sourcesCache, customSets, configCache ->
+        _layoutConfigCache,
+        hiddenSetsFlow
+    ) { grouped, contentStates, sourcesCache, customSets, configCache, hiddenSets ->
         val setNames = customSets.associate { it.id to it.name }
         val sortedSetIds = customSets.sortedBy { it.sortOrder }.map { it.id }
 
         sortedSetIds.flatMap { setId ->
             val setUrl = customSetUrl(setId)
+            if (setUrl in hiddenSets) return@flatMap emptyList()
             val mods = grouped[setUrl] ?: emptyList()
             mods.map { module ->
                 val source = sourcesCache[module.sourceUrl]

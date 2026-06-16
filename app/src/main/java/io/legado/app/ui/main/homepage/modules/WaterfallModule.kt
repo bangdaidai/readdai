@@ -28,6 +28,8 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
 import io.legado.app.ui.main.homepage.SearchBookCover
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -39,7 +41,8 @@ fun WaterfallItem(
 ) {
     val book = item.book
     Card(
-        modifier = modifier,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
@@ -48,7 +51,7 @@ fun WaterfallItem(
                 onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
             ),
         ) {
-            SearchBookCover(book = book, contentDescription = book.name, modifier = Modifier.fillMaxWidth().height(180.dp), contentScale = ContentScale.Crop)
+            SearchBookCover(book = book, contentDescription = book.name, modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)), contentScale = ContentScale.Crop)
             Spacer(modifier = Modifier.height(8.dp))
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 8.dp)) {
                 Text(book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)

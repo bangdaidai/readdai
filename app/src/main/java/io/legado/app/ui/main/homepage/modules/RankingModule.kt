@@ -43,6 +43,8 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
 import io.legado.app.ui.main.homepage.SearchBookCover
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 private const val INITIAL_COUNT = 5
 private const val MAX_COUNT = 20
@@ -111,7 +113,7 @@ private fun RankingItem(
         modifier = Modifier.fillMaxWidth().combinedClickable(
             onClick = onClick,
             onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
-        ).padding(vertical = 4.dp, horizontal = 4.dp),
+        ).padding(vertical = 4.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -126,7 +128,7 @@ private fun RankingItem(
         SearchBookCover(
             book = book,
             contentDescription = null,
-            modifier = Modifier.width(40.dp).height(56.dp),
+            modifier = Modifier.width(40.dp).height(56.dp).clip(RoundedCornerShape(4.dp)),
             contentScale = ContentScale.Crop,
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -141,6 +143,10 @@ private fun RankingItem(
             }
             if (sub.isNotBlank()) {
                 Text(sub, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            val intro = book.intro?.replace("\\s+".toRegex(), " ")?.takeIf { it.isNotBlank() }
+            if (intro != null) {
+                Text(intro, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
             }
         }
     }

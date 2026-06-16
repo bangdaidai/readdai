@@ -30,6 +30,8 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.HomepageBookItemUi
 import io.legado.app.ui.main.homepage.SearchBookCover
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -56,7 +58,7 @@ fun BannerModule(
                     SearchBookCover(
                         book = book,
                         contentDescription = book.name,
-                        modifier = Modifier.width(96.dp).height(134.dp),
+                        modifier = Modifier.width(96.dp).height(134.dp).clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                     )
                     when (item.shelfState) {

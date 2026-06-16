@@ -289,8 +289,8 @@ fun HomepageScreen(
         shelfState = previewBook?.let { viewModel.getCurrentBookShelfState(it) },
         onDismissRequest = { previewBook = null },
         onOpenDetail = { book ->
+            viewModel.onBookClick(book, null)
             previewBook = null
-            onBookClick(book.name, book.author, book.bookUrl, book.origin, book.coverUrl, null)
         },
         onAddToShelf = { book -> viewModel.onAddToShelf(book) },
     )
@@ -393,6 +393,7 @@ private fun ModuleList(
                                         item = item,
                                         onClick = { viewModel.onBookClick(item.book, "home:${moduleUi.globalId}:waterfall:$index") },
                                         onLongClick = onBookLongClick,
+                                        modifier = Modifier.fillMaxWidth(),
                                     )
                                 }
                                 item(key = "wf_more_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
@@ -410,6 +411,7 @@ private fun ModuleList(
                                         shelfState = item.shelfState,
                                         onClick = { viewModel.onBookClick(item.book, "home:${moduleUi.globalId}:infinite:$index") },
                                         onLongClick = onBookLongClick,
+                                        modifier = Modifier.fillMaxWidth(),
                                     )
                                 }
                                 item(key = "inf_more_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
@@ -482,7 +484,7 @@ private fun ModuleList(
 @Composable
 private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -495,8 +497,16 @@ private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
             modifier = Modifier.weight(1f),
         )
         if (onNavigate != null) {
-            TextButton(onClick = onNavigate, contentPadding = PaddingValues(0.dp)) {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.width(18.dp).height(18.dp))
+            Surface(
+                shape = MaterialTheme.shapes.extraSmall,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                onClick = onNavigate,
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.padding(6.dp).size(18.dp),
+                )
             }
         }
     }
@@ -520,7 +530,7 @@ fun GridBookItem(
         SearchBookCover(
             book = book,
             contentDescription = book.name,
-            modifier = Modifier.fillMaxWidth().height(180.dp),
+            modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop,
         )
         Text(book.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
