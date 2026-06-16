@@ -22,11 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.main.homepage.HomepageViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,8 +57,13 @@ fun AddCustomModuleDialog(
         }
     }
 
+    val bgColor = ThemeStore.backgroundColor(LocalContext.current)
+
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest,
+        containerColor = androidx.compose.ui.graphics.Color(bgColor),
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
         title = { Text(if (prefillTitle.isEmpty()) stringResource(R.string.hp_add_module) else stringResource(R.string.hp_edit_module)) },
         text = {
             Column(

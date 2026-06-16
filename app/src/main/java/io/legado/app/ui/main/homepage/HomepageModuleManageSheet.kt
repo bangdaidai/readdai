@@ -28,9 +28,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.main.homepage.manage.AddCustomModuleDialog
 import io.legado.app.ui.main.homepage.manage.BrowseSourcesPage
 import io.legado.app.ui.main.homepage.manage.CustomSetAddModulesPage
@@ -78,10 +81,12 @@ fun HomepageModuleManageSheet(
         }
     }
 
+    val sheetBgColor = remember { Color(ThemeStore.backgroundColor(LocalContext.current)) }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = sheetBgColor,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
@@ -198,6 +203,9 @@ fun HomepageModuleManageSheet(
         var name by remember { mutableStateOf("") }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showCreateSetDialog = false },
+            containerColor = sheetBgColor,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
             title = { Text(stringResource(R.string.hp_create_new_set)) },
             text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.hp_name)) }, modifier = Modifier.fillMaxWidth()) },
             confirmButton = { TextButton(onClick = { if (name.isNotBlank()) viewModel.createCustomSet(name); showCreateSetDialog = false }) { Text(stringResource(R.string.hp_determine)) } },
@@ -209,6 +217,9 @@ fun HomepageModuleManageSheet(
         val id = deleteConfirmId!!
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { deleteConfirmId = null },
+            containerColor = sheetBgColor,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
             title = { Text(stringResource(R.string.hp_delete_set)) },
             text = { Text(stringResource(R.string.hp_delete_set_confirm)) },
             confirmButton = { TextButton(onClick = { viewModel.deleteCustomSet(HomepageViewModel.customSetIdFromUrl(id)); deleteConfirmId = null }) { Text(stringResource(R.string.hp_delete)) } },
@@ -220,6 +231,9 @@ fun HomepageModuleManageSheet(
         val id = deleteModuleConfirmId!!
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { deleteModuleConfirmId = null },
+            containerColor = sheetBgColor,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
             title = { Text(stringResource(R.string.hp_delete_module)) },
             text = { Text(stringResource(R.string.hp_delete_module_confirm)) },
             confirmButton = { TextButton(onClick = { viewModel.deleteModule(id); deleteModuleConfirmId = null }) { Text(stringResource(R.string.hp_delete)) } },
@@ -233,6 +247,9 @@ fun HomepageModuleManageSheet(
         var name by remember { mutableStateOf("") }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { renameSetId = null },
+            containerColor = sheetBgColor,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurface,
             title = { Text(stringResource(R.string.hp_rename_set)) },
             text = { OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.hp_new_name)) }, modifier = Modifier.fillMaxWidth()) },
             confirmButton = { TextButton(onClick = { if (name.isNotBlank()) viewModel.renameCustomSet(setId, name); renameSetId = null }) { Text(stringResource(R.string.hp_determine)) } },
