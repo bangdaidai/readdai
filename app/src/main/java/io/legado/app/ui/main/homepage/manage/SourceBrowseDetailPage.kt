@@ -58,7 +58,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun SourceBrowseDetailPage(
     browseUrl: String,
