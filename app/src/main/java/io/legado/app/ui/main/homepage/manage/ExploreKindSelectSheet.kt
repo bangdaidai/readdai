@@ -72,6 +72,7 @@ fun ExploreKindSelectSheet(
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)

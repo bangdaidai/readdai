@@ -20,10 +20,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -76,41 +78,18 @@ fun SetDetailPage(
         }
     } else {
         val lazyListState = rememberLazyListState()
-
-        val allModuleIds = remember(standardModules, infiniteModules) {
-            standardModules.map { it.id } + infiniteModules.map { it.id }
-        }
-        val standardSectionEnd = standardModules.size
-        val infiniteSectionStart = if (standardModules.isEmpty()) 1 else standardModules.size + 2
+        val allModuleIds = remember(modules) { modules.map { it.id } }
+        val currentOnReorder by rememberUpdatedState(onReorderModules)
+        val currentAllModuleIds by rememberUpdatedState(allModuleIds)
 
         val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-            val fromModuleIndex = when {
-                standardModules.isEmpty() -> {
-                    if (from.index >= 1 && from.index < infiniteSectionStart) from.index - 1
-                    else return@rememberReorderableLazyListState
-                }
-                from.index < standardSectionEnd -> from.index
-                from.index >= infiniteSectionStart -> from.index - infiniteSectionStart + standardSectionEnd
-                else -> return@rememberReorderableLazyListState
-            }
-            val toModuleIndex = when {
-                standardModules.isEmpty() -> {
-                    if (to.index >= 1 && to.index < infiniteSectionStart) to.index - 1
-                    else return@rememberReorderableLazyListState
-                }
-                to.index < standardSectionEnd -> to.index
-                to.index >= infiniteSectionStart -> to.index - infiniteSectionStart + standardSectionEnd
-                else -> return@rememberReorderableLazyListState
-            }
-            if (fromModuleIndex < 0 || fromModuleIndex >= allModuleIds.size ||
-                toModuleIndex < 0 || toModuleIndex >= allModuleIds.size) {
-                return@rememberReorderableLazyListState
-            }
-            if (fromModuleIndex == toModuleIndex) return@rememberReorderableLazyListState
-            val mutableList = allModuleIds.toMutableList()
-            val item = mutableList.removeAt(fromModuleIndex)
-            mutableList.add(toModuleIndex, item)
-            onReorderModules(mutableList)
+            val fromIndex = currentAllModuleIds.indexOf(from.key as String)
+            val toIndex = currentAllModuleIds.indexOf(to.key as String)
+            if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return@rememberReorderableLazyListState
+            val mutableList = currentAllModuleIds.toMutableList()
+            val item = mutableList.removeAt(fromIndex)
+            mutableList.add(toIndex, item)
+            currentOnReorder(mutableList)
         }
 
         LazyColumn(
@@ -133,7 +112,6 @@ fun SetDetailPage(
                         ModuleCard(
                             dragModifier = dragModifier,
                             module = module,
-                            isDragging = isDragging,
                             onToggle = { onToggleModule(module.id, it) },
                             onEdit = { onEditModule(module) },
                             onDelete = { onRequestDeleteModule(module.id) },
@@ -158,12 +136,9 @@ fun SetDetailPage(
                         ModuleCard(
                             dragModifier = dragModifier,
                             module = module,
-                            isDragging = isDragging,
                             onToggle = { onToggleModule(module.id, it) },
                             onEdit = { onEditModule(module) },
                             onDelete = { onRequestDeleteModule(module.id) },
-                            containerColor = if (isDragging) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surfaceContainerHigh,
                         )
                     }
                 }
@@ -188,16 +163,13 @@ fun SetDetailPage(
 private fun ModuleCard(
     dragModifier: Modifier,
     module: HomepageModuleManageUi,
-    isDragging: Boolean,
     onToggle: (Boolean) -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
-    containerColor: androidx.compose.ui.graphics.Color = if (isDragging) MaterialTheme.colorScheme.primaryContainer
-    else MaterialTheme.colorScheme.surfaceContainerLow,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = containerColor),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
@@ -236,6 +208,12 @@ private fun ModuleCard(
             Switch(
                 checked = module.isVisible,
                 onCheckedChange = onToggle,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
             )
         }
     }
