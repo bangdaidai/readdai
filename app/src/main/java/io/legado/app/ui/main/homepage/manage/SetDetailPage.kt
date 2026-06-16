@@ -81,14 +81,44 @@ fun SetDetailPage(
         val allModuleIds = remember(standardModules, infiniteModules) {
             standardModules.map { it.id } + infiniteModules.map { it.id }
         }
+        // Calculate section boundaries in LazyColumn
+        // LazyColumn has: [standardModules..., header_std, ...header_inf..., infiniteModules...]
+        // If standardModules is empty: [header_inf, infiniteModules...]
+        // If infiniteModules is empty: [standardModules..., header_std]
+        val standardSectionStart = 0
+        val standardSectionEnd = standardModules.size // exclusive, header at this position
+        val infiniteSectionStart = if (standardModules.isEmpty()) 1 else standardModules.size + 2
+        // infinite header at infiniteSectionStart - 1
 
         val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-            val mutableList = allModuleIds.toMutableList()
-            if (from.index < mutableList.size && to.index < mutableList.size) {
-                val item = mutableList.removeAt(from.index)
-                mutableList.add(to.index, item)
-                onReorderModules(mutableList)
+            // Determine actual module indices accounting for header offsets
+            val fromModuleIndex = when {
+                standardModules.isEmpty() -> {
+                    // Infinite section at positions 1+
+                    if (from.index >= 1 && from.index < infiniteSectionStart) from.index - 1
+                    else return@rememberReorderableLazyListState
+                }
+                from.index < standardSectionEnd -> from.index
+                from.index >= infiniteSectionStart -> from.index - infiniteSectionStart + infiniteModules.size
+                else -> return@rememberReorderableLazyListState
             }
+            val toModuleIndex = when {
+                standardModules.isEmpty() -> {
+                    if (to.index >= 1 && to.index < infiniteSectionStart) to.index - 1
+                    else return@rememberReorderableLazyListState
+                }
+                to.index < standardSectionEnd -> to.index
+                to.index >= infiniteSectionStart -> to.index - infiniteSectionStart + infiniteModules.size
+                else -> return@rememberReorderableLazyListState
+            }
+            if (fromModuleIndex < 0 || fromModuleIndex >= allModuleIds.size ||
+                toModuleIndex < 0 || toModuleIndex >= allModuleIds.size) {
+                return@rememberReorderableLazyListState
+            }
+            val mutableList = allModuleIds.toMutableList()
+            val item = mutableList.removeAt(fromModuleIndex)
+            mutableList.add(toModuleIndex, item)
+            onReorderModules(mutableList)
         }
 
         LazyColumn(

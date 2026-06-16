@@ -251,7 +251,12 @@ fun HomepageScreen(
                     )
                 }
             } else {
-                val allModules = remember(uiState.modules) { uiState.modules }
+                val visibleModuleIds = remember(uiState.manageState.allJoinedModules) {
+                    uiState.manageState.allJoinedModules.filter { it.isVisible }.map { it.id }.toSet()
+                }
+                val allModules = remember(uiState.modules, visibleModuleIds) {
+                    uiState.modules.filter { it.globalId in visibleModuleIds }
+                }
                 ModuleList(
                     modules = allModules,
                     viewModel = viewModel,
