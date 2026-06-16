@@ -25,7 +25,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -79,17 +78,15 @@ fun SetDetailPage(
     } else {
         val lazyListState = rememberLazyListState()
         val allModuleIds = remember(modules) { modules.map { it.id } }
-        val currentOnReorder by rememberUpdatedState(onReorderModules)
-        val currentAllModuleIds by rememberUpdatedState(allModuleIds)
 
         val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
-            val fromIndex = currentAllModuleIds.indexOf(from.key as String)
-            val toIndex = currentAllModuleIds.indexOf(to.key as String)
+            val fromIndex = allModuleIds.indexOf(from.key as String)
+            val toIndex = allModuleIds.indexOf(to.key as String)
             if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return@rememberReorderableLazyListState
-            val mutableList = currentAllModuleIds.toMutableList()
+            val mutableList = allModuleIds.toMutableList()
             val item = mutableList.removeAt(fromIndex)
             mutableList.add(toIndex, item)
-            currentOnReorder(mutableList)
+            onReorderModules(mutableList)
         }
 
         LazyColumn(
