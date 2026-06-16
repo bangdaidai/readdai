@@ -519,9 +519,10 @@ fun GridBookItem(
     shelfState: BookShelfState,
     onClick: () -> Unit,
     onLongClick: (SearchBook, String?) -> Unit = { _, _ -> },
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth().combinedClickable(
+        modifier = modifier.fillMaxWidth().combinedClickable(
             onClick = onClick,
             onLongClick = { onLongClick(book, null) }
         ),

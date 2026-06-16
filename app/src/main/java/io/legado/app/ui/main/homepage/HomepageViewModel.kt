@@ -219,20 +219,27 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         val browseGroupFilter: String
     )
 
+    private data class ModuleBuildData(
+        val module: ModuleItem,
+        val setName: String,
+        val exploreUrl: String?,
+        val configMap: Map<String, String>,
+        val source: BookSource?,
+        val contentStates: Map<String, ModuleLoadState>
+    )
+
     private val rawModulesFlow = combine(
         orderedModuleDefsFlow,
         _moduleContentStates,
         _bookSourcesCache,
         customSetsFlow,
-        _layoutConfigCache,
-        hiddenSetsFlow
-    ) { grouped, contentStates, sourcesCache, customSets, configCache, hiddenSets ->
+        _layoutConfigCache
+    ) { grouped, contentStates, sourcesCache, customSets, configCache ->
         val setNames = customSets.associate { it.id to it.name }
         val sortedSetIds = customSets.sortedBy { it.sortOrder }.map { it.id }
 
         sortedSetIds.flatMap { setId ->
             val setUrl = customSetUrl(setId)
-            if (setUrl in hiddenSets) return@flatMap emptyList()
             val mods = grouped[setUrl] ?: emptyList()
             mods.map { module ->
                 val source = sourcesCache[module.sourceUrl]
@@ -241,19 +248,25 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val exploreUrl = module.url ?: source?.exploreUrl
                 val configMap = configCache[module.id] ?: emptyMap()
 
-                HomepageModuleUi(
-                    sourceUrl = module.sourceUrl,
-                    setName = setName,
-                    globalId = module.id,
-                    type = HomepageModuleType.fromKey(module.type),
-                    title = module.displayTitle,
-                    exploreUrl = exploreUrl,
-                    customSetId = module.customSetId,
-                    layoutConfig = module.layoutConfig,
-                    state = contentStates[module.id] ?: ModuleLoadState.Loading,
-                    config = configMap
-                )
+                ModuleBuildData(module, setName, exploreUrl, configMap, source, contentStates)
             }
+        }
+    }.combine(hiddenSetsFlow) { buildDataList, hiddenSets ->
+        buildDataList.mapNotNull { data ->
+            val setUrl = customSetUrl(data.module.customSetId ?: return@mapNotNull null)
+            if (setUrl in hiddenSets) return@mapNotNull null
+            HomepageModuleUi(
+                sourceUrl = data.module.sourceUrl,
+                setName = data.setName,
+                globalId = data.module.id,
+                type = HomepageModuleType.fromKey(data.module.type),
+                title = data.module.displayTitle,
+                exploreUrl = data.exploreUrl,
+                customSetId = data.module.customSetId,
+                layoutConfig = data.module.layoutConfig,
+                state = data.contentStates[data.module.id] ?: ModuleLoadState.Loading,
+                config = data.configMap
+            )
         }
     }
 
