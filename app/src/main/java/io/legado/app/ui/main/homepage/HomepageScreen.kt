@@ -555,8 +555,12 @@ fun LoadMoreFooter(isLoading: Boolean, isEnd: Boolean, onRetry: () -> Unit) {
 
 @Composable
 private fun AlertDialog(message: String, onDismiss: () -> Unit, onCopy: (String) -> Unit) {
+    val bgColor = ThemeStore.backgroundColor(LocalContext.current)
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = androidx.compose.ui.graphics.Color(bgColor),
+        titleContentColor = MaterialTheme.colorScheme.onSurface,
+        textContentColor = MaterialTheme.colorScheme.onSurface,
         title = { Text(stringResource(R.string.hp_module_error)) },
         text = {
             SelectionContainer {
