@@ -72,7 +72,7 @@ fun GridRankingModule(
                         ).padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        SearchBookCover(book = item.book, contentDescription = null, modifier = Modifier.width(48.dp).height(67.dp).clip(RoundedCornerShape(4.dp)), contentScale = ContentScale.Crop)
+                        SearchBookCover(book = item.book, contentDescription = null, modifier = Modifier.width(50.dp).height(70.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
                         Text(
                             "$rank", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black,
                             fontStyle = if (rank <= 3) FontStyle.Italic else FontStyle.Normal,

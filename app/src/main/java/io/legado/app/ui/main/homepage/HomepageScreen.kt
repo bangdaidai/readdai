@@ -531,7 +531,7 @@ fun GridBookItem(
         SearchBookCover(
             book = book,
             contentDescription = book.name,
-            modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(8.dp)),
+            modifier = Modifier.fillMaxWidth().aspectRatio(5f / 7f).clip(RoundedCornerShape(8.dp)),
             contentScale = ContentScale.Crop,
         )
         Text(book.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)

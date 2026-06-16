@@ -128,7 +128,7 @@ private fun RankingItem(
         SearchBookCover(
             book = book,
             contentDescription = null,
-            modifier = Modifier.width(40.dp).height(56.dp).clip(RoundedCornerShape(4.dp)),
+            modifier = Modifier.width(50.dp).height(70.dp).clip(RoundedCornerShape(6.dp)),
             contentScale = ContentScale.Crop,
         )
         Spacer(modifier = Modifier.width(8.dp))

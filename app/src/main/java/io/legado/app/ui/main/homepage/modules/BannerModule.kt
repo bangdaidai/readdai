@@ -58,7 +58,7 @@ fun BannerModule(
                     SearchBookCover(
                         book = book,
                         contentDescription = book.name,
-                        modifier = Modifier.width(96.dp).height(134.dp).clip(RoundedCornerShape(12.dp)),
+                        modifier = Modifier.width(100.dp).height(140.dp).clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
                     )
                     when (item.shelfState) {
