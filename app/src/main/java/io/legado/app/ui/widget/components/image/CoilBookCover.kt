@@ -7,14 +7,15 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.TextUtils
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
@@ -47,7 +47,6 @@ fun CoilBookCover(
     path: String?,
     modifier: Modifier = Modifier,
     radius: Dp = 4.dp,
-    sourceOrigin: String? = null,
     showLoadingPlaceholder: Boolean = true,
 ) {
     val context = LocalContext.current
@@ -60,20 +59,17 @@ fun CoilBookCover(
     }
     val hasCustomDefault = !defaultCoverPath.isNullOrBlank()
 
-    var isOnlineCoverLoaded by remember(finalPath) { mutableStateOf(false) }
-
-    LaunchedEffect(finalPath) {
-        if (finalPath == null) {
-            isOnlineCoverLoaded = false
-        }
-    }
+    var isLoading by remember(finalPath) { mutableStateOf(finalPath != null) }
+    var loadFailed by remember(finalPath) { mutableStateOf(false) }
 
     val shape = RoundedCornerShape(radius)
 
     Box(
-        modifier = modifier.clip(shape)
+        modifier = modifier
+            .aspectRatio(5f / 7f, false)
+            .clip(shape)
     ) {
-        if (hasCustomDefault && !isOnlineCoverLoaded) {
+        if (hasCustomDefault) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(defaultCoverPath)
@@ -83,34 +79,37 @@ fun CoilBookCover(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFEEEEEE))
+            )
         }
 
-        if (finalPath != null) {
+        if (finalPath != null && !loadFailed) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(finalPath)
-                    .crossfade(showLoadingPlaceholder)
+                    .crossfade(true)
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
-                onSuccess = { isOnlineCoverLoaded = true },
-                onError = { isOnlineCoverLoaded = false }
-            )
-        } else if (!hasCustomDefault) {
-            AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(R.drawable.image_cover_default)
-                    .crossfade(false)
-                    .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                onSuccess = {
+                    isLoading = false
+                    loadFailed = false
+                },
+                onError = {
+                    isLoading = false
+                    loadFailed = true
+                }
             )
         }
 
-        if (showLoadingPlaceholder && !isOnlineCoverLoaded) {
-            if (!hasCustomDefault && finalPath == null) {
+        val showTextOverlay = finalPath == null || (isLoading || loadFailed)
+        if (showTextOverlay && showLoadingPlaceholder) {
+            if (!hasCustomDefault && finalPath != null && !isLoading && !loadFailed) {
                 val iconColor = ThemeStore.textColorSecondary(context)
                 Icon(
                     Icons.Default.Book,
@@ -121,11 +120,13 @@ fun CoilBookCover(
                         .align(Alignment.Center)
                 )
             }
-            CoverTextOverlay(
-                name = name,
-                author = author,
-                isNight = isNight
-            )
+            if (isLoading || loadFailed || finalPath == null) {
+                CoverTextOverlay(
+                    name = name,
+                    author = author,
+                    isNight = isNight
+                )
+            }
         }
     }
 }

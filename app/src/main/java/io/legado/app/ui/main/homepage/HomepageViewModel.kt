@@ -82,7 +82,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     val effects = _effects.asSharedFlow()
 
     private val loadJobs = ConcurrentHashMap<String, Job>()
-    private val exploreSourcesFlow = appDb.bookSourceDao.flowExplore()
+    private val exploreSourcesFlow = appDb.bookSourceDao.flowExploreSources()
 
     private val _isRefreshing = MutableStateFlow(false)
     private val _isManageMode = MutableStateFlow(false)
@@ -133,18 +133,17 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val browseSourcesFlow = combine(exploreSourcesFlow, _bookSourcesCache) { sourceParts, sourcesCache ->
-        sourceParts.map { part ->
-            val source = sourcesCache[part.bookSourceUrl]
+    val browseSourcesFlow = exploreSourcesFlow.map { sources ->
+        sources.map { source ->
             HomepageSourceManageUi(
-                sourceUrl = part.bookSourceUrl,
-                sourceName = source?.bookSourceName ?: part.bookSourceName,
-                sourceGroup = source?.bookSourceGroup,
+                sourceUrl = source.bookSourceUrl,
+                sourceName = source.bookSourceName,
+                sourceGroup = source.bookSourceGroup,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    val browseGroupsFlow = combine(browseSourcesFlow, _bookSourcesCache) { sources, _ ->
+    val browseGroupsFlow = browseSourcesFlow.map { sources ->
         val groups = mutableSetOf<String>()
         sources.forEach { source ->
             source.sourceGroup?.split(",")?.forEach { g ->
@@ -349,11 +348,8 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         }
 
         viewModelScope.launch {
-            exploreSourcesFlow.collect { sourceParts ->
-                val fullSources = sourceParts.mapNotNull { part ->
-                    appDb.bookSourceDao.getBookSource(part.bookSourceUrl)
-                }
-                _bookSourcesCache.value = fullSources.associateBy { it.bookSourceUrl }
+            exploreSourcesFlow.collect { sources ->
+                _bookSourcesCache.value = sources.associateBy { it.bookSourceUrl }
             }
         }
 
