@@ -54,6 +54,7 @@ object PreferKey {
     const val showHomepage = "showHomepage"
     const val bookshelfLayout = "bookshelfLayout"
     const val bookshelfSort = "bookshelfSort"
+    const val showBookshelfCardBorder = "showBookshelfCardBorder"
     const val bookExportFileName = "bookExportFileName"
     const val bookImportFileName = "bookImportFileName"
     const val episodeExportFileName = "episodeExportFileName"
@@ -261,6 +262,7 @@ object PreferKey {
     const val editAutoWrap = "editAutoWrap"
     const val editAutoComplete = "editAutoComplete"
     const val showBoardLine = "showBoardLine"
+    const val showRecordCardBorder = "showRecordCardBorder"
     const val uiFontPath = "uiFontPath"
     const val titleFontPath = "titleFontPath"
     

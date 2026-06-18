@@ -13,6 +13,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.textfield.TextInputEditText
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
 import io.legado.app.constant.EventBus
@@ -103,12 +106,34 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
     }
 
     private fun setupGlobalSettings() = binding.run {
-        // Layout Mode - Segmented Button
-        when (AppConfig.bottomBarLayoutMode) {
-            "classic" -> toggleLayoutMode.check(R.id.btn_layout_classic)
-            "floating" -> toggleLayoutMode.check(R.id.btn_layout_floating)
+        // Create accent color state list for toggle buttons
+        val accentColorStateList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf()
+            ),
+            intArrayOf(
+                accentColor,
+                android.graphics.Color.TRANSPARENT
+            )
+        )
+
+        // Apply accent color to layout toggle group
+        toggleLayoutMode.checkedButtonId.let { checkedId ->
+            if (checkedId != View.NO_ID) {
+                toggleLayoutMode.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
+            }
         }
         toggleLayoutMode.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                toggleLayoutMode.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
+            }
             if (!isChecked) return@addOnButtonCheckedListener
             val newMode = when (checkedId) {
                 R.id.btn_layout_classic -> "classic"
@@ -118,14 +143,23 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
             AppConfig.bottomBarLayoutMode = newMode
             postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
         }
-        
-        // Effect Mode - Segmented Button
-        when (AppConfig.bottomBarEffectMode) {
-            "solid" -> toggleEffectMode.check(R.id.btn_effect_solid)
-            "glass" -> toggleEffectMode.check(R.id.btn_effect_glass)
-            "frosted" -> toggleEffectMode.check(R.id.btn_effect_frosted)
+
+        // Apply accent color to effect toggle group
+        toggleEffectMode.checkedButtonId.let { checkedId ->
+            if (checkedId != View.NO_ID) {
+                toggleEffectMode.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
+            }
         }
         toggleEffectMode.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                toggleEffectMode.findViewById<MaterialButton>(checkedId)?.apply {
+                    backgroundTintList = accentColorStateList
+                    strokeColor = android.content.res.ColorStateList.valueOf(accentColor)
+                }
+            }
             if (!isChecked) return@addOnButtonCheckedListener
             val newMode = when (checkedId) {
                 R.id.btn_effect_solid -> "solid"
@@ -138,7 +172,11 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
             updateOpacityDisplay()
             postEvent(EventBus.NAVIGATION_BAR_CHANGED, false)
         }
-        
+
+        // Apply accent color to seekbar
+        seekbarOpacity.progressTintList = android.content.res.ColorStateList.valueOf(accentColor)
+        seekbarOpacity.thumbTintList = android.content.res.ColorStateList.valueOf(accentColor)
+
         // Opacity - SeekBar
         updateOpacitySeekBar()
         updateOpacityDisplay()
@@ -232,11 +270,11 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16.dp, 16.dp, 16.dp, 16.dp)
-            
+
             // Add name input - use EditText for editable name
             val nameInput = android.widget.EditText(this@NavigationBarManageActivity).apply {
                 tag = "name"
-                setText(editingEntry?.config?.name ?: "")
+                setText(pendingConfig?.name ?: editingEntry?.config?.name ?: "")
                 hint = getString(R.string.navigation_bar_name)
                 setBackgroundResource(R.drawable.bg_book_info_intro_panel)
                 setPadding(16.dp, 12.dp, 16.dp, 12.dp)
@@ -244,6 +282,13 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                     bottomMargin = 16.dp
                 }
+                addTextChangedListener(object : android.text.TextWatcher {
+                    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                    override fun afterTextChanged(s: android.text.Editable?) {
+                        pendingConfig = pendingConfig?.copy(name = s?.toString() ?: "")
+                    }
+                })
             }
             addView(nameInput)
             
@@ -264,7 +309,10 @@ class NavigationBarManageActivity : BaseActivity<ActivityThemeManageBinding>() {
             
             val tintSwitch = io.legado.app.lib.theme.view.ThemeSwitch(this@NavigationBarManageActivity).apply {
                 tag = "enable_tint"
-                isChecked = editingEntry?.config?.enableTint ?: true
+                isChecked = pendingConfig?.enableTint ?: editingEntry?.config?.enableTint ?: true
+                setOnCheckedChangeListener { _, isChecked ->
+                    pendingConfig = pendingConfig?.copy(enableTint = isChecked)
+                }
             }
             
             tintLayout.addView(tintLabel)

@@ -197,6 +197,7 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                         swShowBookCard.isChecked = AppConfig.showBookCard
                         swShowBookIntro.isChecked = AppConfig.showBookIntro
                         swShowBookReview.isChecked = AppConfig.showBookReview
+                        swShowBookCardBorder.isChecked = AppConfig.showBookshelfCardBorder
                         rgLayout.checkByIndex(bookshelfLayout)
                         rgbLayout.checkByIndex(showBookname)
                         rgSort.checkByIndex(bookshelfSort)
@@ -245,6 +246,10 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                     }
                     if (AppConfig.showBookReview != swShowBookReview.isChecked) {
                         AppConfig.showBookReview = swShowBookReview.isChecked
+                        postEvent(EventBus.BOOKSHELF_REFRESH, "")
+                    }
+                    if (AppConfig.showBookshelfCardBorder != swShowBookCardBorder.isChecked) {
+                        AppConfig.showBookshelfCardBorder = swShowBookCardBorder.isChecked
                         postEvent(EventBus.BOOKSHELF_REFRESH, "")
                     }
                     if (bookshelfSort != rgSort.getCheckedIndex()) {

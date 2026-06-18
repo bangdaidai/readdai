@@ -1,40 +1,27 @@
 package io.legado.app.ui.book.readRecord.component
 
-import android.graphics.Bitmap
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,9 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import io.legado.app.constant.BookType
 import io.legado.app.help.config.AppConfig
-import io.legado.app.help.glide.ImageLoader
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import io.legado.app.ui.widget.components.image.CoilBookCover
 
 data class SummaryCardData(
     val title: String,
@@ -69,11 +54,11 @@ fun ReadingSummaryCard(
     onClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val isNightTheme = AppConfig.isNightTheme
     val cardBgColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(context)
     val primaryColor = io.legado.app.lib.theme.ThemeStore.accentColor(context)
     val textColorPrimary = io.legado.app.lib.theme.ThemeStore.textColorPrimary(context)
     val textColorSecondary = io.legado.app.lib.theme.ThemeStore.textColorSecondary(context)
+    val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(context)
 
     val hours = totalTimeMillis / (1000 * 60 * 60)
     val minutes = (totalTimeMillis / (1000 * 60)) % 60
@@ -96,14 +81,22 @@ fun ReadingSummaryCard(
         bgColor
     }
 
+    val cardModifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+        .clickable(onClick = onClick)
+    val cardBorder = if (AppConfig.showRecordCardBorder) {
+        BorderStroke(2.dp, Color(dividerColor))
+    } else {
+        null
+    }
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(onClick = onClick),
+        modifier = cardModifier,
         shape = shape,
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = cardBorder
     ) {
         Row(
             modifier = Modifier
@@ -167,29 +160,8 @@ fun ReadingSummaryCard(
 fun BookStackView(
     bookCovers: List<BookCoverData>
 ) {
-    val context = LocalContext.current
     val xOffsetStep = 12.dp
     val stackWidth = 48.dp + (xOffsetStep * (bookCovers.size - 1).coerceAtLeast(0))
-    val stackSurfaceColor = Color(0xFFEEEEEE)
-    val iconTint = Color.Gray
-
-    val coverBitmaps = remember { mutableStateOf<Map<Int, Bitmap?>>(emptyMap()) }
-
-    LaunchedEffect(bookCovers.map { it.coverUrl }) {
-        withContext(Dispatchers.IO) {
-            val bitmaps = mutableMapOf<Int, Bitmap?>()
-            bookCovers.forEachIndexed { index, bookCover ->
-                bitmaps[index] = runCatching {
-                    if (bookCover.coverUrl.isNotEmpty()) {
-                        ImageLoader.loadBitmap(context, bookCover.coverUrl)
-                            .submit()
-                            .get()
-                    } else null
-                }.getOrNull()
-            }
-            coverBitmaps.value = bitmaps
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -197,42 +169,20 @@ fun BookStackView(
             .height(72.dp),
         contentAlignment = Alignment.CenterStart
     ) {
-        bookCovers.forEachIndexed { index, _ ->
+        bookCovers.forEachIndexed { index, bookCover ->
             Box(
                 modifier = Modifier
                     .padding(start = xOffsetStep * index)
                     .zIndex(index.toFloat())
                     .rotate(if (index % 2 == 0) 3f else -3f)
             ) {
-                Surface(
-                    shadowElevation = 4.dp,
-                    shape = RoundedCornerShape(4.dp),
-                    color = stackSurfaceColor
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(48.dp)
-                            .height(72.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val bitmap = coverBitmaps.value[index]
-                        if (bitmap != null) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Book,
-                                contentDescription = null,
-                                tint = iconTint,
-                                modifier = Modifier.width(24.dp).height(24.dp)
-                            )
-                        }
-                    }
-                }
+                CoilBookCover(
+                    name = bookCover.bookName,
+                    author = null,
+                    path = bookCover.coverUrl.ifEmpty { null },
+                    modifier = Modifier.width(48.dp),
+                    radius = 4.dp
+                )
             }
         }
     }

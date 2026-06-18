@@ -201,7 +201,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         
         // 设置卡片边框
         val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
-        if (AppConfig.showCardBorder) {
+        if (AppConfig.showRecordCardBorder) {
             binding.navigationCard?.strokeWidth = 2
             binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
             binding.heatmapCard?.strokeWidth = 2

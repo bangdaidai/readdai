@@ -184,8 +184,17 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         binding.recyclerView.applyNavigationBarPadding()
 
         val cardColor = io.legado.app.lib.theme.ThemeStore.backgroundCard(this)
-        val calendarSection = binding.root.findViewById<androidx.cardview.widget.CardView>(R.id.calendar_section)
-        calendarSection?.setCardBackgroundColor(cardColor)
+        val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
+        val calendarSection = binding.root.findViewById<MaterialCardView>(R.id.calendar_section)
+        calendarSection?.apply {
+            setCardBackgroundColor(cardColor)
+            if (AppConfig.showRecordCardBorder) {
+                strokeWidth = 2
+                strokeColor = dividerColor
+            } else {
+                strokeWidth = 0
+            }
+        }
     }
 
     private fun loadCoverCalendarData(year: Int, month: Int) {

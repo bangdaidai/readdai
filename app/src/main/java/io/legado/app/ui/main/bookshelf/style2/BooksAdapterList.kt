@@ -106,7 +106,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                 if (background is android.graphics.drawable.GradientDrawable) {
                     background.setColor(cardColor)
                     // 设置边框
-                    if (AppConfig.showCardBorder) {
+                    if (AppConfig.showBookshelfCardBorder) {
                         val dividerColor = ThemeStore.dividerColor(context)
                         background.setStroke(2, dividerColor)
                     } else {
@@ -444,7 +444,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                 if (background is android.graphics.drawable.GradientDrawable) {
                     background.setColor(cardColor)
                     // 设置边框
-                    if (AppConfig.showCardBorder) {
+                    if (AppConfig.showBookshelfCardBorder) {
                         val dividerColor = ThemeStore.dividerColor(context)
                         background.setStroke(2, dividerColor)
                     } else {
@@ -615,7 +615,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                 if (background is android.graphics.drawable.GradientDrawable) {
                     background.setColor(cardColor)
                     // 设置边框
-                    if (AppConfig.showCardBorder) {
+                    if (AppConfig.showBookshelfCardBorder) {
                         val dividerColor = ThemeStore.dividerColor(context)
                         background.setStroke(2, dividerColor)
                     } else {

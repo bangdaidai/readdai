@@ -162,9 +162,7 @@
                     android:layout_weight="1"
                     android:max="100"
                     android:paddingStart="0dp"
-                    android:paddingEnd="0dp"
-                    android:progressTint="?attr/colorPrimary"
-                    android:thumbTint="?attr/colorPrimary" />
+                    android:paddingEnd="0dp" />
 
                 <TextView
                     android:id="@+id/tv_opacity"

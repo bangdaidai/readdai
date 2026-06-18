@@ -23,7 +23,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/calendar_section"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -32,14 +32,16 @@
                 android:layout_marginTop="12dp"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="?attr/backgroundCard">
+                app:cardBackgroundColor="?attr/backgroundCard"
+                app:strokeWidth="2dp"
+                app:strokeColor="?attr/divider">
 
                 <io.legado.app.ui.widget.CoverCalendarView
                     android:id="@+id/cover_calendar_view"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Compose容器用于阅读概览卡片 -->
             <androidx.compose.ui.platform.ComposeView

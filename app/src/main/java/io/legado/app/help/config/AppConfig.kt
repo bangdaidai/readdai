@@ -56,6 +56,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     var editAutoWrap = appCtx.getPrefBoolean(PreferKey.editAutoWrap, true)
     var editAutoComplete = appCtx.getPrefBoolean(PreferKey.editAutoComplete, true)
     var showBoardLine = appCtx.getPrefInt(PreferKey.showBoardLine, 1)
+    var showRecordCardBorder = appCtx.getPrefBoolean(PreferKey.showRecordCardBorder, true)
     var adaptSpecialStyle = appCtx.getPrefBoolean(PreferKey.adaptSpecialStyle, true)
     var aiStreamMode = appCtx.getPrefBoolean(PreferKey.aiStreamMode, true)
 
@@ -112,6 +113,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             PreferKey.editAutoWrap -> editAutoWrap = appCtx.getPrefBoolean(PreferKey.editAutoWrap, true)
             PreferKey.editAutoComplete -> editAutoComplete = appCtx.getPrefBoolean(PreferKey.editAutoComplete, true)
             PreferKey.showBoardLine -> showBoardLine = appCtx.getPrefInt(PreferKey.showBoardLine, 1)
+            PreferKey.showRecordCardBorder -> showRecordCardBorder = appCtx.getPrefBoolean(PreferKey.showRecordCardBorder, true)
             PreferKey.adaptSpecialStyle -> adaptSpecialStyle = appCtx.getPrefBoolean(PreferKey.adaptSpecialStyle, true)
 
             PreferKey.themeMode -> {
@@ -747,6 +749,12 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         get() = appCtx.getPrefInt(PreferKey.bookshelfSort, 0)
         set(value) {
             appCtx.putPrefInt(PreferKey.bookshelfSort, value)
+        }
+
+    var showBookshelfCardBorder: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.showBookshelfCardBorder, true)
+        set(value) {
+            appCtx.putPrefBoolean(PreferKey.showBookshelfCardBorder, value)
         }
 
     fun getBookSortByGroupId(groupId: Long): Int {

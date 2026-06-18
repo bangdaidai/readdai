@@ -1,16 +1,11 @@
 package io.legado.app.ui.book.readRecord.component
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,31 +19,18 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.legado.app.help.config.AppConfig
-import io.legado.app.help.glide.ImageLoader
 import io.legado.app.lib.theme.ThemeStore
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import io.legado.app.ui.widget.components.image.CoilBookCover
 
 data class BookRankingData(
     val bookName: String,
@@ -69,7 +51,7 @@ fun TopReadingListCard(
     val textColorSecondary = ThemeStore.textColorSecondary(context)
     val dividerColor = ThemeStore.dividerColor(context)
 
-    val borderStroke = if (AppConfig.showCardBorder) {
+    val borderStroke = if (AppConfig.showRecordCardBorder) {
         BorderStroke(0.5.dp, Color(dividerColor))
     } else {
         null
@@ -125,11 +107,12 @@ fun TopReadingListCard(
                         color = if (index < 3) Color(primaryColor) else Color(textColorSecondary)
                     )
 
-                    BookCoverImage(
-                        bookName = book.bookName,
-                        coverUrl = book.coverUrl,
-                        width = 40,
-                        height = 56
+                    CoilBookCover(
+                        name = book.bookName,
+                        author = book.bookAuthor.ifEmpty { null },
+                        path = book.coverUrl.ifEmpty { null },
+                        modifier = Modifier.width(40.dp),
+                        radius = 4.dp
                     )
 
                     Column(
@@ -163,77 +146,6 @@ fun TopReadingListCard(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun BookCoverImage(
-    bookName: String,
-    coverUrl: String,
-    width: Int = 40,
-    height: Int = 56
-) {
-    val context = LocalContext.current
-    val primaryColor = ThemeStore.accentColor(context)
-
-    var coverBitmap by remember(coverUrl) { mutableStateOf<Bitmap?>(null) }
-    LaunchedEffect(coverUrl) {
-        if (coverUrl.isNotEmpty()) {
-            withContext(Dispatchers.IO) {
-                coverBitmap = runCatching {
-                    ImageLoader.loadBitmap(context, coverUrl)
-                        .submit()
-                        .get()
-                }.getOrNull()
-            }
-        }
-    }
-
-    val bitmap = coverBitmap
-    if (bitmap != null && coverUrl.isNotEmpty()) {
-        Box(
-            modifier = Modifier
-                .width(width.dp)
-                .height(height.dp)
-                .clip(RoundedCornerShape(4.dp))
-        ) {
-            Image(
-                bitmap = bitmap.asImageBitmap(),
-                contentDescription = bookName,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
-    } else {
-        // 无封面或加载失败，使用 Compose 绘制的默认封面
-        val cardBgColor = ThemeStore.backgroundCard(context)
-        val textColor = primaryColor
-        Box(
-            modifier = Modifier
-                .width(width.dp)
-                .height(height.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color(cardBgColor))
-                .padding(3.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = bookName,
-                fontSize = 9.sp,
-                color = Color(textColor),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold,
-                style = TextStyle(
-                    shadow = Shadow(
-                        color = Color.Black,
-                        blurRadius = 3f,
-                        offset = Offset(1f, 1f)
-                    )
-                )
-            )
         }
     }
 }

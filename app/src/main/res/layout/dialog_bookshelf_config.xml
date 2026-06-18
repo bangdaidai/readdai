@@ -97,6 +97,15 @@
             app:layout_constraintTop_toBottomOf="@+id/sw_show_book_intro"
             tools:ignore="TouchTargetSizeCheck" />
 
+        <io.legado.app.lib.theme.view.ThemeSwitch
+            android:id="@+id/sw_show_book_card_border"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:padding="4dp"
+            android:text="@string/show_book_card_border"
+            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_review"
+            tools:ignore="TouchTargetSizeCheck" />
+
         <LinearLayout
             android:id="@+id/ll_layout"
             android:layout_width="0dp"
@@ -105,7 +114,7 @@
             android:layout_marginTop="4dp"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toLeftOf="@+id/ll_sort"
-            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_review">
+            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_card_border">
 
             <io.legado.app.ui.widget.text.AccentTextView
                 android:layout_width="match_parent"
@@ -187,7 +196,7 @@
             android:layout_marginTop="4dp"
             app:layout_constraintLeft_toRightOf="@+id/ll_layout"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_review">
+            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_card_border">
 
             <io.legado.app.ui.widget.text.AccentTextView
                 android:layout_width="match_parent"

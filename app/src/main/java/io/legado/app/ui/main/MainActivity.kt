@@ -1192,7 +1192,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             "homepage" -> if (AppConfig.showHomepage) {
                 binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idHomepage), false)
             }
-            "bookshelf" -> {}
+            "bookshelf" -> binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idBookshelf), false)
             "explore" -> if (AppConfig.showDiscovery) {
                 binding.viewPagerMain.setCurrentItem(realPositions.indexOf(idExplore), false)
             }
