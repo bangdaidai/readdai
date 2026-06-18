@@ -183,27 +183,32 @@ private fun CoverTextOverlay(
 
                 if (isHorizontal) {
                     val maxWidth = (viewWidth * 0.8f).toInt()
-                    val textPaint = TextPaint(paint).apply { textAlign = Paint.Align.LEFT }
-                    val layout = StaticLayout.Builder
-                        .obtain(name, 0, name.length, textPaint, maxWidth)
+                    val textPaintStroke = TextPaint(paint).apply {
+                        textAlign = Paint.Align.LEFT
+                        style = Paint.Style.STROKE
+                        strokeWidth = paint.textSize / 12
+                        color = android.graphics.Color.WHITE
+                        clearShadowLayer()
+                    }
+                    val strokeLayout = StaticLayout.Builder
+                        .obtain(name, 0, name.length, textPaintStroke, maxWidth)
                         .setAlignment(Layout.Alignment.ALIGN_CENTER)
                         .setMaxLines(3)
                         .setEllipsize(TextUtils.TruncateAt.END)
                         .build()
-
+                    val textPaintFill = TextPaint(paint).apply { textAlign = Paint.Align.LEFT }
+                    val fillLayout = StaticLayout.Builder
+                        .obtain(name, 0, name.length, textPaintFill, maxWidth)
+                        .setAlignment(Layout.Alignment.ALIGN_CENTER)
+                        .setMaxLines(3)
+                        .setEllipsize(TextUtils.TruncateAt.END)
+                        .build()
                     nativeCanvas.withSave {
                         val textX = (viewWidth - maxWidth) / 2f
                         val textY = viewHeight * 0.08f
                         translate(textX, textY)
-                        val strokePaint = TextPaint(paint).apply {
-                            style = Paint.Style.STROKE
-                            strokeWidth = textPaint.textSize / 12
-                            color = android.graphics.Color.WHITE
-                            clearShadowLayer()
-                        }
-                        layout.draw(this)
-                        layout.paint = textPaint
-                        layout.draw(this)
+                        strokeLayout.draw(this)
+                        fillLayout.draw(this)
                     }
                 } else {
                     var startX = viewWidth * 0.16f
