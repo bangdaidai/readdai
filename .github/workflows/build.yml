@@ -33,7 +33,16 @@ jobs:
       - name: Build Release APK
         run: |
           chmod +x gradlew
-          ./gradlew assembleAppRelease --no-daemon -x lint
+          ./gradlew assembleAppRelease --no-daemon -x lint 2>&1
+
+      - name: Show error log if build failed
+        if: failure()
+        run: |
+          echo "构建失败，查看最后100行日志:"
+          tail -100 app/build/outputs/logs/*.log 2>/dev/null || echo "无日志文件"
+          echo ""
+          echo "查看 build 目录:"
+          ls -la app/build/ 2>/dev/null || echo "build 目录不存在"
 
       - name: Upload APK
         uses: actions/upload-artifact@v6
