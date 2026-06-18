@@ -497,7 +497,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val books = if (kind != null) {
                     WebBook.exploreBookAwait(source, kind.url ?: exploreUrl, 1)
                 } else {
-                    arrayListOf<SearchBook>()
+                    WebBook.exploreBookAwait(source, exploreUrl, 1)
                 }
 
                 val hasMore = isInfinite(module.type, module.layoutConfig) && books.isNotEmpty()
