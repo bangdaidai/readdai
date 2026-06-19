@@ -1,6 +1,8 @@
 package io.legado.app.ui.main.homepage
 
 import android.graphics.drawable.Drawable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -52,17 +54,19 @@ fun GlideBookCover(
     }
 
     val currentDrawable = drawable
-    if (currentDrawable != null) {
-        val bitmap = remember(currentDrawable) {
-            runCatching { currentDrawable.toBitmap().asImageBitmap() }.getOrNull()
-        }
-        if (bitmap != null) {
-            androidx.compose.foundation.Image(
-                painter = BitmapPainter(bitmap),
-                contentDescription = contentDescription,
-                modifier = modifier,
-                contentScale = contentScale,
-            )
+    Box(modifier = modifier) {
+        if (currentDrawable != null) {
+            val bitmap = remember(currentDrawable) {
+                runCatching { currentDrawable.toBitmap().asImageBitmap() }.getOrNull()
+            }
+            if (bitmap != null) {
+                androidx.compose.foundation.Image(
+                    painter = BitmapPainter(bitmap),
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = contentScale,
+                )
+            }
         }
     }
 }
