@@ -95,16 +95,7 @@ class SearchViewModel(application: Application) : BaseViewModel(application) {
     fun addToBookshelf(book: SearchBook) {
         execute {
             kotlin.runCatching {
-                val bookUrl = book.bookUrl
-                val existedBook = appDb.bookDao.getBook(bookUrl)
-                if (existedBook != null) {
-                    existedBook.lastAccessTime = System.currentTimeMillis()
-                    appDb.bookDao.update(existedBook)
-                } else {
-                    val newBook = book.toBook()
-                    newBook.addToShelf = true
-                    appDb.bookDao.insert(newBook)
-                }
+                appDb.bookDao.insert(book.toBook())
             }
         }
     }
