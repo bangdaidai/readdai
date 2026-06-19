@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.SearchBook
 import io.legado.app.databinding.ActivityExploreShowBinding
 import io.legado.app.databinding.ViewLoadMoreBinding
@@ -24,6 +25,7 @@ import io.legado.app.utils.applyNavigationBarPadding
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.startActivity
 import io.legado.app.utils.viewbindingdelegate.viewBinding
+import kotlinx.coroutines.launch
 
 /**
  * 发现列表
@@ -226,17 +228,15 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
     private fun ExploreShowViewModel.addToBookshelf(book: SearchBook) {
         viewModelScope.launch {
             kotlin.runCatching {
-                val source = bookSource
-                if (source != null) {
-                    val bookUrl = book.bookUrl
-                    val existedBook = appDb.bookDao.getBook(bookUrl)
-                    if (existedBook != null) {
-                        appDb.bookDao.update(bookUrl) { it.lastAccessTime = System.currentTimeMillis() }
-                    } else {
-                        val newBook = book.toBook()
-                        newBook.addToShelf = true
-                        appDb.bookDao.insert(newBook)
-                    }
+                val bookUrl = book.bookUrl
+                val existedBook = appDb.bookDao.getBook(bookUrl)
+                if (existedBook != null) {
+                    existedBook.lastAccessTime = System.currentTimeMillis()
+                    appDb.bookDao.update(existedBook)
+                } else {
+                    val newBook = book.toBook()
+                    newBook.addToShelf = true
+                    appDb.bookDao.insert(newBook)
                 }
             }
         }

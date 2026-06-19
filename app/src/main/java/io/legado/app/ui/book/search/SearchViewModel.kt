@@ -98,7 +98,8 @@ class SearchViewModel(application: Application) : BaseViewModel(application) {
                 val bookUrl = book.bookUrl
                 val existedBook = appDb.bookDao.getBook(bookUrl)
                 if (existedBook != null) {
-                    appDb.bookDao.update(bookUrl) { it.lastAccessTime = System.currentTimeMillis() }
+                    existedBook.lastAccessTime = System.currentTimeMillis()
+                    appDb.bookDao.update(existedBook)
                 } else {
                     val newBook = book.toBook()
                     newBook.addToShelf = true

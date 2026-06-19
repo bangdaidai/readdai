@@ -105,6 +105,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.ComposeView
+import io.legado.app.domain.model.BookShelfState
+import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 
 /**
  * 发现界面
@@ -1407,6 +1410,36 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             }
             SearchBookOpenHelper.open(requireContext(), book, isVideo)
         }
+    }
+
+    override fun onBookLongClick(book: SearchBook) {
+        val shelfState = if (viewModel.isInBookShelf(book)) {
+            BookShelfState.IN_SHELF
+        } else {
+            BookShelfState.NOT_IN_SHELF
+        }
+        var dialog: AlertDialog? = null
+        dialog = AlertDialog.Builder(requireContext())
+            .setView(
+                ComposeView(requireContext()).apply {
+                    setContent {
+                        SearchBookPreviewSheet(
+                            data = book,
+                            shelfState = shelfState,
+                            onDismissRequest = { dialog?.dismiss() },
+                            onOpenDetail = { b ->
+                                showBookInfo(b)
+                                dialog?.dismiss()
+                            },
+                            onAddToShelf = { b ->
+                                viewModel.addToBookshelf(b)
+                                dialog?.dismiss()
+                            }
+                        )
+                    }
+                }
+            )
+            .show()
     }
 
     fun compressExplore() {
