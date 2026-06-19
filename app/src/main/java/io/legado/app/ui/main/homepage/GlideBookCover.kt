@@ -49,7 +49,10 @@ fun GlideBookCover(
             })
 
         onDispose {
-            com.bumptech.glide.Glide.with(context.applicationContext).clear(glide)
+            try {
+                com.bumptech.glide.Glide.with(context).clear(glide)
+            } catch (_: IllegalArgumentException) {
+            }
         }
     }
 
