@@ -136,15 +136,6 @@ fun HomepageScreen(
         }
     }
 
-    var hasAutoRefreshed by remember { mutableStateOf(false) }
-
-    LaunchedEffect(uiState.manageState.sets, uiState.isRefreshing) {
-        if (uiState.manageState.sets.isEmpty() && !uiState.isRefreshing && !hasAutoRefreshed) {
-            hasAutoRefreshed = true
-            viewModel.onRefresh()
-        }
-    }
-
     val context = LocalContext.current
     val titleBarBgColor = Color(context.primaryColor)
     val titleBarTextColor = Color(ThemeStore.titleBarTextIconColor(context))
