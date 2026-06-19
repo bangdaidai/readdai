@@ -55,6 +55,7 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -508,7 +509,7 @@ private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
         )
         if (onNavigate != null) {
             Surface(
-                shape = io.legado.app.ui.widget.components.CircleShape,
+                shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 onClick = onNavigate,
             ) {
