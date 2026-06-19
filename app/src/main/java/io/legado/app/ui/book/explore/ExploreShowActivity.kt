@@ -8,7 +8,7 @@ import android.view.Window
 import androidx.activity.viewModels
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.savedstate.ViewTreeSavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.core.os.bundleOf
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -207,7 +207,7 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
         var dialog: Dialog? = null
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@ExploreShowActivity)
-            ViewTreeSavedStateRegistryOwner.set(this, this@ExploreShowActivity)
+            this.setViewTreeSavedStateRegistryOwner(this@ExploreShowActivity)
             setContent {
                 SearchBookPreviewSheet(
                     data = book,

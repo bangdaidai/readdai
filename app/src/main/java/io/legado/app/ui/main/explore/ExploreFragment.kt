@@ -109,7 +109,7 @@ import kotlinx.coroutines.withContext
 import android.view.Window
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.savedstate.ViewTreeSavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 
@@ -1425,7 +1425,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         var dialog: Dialog? = null
         val composeView = ComposeView(requireContext()).apply {
             setViewTreeLifecycleOwner(viewLifecycleOwner)
-            ViewTreeSavedStateRegistryOwner.set(this, this@ExploreFragment)
+            this.setViewTreeSavedStateRegistryOwner(this@ExploreFragment)
             setContent {
                 SearchBookPreviewSheet(
                     data = book,

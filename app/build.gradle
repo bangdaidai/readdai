@@ -257,6 +257,7 @@ dependencies {
     implementation(libs.activity.ktx)
     implementation(libs.activity.compose)
     implementation(libs.fragment.ktx)
+    implementation(libs.savedstate)
     implementation(libs.savedstate.ktx)
     implementation(libs.preference.ktx)
     implementation(libs.androidx.constraintlayout)
