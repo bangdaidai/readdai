@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.book.info.BookInfoActivity
@@ -35,6 +36,7 @@ class HomepageFragment() : Fragment(), MainFragmentInterface {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return ComposeView(requireContext()).apply {
+            setViewTreeLifecycleOwner(viewLifecycleOwner)
             composeView = this
             setContent {
                 ReaddaiTheme {
