@@ -13,7 +13,7 @@ import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -528,6 +528,7 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
         } else {
             io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
         }
+        var dialog: Dialog? = null
         val composeView = ComposeView(this).apply {
             setContent {
                 SearchBookPreviewSheet(
@@ -545,13 +546,12 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
                 )
             }
         }
-        var dialog: Dialog? = null
         dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
             setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
             setOnShowListener {
-                ViewTreeLifecycleOwner.set(composeView, this@SearchActivity)
+                composeView.setViewTreeLifecycleOwner(this@SearchActivity)
             }
             show()
         }

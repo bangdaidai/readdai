@@ -108,7 +108,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.Window
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 
@@ -1421,6 +1421,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         } else {
             BookShelfState.NOT_IN_SHELF
         }
+        var dialog: Dialog? = null
         val composeView = ComposeView(requireContext()).apply {
             setContent {
                 SearchBookPreviewSheet(
@@ -1438,13 +1439,12 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 )
             }
         }
-        var dialog: Dialog? = null
         dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
             setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
             setOnShowListener {
-                ViewTreeLifecycleOwner.set(composeView, viewLifecycleOwner)
+                composeView.setViewTreeLifecycleOwner(viewLifecycleOwner)
             }
             show()
         }

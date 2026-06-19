@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.activity.viewModels
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.core.os.bundleOf
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -203,6 +203,7 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
         } else {
             io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
         }
+        var dialog: Dialog? = null
         val composeView = ComposeView(this).apply {
             setContent {
                 SearchBookPreviewSheet(
@@ -220,13 +221,12 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
                 )
             }
         }
-        var dialog: Dialog? = null
         dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
             setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
             setOnShowListener {
-                ViewTreeLifecycleOwner.set(composeView, this@ExploreShowActivity)
+                composeView.setViewTreeLifecycleOwner(this@ExploreShowActivity)
             }
             show()
         }
