@@ -113,7 +113,7 @@ private fun RankingItem(
         modifier = Modifier.fillMaxWidth().combinedClickable(
             onClick = onClick,
             onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
-        ).padding(start = 0.dp, top = 4.dp, end = 4.dp, bottom = 4.dp),
+        ).padding(start = 0.dp, top = 8.dp, end = 4.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(

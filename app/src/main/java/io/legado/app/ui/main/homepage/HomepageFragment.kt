@@ -23,6 +23,7 @@ class HomepageFragment() : Fragment(), MainFragmentInterface {
     }
 
     override val position: Int? get() = arguments?.getInt("position")
+    private var composeView: ComposeView? = null
 
     override fun onResume() {
         super.onResume()
@@ -34,6 +35,7 @@ class HomepageFragment() : Fragment(), MainFragmentInterface {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return ComposeView(requireContext()).apply {
+            composeView = this
             setContent {
                 ReaddaiTheme {
                     HomepageScreen(
@@ -59,5 +61,11 @@ class HomepageFragment() : Fragment(), MainFragmentInterface {
                 }
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        composeView?.disposeComposition()
+        composeView = null
     }
 }

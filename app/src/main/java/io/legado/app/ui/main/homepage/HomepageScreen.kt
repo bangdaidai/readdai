@@ -134,6 +134,15 @@ fun HomepageScreen(
         }
     }
 
+    var hasAutoRefreshed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.manageState.sets, uiState.isRefreshing) {
+        if (uiState.manageState.sets.isEmpty() && !uiState.isRefreshing && !hasAutoRefreshed) {
+            hasAutoRefreshed = true
+            viewModel.onRefresh()
+        }
+    }
+
     val context = LocalContext.current
     val titleBarBgColor = remember { Color(context.primaryColor) }
     val titleBarTextColor = remember { Color(ThemeStore.titleBarTextIconColor(context)) }
@@ -499,7 +508,7 @@ private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
         )
         if (onNavigate != null) {
             Surface(
-                shape = MaterialTheme.shapes.extraSmall,
+                shape = io.legado.app.ui.widget.components.CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHighest,
                 onClick = onNavigate,
             ) {

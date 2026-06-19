@@ -46,12 +46,12 @@ fun CardModule(
         itemsIndexed(books, key = { index, item -> "${item.book.bookUrl}:$index" }) { index, item ->
             val book = item.book
             Card(
-                modifier = Modifier.width(140.dp),
+                modifier = Modifier.width(100.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
             ) {
                 Column(
-                    modifier = Modifier.width(140.dp).combinedClickable(
+                    modifier = Modifier.width(100.dp).combinedClickable(
                         onClick = { onClick(book, null) },
                         onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
                     ),

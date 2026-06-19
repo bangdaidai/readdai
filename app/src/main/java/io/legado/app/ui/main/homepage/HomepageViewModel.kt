@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 
@@ -98,17 +97,17 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     private val hiddenSetsFlow = _configVersion.map {
         GSON.fromJsonArray<String>(HomepageConfig.homepageSourceHidden)
             .getOrDefault(emptyList()).toSet()
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     private val localModulesFlow = gateway.flowEnabled()
     val allModulesCache =
         gateway.flowAll().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val customSetsFlow = gateway.flowCustomSets()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val orderedModuleDefsFlow = combine(localModulesFlow, _configVersion) { modules, _ ->
         modules.groupBySourceOrdered()
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     val setsFlow = combine(
         localModulesFlow,
@@ -131,7 +130,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 isCustomSet = true,
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val browseSourcesFlow = exploreSourcesFlow.map { sources ->
         sources.map { source ->
@@ -141,7 +140,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 sourceGroup = source.bookSourceGroup,
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val browseGroupsFlow = browseSourcesFlow.map { sources ->
         val groups = mutableSetOf<String>()
@@ -152,7 +151,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             }
         }
         groups.toList().sorted()
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _browseGroupFilter = MutableStateFlow("")
 
@@ -161,7 +160,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         else sources.filter { source ->
             source.sourceGroup?.split(",")?.any { it.trim() == group } == true
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val uiFlagsFlow =
         combine(_isRefreshing, _isManageMode, _isConfigMode) { refreshing, manage, config ->
@@ -218,15 +217,6 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         val browseGroupFilter: String
     )
 
-    private data class ModuleBuildData(
-        val module: ModuleItem,
-        val setName: String,
-        val exploreUrl: String?,
-        val configMap: Map<String, String>,
-        val source: BookSource?,
-        val contentStates: Map<String, ModuleLoadState>
-    )
-
     private val rawModulesFlow = combine(
         orderedModuleDefsFlow,
         _moduleContentStates,
@@ -247,25 +237,19 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val exploreUrl = module.url ?: source?.exploreUrl
                 val configMap = configCache[module.id] ?: emptyMap()
 
-                ModuleBuildData(module, setName, exploreUrl, configMap, source, contentStates)
+                HomepageModuleUi(
+                    sourceUrl = module.sourceUrl,
+                    setName = setName,
+                    globalId = module.id,
+                    type = HomepageModuleType.fromKey(module.type),
+                    title = module.displayTitle,
+                    exploreUrl = exploreUrl,
+                    customSetId = module.customSetId,
+                    layoutConfig = module.layoutConfig,
+                    state = contentStates[module.id] ?: ModuleLoadState.Loading,
+                    config = configMap
+                )
             }
-        }
-    }.combine(hiddenSetsFlow) { buildDataList, hiddenSets ->
-        buildDataList.mapNotNull { data ->
-            val setUrl = customSetUrl(data.module.customSetId ?: return@mapNotNull null)
-            if (setUrl in hiddenSets) return@mapNotNull null
-            HomepageModuleUi(
-                sourceUrl = data.module.sourceUrl,
-                setName = data.setName,
-                globalId = data.module.id,
-                type = HomepageModuleType.fromKey(data.module.type),
-                title = data.module.displayTitle,
-                exploreUrl = data.exploreUrl,
-                customSetId = data.module.customSetId,
-                layoutConfig = data.module.layoutConfig,
-                state = data.contentStates[data.module.id] ?: ModuleLoadState.Loading,
-                config = data.configMap
-            )
         }
     }
 
@@ -325,7 +309,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             isConfigMode = flags.isConfigMode,
             manageState = manageState
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, HomepageUiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomepageUiState())
 
     init {
         viewModelScope.launch {
@@ -483,15 +467,16 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val exploreUrl = module.url ?: source.exploreUrl
                 if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
-                val exploreKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
-                val kind = if (module.args.isNullOrBlank()) {
-                    exploreKinds.firstOrNull()
-                } else {
-                    exploreKinds.find { it.title == module.args }
-                }
-
-                val books = if (kind != null) {
-                    WebBook.exploreBookAwait(source, kind.url ?: exploreUrl, 1)
+                val books = if (isRanking) {
+                    val allBooks = mutableListOf<SearchBook>()
+                    var page = 1
+                    while (allBooks.size < 20 && page <= 3) {
+                        val pageBooks = WebBook.exploreBookAwait(source, exploreUrl, page)
+                        if (pageBooks.isEmpty()) break
+                        allBooks.addAll(pageBooks)
+                        page++
+                    }
+                    allBooks.take(20)
                 } else {
                     WebBook.exploreBookAwait(source, exploreUrl, 1)
                 }
@@ -575,20 +560,21 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     fun onRefresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            try {
-                loadJobs.values.forEach { it.cancel() }
-                loadJobs.clear()
-                uiState.value.modules.map { it.sourceUrl }.distinct().forEach { url ->
-                    kotlin.runCatching { resolveBookSource(url)?.let { syncModulesFromSource(it) } }
-                }
-                _moduleContentStates.value = emptyMap()
-                withTimeoutOrNull(30_000L) {
-                    uiState.map { it.modules }
-                        .first { modules -> modules.all { it.state !is ModuleLoadState.Loading } }
-                }
-            } finally {
-                _isRefreshing.value = false
+            loadJobs.values.forEach { it.cancel() }
+            loadJobs.clear()
+            val existingSourceUrls = uiState.value.modules.map { it.sourceUrl }.toSet()
+            val sourcesToSync = if (existingSourceUrls.isEmpty()) {
+                appDb.bookSourceDao.flowHomepageModules().first().map { it.bookSourceUrl }
+            } else {
+                existingSourceUrls
             }
+            sourcesToSync.forEach { url ->
+                resolveBookSource(url)?.let { syncModulesFromSource(it) }
+            }
+            _moduleContentStates.value = emptyMap()
+            uiState.map { it.modules }
+                .first { modules -> modules.all { it.state !is ModuleLoadState.Loading } }
+            _isRefreshing.value = false
         }
     }
 
