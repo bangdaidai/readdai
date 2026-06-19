@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.book.info.BookInfoActivity
@@ -37,6 +38,7 @@ class HomepageFragment() : Fragment(), MainFragmentInterface {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return ComposeView(requireContext()).apply {
             setViewTreeLifecycleOwner(viewLifecycleOwner)
+            ViewTreeSavedStateRegistryOwner.set(this, this@HomepageFragment)
             composeView = this
             setContent {
                 ReaddaiTheme {

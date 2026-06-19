@@ -14,6 +14,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -531,6 +532,7 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
         var dialog: Dialog? = null
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@SearchActivity)
+            ViewTreeSavedStateRegistryOwner.set(this, this@SearchActivity)
             setContent {
                 SearchBookPreviewSheet(
                     data = book,

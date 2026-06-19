@@ -14,6 +14,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
@@ -118,6 +119,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
     private fun initComposeTop10() {
         binding.composeTop10Container?.apply {
             setViewTreeLifecycleOwner(this@ReadStatisticsActivity)
+            ViewTreeSavedStateRegistryOwner.set(this, this@ReadStatisticsActivity)
             setContent {
             io.legado.app.ui.book.readRecord.component.TopReadingListCard(
                 topBooks = currentTop10Data.map { rank ->

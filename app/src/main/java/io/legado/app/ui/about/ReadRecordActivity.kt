@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
 import io.legado.app.base.adapter.ItemViewHolder
@@ -235,6 +236,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         val composeView = binding.root.findViewById<androidx.compose.ui.platform.ComposeView>(R.id.compose_summary_container)
         composeView?.apply {
             setViewTreeLifecycleOwner(this@ReadRecordActivity)
+            ViewTreeSavedStateRegistryOwner.set(this, this@ReadRecordActivity)
             setContent {
                 val state = viewModel.uiState.value
                 io.legado.app.ui.book.readRecord.component.ReadingSummaryCard(
