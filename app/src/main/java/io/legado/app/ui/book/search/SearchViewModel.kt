@@ -92,6 +92,22 @@ class SearchViewModel(application: Application) : BaseViewModel(application) {
         return bookshelf.contains(key) || bookshelf.contains(bookUrl)
     }
 
+    fun addToBookshelf(book: SearchBook) {
+        execute {
+            kotlin.runCatching {
+                val bookUrl = book.bookUrl
+                val existedBook = appDb.bookDao.getBook(bookUrl)
+                if (existedBook != null) {
+                    appDb.bookDao.update(bookUrl) { it.lastAccessTime = System.currentTimeMillis() }
+                } else {
+                    val newBook = book.toBook()
+                    newBook.addToShelf = true
+                    appDb.bookDao.insert(newBook)
+                }
+            }
+        }
+    }
+
     /**
      * 开始搜索
      */

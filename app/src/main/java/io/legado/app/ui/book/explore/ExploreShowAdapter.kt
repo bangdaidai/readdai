@@ -81,6 +81,12 @@ class ExploreShowAdapter(context: Context, val callBack: CallBack) :
                 callBack.showBookInfo(it)
             }
         }
+        holder.itemView.setOnLongClickListener {
+            getItem(holder.bindingAdapterPosition - getHeaderCount())?.let {
+                callBack.onBookLongClick(it)
+            }
+            true
+        }
     }
 
     interface CallBack {
@@ -90,5 +96,7 @@ class ExploreShowAdapter(context: Context, val callBack: CallBack) :
         fun isInBookshelf(book: SearchBook): Boolean
 
         fun showBookInfo(book: SearchBook)
+
+        fun onBookLongClick(book: SearchBook)
     }
 }

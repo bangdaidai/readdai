@@ -9,7 +9,9 @@ import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.TextView
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
+import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -38,6 +40,7 @@ import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
+import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarMargin
 import io.legado.app.utils.applyNavigationBarPadding
@@ -515,6 +518,36 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
      */
     override fun isInBookshelf(book: SearchBook): Boolean {
         return viewModel.isInBookShelf(book)
+    }
+
+    override fun onBookLongClick(book: SearchBook) {
+        val shelfState = if (viewModel.isInBookShelf(book)) {
+            io.legado.app.domain.model.BookShelfState.IN_SHELF
+        } else {
+            io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
+        }
+        var dialog: AlertDialog? = null
+        dialog = AlertDialog.Builder(this)
+            .setView(
+                ComposeView(this).apply {
+                    setContent {
+                        SearchBookPreviewSheet(
+                            data = book,
+                            shelfState = shelfState,
+                            onDismissRequest = { dialog?.dismiss() },
+                            onOpenDetail = { b ->
+                                showBookInfo(b.name, b.author, b.bookUrl)
+                                dialog?.dismiss()
+                            },
+                            onAddToShelf = { b ->
+                                viewModel.addToBookshelf(b)
+                                dialog?.dismiss()
+                            }
+                        )
+                    }
+                }
+            )
+            .show()
     }
 
     /**

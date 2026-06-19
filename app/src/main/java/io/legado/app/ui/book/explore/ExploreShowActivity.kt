@@ -4,7 +4,10 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.ViewGroup
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
+import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.bundleOf
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.R
@@ -13,6 +16,7 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.databinding.ActivityExploreShowBinding
 import io.legado.app.databinding.ViewLoadMoreBinding
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 import io.legado.app.ui.widget.number.NumberPickerDialog
 import io.legado.app.ui.widget.recycler.LoadMoreView
 import io.legado.app.ui.widget.recycler.VerticalDivider
@@ -186,6 +190,55 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
             putExtra("name", book.name)
             putExtra("author", book.author)
             putExtra("bookUrl", book.bookUrl)
+        }
+    }
+
+    override fun onBookLongClick(book: SearchBook) {
+        val shelfState = if (viewModel.isInBookShelf(book)) {
+            io.legado.app.domain.model.BookShelfState.IN_SHELF
+        } else {
+            io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
+        }
+        var dialog: AlertDialog? = null
+        dialog = AlertDialog.Builder(this)
+            .setView(
+                ComposeView(this).apply {
+                    setContent {
+                        SearchBookPreviewSheet(
+                            data = book,
+                            shelfState = shelfState,
+                            onDismissRequest = { dialog?.dismiss() },
+                            onOpenDetail = { b ->
+                                showBookInfo(b)
+                                dialog?.dismiss()
+                            },
+                            onAddToShelf = { b ->
+                                viewModel.addToBookshelf(b)
+                                dialog?.dismiss()
+                            }
+                        )
+                    }
+                }
+            )
+            .show()
+    }
+
+    private fun ExploreShowViewModel.addToBookshelf(book: SearchBook) {
+        viewModelScope.launch {
+            kotlin.runCatching {
+                val source = bookSource
+                if (source != null) {
+                    val bookUrl = book.bookUrl
+                    val existedBook = appDb.bookDao.getBook(bookUrl)
+                    if (existedBook != null) {
+                        appDb.bookDao.update(bookUrl) { it.lastAccessTime = System.currentTimeMillis() }
+                    } else {
+                        val newBook = book.toBook()
+                        newBook.addToShelf = true
+                        appDb.bookDao.insert(newBook)
+                    }
+                }
+            }
         }
     }
 }
