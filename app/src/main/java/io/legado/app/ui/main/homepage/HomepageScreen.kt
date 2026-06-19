@@ -145,12 +145,12 @@ fun HomepageScreen(
     }
 
     val context = LocalContext.current
-    val titleBarBgColor = remember { Color(context.primaryColor) }
-    val titleBarTextColor = remember { Color(ThemeStore.titleBarTextIconColor(context)) }
-    val pageBgColor = remember { Color(context.backgroundColor) }
-    val accentColor = remember { Color(context.accentColor) }
-    val isTransparentStatusBar = remember { AppConfig.isTransparentStatusBar }
-    val elevationDp = remember { AppConfig.elevation.dp }
+    val titleBarBgColor = Color(context.primaryColor)
+    val titleBarTextColor = Color(ThemeStore.titleBarTextIconColor(context))
+    val pageBgColor = Color(context.backgroundColor)
+    val accentColor = Color(context.accentColor)
+    val isTransparentStatusBar = AppConfig.isTransparentStatusBar
+    val elevationDp = context.elevation.dp
 
     Column(modifier = Modifier.fillMaxSize().background(pageBgColor)) {
         Surface(
@@ -264,8 +264,13 @@ fun HomepageScreen(
                     )
                 }
             } else {
-                val visibleModuleIds = remember(uiState.manageState.allJoinedModules) {
-                    uiState.manageState.allJoinedModules.filter { it.isVisible }.map { it.id }.toSet()
+                val selectedSetUrls = remember(selectedSets) { selectedSets.map { it.sourceUrl }.toSet() }
+                val visibleModuleIds = remember(uiState.manageState.allJoinedModules, selectedSetUrls) {
+                    uiState.manageState.allJoinedModules.filter { module ->
+                        if (!module.isVisible) return@filter false
+                        val setUrl = HomepageViewModel.customSetUrl(module.customSetId ?: "")
+                        setUrl in selectedSetUrls
+                    }.map { it.id }.toSet()
                 }
                 val allModules = remember(uiState.modules, visibleModuleIds) {
                     uiState.modules.filter { it.globalId in visibleModuleIds }

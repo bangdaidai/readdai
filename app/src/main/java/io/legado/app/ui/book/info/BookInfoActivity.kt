@@ -3,8 +3,6 @@ package io.legado.app.ui.book.info
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -24,13 +22,7 @@ import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.DataSource
-import com.bumptech.glide.load.engine.GlideException
-import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.target.Target
-import com.bumptech.glide.request.transition.Transition
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.BookType
@@ -51,7 +43,6 @@ import io.legado.app.help.GlideImageGetter
 import io.legado.app.help.TextViewTagHandler
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.getRemoteUrl
-import io.legado.app.help.glide.ImageLoader
 import io.legado.app.help.book.isAudio
 import io.legado.app.help.book.isImage
 import io.legado.app.help.book.isLocal
@@ -79,7 +70,6 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
-import io.legado.app.lib.theme.CoverColorExtractor
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.bottomBackground
@@ -262,7 +252,7 @@ class BookInfoActivity :
         binding.refreshLayout?.setColorSchemeColors(accentColor)
         binding.vwBg.applyNavigationBarPadding()
         binding.arcView?.setBgColor(backgroundColor)
-        binding.llInfo.background = null
+        binding.llInfo.setBackgroundColor(backgroundColor)
         binding.ivCoverC.setCardBackgroundColor(backgroundColor)
         binding.flAction.setBackgroundColor(bottomBackground)
         (binding.tvShelf as android.widget.TextView).setTextColor(getPrimaryTextColor(ColorUtils.isColorLight(bottomBackground)))
@@ -776,80 +766,12 @@ class BookInfoActivity :
     }
 
     private fun showCover(book: Book) {
-        val coverPath = book.getDisplayCover()
         binding.ivCover.load(book, false) {
             if (!AppConfig.isEInkMode) {
-                BookCover.loadBlur(this, coverPath, false, book.origin)
-                    .listener(object : RequestListener<android.graphics.drawable.Drawable> {
-                        override fun onLoadFailed(
-                            e: GlideException?,
-                            model: Any?,
-                            target: Target<android.graphics.drawable.Drawable>,
-                            isFirstResource: Boolean
-                        ): Boolean {
-                            return false
-                        }
-
-                        override fun onResourceReady(
-                            resource: android.graphics.drawable.Drawable,
-                            model: Any,
-                            target: Target<android.graphics.drawable.Drawable>?,
-                            dataSource: DataSource,
-                            isFirstResource: Boolean
-                        ): Boolean {
-                            if (!AppConfig.isEInkMode && !coverPath.isNullOrBlank()) {
-                                extractCoverColor(coverPath)
-                            }
-                            return false
-                        }
-                    })
+                BookCover.loadBlur(this, book.getDisplayCover(), false, book.origin)
                     .into(binding.bgBook)
             }
         }
-    }
-
-    private fun extractCoverColor(coverPath: String) {
-        ImageLoader.load(this, coverPath)
-            .override(128, 128)
-            .into(object : CustomTarget<android.graphics.drawable.Drawable>() {
-                override fun onResourceReady(
-                    resource: android.graphics.drawable.Drawable,
-                    transition: Transition<in android.graphics.drawable.Drawable>?
-                ) {
-                    if (resource is android.graphics.drawable.BitmapDrawable) {
-                        val dominantColor = CoverColorExtractor.extractDominantColor(resource.bitmap)
-                        updateGradientBackground(dominantColor)
-                    }
-                }
-
-                override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                }
-
-                override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
-                    updateGradientBackground(Color.GRAY)
-                }
-            })
-    }
-
-    private fun updateGradientBackground(dominantColor: Int) {
-        val darkenedColor = CoverColorExtractor.darkenColor(dominantColor, 0.6f)
-        val lightenedColor = CoverColorExtractor.lightenColor(dominantColor, 0.3f)
-
-        binding.gradientCover?.background = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(
-                Color.TRANSPARENT,
-                Color.argb(80, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor)),
-                Color.argb(160, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor))
-            )
-        )
-
-        val arcColor = Color.argb(230, Color.red(lightenedColor), Color.green(lightenedColor), Color.blue(lightenedColor))
-        binding.arcView?.setBgColor(arcColor)
-
-        binding.llInfo.setBackgroundColor(
-            Color.argb(180, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor))
-        )
     }
 
     private fun upLoading(isLoading: Boolean, chapterList: List<BookChapter>? = null) {

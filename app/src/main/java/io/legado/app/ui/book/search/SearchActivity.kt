@@ -11,9 +11,9 @@ import android.view.View.VISIBLE
 import android.view.Window
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewTreeLifecycleOwner
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -528,29 +528,31 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
         } else {
             io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
         }
+        val composeView = ComposeView(this).apply {
+            setContent {
+                SearchBookPreviewSheet(
+                    data = book,
+                    shelfState = shelfState,
+                    onDismissRequest = { dialog?.dismiss() },
+                    onOpenDetail = { b ->
+                        showBookInfo(b.name, b.author, b.bookUrl)
+                        dialog?.dismiss()
+                    },
+                    onAddToShelf = { b ->
+                        viewModel.addToBookshelf(b)
+                        dialog?.dismiss()
+                    }
+                )
+            }
+        }
         var dialog: Dialog? = null
         dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
-            setContentView(
-                ComposeView(this@SearchActivity).apply {
-                    setContent {
-                        SearchBookPreviewSheet(
-                            data = book,
-                            shelfState = shelfState,
-                            onDismissRequest = { dialog?.dismiss() },
-                            onOpenDetail = { b ->
-                                showBookInfo(b.name, b.author, b.bookUrl)
-                                dialog?.dismiss()
-                            },
-                            onAddToShelf = { b ->
-                                viewModel.addToBookshelf(b)
-                                dialog?.dismiss()
-                            }
-                        )
-                    }
-                }
-            )
+            setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
+            setOnShowListener {
+                ViewTreeLifecycleOwner.set(composeView, this@SearchActivity)
+            }
             show()
         }
     }

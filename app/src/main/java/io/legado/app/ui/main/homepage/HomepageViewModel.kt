@@ -575,8 +575,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                     resolveBookSource(url)?.let { syncModulesFromSource(it) }
                 }
                 _moduleContentStates.value = emptyMap()
-                uiState.map { it.modules }
-                    .first { modules -> modules.all { it.state !is ModuleLoadState.Loading } }
+                kotlinx.coroutines.delay(1500)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {

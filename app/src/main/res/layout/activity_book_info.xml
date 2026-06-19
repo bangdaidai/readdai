@@ -18,6 +18,7 @@
         android:id="@+id/vw_bg"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="#50000000"
         android:orientation="vertical">
 
         <io.legado.app.ui.widget.TitleBar
@@ -65,13 +66,6 @@
                             app:arcHeight="36dp"
                             app:bgColor="@color/background" />
 
-                        <View
-                            android:id="@+id/gradient_cover"
-                            android:layout_width="match_parent"
-                            android:layout_height="160dp"
-                            android:layout_marginTop="90dp"
-                            android:background="@drawable/bg_gradient_cover" />
-
                         <androidx.cardview.widget.CardView
                             android:id="@+id/iv_cover_c"
                             android:layout_width="wrap_content"
@@ -96,7 +90,8 @@
                     <LinearLayout
                         android:id="@+id/ll_info"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:layout_height="match_parent"
+                        android:background="@color/background"
                         android:orientation="vertical"
                         android:paddingLeft="8dp"
                         android:paddingRight="8dp"

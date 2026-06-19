@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.activity.viewModels
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewTreeLifecycleOwner
 import androidx.core.os.bundleOf
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -202,29 +203,31 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
         } else {
             io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
         }
+        val composeView = ComposeView(this).apply {
+            setContent {
+                SearchBookPreviewSheet(
+                    data = book,
+                    shelfState = shelfState,
+                    onDismissRequest = { dialog?.dismiss() },
+                    onOpenDetail = { b ->
+                        showBookInfo(b)
+                        dialog?.dismiss()
+                    },
+                    onAddToShelf = { b ->
+                        viewModel.addToBookshelf(b)
+                        dialog?.dismiss()
+                    }
+                )
+            }
+        }
         var dialog: Dialog? = null
         dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
-            setContentView(
-                ComposeView(this@ExploreShowActivity).apply {
-                    setContent {
-                        SearchBookPreviewSheet(
-                            data = book,
-                            shelfState = shelfState,
-                            onDismissRequest = { dialog?.dismiss() },
-                            onOpenDetail = { b ->
-                                showBookInfo(b)
-                                dialog?.dismiss()
-                            },
-                            onAddToShelf = { b ->
-                                viewModel.addToBookshelf(b)
-                                dialog?.dismiss()
-                            }
-                        )
-                    }
-                }
-            )
+            setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
+            setOnShowListener {
+                ViewTreeLifecycleOwner.set(composeView, this@ExploreShowActivity)
+            }
             show()
         }
     }

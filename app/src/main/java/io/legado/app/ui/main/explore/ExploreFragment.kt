@@ -108,6 +108,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.view.Window
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewTreeLifecycleOwner
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 
@@ -1420,29 +1421,31 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         } else {
             BookShelfState.NOT_IN_SHELF
         }
+        val composeView = ComposeView(requireContext()).apply {
+            setContent {
+                SearchBookPreviewSheet(
+                    data = book,
+                    shelfState = shelfState,
+                    onDismissRequest = { dialog?.dismiss() },
+                    onOpenDetail = { b ->
+                        showBookInfo(b)
+                        dialog?.dismiss()
+                    },
+                    onAddToShelf = { b ->
+                        viewModel.addToBookshelf(b)
+                        dialog?.dismiss()
+                    }
+                )
+            }
+        }
         var dialog: Dialog? = null
         dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
-            setContentView(
-                ComposeView(requireContext()).apply {
-                    setContent {
-                        SearchBookPreviewSheet(
-                            data = book,
-                            shelfState = shelfState,
-                            onDismissRequest = { dialog?.dismiss() },
-                            onOpenDetail = { b ->
-                                showBookInfo(b)
-                                dialog?.dismiss()
-                            },
-                            onAddToShelf = { b ->
-                                viewModel.addToBookshelf(b)
-                                dialog?.dismiss()
-                            }
-                        )
-                    }
-                }
-            )
+            setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
+            setOnShowListener {
+                ViewTreeLifecycleOwner.set(composeView, viewLifecycleOwner)
+            }
             show()
         }
     }
