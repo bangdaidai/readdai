@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,41 +57,36 @@ fun RankingModule(
     var visibleCount by rememberSaveable { mutableIntStateOf(INITIAL_COUNT) }
     val displayBooks = books.take(visibleCount)
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-    ) {
-        Column(modifier = Modifier.padding(top = 12.dp).animateContentSize()) {
-            displayBooks.forEachIndexed { index, item ->
-                RankingItem(
-                    rank = index + 1,
-                    book = item.book,
-                    shelfState = item.shelfState,
-                    onClick = { onClick(item.book, null) },
-                    onLongClick = onLongClick,
-                )
-            }
-            if (books.size > INITIAL_COUNT) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        visibleCount = if (visibleCount == INITIAL_COUNT) MAX_COUNT else INITIAL_COUNT
-                    }.padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val isExpanded = visibleCount > INITIAL_COUNT
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.ExpandMore,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            if (isExpanded) stringResource(R.string.hp_collapse) else stringResource(R.string.hp_expand_all),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
-                        )
-                    }
+    Column(modifier = Modifier.animateContentSize()) {
+        displayBooks.forEachIndexed { index, item ->
+            RankingItem(
+                rank = index + 1,
+                book = item.book,
+                shelfState = item.shelfState,
+                onClick = { onClick(item.book, null) },
+                onLongClick = onLongClick,
+            )
+        }
+        if (books.size > INITIAL_COUNT) {
+            Box(
+                modifier = Modifier.fillMaxWidth().clickable {
+                    visibleCount = if (visibleCount == INITIAL_COUNT) MAX_COUNT else INITIAL_COUNT
+                }.padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                val isExpanded = visibleCount > INITIAL_COUNT
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        if (isExpanded) stringResource(R.string.hp_collapse) else stringResource(R.string.hp_expand_all),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }

@@ -1,9 +1,11 @@
 package io.legado.app.ui.book.read.config
 
+import android.graphics.Typeface
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import io.legado.app.data.entities.HighlightRule
 
 object HighlightRulePreview {
@@ -20,6 +22,15 @@ object HighlightRulePreview {
             val underlineWidth = rule.underlineWidth
             val underlineOffset = rule.underlineOffset
             val hasBgImage = !rule.bgImage.isNullOrBlank()
+
+            if (rule.bold) {
+                spannable.setSpan(
+                    StyleSpan(Typeface.BOLD),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
 
             if (hasBgImage) {
                 spannable.setSpan(

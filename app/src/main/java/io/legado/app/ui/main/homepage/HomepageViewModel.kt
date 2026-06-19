@@ -321,7 +321,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                         val json = GSON.fromJson(configStr, Map::class.java)
                         if (json != null) {
                             val map = mutableMapOf<String, String>()
-                            json.forEach { (k, v) -> map["layout_$k"] = v.toString() }
+                            json.forEach { (k, v) -> map[k] = v.toString() }
                             cache[module.id] = map
                         }
                     } catch (_: Exception) {

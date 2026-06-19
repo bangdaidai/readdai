@@ -190,6 +190,46 @@
                         android:paddingStart="8dp"
                         android:paddingEnd="8dp" />
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="作用范围（选填，书名或书源URL）"
+                        android:textColor="@color/primaryText"
+                        android:textSize="13sp" />
+
+                    <EditText
+                        android:id="@+id/et_scope"
+                        android:layout_width="match_parent"
+                        android:layout_height="42dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/shape_edit_text"
+                        android:hint="多个用换行分隔，留空则全部生效"
+                        android:inputType="textMultiLine"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:text="排除范围（选填，书名或书源URL）"
+                        android:textColor="@color/primaryText"
+                        android:textSize="13sp" />
+
+                    <EditText
+                        android:id="@+id/et_exclude_scope"
+                        android:layout_width="match_parent"
+                        android:layout_height="42dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/shape_edit_text"
+                        android:hint="多个用换行分隔"
+                        android:inputType="textMultiLine"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textSize="14sp" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -255,6 +295,27 @@
                             android:paddingStart="12dp"
                             android:paddingEnd="12dp"
                             android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="字体加粗"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/switch_bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
 
                     <TextView

@@ -10,6 +10,7 @@ data class HighlightRule(
     var enabled: Boolean = true,
     var textColor: Int? = null,
     var bgColor: Int? = null,
+    var bold: Boolean = false,
     var underlineMode: Int = 0,
     var underlineColor: Int? = null,
     var underlineWidth: Float = 1f,
@@ -18,13 +19,18 @@ data class HighlightRule(
     var bgImage: String? = null,
     var bgImageFit: Int = 0,
     var bgImageScale: Float = 1f,
+    var scope: String? = null,
+    var excludeScope: String? = null,
 ) {
 
     fun styleSummary(): String {
-        val parts = ArrayList<String>(4)
+        val parts = ArrayList<String>(5)
         parts.add(targetScopeLabel())
         textColor?.let {
             parts.add("字色 ${it.toHexColor()}")
+        }
+        if (bold) {
+            parts.add("加粗")
         }
         bgColor?.let {
             parts.add("背景色 ${it.toHexColor()}")

@@ -52,7 +52,7 @@ fun WaterfallItem(
                 onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
             ),
         ) {
-            SearchBookCover(book = book, contentDescription = book.name, modifier = Modifier.fillMaxWidth().aspectRatio(5f / 7f).clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)), contentScale = ContentScale.Crop)
+            SearchBookCover(book = book, contentDescription = book.name, modifier = Modifier.fillMaxWidth().aspectRatio(5f / 7f).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
             Spacer(modifier = Modifier.height(8.dp))
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 8.dp)) {
                 Text(book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)

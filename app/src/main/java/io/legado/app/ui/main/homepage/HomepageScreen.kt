@@ -88,7 +88,7 @@ import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
-import io.legado.app.lib.theme.elevation
+import io.legado.app.lib.theme.MaterialValueHelper.elevation
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.main.homepage.modules.HomepageModuleSkeleton
 import io.legado.app.ui.main.homepage.modules.BannerModule
@@ -142,13 +142,12 @@ fun HomepageScreen(
     val pageBgColor = Color(context.backgroundColor)
     val accentColor = Color(context.accentColor)
     val isTransparentStatusBar = AppConfig.isTransparentStatusBar
-    val elevationDp = context.elevation.dp
 
     Column(modifier = Modifier.fillMaxSize().background(pageBgColor)) {
         Surface(
             color = titleBarBgColor,
             modifier = Modifier.fillMaxWidth(),
-            shadowElevation = elevationDp,
+            shadowElevation = 4.dp,
         ) {
             Column(modifier = Modifier.then(if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier)) {
                 Row(
@@ -338,9 +337,9 @@ private fun ModuleList(
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(gridColumns),
             modifier = modifier,
-            verticalItemSpacing = 16.dp,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
+            verticalItemSpacing = 10.dp,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 100.dp),
         ) {
             processedModules.forEach { moduleUi ->
                 item(key = "header_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {

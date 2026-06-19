@@ -15,6 +15,10 @@
         android:title="@string/annotation" />
 
     <item
+        android:id="@+id/menu_highlight_rule"
+        android:title="高亮规则" />
+
+    <item
         android:id="@+id/menu_protagonist"
         android:title="主角" />
 

@@ -1157,8 +1157,8 @@
     <string name="summary">summary</string>
     <string name="cover_config">cover config</string>
     <string name="cover_config_summary">Generic Cover Rules and Default Cover Style</string>
-    <string name="show_card_border">阅读记录卡片边框</string>
-    <string name="show_card_border_summary">显示阅读统计和阅读记录页面的卡片边框</string>
+    <string name="show_card_border">显示卡片边框</string>
+    <string name="show_card_border_summary">在阅读统计和阅读记录页面显示卡片边框</string>
     <string name="cover_show_name">show name</string>
     <string name="cover_show_name_summary">Book title shown on cover</string>
     <string name="cover_show_author">show author</string>

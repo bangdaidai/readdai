@@ -67,6 +67,7 @@ import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.config.ReadTipConfig
 import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.help.highlight.HighlightRuleStore
 import io.legado.app.help.source.getSourceType
 import io.legado.app.help.storage.Backup
 import io.legado.app.lib.dialogs.SelectItem
@@ -1146,6 +1147,37 @@ $content
                         this,
                         pattern = text,
                         scope = scopes.joinToString(";")
+                    )
+                )
+                return true
+            }
+
+            R.id.menu_highlight_rule -> {
+                val scopes = arrayListOf<String>()
+                ReadBook.book?.name?.let {
+                    scopes.add(it)
+                }
+                ReadBook.bookSource?.bookSourceUrl?.let {
+                    scopes.add(it)
+                }
+                val text = selectedText.lineSequence().map { it.trim() }.joinToString("\n")
+                showDialogFragment(
+                    HighlightRuleEditDialog.newInstance(
+                        sampleText = text,
+                        scope = scopes.joinToString("\n"),
+                        onSave = { rule ->
+                            lifecycleScope.launch {
+                                val rules = HighlightRuleStore.load(requireContext())
+                                val existingIndex = rules.indexOfFirst { it.id == rule.id }
+                                if (existingIndex >= 0) {
+                                    rules[existingIndex] = rule
+                                } else {
+                                    rules.add(rule)
+                                }
+                                HighlightRuleStore.save(requireContext(), rules)
+                                toastOnUi("高亮规则已保存")
+                            }
+                        }
                     )
                 )
                 return true

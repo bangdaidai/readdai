@@ -35,6 +35,8 @@ class HighlightRuleEditDialog(
     private val sourceRule: HighlightRule? = null,
     private val defaultGroup: String? = null,
     private val onSave: (HighlightRule) -> Unit = {},
+    private val defaultSampleText: String? = null,
+    private val defaultScope: String? = null,
 ) : BaseDialogFragment(R.layout.dialog_highlight_rule_edit, true), ColorPickerDialogListener {
 
     private val binding by viewBinding(DialogHighlightRuleEditBinding::bind)
@@ -44,6 +46,24 @@ class HighlightRuleEditDialog(
     private var secondaryTextColor = 0
     private var accentColor = 0
     private var isRegexMode = false
+
+    companion object {
+        fun newInstance(
+            sampleText: String? = null,
+            scope: String? = null,
+            sourceRule: HighlightRule? = null,
+            defaultGroup: String? = null,
+            onSave: (HighlightRule) -> Unit = {}
+        ): HighlightRuleEditDialog {
+            return HighlightRuleEditDialog(
+                sourceRule = sourceRule,
+                defaultGroup = defaultGroup,
+                onSave = onSave,
+                defaultSampleText = sampleText,
+                defaultScope = scope
+            )
+        }
+    }
 
     override fun onStart() {
         super.onStart()
@@ -56,7 +76,10 @@ class HighlightRuleEditDialog(
         initTheme()
         editingRule = sourceRule?.copy() ?: HighlightRule(
             group = defaultGroup ?: HighlightRuleGroupStore.DEFAULT_GROUP
-        )
+        ).apply {
+            defaultSampleText?.let { sampleText = it }
+            defaultScope?.let { scope = it }
+        }
         groupItems = HighlightRuleGroupStore.load(requireContext())
         setupViews()
         bindData()
@@ -87,6 +110,8 @@ class HighlightRuleEditDialog(
 
         binding.switchEnable.trackTintList = android.content.res.ColorStateList.valueOf(accentColor)
         binding.switchEnable.thumbTintList = android.content.res.ColorStateList.valueOf(accentColor)
+        binding.switchBold.trackTintList = android.content.res.ColorStateList.valueOf(accentColor)
+        binding.switchBold.thumbTintList = android.content.res.ColorStateList.valueOf(accentColor)
 
         binding.etPattern.setTextColor(primaryTextColor)
         binding.etPattern.setHintTextColor(secondaryTextColor)
@@ -102,6 +127,10 @@ class HighlightRuleEditDialog(
         binding.etUnderlineOffset.setTextColor(primaryTextColor)
         binding.etSvgPath.setTextColor(primaryTextColor)
         binding.etSvgPath.setHintTextColor(secondaryTextColor)
+        binding.etScope.setTextColor(primaryTextColor)
+        binding.etScope.setHintTextColor(secondaryTextColor)
+        binding.etExcludeScope.setTextColor(primaryTextColor)
+        binding.etExcludeScope.setHintTextColor(secondaryTextColor)
         binding.etSampleText.setTextColor(primaryTextColor)
         binding.etSampleText.setHintTextColor(secondaryTextColor)
 
@@ -145,6 +174,7 @@ class HighlightRuleEditDialog(
 
     private fun bindData() {
         binding.switchEnable.isChecked = editingRule.enabled
+        binding.switchBold.isChecked = editingRule.bold
         binding.etName.setText(editingRule.name)
         binding.etPattern.setText(editingRule.pattern)
         binding.etTextColor.setText(editingRule.textColor?.toHexColor().orEmpty())
@@ -153,6 +183,8 @@ class HighlightRuleEditDialog(
         binding.etUnderlineWidth.setText(editingRule.underlineWidth.toString())
         binding.etUnderlineOffset.setText(editingRule.underlineOffset.formatDistance())
         binding.etSvgPath.setText(editingRule.underlineSvgPath.orEmpty())
+        binding.etScope.setText(editingRule.scope.orEmpty())
+        binding.etExcludeScope.setText(editingRule.excludeScope.orEmpty())
         binding.etSampleText.setText(editingRule.sampleText.ifBlank { editingRule.normalizedSampleText() })
         binding.spBgImageFit.setSelection(editingRule.bgImageFit.coerceIn(0, 2))
         binding.sbBgImageScale.progress = (editingRule.bgImageScale.coerceIn(0.1f, 5f) * 10).toInt()
@@ -203,6 +235,10 @@ class HighlightRuleEditDialog(
         }
         binding.switchEnable.setOnCheckedChangeListener { _, isChecked ->
             editingRule.enabled = isChecked
+        }
+        binding.switchBold.setOnCheckedChangeListener { _, isChecked ->
+            editingRule.bold = isChecked
+            updatePreview()
         }
         binding.etName.doAfterTextChanged {
             editingRule.name = it?.toString().orEmpty()
@@ -369,6 +405,7 @@ class HighlightRuleEditDialog(
             },
             targetScope = binding.spTarget.selectedItemPosition.coerceIn(0, 2),
             enabled = binding.switchEnable.isChecked,
+            bold = binding.switchBold.isChecked,
             textColor = parseColorOrNull(binding.etTextColor.text?.toString().orEmpty()),
             bgColor = parseColorOrNull(binding.etBgColor.text?.toString().orEmpty()),
             underlineMode = binding.spUnderlineMode.selectedItemPosition,
@@ -378,7 +415,9 @@ class HighlightRuleEditDialog(
             underlineSvgPath = binding.etSvgPath.text?.toString().orEmpty().takeIf { binding.spUnderlineMode.selectedItemPosition == 5 }.orEmpty(),
             bgImage = binding.etBgImage.text?.toString().orEmpty().takeIf { it.isNotBlank() },
             bgImageFit = binding.spBgImageFit.selectedItemPosition,
-            bgImageScale = (binding.sbBgImageScale.progress.coerceAtLeast(1) / 10f).coerceIn(0.1f, 5f)
+            bgImageScale = (binding.sbBgImageScale.progress.coerceAtLeast(1) / 10f).coerceIn(0.1f, 5f),
+            scope = binding.etScope.text?.toString()?.takeIf { it.isNotBlank() },
+            excludeScope = binding.etExcludeScope.text?.toString()?.takeIf { it.isNotBlank() }
         )
         onSave(editingRule)
         dismissAllowingStateLoss()
