@@ -205,6 +205,7 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
         }
         var dialog: Dialog? = null
         val composeView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(this@ExploreShowActivity)
             setContent {
                 SearchBookPreviewSheet(
                     data = book,
@@ -226,7 +227,6 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
             setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
             setOnShowListener {
-                composeView.setViewTreeLifecycleOwner(this@ExploreShowActivity)
             }
             show()
         }

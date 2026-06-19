@@ -1423,6 +1423,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         }
         var dialog: Dialog? = null
         val composeView = ComposeView(requireContext()).apply {
+            setViewTreeLifecycleOwner(viewLifecycleOwner)
             setContent {
                 SearchBookPreviewSheet(
                     data = book,
@@ -1444,7 +1445,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
             setOnShowListener {
-                composeView.setViewTreeLifecycleOwner(viewLifecycleOwner)
             }
             show()
         }
