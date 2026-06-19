@@ -81,7 +81,8 @@ class ExploreShowAdapter(context: Context, val callBack: CallBack) :
                 callBack.showBookInfo(it)
             }
         }
-        holder.itemView.setOnLongClickListener {
+        holder.itemView.setOnLongClickListener { v ->
+            v.cancelLongPress()
             getItem(holder.bindingAdapterPosition - getHeaderCount())?.let {
                 callBack.onBookLongClick(it)
             }

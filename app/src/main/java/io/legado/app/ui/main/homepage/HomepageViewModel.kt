@@ -467,18 +467,20 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val exploreUrl = module.url ?: source.exploreUrl
                 if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
-                val books = if (isRanking) {
-                    val allBooks = mutableListOf<SearchBook>()
-                    var page = 1
-                    while (allBooks.size < 20 && page <= 3) {
-                        val pageBooks = WebBook.exploreBookAwait(source, exploreUrl, page)
-                        if (pageBooks.isEmpty()) break
-                        allBooks.addAll(pageBooks)
-                        page++
+                val books = withContext(Dispatchers.IO) {
+                    if (isRanking) {
+                        val allBooks = mutableListOf<SearchBook>()
+                        var page = 1
+                        while (allBooks.size < 20 && page <= 3) {
+                            val pageBooks = WebBook.exploreBookAwait(source, exploreUrl, page)
+                            if (pageBooks.isEmpty()) break
+                            allBooks.addAll(pageBooks)
+                            page++
+                        }
+                        allBooks.take(20)
+                    } else {
+                        WebBook.exploreBookAwait(source, exploreUrl, 1)
                     }
-                    allBooks.take(20)
-                } else {
-                    WebBook.exploreBookAwait(source, exploreUrl, 1)
                 }
 
                 val hasMore = isInfinite(module.type, module.layoutConfig) && books.isNotEmpty()
@@ -560,21 +562,26 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     fun onRefresh() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            loadJobs.values.forEach { it.cancel() }
-            loadJobs.clear()
-            val existingSourceUrls = uiState.value.modules.map { it.sourceUrl }.toSet()
-            val sourcesToSync = if (existingSourceUrls.isEmpty()) {
-                appDb.bookSourceDao.flowHomepageModules().first().map { it.bookSourceUrl }
-            } else {
-                existingSourceUrls
+            try {
+                loadJobs.values.forEach { it.cancel() }
+                loadJobs.clear()
+                val existingSourceUrls = uiState.value.modules.map { it.sourceUrl }.toSet()
+                val sourcesToSync = if (existingSourceUrls.isEmpty()) {
+                    appDb.bookSourceDao.flowHomepageModules().first().map { it.bookSourceUrl }
+                } else {
+                    existingSourceUrls
+                }
+                sourcesToSync.forEach { url ->
+                    resolveBookSource(url)?.let { syncModulesFromSource(it) }
+                }
+                _moduleContentStates.value = emptyMap()
+                uiState.map { it.modules }
+                    .first { modules -> modules.all { it.state !is ModuleLoadState.Loading } }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isRefreshing.value = false
             }
-            sourcesToSync.forEach { url ->
-                resolveBookSource(url)?.let { syncModulesFromSource(it) }
-            }
-            _moduleContentStates.value = emptyMap()
-            uiState.map { it.modules }
-                .first { modules -> modules.all { it.state !is ModuleLoadState.Loading } }
-            _isRefreshing.value = false
         }
     }
 

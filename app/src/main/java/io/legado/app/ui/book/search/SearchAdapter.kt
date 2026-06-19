@@ -77,7 +77,8 @@ class SearchAdapter(context: Context, val callBack: CallBack) :
                 callBack.showBookInfo(it.name, it.author, it.bookUrl)
             }
         }
-        binding.root.setOnLongClickListener {
+        binding.root.setOnLongClickListener { v ->
+            v.cancelLongPress()
             getItem(holder.layoutPosition)?.let {
                 callBack.onBookLongClick(it)
             }

@@ -150,15 +150,17 @@ fun HomepageScreen(
     val pageBgColor = remember { Color(context.backgroundColor) }
     val accentColor = remember { Color(context.accentColor) }
     val isTransparentStatusBar = remember { AppConfig.isTransparentStatusBar }
+    val elevationDp = remember { AppConfig.elevation.dp }
 
     Column(modifier = Modifier.fillMaxSize().background(pageBgColor)) {
         Surface(
             color = titleBarBgColor,
             modifier = Modifier.fillMaxWidth(),
+            shadowElevation = elevationDp,
         ) {
             Column(modifier = Modifier.then(if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = 4.dp),
+                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     if (layoutMode == 1 && selectedSets.size > 1) {

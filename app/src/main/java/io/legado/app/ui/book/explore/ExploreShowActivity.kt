@@ -1,10 +1,11 @@
 package io.legado.app.ui.book.explore
 
+import android.app.Dialog
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.ViewGroup
+import android.view.Window
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.bundleOf
 import androidx.lifecycle.viewModelScope
@@ -201,10 +202,11 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
         } else {
             io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
         }
-        var dialog: AlertDialog? = null
-        dialog = AlertDialog.Builder(this)
-            .setView(
-                ComposeView(this).apply {
+        var dialog: Dialog? = null
+        dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            setContentView(
+                ComposeView(this@ExploreShowActivity).apply {
                     setContent {
                         SearchBookPreviewSheet(
                             data = book,
@@ -222,7 +224,9 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
                     }
                 }
             )
-            .show()
+            window?.setBackgroundDrawableResource(android.R.color.transparent)
+            show()
+        }
     }
 
     private fun ExploreShowViewModel.addToBookshelf(book: SearchBook) {

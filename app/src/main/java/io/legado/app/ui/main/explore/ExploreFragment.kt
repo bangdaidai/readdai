@@ -95,6 +95,7 @@ import io.legado.app.utils.visible
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.windowSize
 import kotlinx.coroutines.CoroutineScope
+import android.app.Dialog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
@@ -105,6 +106,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.view.Window
 import androidx.compose.ui.platform.ComposeView
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
@@ -1418,9 +1420,10 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         } else {
             BookShelfState.NOT_IN_SHELF
         }
-        var dialog: AlertDialog? = null
-        dialog = AlertDialog.Builder(requireContext())
-            .setView(
+        var dialog: Dialog? = null
+        dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            setContentView(
                 ComposeView(requireContext()).apply {
                     setContent {
                         SearchBookPreviewSheet(
@@ -1439,7 +1442,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                     }
                 }
             )
-            .show()
+            window?.setBackgroundDrawableResource(android.R.color.transparent)
+            show()
+        }
     }
 
     fun compressExplore() {

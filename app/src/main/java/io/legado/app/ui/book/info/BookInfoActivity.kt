@@ -24,8 +24,12 @@ import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.target.Target
 import com.bumptech.glide.request.transition.Transition
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
@@ -47,6 +51,7 @@ import io.legado.app.help.GlideImageGetter
 import io.legado.app.help.TextViewTagHandler
 import io.legado.app.help.book.addType
 import io.legado.app.help.book.getRemoteUrl
+import io.legado.app.help.glide.ImageLoader
 import io.legado.app.help.book.isAudio
 import io.legado.app.help.book.isImage
 import io.legado.app.help.book.isLocal
@@ -771,64 +776,80 @@ class BookInfoActivity :
     }
 
     private fun showCover(book: Book) {
+        val coverPath = book.getDisplayCover()
         binding.ivCover.load(book, false) {
             if (!AppConfig.isEInkMode) {
-                BookCover.loadBlur(this, book.getDisplayCover(), false, book.origin)
+                BookCover.loadBlur(this, coverPath, false, book.origin)
+                    .listener(object : RequestListener<android.graphics.drawable.Drawable> {
+                        override fun onLoadFailed(
+                            e: GlideException?,
+                            model: Any?,
+                            target: Target<android.graphics.drawable.Drawable>,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            return false
+                        }
+
+                        override fun onResourceReady(
+                            resource: android.graphics.drawable.Drawable,
+                            model: Any,
+                            target: Target<android.graphics.drawable.Drawable>?,
+                            dataSource: DataSource,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            if (!AppConfig.isEInkMode && !coverPath.isNullOrBlank()) {
+                                extractCoverColor(coverPath)
+                            }
+                            return false
+                        }
+                    })
                     .into(binding.bgBook)
             }
         }
+    }
 
-        if (!AppConfig.isEInkMode) {
-            val coverPath = book.getDisplayCover()
-            if (!coverPath.isNullOrBlank()) {
-                Glide.with(this@BookInfoActivity)
-                    .asBitmap()
-                    .load(coverPath)
-                    .override(128, 128)
-                    .into(object : CustomTarget<Bitmap>() {
-                        override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                            val dominantColor = CoverColorExtractor.extractDominantColor(resource)
-                            updateGradientBackground(dominantColor)
-                        }
+    private fun extractCoverColor(coverPath: String) {
+        ImageLoader.load(this, coverPath)
+            .override(128, 128)
+            .into(object : CustomTarget<android.graphics.drawable.Drawable>() {
+                override fun onResourceReady(
+                    resource: android.graphics.drawable.Drawable,
+                    transition: Transition<in android.graphics.drawable.Drawable>?
+                ) {
+                    if (resource is android.graphics.drawable.BitmapDrawable) {
+                        val dominantColor = CoverColorExtractor.extractDominantColor(resource.bitmap)
+                        updateGradientBackground(dominantColor)
+                    }
+                }
 
-                        override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
-                        }
+                override fun onLoadCleared(placeholder: android.graphics.drawable.Drawable?) {
+                }
 
-                        override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
-                            updateGradientBackground(Color.GRAY)
-                        }
-                    })
-            }
-        }
+                override fun onLoadFailed(errorDrawable: android.graphics.drawable.Drawable?) {
+                    updateGradientBackground(Color.GRAY)
+                }
+            })
     }
 
     private fun updateGradientBackground(dominantColor: Int) {
         val darkenedColor = CoverColorExtractor.darkenColor(dominantColor, 0.6f)
         val lightenedColor = CoverColorExtractor.lightenColor(dominantColor, 0.3f)
 
-        val gradientDrawable = GradientDrawable(
+        binding.gradientCover?.background = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
             intArrayOf(
                 Color.TRANSPARENT,
-                Color.argb(25, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor)),
-                Color.argb(51, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor))
+                Color.argb(80, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor)),
+                Color.argb(160, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor))
             )
         )
-
-        binding.vwBg.background = gradientDrawable
 
         val arcColor = Color.argb(230, Color.red(lightenedColor), Color.green(lightenedColor), Color.blue(lightenedColor))
         binding.arcView?.setBgColor(arcColor)
 
-        val infoGradientDrawable = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(
-                Color.argb(40, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor)),
-                Color.argb(20, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor)),
-                backgroundColor
-            )
+        binding.llInfo.setBackgroundColor(
+            Color.argb(180, Color.red(darkenedColor), Color.green(darkenedColor), Color.blue(darkenedColor))
         )
-        binding.llInfo.background = infoGradientDrawable
     }
 
     private fun upLoading(isLoading: Boolean, chapterList: List<BookChapter>? = null) {

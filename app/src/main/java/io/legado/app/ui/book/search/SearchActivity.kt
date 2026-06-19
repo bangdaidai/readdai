@@ -1,5 +1,6 @@
 package io.legado.app.ui.book.search
 
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -7,6 +8,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View.GONE
 import android.view.View.VISIBLE
+import android.view.Window
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -526,10 +528,11 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
         } else {
             io.legado.app.domain.model.BookShelfState.NOT_IN_SHELF
         }
-        var dialog: AlertDialog? = null
-        dialog = AlertDialog.Builder(this)
-            .setView(
-                ComposeView(this).apply {
+        var dialog: Dialog? = null
+        dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+            setContentView(
+                ComposeView(this@SearchActivity).apply {
                     setContent {
                         SearchBookPreviewSheet(
                             data = book,
@@ -547,7 +550,9 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
                     }
                 }
             )
-            .show()
+            window?.setBackgroundDrawableResource(android.R.color.transparent)
+            show()
+        }
     }
 
     /**
