@@ -134,6 +134,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             )
         }
     }
+    }
 
     private fun initView() {
         binding.recyclerView?.setEdgeEffectColor(primaryColor)
