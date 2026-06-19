@@ -327,7 +327,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     private fun initView() = binding.run {
         // Initialize ViewPager - use single ViewPager like archive
         viewPagerMain.setEdgeEffectColor(primaryColor)
-        viewPagerMain.offscreenPageLimit = 3
+        viewPagerMain.offscreenPageLimit = bottomMenuCount.coerceAtLeast(1) - 1
         viewPagerMain.adapter = adapter
         viewPagerMain.addOnPageChangeListener(PageChangeCallback())
         
@@ -1184,6 +1184,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         realPositions[index] = idMy
         bottomMenuCount = index + 1
+        binding.viewPagerMain.offscreenPageLimit = bottomMenuCount.coerceAtLeast(1) - 1
         adapter.notifyDataSetChanged()
     }
 
