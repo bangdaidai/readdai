@@ -19,38 +19,38 @@ import io.legado.app.lib.theme.secondaryTextColor
 fun ReaddaiTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val defaultScheme = MaterialTheme.colorScheme
-    val accent = Color(context.accentColor)
-    val bg = Color(context.backgroundColor)
-    val cardBg = Color(context.backgroundCard)
-    val textPrimary = Color(context.primaryTextColor)
-    val textSecondary = Color(context.secondaryTextColor)
-    val divider = Color(context.dividerColor)
-    val titleBarTextIcon = Color(ThemeStore.titleBarTextIconColor(context))
+    val accentColor = Color(context.accentColor)
+    val backgroundColor = Color(context.backgroundColor)
+    val cardBackground = Color(context.backgroundCard)
+    val textColorPrimary = Color(context.primaryTextColor)
+    val textColorSecondary = Color(context.secondaryTextColor)
+    val dividerColor = Color(context.dividerColor)
+    val titleBarTextIconColor = Color(ThemeStore.titleBarTextIconColor(context))
 
-    val colorScheme = remember(accent, bg, cardBg, textPrimary, textSecondary, divider, titleBarTextIcon) {
+    val colorScheme = remember(accentColor, backgroundColor, cardBackground, textColorPrimary, textColorSecondary, dividerColor, titleBarTextIconColor) {
         defaultScheme.copy(
-            primary = accent,
-            onPrimary = titleBarTextIcon,
-            primaryContainer = accent.copy(alpha = 0.25f),
-            onPrimaryContainer = accent,
-            secondary = accent,
-            onSecondary = titleBarTextIcon,
-            tertiary = accent,
-            onTertiary = titleBarTextIcon,
-            tertiaryContainer = accent.copy(alpha = 0.2f),
-            background = bg,
-            onBackground = textPrimary,
-            surface = bg,
-            onSurface = textPrimary,
-            surfaceVariant = cardBg,
-            onSurfaceVariant = textSecondary,
-            surfaceContainerLowest = bg,
-            surfaceContainerLow = bg,
-            surfaceContainer = bg,
-            surfaceContainerHigh = cardBg,
-            surfaceContainerHighest = cardBg,
-            outline = divider,
-            outlineVariant = divider.copy(alpha = 0.5f),
+            primary = accentColor,
+            onPrimary = titleBarTextIconColor,
+            primaryContainer = accentColor.copy(alpha = 0.25f),
+            onPrimaryContainer = accentColor,
+            secondary = accentColor,
+            onSecondary = titleBarTextIconColor,
+            tertiary = accentColor,
+            onTertiary = titleBarTextIconColor,
+            tertiaryContainer = accentColor.copy(alpha = 0.2f),
+            background = backgroundColor,
+            onBackground = textColorPrimary,
+            surface = backgroundColor,
+            onSurface = textColorPrimary,
+            surfaceVariant = cardBackground,
+            onSurfaceVariant = textColorSecondary,
+            surfaceContainerLowest = backgroundColor,
+            surfaceContainerLow = backgroundColor,
+            surfaceContainer = backgroundColor,
+            surfaceContainerHigh = cardBackground,
+            surfaceContainerHighest = cardBackground,
+            outline = dividerColor,
+            outlineVariant = dividerColor.copy(alpha = 0.5f),
         )
     }
     MaterialTheme(colorScheme = colorScheme, content = content)

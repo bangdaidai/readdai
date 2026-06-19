@@ -380,7 +380,7 @@ result = `<img src = "${url}">`;
 > 书籍详情页支持轻度显示html字符串样式（同字典规则）  
 > 获取到的简介字符串需要用`<usehtml></usehtml>`包裹起来才能识别  
 > 按钮文本需要含有@onclick:执行内容才能被识别  
-```
+```xml
 <usehtml>
 <p style="text-align:end">右对齐文本</p>
 <button>点我@onclick:java.toast("Hello World")</button>

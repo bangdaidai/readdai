@@ -43,6 +43,7 @@ import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
+import io.legado.app.ui.main.homepage.ReaddaiTheme
 import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.applyNavigationBarMargin
@@ -534,27 +535,27 @@ class SearchActivity : VMBaseActivity<ActivityBookSearchBinding, SearchViewModel
             setViewTreeLifecycleOwner(this@SearchActivity)
             this.setViewTreeSavedStateRegistryOwner(this@SearchActivity)
             setContent {
-                SearchBookPreviewSheet(
-                    data = book,
-                    shelfState = shelfState,
-                    onDismissRequest = { dialog?.dismiss() },
-                    onOpenDetail = { b ->
-                        showBookInfo(b.name, b.author, b.bookUrl)
-                        dialog?.dismiss()
-                    },
-                    onAddToShelf = { b ->
-                        viewModel.addToBookshelf(b)
-                        dialog?.dismiss()
-                    }
-                )
+                ReaddaiTheme {
+                    SearchBookPreviewSheet(
+                        data = book,
+                        shelfState = shelfState,
+                        onDismissRequest = { dialog?.dismiss() },
+                        onOpenDetail = { b ->
+                            showBookInfo(b.name, b.author, b.bookUrl)
+                            dialog?.dismiss()
+                        },
+                        onAddToShelf = { b ->
+                            viewModel.addToBookshelf(b)
+                            dialog?.dismiss()
+                        }
+                    )
+                }
             }
         }
-        dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+        dialog = Dialog(this, R.style.Theme_Transparent_Dialog).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
             setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
-            setOnShowListener {
-            }
             show()
         }
     }

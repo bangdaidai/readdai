@@ -20,6 +20,7 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.databinding.ActivityExploreShowBinding
 import io.legado.app.databinding.ViewLoadMoreBinding
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.main.homepage.ReaddaiTheme
 import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
 import io.legado.app.ui.widget.number.NumberPickerDialog
 import io.legado.app.ui.widget.recycler.LoadMoreView
@@ -209,27 +210,27 @@ class ExploreShowActivity : VMBaseActivity<ActivityExploreShowBinding, ExploreSh
             setViewTreeLifecycleOwner(this@ExploreShowActivity)
             this.setViewTreeSavedStateRegistryOwner(this@ExploreShowActivity)
             setContent {
-                SearchBookPreviewSheet(
-                    data = book,
-                    shelfState = shelfState,
-                    onDismissRequest = { dialog?.dismiss() },
-                    onOpenDetail = { b ->
-                        showBookInfo(b)
-                        dialog?.dismiss()
-                    },
-                    onAddToShelf = { b ->
-                        viewModel.addToBookshelf(b)
-                        dialog?.dismiss()
-                    }
-                )
+                ReaddaiTheme {
+                    SearchBookPreviewSheet(
+                        data = book,
+                        shelfState = shelfState,
+                        onDismissRequest = { dialog?.dismiss() },
+                        onOpenDetail = { b ->
+                            showBookInfo(b)
+                            dialog?.dismiss()
+                        },
+                        onAddToShelf = { b ->
+                            viewModel.addToBookshelf(b)
+                            dialog?.dismiss()
+                        }
+                    )
+                }
             }
         }
-        dialog = Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+        dialog = Dialog(this, R.style.Theme_Transparent_Dialog).apply {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
             setContentView(composeView)
             window?.setBackgroundDrawableResource(android.R.color.transparent)
-            setOnShowListener {
-            }
             show()
         }
     }

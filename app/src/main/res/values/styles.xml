@@ -205,4 +205,12 @@
         <item name="actionBarStyle">@style/AppTheme.AppBarOverlay.Universal</item>
     </style>
 
+    <style name="Theme.Transparent.Dialog" parent="Theme.MaterialComponents.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="colorSurface">@android:color/transparent</item>
+    </style>
+
 </resources>
