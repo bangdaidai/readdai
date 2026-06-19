@@ -25,22 +25,14 @@ import io.legado.app.model.analyzeRule.AnalyzeUrl.Companion.paramPattern
 import io.legado.app.utils.GSON
 import io.legado.app.utils.SvgUtils
 import io.legado.app.utils.fromJsonObject
-import java.lang.ref.WeakReference
 import io.legado.app.utils.lifecycle
 import java.io.ByteArrayInputStream
-import kotlin.io.encoding.Base64
-import io.legado.app.utils.SvgUtils
+import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.io.encoding.Base64
 import kotlin.text.dropLast
 import kotlin.text.endsWith
 import kotlin.text.toIntOrNull
-import androidx.core.graphics.drawable.toDrawable
-import android.graphics.Color
-import com.bumptech.glide.request.RequestOptions
-import io.legado.app.data.appDb
-import io.legado.app.help.glide.OkHttpModelLoader
-import io.legado.app.model.analyzeRule.AnalyzeUrl
 
 class GlideImageGetter(
     context: Context,
