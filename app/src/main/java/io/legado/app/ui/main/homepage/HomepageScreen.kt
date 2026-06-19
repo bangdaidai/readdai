@@ -88,7 +88,7 @@ import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
-import io.legado.app.lib.theme.MaterialValueHelper.elevation
+import io.legado.app.lib.theme.elevation
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.ui.main.homepage.modules.HomepageModuleSkeleton
 import io.legado.app.ui.main.homepage.modules.BannerModule

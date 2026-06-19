@@ -34,9 +34,9 @@ import io.legado.app.ui.book.read.config.HighlightRulePreview
 class HighlightRuleEditDialog(
     private val sourceRule: HighlightRule? = null,
     private val defaultGroup: String? = null,
-    private val onSave: (HighlightRule) -> Unit = {},
     private val defaultSampleText: String? = null,
     private val defaultScope: String? = null,
+    private val onSave: (HighlightRule) -> Unit = {},
 ) : BaseDialogFragment(R.layout.dialog_highlight_rule_edit, true), ColorPickerDialogListener {
 
     private val binding by viewBinding(DialogHighlightRuleEditBinding::bind)
