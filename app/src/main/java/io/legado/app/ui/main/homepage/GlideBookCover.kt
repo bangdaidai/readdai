@@ -49,7 +49,7 @@ fun GlideBookCover(
             })
 
         onDispose {
-            com.bumptech.glide.Glide.with(context).clear(glide)
+            com.bumptech.glide.Glide.with(context.applicationContext).clear(glide)
         }
     }
 
