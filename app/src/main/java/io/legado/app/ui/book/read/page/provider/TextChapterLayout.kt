@@ -1,15 +1,18 @@
 package io.legado.app.ui.book.read.page.provider
 
 import android.graphics.Paint
+import android.graphics.Typeface
 import android.text.Layout
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.ImageSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.ReplacementSpan
+import android.text.style.StyleSpan
 import android.text.style.URLSpan
 import android.util.Size
 import androidx.core.text.HtmlCompat
@@ -32,6 +35,7 @@ import io.legado.app.help.book.getBookSource
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.coroutine.Coroutine
+import io.legado.app.help.highlight.HighlightRuleStore
 import io.legado.app.model.ImageProvider
 import io.legado.app.model.ReadBook
 import io.legado.app.model.analyzeRule.AnalyzeUrl.Companion.paramPattern
@@ -886,14 +890,15 @@ class TextChapterLayout(
         srcList: LinkedList<String>? = null,
         clickList: LinkedList<String?>? = null
     ) {
+        val styledText = applyHighlightRules(SpannableStringBuilder(text), isTitle)
         val widthsArray = allocateFloatArray(text.length)
         textPaint.getTextWidthsCompat(text, widthsArray, reviewCharWidth)
         val layout = if (useZhLayout) {
             val (words, widths) = measureTextSplit(text, widthsArray)
             val indentSize = if (isFirstLine) paragraphIndent.length else 0
-            ZhLayout(text, textPaint, visibleWidth, words, widths, indentSize)
+            ZhLayout(styledText, textPaint, visibleWidth, words, widths, indentSize)
         } else {
-            StaticLayout(text, textPaint, visibleWidth, Layout.Alignment.ALIGN_NORMAL, 0f, 0f, true)
+            StaticLayout(styledText, textPaint, visibleWidth, Layout.Alignment.ALIGN_NORMAL, 0f, 0f, true)
         }
         durY = when {
             emptyContent && textPages.isEmpty() -> {
@@ -942,7 +947,7 @@ class TextChapterLayout(
                 0 if layout.lineCount > 1 && !isTitle && isFirstLine -> {
                     addCharsToLineFirst(
                         book, absStartX, textLine, words, textPaint,
-                        desiredWidth, widths, srcList, clickList
+                        desiredWidth, widths, srcList, clickList, styledText, lineStart
                     )
                 }
                 layout.lineCount - 1 -> {
@@ -959,7 +964,7 @@ class TextChapterLayout(
                     }
                     addCharsToLineNatural(
                         book, absStartX, textLine, words,
-                        startX, !isTitle && lineIndex == 0, widths, srcList, clickList
+                        startX, !isTitle && lineIndex == 0, widths, srcList, clickList, styledText, lineStart
                     )
                 }
                 else -> {
@@ -971,18 +976,18 @@ class TextChapterLayout(
                         val startX = (visibleWidth - desiredWidth) / 2
                         addCharsToLineNatural(
                             book, absStartX, textLine, words,
-                            startX, false, widths, srcList, clickList
+                            startX, false, widths, srcList, clickList, styledText, lineStart
                         )
                     } else if (isTitle && isRightTitle) {
                         val startX = visibleWidth - desiredWidth
                         addCharsToLineNatural(
                             book, absStartX, textLine, words,
-                            startX, false, widths, srcList, clickList
+                            startX, false, widths, srcList, clickList, styledText, lineStart
                         )
                     } else {
                         addCharsToLineMiddle(
                             book, absStartX, textLine, words, textPaint,
-                            desiredWidth, 0f, widths, srcList, clickList
+                            desiredWidth, 0f, widths, srcList, clickList, styledText, lineStart
                         )
                     }
                 }
@@ -1032,13 +1037,15 @@ class TextChapterLayout(
         desiredWidth: Float,
         textWidths: List<Float>,
         srcList: LinkedList<String>?,
-        clickList: LinkedList<String?>?
+        clickList: LinkedList<String?>?,
+        styledText: CharSequence,
+        lineStart: Int
     ) {
         var x = 0f
         if (!textFullJustify) {
             addCharsToLineNatural(
                 book, absStartX, textLine, words,
-                x, true, textWidths, srcList, clickList
+                x, true, textWidths, srcList, clickList, styledText, lineStart
             )
             return
         }
@@ -1062,7 +1069,7 @@ class TextChapterLayout(
             val textWidths1 = textWidths.subList(bodyIndent.length, textWidths.size)
             addCharsToLineMiddle(
                 book, absStartX, textLine, text1, textPaint,
-                desiredWidth, x, textWidths1, srcList, clickList
+                desiredWidth, x, textWidths1, srcList, clickList, styledText, lineStart + bodyIndent.length
             )
         }
     }
@@ -1077,12 +1084,14 @@ class TextChapterLayout(
         startX: Float,
         textWidths: List<Float>,
         srcList: LinkedList<String>?,
-        clickList: LinkedList<String?>?
+        clickList: LinkedList<String?>?,
+        styledText: CharSequence,
+        lineStart: Int
     ) {
         if (!textFullJustify) {
             addCharsToLineNatural(
                 book, absStartX, textLine, words,
-                startX, false, textWidths, srcList, clickList
+                startX, false, textWidths, srcList, clickList, styledText, lineStart
             )
             return
         }
@@ -1104,7 +1113,7 @@ class TextChapterLayout(
                 addCharToLine(
                     book, absStartX, textLine, char,
                     x, x1, index + 1 == words.size, srcList,
-                    clickList
+                    clickList, styledText, lineStart + index
                 )
                 x = x1
             }
@@ -1121,7 +1130,7 @@ class TextChapterLayout(
                 addCharToLine(
                     book, absStartX, textLine, char,
                     x, x1, index + 1 == words.size, srcList,
-                    clickList
+                    clickList, styledText, lineStart + index
                 )
                 x = x1
             }
@@ -1138,7 +1147,9 @@ class TextChapterLayout(
         hasIndent: Boolean,
         textWidths: List<Float>,
         srcList: LinkedList<String>?,
-        clickList: LinkedList<String?>?
+        clickList: LinkedList<String?>?,
+        styledText: CharSequence,
+        lineStart: Int
     ) {
         val indentLength = paragraphIndent.length
         var x = startX
@@ -1156,7 +1167,9 @@ class TextChapterLayout(
                 x1,
                 index + 1 == words.size,
                 srcList,
-                clickList
+                clickList,
+                styledText,
+                lineStart + index
             )
             x = x1
             if (hasIndent && index == indentLength - 1) {
@@ -1175,8 +1188,20 @@ class TextChapterLayout(
         xEnd: Float,
         isLineEnd: Boolean,
         srcList: LinkedList<String>?,
-        clickList: LinkedList<String?>?
+        clickList: LinkedList<String?>?,
+        styledText: CharSequence,
+        textIndex: Int
     ) {
+        val spanned = styledText as? Spanned
+        val textColor = spanned?.let {
+            val spans = it.getSpans(textIndex, textIndex + 1, ForegroundColorSpan::class.java)
+            spans.firstOrNull()?.foregroundColor
+        }
+        val bgColor = spanned?.let {
+            val spans = it.getSpans(textIndex, textIndex + 1, BackgroundColorSpan::class.java)
+            spans.firstOrNull()?.backgroundColor
+        }
+        val highlightStyle = spanned?.let { extractHighlightStyle(it, textIndex) }
         val column = when {
             !srcList.isNullOrEmpty() && (char == srcReplaceStr || char == reviewStr) -> {
                 val src = srcList.removeFirst()
@@ -1194,7 +1219,10 @@ class TextChapterLayout(
                 TextColumn(
                     start = absStartX + xStart,
                     end = absStartX + xEnd,
-                    charData = char
+                    charData = char,
+                    highlightColor = textColor,
+                    highlightStyle = highlightStyle,
+                    columnBgColor = bgColor
                 )
             }
         }
@@ -1287,4 +1315,131 @@ class TextChapterLayout(
         val code = char.code
         return code == 8203 || code == 8204 || code == 8205 || code == 8288
     }
+
+    private val compiledHighlightRules by lazy {
+        HighlightRuleStore.loadEnabled(appCtx).mapNotNull { rule ->
+            kotlin.runCatching {
+                CompiledHighlightRule(
+                    rule = rule,
+                    regex = Regex(rule.pattern)
+                )
+            }.getOrNull()
+        }
+    }
+
+    private fun applyHighlightRules(
+        spannable: SpannableStringBuilder,
+        isTitle: Boolean = false
+    ): SpannableStringBuilder {
+        if (ReadBook.book?.getUseHighlightRule() != true) return spannable
+        compiledHighlightRules.forEach { compiled ->
+            if (!compiled.rule.appliesTo(isTitle)) return@forEach
+            applyRuleSpans(spannable, compiled.rule, compiled.regex)
+        }
+        return spannable
+    }
+
+    private fun applyRuleSpans(
+        spannable: SpannableStringBuilder,
+        rule: io.legado.app.data.entities.HighlightRule,
+        regex: Regex
+    ) {
+        regex.findAll(spannable).forEach { match ->
+            val start = match.range.first
+            val end = match.range.last + 1
+            if (start >= end) return@forEach
+            rule.textColor?.let { color ->
+                spannable.setSpan(
+                    ForegroundColorSpan(color),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            rule.bgColor?.let { color ->
+                spannable.setSpan(
+                    BackgroundColorSpan(color),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            if (rule.bold) {
+                spannable.setSpan(
+                    StyleSpan(Typeface.BOLD),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+            if (rule.underlineMode != 0 || !rule.bgImage.isNullOrBlank()) {
+                spannable.setSpan(
+                    HighlightStyleSpan(
+                        underlineMode = rule.underlineMode,
+                        underlineColor = rule.underlineColor ?: rule.textColor ?: 0xFF63C37D.toInt(),
+                        underlineWidth = rule.underlineWidth,
+                        underlineOffset = rule.underlineOffset,
+                        underlineSvgPath = rule.underlineSvgPath.orEmpty(),
+                        bgImage = rule.bgImage.orEmpty(),
+                        bgImageFit = rule.bgImageFit,
+                        bgImageScale = rule.bgImageScale
+                    ),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+        }
+    }
+
+    private fun extractHighlightStyle(spanned: Spanned, index: Int): HighlightStyleSpan? {
+        val spans = spanned.getSpans(
+            index,
+            index + 1,
+            HighlightStyleSpan::class.java
+        ) ?: return null
+        if (spans.isEmpty()) return null
+        var underlineMode = 0
+        var underlineColor = 0xFF63C37D.toInt()
+        var underlineWidth = 1f
+        var underlineOffset = 2f
+        var underlineSvgPath = ""
+        var bgImage = ""
+        var bgImageFit = 0
+        var bgImageScale = 1f
+        var hasUnderline = false
+        var hasBgImage = false
+        spans.forEach { span ->
+            if (span.underlineMode != 0) {
+                underlineMode = span.underlineMode
+                underlineColor = span.underlineColor
+                underlineWidth = span.underlineWidth
+                underlineOffset = span.underlineOffset
+                underlineSvgPath = span.underlineSvgPath
+                hasUnderline = true
+            }
+            if (span.bgImage.isNotEmpty()) {
+                bgImage = span.bgImage
+                bgImageFit = span.bgImageFit
+                bgImageScale = span.bgImageScale
+                hasBgImage = true
+            }
+        }
+        if (!hasUnderline && !hasBgImage) return null
+        return HighlightStyleSpan(
+            underlineMode = if (hasUnderline) underlineMode else 0,
+            underlineColor = underlineColor,
+            underlineWidth = underlineWidth,
+            underlineOffset = underlineOffset,
+            underlineSvgPath = if (hasUnderline) underlineSvgPath else "",
+            bgImage = if (hasBgImage) bgImage else "",
+            bgImageFit = if (hasBgImage) bgImageFit else 0,
+            bgImageScale = if (hasBgImage) bgImageScale else 1f,
+        )
+    }
+
+    private data class CompiledHighlightRule(
+        val rule: io.legado.app.data.entities.HighlightRule,
+        val regex: Regex,
+    )
 }

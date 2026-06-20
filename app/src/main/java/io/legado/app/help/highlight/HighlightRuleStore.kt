@@ -254,13 +254,16 @@ object HighlightRuleStore {
                     targetScope = normalizeTargetScope(safeRule.targetScope, builtin.targetScope),
                     textColor = safeRule.textColor ?: builtin.textColor,
                     bgColor = safeRule.bgColor ?: builtin.bgColor,
+                    bold = safeRule.bold,
                     underlineMode = safeRule.underlineMode.takeIf { it != 0 } ?: builtin.underlineMode,
                     underlineColor = safeRule.underlineColor ?: builtin.underlineColor,
                     underlineWidth = safeRule.underlineWidth.takeIf { it != 1f } ?: builtin.underlineWidth,
                     underlineSvgPath = safeRule.underlineSvgPath ?: builtin.underlineSvgPath,
                     bgImage = safeRule.bgImage ?: builtin.bgImage,
                     bgImageFit = safeRule.bgImageFit.takeIf { it != 0 } ?: builtin.bgImageFit,
-                    bgImageScale = safeRule.bgImageScale.takeIf { it != 1f } ?: builtin.bgImageScale
+                    bgImageScale = safeRule.bgImageScale.takeIf { it != 1f } ?: builtin.bgImageScale,
+                    scope = safeRule.scope,
+                    excludeScope = safeRule.excludeScope,
                 )
             } else {
                 safeRule.copy(
@@ -284,6 +287,8 @@ object HighlightRuleStore {
         }
         val underlineSvgPath = runCatching { rule.underlineSvgPath }.getOrNull()
         val bgImage = runCatching { rule.bgImage }.getOrNull()?.takeIf { it.isNotBlank() }
+        val scope = runCatching { rule.scope }.getOrNull()?.takeIf { it.isNotBlank() }
+        val excludeScope = runCatching { rule.excludeScope }.getOrNull()?.takeIf { it.isNotBlank() }
         return HighlightRule(
             id = id,
             name = name,
@@ -294,6 +299,7 @@ object HighlightRuleStore {
             enabled = runCatching { rule.enabled }.getOrDefault(true),
             textColor = runCatching { rule.textColor }.getOrNull(),
             bgColor = runCatching { rule.bgColor }.getOrNull(),
+            bold = runCatching { rule.bold }.getOrDefault(false),
             underlineMode = runCatching { rule.underlineMode }.getOrDefault(0).coerceIn(0, 5),
             underlineColor = runCatching { rule.underlineColor }.getOrNull(),
             underlineWidth = runCatching { rule.underlineWidth }.getOrDefault(1f).coerceIn(0.1f, 10f),
@@ -302,6 +308,8 @@ object HighlightRuleStore {
             bgImage = bgImage,
             bgImageFit = runCatching { rule.bgImageFit }.getOrDefault(0).coerceIn(0, 2),
             bgImageScale = runCatching { rule.bgImageScale }.getOrDefault(1f).coerceIn(0.1f, 5f),
+            scope = scope,
+            excludeScope = excludeScope,
         )
     }
 

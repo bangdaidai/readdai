@@ -74,12 +74,13 @@ class HighlightRuleEditDialog(
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         initTheme()
-        editingRule = sourceRule?.copy() ?: HighlightRule(
+        val baseRule = sourceRule?.copy() ?: HighlightRule(
             group = defaultGroup ?: HighlightRuleGroupStore.DEFAULT_GROUP
-        ).apply {
-            defaultSampleText?.let { sampleText = it }
-            defaultScope?.let { scope = it }
-        }
+        )
+        editingRule = baseRule.copy(
+            sampleText = defaultSampleText ?: baseRule.sampleText,
+            scope = defaultScope ?: baseRule.scope
+        )
         groupItems = HighlightRuleGroupStore.load(requireContext())
         setupViews()
         bindData()
