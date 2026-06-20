@@ -511,7 +511,7 @@ private fun ModuleList(
 @Composable
 private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 0.dp, end = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
