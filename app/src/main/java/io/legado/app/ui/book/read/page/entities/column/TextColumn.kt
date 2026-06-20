@@ -22,6 +22,7 @@ data class TextColumn(
     val highlightColor: Int? = null,
     val highlightStyle: HighlightStyleSpan? = null,
     val columnBgColor: Int? = null,
+    val columnBold: Boolean = false,
 ) : TextBaseColumn {
 
     override var textLine: TextLine = emptyTextLine
@@ -46,6 +47,8 @@ data class TextColumn(
     override val bgImageFit: Int get() = highlightStyle?.bgImageFit ?: 0
 
     override val bgImageScale: Float get() = highlightStyle?.bgImageScale ?: 1f
+
+    override val isBold: Boolean get() = columnBold
 
     override var selected: Boolean = false
         set(value) {
@@ -88,6 +91,10 @@ data class TextColumn(
         if (textPaint.color != drawColor) {
             textPaint.color = drawColor
         }
+        val originalFakeBold = textPaint.isFakeBoldText
+        if (isBold && !originalFakeBold) {
+            textPaint.isFakeBoldText = true
+        }
 
         val y = textLine.lineBase - textLine.lineTop
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
@@ -96,6 +103,10 @@ data class TextColumn(
             canvas.drawText(charData, start + letterSpacingHalf, y, textPaint)
         } else {
             canvas.drawText(charData, start, y, textPaint)
+        }
+
+        if (isBold && !originalFakeBold) {
+            textPaint.isFakeBoldText = false
         }
 
         if (selected && !isSearchResult) {

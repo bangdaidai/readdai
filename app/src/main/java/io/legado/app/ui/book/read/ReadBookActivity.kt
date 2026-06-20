@@ -1165,6 +1165,7 @@ $content
                 showDialogFragment(
                     HighlightRuleEditDialog.newInstance(
                         sampleText = text,
+                        pattern = text,
                         scope = scopes.joinToString("\n"),
                         onSave = { rule ->
                             lifecycleScope.launch {

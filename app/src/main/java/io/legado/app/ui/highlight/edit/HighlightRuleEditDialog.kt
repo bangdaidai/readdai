@@ -35,6 +35,7 @@ class HighlightRuleEditDialog(
     private val sourceRule: HighlightRule? = null,
     private val defaultGroup: String? = null,
     private val defaultSampleText: String? = null,
+    private val defaultPattern: String? = null,
     private val defaultScope: String? = null,
     private val onSave: (HighlightRule) -> Unit = {},
 ) : BaseDialogFragment(R.layout.dialog_highlight_rule_edit, true), ColorPickerDialogListener {
@@ -50,6 +51,7 @@ class HighlightRuleEditDialog(
     companion object {
         fun newInstance(
             sampleText: String? = null,
+            pattern: String? = null,
             scope: String? = null,
             sourceRule: HighlightRule? = null,
             defaultGroup: String? = null,
@@ -60,6 +62,7 @@ class HighlightRuleEditDialog(
                 defaultGroup = defaultGroup,
                 onSave = onSave,
                 defaultSampleText = sampleText,
+                defaultPattern = pattern,
                 defaultScope = scope
             )
         }
@@ -79,6 +82,7 @@ class HighlightRuleEditDialog(
         )
         editingRule = baseRule.copy(
             sampleText = defaultSampleText ?: baseRule.sampleText,
+            pattern = defaultPattern ?: baseRule.pattern,
             scope = defaultScope ?: baseRule.scope
         )
         groupItems = HighlightRuleGroupStore.load(requireContext())
@@ -109,10 +113,30 @@ class HighlightRuleEditDialog(
             if (ColorUtils.isColorLight(accentColor)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
         )
 
-        binding.switchEnable.trackTintList = android.content.res.ColorStateList.valueOf(accentColor)
-        binding.switchEnable.thumbTintList = android.content.res.ColorStateList.valueOf(accentColor)
-        binding.switchBold.trackTintList = android.content.res.ColorStateList.valueOf(accentColor)
-        binding.switchBold.thumbTintList = android.content.res.ColorStateList.valueOf(accentColor)
+        val switchTrackColorList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(-android.R.attr.state_checked),
+                intArrayOf(android.R.attr.state_checked)
+            ),
+            intArrayOf(
+                0xFFFFFFFF.toInt(),
+                accentColor
+            )
+        )
+        val switchThumbColorList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(-android.R.attr.state_checked),
+                intArrayOf(android.R.attr.state_checked)
+            ),
+            intArrayOf(
+                0xFFFFFFFF.toInt(),
+                accentColor
+            )
+        )
+        binding.switchEnable.trackTintList = switchTrackColorList
+        binding.switchEnable.thumbTintList = switchThumbColorList
+        binding.switchBold.trackTintList = switchTrackColorList
+        binding.switchBold.thumbTintList = switchThumbColorList
 
         binding.etPattern.setTextColor(primaryTextColor)
         binding.etPattern.setHintTextColor(secondaryTextColor)

@@ -17,6 +17,7 @@ interface TextBaseColumn : BaseColumn {
     val bgImageFit: Int
     val bgImageScale: Float
     val bgColor: Int?
+    val isBold: Boolean
     var selected: Boolean
     var isSearchResult: Boolean
     var isCurrentSearchResult: Boolean

@@ -156,6 +156,12 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             val bgDrawable = it.background
             if (bgDrawable is android.graphics.drawable.GradientDrawable) {
                 bgDrawable.setColor(cardColor)
+                val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
+                if (AppConfig.showRecordCardBorder) {
+                    bgDrawable.setStroke(2, dividerColor)
+                } else {
+                    bgDrawable.setStroke(0, android.graphics.Color.TRANSPARENT)
+                }
             }
         }
 

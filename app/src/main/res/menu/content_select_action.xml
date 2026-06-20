@@ -16,7 +16,7 @@
 
     <item
         android:id="@+id/menu_highlight_rule"
-        android:title="高亮规则" />
+        android:title="高亮" />
 
     <item
         android:id="@+id/menu_protagonist"

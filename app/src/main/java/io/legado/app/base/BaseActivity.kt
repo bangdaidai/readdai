@@ -221,12 +221,15 @@ abstract class BaseActivity<VB : ViewBinding>(
     }
 
     open fun upNavigationBarColor() {
-        if (AppConfig.immNavigationBar) {
-            setNavigationBarColorAuto(ThemeStore.navigationBarColor(this))
+        val hasBgImage = ThemeConfig.getBgImage(this, windowManager.windowSize) != null
+        val nbColor = if (hasBgImage) {
+            Color.TRANSPARENT
+        } else if (AppConfig.immNavigationBar) {
+            ThemeStore.navigationBarColor(this)
         } else {
-            val nbColor = ColorUtils.darkenColor(ThemeStore.navigationBarColor(this))
-            setNavigationBarColorAuto(nbColor)
+            ColorUtils.darkenColor(ThemeStore.navigationBarColor(this))
         }
+        setNavigationBarColorAuto(nbColor)
     }
 
     open fun observeLiveBus() {

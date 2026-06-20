@@ -56,7 +56,7 @@ fun GridRankingModule(
         modifier = modifier.fillMaxWidth(),
     ) { pageIndex ->
         val page = pages[pageIndex]
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
             for ((rowIndex, item) in page.withIndex()) {
                 val rank = pageIndex * rows + rowIndex + 1
                 Row(

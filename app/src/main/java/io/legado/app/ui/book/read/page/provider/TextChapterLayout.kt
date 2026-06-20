@@ -1202,6 +1202,10 @@ class TextChapterLayout(
             spans.firstOrNull()?.backgroundColor
         }
         val highlightStyle = spanned?.let { extractHighlightStyle(it, textIndex) }
+        val isBold = spanned?.let {
+            val styleSpans = it.getSpans(textIndex, textIndex + 1, StyleSpan::class.java)
+            styleSpans.any { s -> s.style == Typeface.BOLD }
+        } ?: false
         val column = when {
             !srcList.isNullOrEmpty() && (char == srcReplaceStr || char == reviewStr) -> {
                 val src = srcList.removeFirst()
@@ -1222,7 +1226,8 @@ class TextChapterLayout(
                     charData = char,
                     highlightColor = textColor,
                     highlightStyle = highlightStyle,
-                    columnBgColor = bgColor
+                    columnBgColor = bgColor,
+                    columnBold = isBold
                 )
             }
         }

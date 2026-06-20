@@ -73,7 +73,11 @@ fun WaterfallItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         kinds.forEach { kind ->
-                            AssistChip(onClick = {}, label = { Text(kind, style = MaterialTheme.typography.labelSmall) }, modifier = Modifier.height(24.dp))
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(kind, style = MaterialTheme.typography.labelSmall) },
+                                modifier = Modifier.height(20.dp)
+                            )
                         }
                     }
                 }

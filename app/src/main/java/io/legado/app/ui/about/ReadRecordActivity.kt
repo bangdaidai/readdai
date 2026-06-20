@@ -501,6 +501,12 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             val bgDrawable = itemView.background
             if (bgDrawable is android.graphics.drawable.GradientDrawable) {
                 bgDrawable.setColor(cardColor)
+                val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(itemView.context)
+                if (AppConfig.showRecordCardBorder) {
+                    bgDrawable.setStroke(2, dividerColor)
+                } else {
+                    bgDrawable.setStroke(0, android.graphics.Color.TRANSPARENT)
+                }
             }
 
             // 设置汇总按钮

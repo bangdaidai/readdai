@@ -85,6 +85,7 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.help.config.AppConfig
+import io.legado.app.help.config.ThemeConfig
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
@@ -143,7 +144,16 @@ fun HomepageScreen(
     val accentColor = Color(context.accentColor)
     val isTransparentStatusBar = AppConfig.isTransparentStatusBar
 
-    Column(modifier = Modifier.fillMaxSize().background(pageBgColor)) {
+    val hasBgImage = remember(context) {
+        try {
+            ThemeConfig.getBgImage(context, context.resources.displayMetrics) != null
+        } catch (_: Exception) {
+            false
+        }
+    }
+    val effectiveBgColor = if (hasBgImage) Color.Transparent else pageBgColor
+
+    Column(modifier = Modifier.fillMaxSize().background(effectiveBgColor)) {
         Surface(
             color = titleBarBgColor,
             modifier = Modifier.fillMaxWidth(),
@@ -223,7 +233,7 @@ fun HomepageScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = { viewModel.onRefresh() },
-            modifier = Modifier.fillMaxSize().background(pageBgColor),
+            modifier = Modifier.fillMaxSize().background(effectiveBgColor),
         ) {
             if (selectedSets.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -338,8 +348,8 @@ private fun ModuleList(
             columns = StaggeredGridCells.Fixed(gridColumns),
             modifier = modifier,
             verticalItemSpacing = 10.dp,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            contentPadding = PaddingValues(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 100.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
         ) {
             processedModules.forEach { moduleUi ->
                 item(key = "header_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {

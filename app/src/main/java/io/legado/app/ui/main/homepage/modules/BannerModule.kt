@@ -75,7 +75,6 @@ fun BannerModule(
                         else -> {}
                     }
                 }
-                Text(book.name, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(top = 4.dp))
             }
         }
     }
