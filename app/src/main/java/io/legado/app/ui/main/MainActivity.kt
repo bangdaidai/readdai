@@ -801,11 +801,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val bgDrawable = if (AppConfig.isEInkMode) {
             getDrawable(R.drawable.bg_eink_border_top)
         } else if (this.transparentNavBar) {
-            val bgImage = kotlin.runCatching {
+            val hasBgImage = kotlin.runCatching {
                 ThemeConfig.getBgImage(this, resources.displayMetrics)
-            }.getOrNull()
-            if (bgImage != null) {
-                bgImage
+            }.getOrNull() != null
+            if (hasBgImage) {
+                ColorDrawable(android.graphics.Color.TRANSPARENT)
             } else {
                 NoTintColorDrawable(io.legado.app.lib.theme.ThemeStore.backgroundColor(this))
             }
