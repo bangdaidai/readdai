@@ -37,6 +37,7 @@ data class TextHtmlColumn(
     override val bgImage: String get() = ""
     override val bgImageFit: Int get() = 0
     override val bgImageScale: Float get() = 1f
+    override val isBold: Boolean get() = false
 
     private val textPaint: TextPaint by lazy {
         TextPaint(ChapterProvider.contentPaint).apply {
