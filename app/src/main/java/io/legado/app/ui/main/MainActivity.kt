@@ -39,6 +39,7 @@ import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.AppConfig
+import io.legado.app.help.config.ThemeConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.NavigationBarIconConfig
 import io.legado.app.help.coroutine.Coroutine
@@ -800,7 +801,14 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val bgDrawable = if (AppConfig.isEInkMode) {
             getDrawable(R.drawable.bg_eink_border_top)
         } else if (this.transparentNavBar) {
-            ColorDrawable(Color.TRANSPARENT)
+            val hasBgImage = kotlin.runCatching {
+                ThemeConfig.getBgImage(this, resources.displayMetrics)
+            }.getOrNull() != null
+            if (hasBgImage) {
+                ColorDrawable(Color.TRANSPARENT)
+            } else {
+                NoTintColorDrawable(io.legado.app.lib.theme.ThemeStore.backgroundColor(this))
+            }
         } else {
             val bgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this)
             NoTintColorDrawable(bgColor)

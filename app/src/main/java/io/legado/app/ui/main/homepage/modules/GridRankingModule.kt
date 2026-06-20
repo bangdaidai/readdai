@@ -51,19 +51,18 @@ fun GridRankingModule(
     val pages = limitedBooks.chunked(rows)
     val pagerState = rememberPagerState(pageCount = { pages.size })
 
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(start = 12.dp, end = 100.dp),
-            pageSpacing = 12.dp,
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        ) { pageIndex ->
-            val page = pages[pageIndex]
-            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+    HorizontalPager(
+        state = pagerState,
+        contentPadding = PaddingValues(end = 100.dp),
+        pageSpacing = 12.dp,
+        modifier = modifier.fillMaxWidth(),
+    ) { pageIndex ->
+        val page = pages[pageIndex]
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
                 for ((rowIndex, item) in page.withIndex()) {
                     val rank = pageIndex * rows + rowIndex + 1
                     Row(
