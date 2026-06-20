@@ -13,10 +13,10 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -73,11 +73,16 @@ fun WaterfallItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         kinds.forEach { kind ->
-                            AssistChip(
-                                onClick = {},
-                                label = { Text(kind, style = MaterialTheme.typography.labelSmall) },
-                                modifier = Modifier.height(20.dp)
-                            )
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            ) {
+                                Text(
+                                    kind,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
                         }
                     }
                 }

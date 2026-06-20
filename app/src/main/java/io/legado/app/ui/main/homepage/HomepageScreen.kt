@@ -143,6 +143,7 @@ fun HomepageScreen(
     val pageBgColor = Color(context.backgroundColor)
     val accentColor = Color(context.accentColor)
     val isTransparentStatusBar = AppConfig.isTransparentStatusBar
+    val isImmNavBar = AppConfig.immNavigationBar
 
     val hasBgImage = remember(context) {
         try {
@@ -152,12 +153,17 @@ fun HomepageScreen(
         }
     }
     val effectiveBgColor = if (hasBgImage) Color.Transparent else pageBgColor
+    val effectiveTitleBarColor = if (isImmNavBar) {
+        if (hasBgImage) Color.Transparent else pageBgColor
+    } else {
+        titleBarBgColor
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(effectiveBgColor)) {
         Surface(
-            color = titleBarBgColor,
+            color = effectiveTitleBarColor,
             modifier = Modifier.fillMaxWidth(),
-            shadowElevation = 4.dp,
+            shadowElevation = if (isImmNavBar && hasBgImage) 0.dp else 4.dp,
         ) {
             Column(modifier = Modifier.then(if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier)) {
                 Row(
