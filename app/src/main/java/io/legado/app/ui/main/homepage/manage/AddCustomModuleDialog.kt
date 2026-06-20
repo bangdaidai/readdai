@@ -93,7 +93,7 @@ fun AddCustomModuleDialog(
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor(),
                     )
-                    ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }) {
+                    ExposedDropdownMenu(expanded = typeExpanded, onDismissRequest = { typeExpanded = false }, containerColor = androidx.compose.ui.graphics.Color(bgColor)) {
                         typeList.forEach { moduleType ->
                             DropdownMenuItem(
                                 text = { Text(moduleType.title) },

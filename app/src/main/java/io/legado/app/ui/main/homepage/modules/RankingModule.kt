@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -57,36 +59,42 @@ fun RankingModule(
     var visibleCount by rememberSaveable { mutableIntStateOf(INITIAL_COUNT) }
     val displayBooks = books.take(visibleCount)
 
-    Column(modifier = Modifier.animateContentSize()) {
-        displayBooks.forEachIndexed { index, item ->
-            RankingItem(
-                rank = index + 1,
-                book = item.book,
-                shelfState = item.shelfState,
-                onClick = { onClick(item.book, null) },
-                onLongClick = onLongClick,
-            )
-        }
-        if (books.size > INITIAL_COUNT) {
-            Box(
-                modifier = Modifier.fillMaxWidth().clickable {
-                    visibleCount = if (visibleCount == INITIAL_COUNT) MAX_COUNT else INITIAL_COUNT
-                }.padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                val isExpanded = visibleCount > INITIAL_COUNT
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        if (isExpanded) stringResource(R.string.hp_collapse) else stringResource(R.string.hp_expand_all),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
-                    )
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(modifier = Modifier.animateContentSize().padding(horizontal = 12.dp, vertical = 4.dp)) {
+            displayBooks.forEachIndexed { index, item ->
+                RankingItem(
+                    rank = index + 1,
+                    book = item.book,
+                    shelfState = item.shelfState,
+                    onClick = { onClick(item.book, null) },
+                    onLongClick = onLongClick,
+                )
+            }
+            if (books.size > INITIAL_COUNT) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().clickable {
+                        visibleCount = if (visibleCount == INITIAL_COUNT) MAX_COUNT else INITIAL_COUNT
+                    }.padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    val isExpanded = visibleCount > INITIAL_COUNT
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            if (isExpanded) stringResource(R.string.hp_collapse) else stringResource(R.string.hp_expand_all),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isExpanded) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
         }

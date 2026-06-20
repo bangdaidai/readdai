@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -49,41 +51,47 @@ fun GridRankingModule(
     val pages = limitedBooks.chunked(rows)
     val pagerState = rememberPagerState(pageCount = { pages.size })
 
-    HorizontalPager(
-        state = pagerState,
-        contentPadding = PaddingValues(end = 100.dp),
-        pageSpacing = 12.dp,
-        modifier = modifier.fillMaxWidth(),
-    ) { pageIndex ->
-        val page = pages[pageIndex]
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-            for ((rowIndex, item) in page.withIndex()) {
-                val rank = pageIndex * rows + rowIndex + 1
-                Row(
-                    modifier = Modifier.fillMaxWidth().combinedClickable(
-                        onClick = { onClick(item.book, null) },
-                        onLongClick = onLongClick?.let { cb -> { cb(item.book, null) } }
-                    ).padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SearchBookCover(book = item.book, contentDescription = null, modifier = Modifier.width(50.dp).height(70.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
-                    Text(
-                        "$rank", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black,
-                        fontStyle = if (rank <= 3) FontStyle.Italic else FontStyle.Normal,
-                        color = if (rank <= 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.width(32.dp), textAlign = TextAlign.Center,
-                    )
-                    Column(modifier = Modifier.padding(start = 4.dp).weight(1f)) {
-                        Text(item.book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
-                        val sub = buildString {
-                            append(item.book.kind?.split(",")?.firstOrNull() ?: "")
-                            if (item.book.author.isNotBlank()) { if (isNotEmpty()) append(" · "); append(item.book.author) }
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(start = 12.dp, end = 100.dp),
+            pageSpacing = 12.dp,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        ) { pageIndex ->
+            val page = pages[pageIndex]
+            Column(modifier = Modifier.fillMaxWidth()) {
+                for ((rowIndex, item) in page.withIndex()) {
+                    val rank = pageIndex * rows + rowIndex + 1
+                    Row(
+                        modifier = Modifier.fillMaxWidth().combinedClickable(
+                            onClick = { onClick(item.book, null) },
+                            onLongClick = onLongClick?.let { cb -> { cb(item.book, null) } }
+                        ).padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SearchBookCover(book = item.book, contentDescription = null, modifier = Modifier.width(50.dp).height(70.dp).clip(RoundedCornerShape(6.dp)), contentScale = ContentScale.Crop)
+                        Text(
+                            "$rank", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black,
+                            fontStyle = if (rank <= 3) FontStyle.Italic else FontStyle.Normal,
+                            color = if (rank <= 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.width(32.dp), textAlign = TextAlign.Center,
+                        )
+                        Column(modifier = Modifier.padding(start = 4.dp).weight(1f)) {
+                            Text(item.book.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
+                            val sub = buildString {
+                                append(item.book.kind?.split(",")?.firstOrNull() ?: "")
+                                if (item.book.author.isNotBlank()) { if (isNotEmpty()) append(" · "); append(item.book.author) }
+                            }
+                            if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
                         }
-                        if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
                     }
                 }
+                repeat(rows - page.size) { Spacer(modifier = Modifier.height(76.dp)) }
             }
-            repeat(rows - page.size) { Spacer(modifier = Modifier.height(76.dp)) }
         }
     }
 }

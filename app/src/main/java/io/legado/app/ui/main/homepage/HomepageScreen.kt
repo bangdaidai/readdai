@@ -91,6 +91,7 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.elevation
 import io.legado.app.lib.theme.primaryColor
+import io.legado.app.lib.theme.transparentNavBar
 import io.legado.app.ui.main.homepage.modules.HomepageModuleSkeleton
 import io.legado.app.ui.main.homepage.modules.BannerModule
 import io.legado.app.ui.main.homepage.modules.ButtonGroupModule
@@ -138,7 +139,8 @@ fun HomepageScreen(
     }
 
     val context = LocalContext.current
-    val titleBarBgColor = Color(context.primaryColor)
+    val isTransparentNavBar = context.transparentNavBar
+    val titleBarBgColor = if (isTransparentNavBar) Color.Transparent else Color(context.primaryColor)
     val titleBarTextColor = Color(ThemeStore.titleBarTextIconColor(context))
     val pageBgColor = Color(context.backgroundColor)
     val accentColor = Color(context.accentColor)
@@ -163,7 +165,7 @@ fun HomepageScreen(
         Surface(
             color = effectiveTitleBarColor,
             modifier = Modifier.fillMaxWidth(),
-            shadowElevation = if (isImmNavBar && hasBgImage) 0.dp else 4.dp,
+            shadowElevation = if (isTransparentNavBar || (isImmNavBar && hasBgImage)) 0.dp else 4.dp,
         ) {
             Column(modifier = Modifier.then(if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier)) {
                 Row(

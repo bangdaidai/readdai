@@ -56,7 +56,7 @@ fun CardModule(
                         onLongClick = onLongClick?.let { cb -> { cb(book, null) } }
                     ),
                 ) {
-                    SearchBookCover(book = book, contentDescription = book.name, modifier = Modifier.fillMaxWidth().aspectRatio(5f / 7f).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop)
+                    SearchBookCover(book = book, contentDescription = book.name, modifier = Modifier.fillMaxWidth().aspectRatio(5f / 7f).clip(RoundedCornerShape(16.dp)), contentScale = ContentScale.Crop)
                     Text(book.name, style = MaterialTheme.typography.labelLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp))
                     val intro = book.intro?.takeIf { it.isNotBlank() }?.replace("\\s+".toRegex(), " ")
                     if (intro != null) {
