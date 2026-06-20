@@ -3,9 +3,13 @@
 package io.legado.app.ui.main
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.format.DateUtils
 import android.view.MenuItem
@@ -39,6 +43,7 @@ import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.AppConfig
+import io.legado.app.help.config.ThemeConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.NavigationBarIconConfig
 import io.legado.app.help.coroutine.Coroutine
@@ -800,7 +805,14 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         val bgDrawable = if (AppConfig.isEInkMode) {
             getDrawable(R.drawable.bg_eink_border_top)
         } else if (this.transparentNavBar) {
-            NoTintColorDrawable(io.legado.app.lib.theme.ThemeStore.backgroundColor(this))
+            val bgImage = kotlin.runCatching {
+                ThemeConfig.getBgImage(this, resources.displayMetrics)
+            }.getOrNull()
+            if (bgImage != null) {
+                cropBottomBgDrawable(bgImage, bottomNav)
+            } else {
+                NoTintColorDrawable(io.legado.app.lib.theme.ThemeStore.backgroundColor(this))
+            }
         } else {
             val bgColor = io.legado.app.lib.theme.ThemeStore.bottomBackground(this)
             NoTintColorDrawable(bgColor)
@@ -813,6 +825,33 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         } else {
             resources.getDimension(R.dimen.main_bottom_bar_elevation)
         }
+    }
+
+    private fun cropBottomBgDrawable(fullDrawable: Drawable, bottomNav: View): Drawable {
+        val metrics = resources.displayMetrics
+        val screenWidth = metrics.widthPixels
+        val screenHeight = metrics.heightPixels
+
+        val fullBitmap = if (fullDrawable is BitmapDrawable) {
+            fullDrawable.bitmap
+        } else {
+            val bmp = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            fullDrawable.setBounds(0, 0, screenWidth, screenHeight)
+            fullDrawable.draw(canvas)
+            bmp
+        }
+
+        val bottomNavHeight = if (bottomNav.height > 0) bottomNav.height else (50 * metrics.density).toInt()
+        val srcY = (fullBitmap.height - bottomNavHeight).coerceAtLeast(0)
+        val cropH = bottomNavHeight.coerceAtMost(fullBitmap.height - srcY)
+        val cropped = Bitmap.createBitmap(fullBitmap, 0, srcY, fullBitmap.width, cropH)
+
+        if (fullDrawable !is BitmapDrawable) {
+            fullBitmap.recycle()
+        }
+
+        return BitmapDrawable(resources, cropped)
     }
 
     private class NoTintColorDrawable(color: Int) : ColorDrawable(color) {
