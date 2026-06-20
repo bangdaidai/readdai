@@ -39,8 +39,6 @@ import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.config.AppConfig
-
-
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.NavigationBarIconConfig
 import io.legado.app.help.coroutine.Coroutine
