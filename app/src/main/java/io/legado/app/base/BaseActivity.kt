@@ -22,6 +22,7 @@ import androidx.viewbinding.ViewBinding
 import io.legado.app.R
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
+import io.legado.app.constant.PreferKey
 import io.legado.app.constant.Theme
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ThemeConfig
@@ -37,6 +38,7 @@ import io.legado.app.utils.observeEvent
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.disableAutoFill
 import io.legado.app.utils.fullScreen
+import io.legado.app.utils.getPrefString
 import io.legado.app.utils.hideSoftInput
 import io.legado.app.utils.setLightStatusBar
 import io.legado.app.utils.setNavigationBarColorAuto
@@ -221,7 +223,9 @@ abstract class BaseActivity<VB : ViewBinding>(
     }
 
     open fun upNavigationBarColor() {
-        val hasBgImage = ThemeConfig.getBgImage(this, windowManager.windowSize) != null
+        val bgPath = getPrefString(PreferKey.bgImage)
+        val bgPathN = getPrefString(PreferKey.bgImageN)
+        val hasBgImage = !bgPath.isNullOrBlank() || !bgPathN.isNullOrBlank()
         val nbColor = if (hasBgImage) {
             Color.TRANSPARENT
         } else if (AppConfig.immNavigationBar) {

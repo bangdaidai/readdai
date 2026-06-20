@@ -24,7 +24,6 @@ import io.legado.app.databinding.DialogSimulatedReadingBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.ReadBookConfig
-import io.legado.app.help.config.ThemeConfig
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.lib.theme.ThemeStore
@@ -227,11 +226,7 @@ abstract class BaseReadBookActivity :
             binding.searchMenu.bottomMenuVisible -> super.upNavigationBarColor()
             bottomDialog > 0 -> super.upNavigationBarColor()
             !AppConfig.immNavigationBar -> super.upNavigationBarColor()
-            else -> {
-                val hasBgImage = ThemeConfig.getBgImage(this, windowManager.windowSize) != null
-                val color = if (hasBgImage) android.graphics.Color.TRANSPARENT else ReadBookConfig.bgMeanColor
-                setNavigationBarColorAuto(color)
-            }
+            else -> setNavigationBarColorAuto(ReadBookConfig.bgMeanColor)
         }
     }
 

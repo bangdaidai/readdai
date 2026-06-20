@@ -80,7 +80,7 @@ fun WaterfallItem(
                                 Text(
                                     kind,
                                     style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 2.dp)
                                 )
                             }
                         }
