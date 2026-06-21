@@ -183,7 +183,7 @@ android {
         }
         releaseNoR8 {
             signingConfig signingConfigs.release
-            applicationIdSuffix '.releaseNoR8'
+            applicationIdSuffix '.release'
             manifestPlaceholders.put("app_name", "@string/app_name")
 
             matchingFallbacks = ['release']
