@@ -186,6 +186,8 @@ android {
             applicationIdSuffix '.releaseNoR8'
             manifestPlaceholders.put("app_name", "@string/app_name")
 
+            matchingFallbacks = ['release']
+
             minifyEnabled false
             shrinkResources = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
