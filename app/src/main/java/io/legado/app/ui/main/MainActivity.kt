@@ -117,16 +117,16 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         TabFragmentPageAdapter(supportFragmentManager)
     }
     private var onUpBooksBadgeView: BadgeView? = null
-    
+
     // Bottom navigation config signature - match archive implementation
     private var bottomNavigationConfigSignature: String? = null
-    
+
     // LiquidGlass initialization state - match archive implementation
     private var liquidGlassReady = false
-    
+
     // Track if we should cancel pending LiquidGlass tasks
     private var shouldCancelLiquidGlassTasks = false
-    
+
     // Bottom navigation indicator animator - match archive implementation
     private val bottomIndicatorAnimator by lazy {
         ValueAnimator().apply {
@@ -134,13 +134,13 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             interpolator = OvershootInterpolator(0.55f)
         }
     }
-    
+
     // Bottom glass pulse interpolator - match archive implementation
     private val bottomGlassPulseInterpolator by lazy { AccelerateDecelerateInterpolator() }
-    
+
     // Track bound LiquidGlassView IDs to prevent duplicate binding - match archive
     private val boundLiquidGlassViewIds = hashSetOf<Int>()
-    
+
     // Hide indicator runnable - match archive implementation
     private val hideBottomIndicatorRunnable = Runnable {
         binding.root.findViewById<View>(R.id.bottom_navigation_indicator_container)?.animate()
@@ -321,7 +321,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     (fragmentMap[1] as? ExploreFragment)?.compressExplore()
                 }
             }
-            
+
             R.id.menu_ai_read -> {
                 // ✅ 关键修复：重复点击 AI 按钮时，重新启动 AI 聊天页面
                 startActivity(Intent(this@MainActivity, AiChatActivity::class.java))
@@ -335,45 +335,45 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         viewPagerMain.offscreenPageLimit = bottomMenuCount.coerceAtLeast(1) - 1
         viewPagerMain.adapter = adapter
         viewPagerMain.addOnPageChangeListener(PageChangeCallback())
-        
+
         // Initialize both BottomNavigationViews
         bottomNavigationView.setOnNavigationItemSelectedListener(this@MainActivity)
         bottomNavigationView.setOnNavigationItemReselectedListener(this@MainActivity)
         bottomNavigationViewFloating.setOnNavigationItemSelectedListener(this@MainActivity)
         bottomNavigationViewFloating.setOnNavigationItemReselectedListener(this@MainActivity)
-        
+
         // Apply layout mode - match archive implementation
         applyBottomLayoutMode()
-        
+
         // Schedule LiquidGlass setup - match archive
         scheduleLiquidGlassSetup()
         contentContainer.doOnPreDraw {
             liquidGlassReady = true
             scheduleLiquidGlassSetup(delayMillis = 32L)
         }
-        
+
         // Update indicator position after layout - match archive
         bottomNavigationViewFloating.doOnLayout {
             val initialItemId = getBottomNavigationItemId(pagePosition)
             updateFloatingIndicatorPosition(initialItemId)
         }
-        
+
         // Handle window insets for floating mode - match archive implementation
         bottomNavigationGlass.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
-            val height = windowInsets.navigationBarHeight
+            val height = if (view.height > 0) view.height else windowInsets.navigationBarHeight
             // Add system navigation bar height plus extra spacing like archive (14.dpToPx())
             view.bottomPadding = height + 14f.dpToPx().toInt()
             windowInsets.inset(0, 0, 0, height)
         }
     }
-    
+
     /**
      * Refresh bottom navigation config - EXACT match with archive
      */
     private fun refreshBottomNavigationConfig() {
         // Always apply layout mode first to ensure correct visibility and padding
         applyBottomLayoutMode()
-        
+
         // Check icon config signature
         val signature = NavigationBarIconConfig.currentSignature(AppConfig.isNightTheme)
         if (bottomNavigationConfigSignature == signature) {
@@ -399,16 +399,16 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             updateFloatingIndicatorPosition(initialItemId)
         }
     }
-    
+
     /**
      * Apply bottom layout mode - match archive implementation
      */
     private fun applyBottomLayoutMode() = binding.run {
         val floatingMode = AppConfig.bottomBarLayoutMode == "floating"
-        
+
         // Enable/disable swipe based on mode
         viewPagerMain.swipeEnabled = !floatingMode
-        
+
         if (floatingMode) {
             // Floating mode: NO bottom padding - capsule floats above content, content can scroll under it
             // Reference: archive project implementation and memory specification
@@ -427,7 +427,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 0
             )
         }
-        
+
         // Show/hide bottom navigation views
         if (floatingMode) {
             // Floating mode: completely hide classic bottom navigation
@@ -442,17 +442,17 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomNavigationView.visibility = View.VISIBLE
             bottomNavigationGlass.visibility = View.GONE
         }
-        
+
         if (floatingMode) {
             // Floating mode: setup LiquidGlass and indicator
             shouldCancelLiquidGlassTasks = false
             bottomIndicatorAnimator.cancel()
-            
+
             // Hide indicator initially while setting up
             bottomNavigationIndicatorContainer.isVisible = false
             setupLiquidGlass()
             applyBottomNavigationIcons() // Apply icons for floating mode
-            
+
             // Show indicator after a delay to ensure everything is set up properly
             bottomNavigationViewFloating.doOnLayout {
                 val initialItemId = getBottomNavigationItemId(pagePosition)
@@ -466,12 +466,12 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             shouldCancelLiquidGlassTasks = true
             bottomIndicatorAnimator.cancel()
             bottomNavigationIndicatorContainer.isVisible = false
-            
+
             applyClassicModeStyle()
             applyBottomNavigationIcons() // Apply icons for classic mode
         }
     }
-    
+
     /**
      * Apply bottom navigation icons - match archive implementation
      */
@@ -487,11 +487,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             this@MainActivity,
             AppConfig.isNightTheme
         )
-        
+
         // Check if tint is enabled in the current config
         val currentEntry = NavigationBarIconConfig.currentEntry(AppConfig.isNightTheme)
         val enableTint = currentEntry.config.enableTint
-        
+
         // Apply tint only if enabled
         if (enableTint) {
             bottomNavigationView.restoreThemeIconTint()
@@ -502,7 +502,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bottomNavigationViewFloating.itemIconTintList = null
         }
     }
-    
+
     /**
      * Schedule LiquidGlass setup with optional delay - EXACT match with archive
      */
@@ -525,13 +525,13 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
     private fun setupLiquidGlass() {
         // Only apply in floating mode
         if (AppConfig.bottomBarLayoutMode != "floating") return
-        
+
         val liquidGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_glass_view)
         val indicatorGlassView = binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_indicator_glass_view)
         val shellOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_shell_overlay)
         val backgroundView = binding.root.findViewById<View>(R.id.bottom_navigation_background)
         val indicatorContainer = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_container)
-        
+
         when (AppConfig.bottomBarEffectMode) {
             "solid" -> {
                 // Solid mode: hide liquid glass, show solid background with capsule shape - match archive
@@ -542,21 +542,21 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 indicatorContainer?.alpha = 1f
                 indicatorContainer?.scaleX = 1f
                 indicatorContainer?.scaleY = 1f
-                
+
                 // Use factory method to create drawable - match archive implementation
                 val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
                 shellOverlay?.background = createSolidBottomShellDrawable(cornerRadius)
-                
+
                 // Setup indicator overlay
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
                 indicatorOverlay?.background = createSolidBottomIndicatorDrawable()
-                
+
                 // Hide background view - NOT used in archive, shell_overlay handles everything
                 backgroundView?.visibility = View.GONE
-                
+
                 // BottomNavigationView must be transparent
                 binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
-                
+
                 // Update indicator position - match archive
                 val initialItemId = getBottomNavigationItemId(pagePosition)
                 updateFloatingIndicatorPosition(initialItemId)
@@ -567,16 +567,16 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 indicatorContainer?.alpha = 0f
                 indicatorContainer?.scaleX = 0.82f
                 indicatorContainer?.scaleY = 0.82f
-                
+
                 liquidGlassView?.visibility = View.VISIBLE
                 indicatorGlassView?.visibility = View.VISIBLE
                 shellOverlay?.visibility = View.VISIBLE
                 // CRITICAL: Hide background view to allow LiquidGlassView to show content behind - match archive
                 backgroundView?.visibility = View.GONE
-                
+
                 // BottomNavigationView must be transparent - match archive
                 binding.bottomNavigationViewFloating.setBackgroundColor(Color.TRANSPARENT)
-                
+
                 // Check if ready to setup LiquidGlass - match archive
                 if (!liquidGlassReady || !binding.contentContainer.isLaidOut || !binding.bottomNavigationGlass.isLaidOut) {
                     binding.contentContainer.doOnPreDraw {
@@ -585,7 +585,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                     }
                     return
                 }
-                
+
                 // Calculate glass level for shell overlay - match archive
                 val isFrosted = AppConfig.bottomBarEffectMode == "frosted"
                 val glassLevel = if (isFrosted) {
@@ -593,7 +593,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 } else {
                     AppConfig.liquidGlassLevel / 100f
                 }
-                
+
                 val frostedMode = isFrosted
                 val blurRadius = if (frostedMode) {
                     (14f + glassLevel * 28f).dpToPx()
@@ -620,15 +620,15 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 } else {
                     (24f + glassLevel * 16f).dpToPx()
                 }
-                
+
                 // Setup shell overlays with gradient drawable - match archive implementation
                 val cornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
                 shellOverlay?.background = createLiquidGlassShellDrawable(glassLevel, cornerRadius, false, false)
-                
+
                 val indicatorOverlay = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_overlay)
                 val indicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
                 indicatorOverlay?.background = createLiquidGlassShellDrawable(glassLevel, indicatorCornerRadius, false, true)
-                
+
                 // Setup main bottom navigation LiquidGlassView - match archive
                 val bottomBarCornerRadius = resources.getDimension(R.dimen.main_bottom_bar_corner_radius)
                 liquidGlassView?.let { glass ->
@@ -644,7 +644,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                         touchEffectEnabled = false
                     )
                 }
-                
+
                 // Setup indicator LiquidGlassView with adjusted parameters - match archive
                 val bottomIndicatorCornerRadius = resources.getDimension(R.dimen.main_bottom_indicator_corner_radius)
                 indicatorGlassView?.let { indicatorGlass ->
@@ -663,22 +663,22 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             }
         }
     }
-    
+
     /**
      * Update floating mode indicator position to follow selected item - EXACT match with archive
      */
     private fun updateFloatingIndicatorPosition(menuItemId: Int) {
         if (AppConfig.bottomBarLayoutMode != "floating") return
-        
+
         val bottomNav = binding.bottomNavigationViewFloating
         val indicatorContainer = binding.root.findViewById<ViewGroup>(R.id.bottom_navigation_indicator_container)
-        
+
         // Get the menu view (first child of BottomNavigationView)
         val menuView = bottomNav.getChildAt(0) as? ViewGroup ?: return
-        
+
         // Find the selected item view
         val itemView = findBottomNavigationItemView(menuView, menuItemId) ?: return
-        
+
         // CRITICAL: Ensure itemView has valid dimensions before calculating position
         // If width is 0 or not laid out, delay the calculation
         if (!itemView.isLaidOut || itemView.width == 0) {
@@ -688,29 +688,29 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             }, 50L)
             return
         }
-        
+
         // Calculate target width - match archive's logic
         val targetWidth = kotlin.math.min(
             resources.getDimensionPixelSize(R.dimen.main_bottom_indicator_width),
             (itemView.width - 16f.dpToPx().toInt()).coerceAtLeast(42f.dpToPx().toInt())
         )
-        
+
         // Update indicator width
         indicatorContainer.layoutParams = indicatorContainer.layoutParams.apply {
             width = targetWidth
         }
-        
+
         // Calculate target X position - match archive's calculation
         val baseX = bottomNav.x + menuView.x + itemView.x
         val targetX = baseX + (itemView.width - targetWidth) / 2f
-        
+
         // Animate indicator to new position with overshoot effect - use ValueAnimator like archive
         if (!indicatorContainer.isLaidOut) {
             indicatorContainer.x = targetX
             playBottomNavigationIndicatorAnimation(animate = false)
             return
         }
-        
+
         val startX = indicatorContainer.x
         bottomIndicatorAnimator.cancel()
         bottomIndicatorAnimator.removeAllUpdateListeners()
@@ -721,21 +721,21 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         bottomIndicatorAnimator.start()
         playBottomNavigationIndicatorAnimation(animate = true)
     }
-    
+
     /**
      * Play bottom navigation indicator animation - EXACT match with archive
      */
     private fun playBottomNavigationIndicatorAnimation(animate: Boolean) {
         if (AppConfig.bottomBarLayoutMode != "floating") return
         if (AppConfig.isEInkMode) return
-        
+
         val indicator = binding.root.findViewById<View>(R.id.bottom_navigation_indicator_container) ?: return
-        
+
         // Remove any pending hide callbacks - match archive implementation
         indicator.removeCallbacks(hideBottomIndicatorRunnable)
         indicator.animate().cancel()
         indicator.isVisible = true
-        
+
         if (!animate) {
             indicator.alpha = 1f
             indicator.scaleX = 1f
@@ -751,7 +751,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 .setDuration(280L)
                 .setInterpolator(OvershootInterpolator(0.78f))
                 .start()
-            
+
             // Animate bottom navigation glass container - pulse effect like archive
             binding.bottomNavigationGlass.animate()
                 .scaleX(1.01f)
@@ -767,11 +767,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
                 }
                 .start()
         }
-        
+
         // Schedule hide indicator after delay - match archive
         indicator.postDelayed(hideBottomIndicatorRunnable, 780L)
     }
-    
+
     /**
      * Find bottom navigation item view by menu item ID - EXACT match with archive
      */
@@ -792,7 +792,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         return null
     }
-    
+
     /**
      * Apply classic mode style - based on dai411 original implementation
      * Uses transparentNavBar to control whether bottom bar blends into page background
@@ -860,7 +860,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         override fun setTintMode(tint: PorterDuff.Mode?) {
         }
     }
-    
+
     /**
      * Setup LiquidGlassView - EXACT match with archive
      */
@@ -878,7 +878,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         if (!liquidGlassView.isLaidOut || liquidGlassView.width == 0 || liquidGlassView.height == 0) {
             return
         }
-        
+
         try {
             if (boundLiquidGlassViewIds.add(liquidGlassView.id)) {
                 liquidGlassView.bind(binding.contentContainer)
@@ -904,11 +904,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             boundLiquidGlassViewIds.remove(liquidGlassView.id)
         }
     }
-    
+
     private fun Float.dpToPx(): Float {
         return this * resources.displayMetrics.density
     }
-    
+
     /**
      * Create solid bottom shell drawable - match archive implementation
      */
@@ -928,7 +928,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             setStroke(1f.dpToPx().toInt(), strokeColor)
         }
     }
-    
+
     /**
      * Create solid bottom indicator drawable - match archive implementation
      */
@@ -938,7 +938,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             setColor(primaryColor)
         }
     }
-    
+
     /**
      * Create liquid glass shell drawable - match archive implementation
      */
@@ -1099,10 +1099,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         // Cancel all pending LiquidGlass tasks to prevent NPE
         shouldCancelLiquidGlassTasks = true
         bottomIndicatorAnimator.cancel()
-        
+
         // Clear bound LiquidGlassView IDs to allow re-binding on recreate
         boundLiquidGlassViewIds.clear()
-        
+
         Coroutine.async {
             BookHelp.clearInvalidCache()
         }
@@ -1177,7 +1177,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             menu.findItem(R.id.menu_ai_read).isVisible = showAI
             menu.findItem(R.id.menu_rss).isVisible = showRss
         }
-        
+
         // Apply icons and tint
         NavigationBarIconConfig.applyTo(
             binding.bottomNavigationView.menu,
@@ -1189,11 +1189,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             this,
             AppConfig.isNightTheme
         )
-        
+
         // Check if tint is enabled in the current config
         val currentEntry = NavigationBarIconConfig.currentEntry(AppConfig.isNightTheme)
         val enableTint = currentEntry.config.enableTint
-        
+
         // Apply tint only if enabled
         if (enableTint) {
             binding.bottomNavigationView.restoreThemeIconTint()
@@ -1203,7 +1203,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             binding.bottomNavigationView.itemIconTintList = null
             binding.bottomNavigationViewFloating.itemIconTintList = null
         }
-        
+
         var index = 0
         if (showHomepage) {
             realPositions[index] = idHomepage
@@ -1250,7 +1250,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         }
         return id
     }
-    
+
     private fun getBottomNavigationItemId(position: Int): Int {
         val fragmentId = getFragmentId(position)
         return when (fragmentId) {
@@ -1279,7 +1279,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             // Update both bottom navigation views
             binding.bottomNavigationView.menu.findItem(menuItemId)?.isChecked = true
             binding.bottomNavigationViewFloating.menu.findItem(menuItemId)?.isChecked = true
-            
+
             // Update floating mode indicator position if in floating mode
             if (AppConfig.bottomBarLayoutMode == "floating") {
                 // Use postDelayed to ensure smooth animation during page switch
