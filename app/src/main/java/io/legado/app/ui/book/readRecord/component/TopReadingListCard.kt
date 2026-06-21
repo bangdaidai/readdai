@@ -51,8 +51,8 @@ fun TopReadingListCard(
     val textColorSecondary = ThemeStore.textColorSecondary(context)
     val dividerColor = ThemeStore.dividerColor(context)
 
-    val borderStroke = if (AppConfig.showRecordCardBorder) {
-        BorderStroke(0.5.dp, Color(dividerColor))
+    val borderStroke = if (AppConfig.cardBorderWidth > 0) {
+        BorderStroke((AppConfig.cardBorderWidth * 0.5).dp, Color(dividerColor))
     } else {
         null
     }

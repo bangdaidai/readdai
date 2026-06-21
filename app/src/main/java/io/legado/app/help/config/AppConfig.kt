@@ -56,7 +56,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     var editAutoWrap = appCtx.getPrefBoolean(PreferKey.editAutoWrap, true)
     var editAutoComplete = appCtx.getPrefBoolean(PreferKey.editAutoComplete, true)
     var showBoardLine = appCtx.getPrefInt(PreferKey.showBoardLine, 1)
-    var showRecordCardBorder = appCtx.getPrefBoolean(PreferKey.showCardBorder, true)
+    var cardBorderWidth = appCtx.getPrefInt(PreferKey.cardBorderWidth, 1)
     var adaptSpecialStyle = appCtx.getPrefBoolean(PreferKey.adaptSpecialStyle, true)
     var aiStreamMode = appCtx.getPrefBoolean(PreferKey.aiStreamMode, true)
 
@@ -113,7 +113,7 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             PreferKey.editAutoWrap -> editAutoWrap = appCtx.getPrefBoolean(PreferKey.editAutoWrap, true)
             PreferKey.editAutoComplete -> editAutoComplete = appCtx.getPrefBoolean(PreferKey.editAutoComplete, true)
             PreferKey.showBoardLine -> showBoardLine = appCtx.getPrefInt(PreferKey.showBoardLine, 1)
-            PreferKey.showCardBorder -> showRecordCardBorder = appCtx.getPrefBoolean(PreferKey.showCardBorder, true)
+            PreferKey.cardBorderWidth -> cardBorderWidth = appCtx.getPrefInt(PreferKey.cardBorderWidth, 1)
             PreferKey.adaptSpecialStyle -> adaptSpecialStyle = appCtx.getPrefBoolean(PreferKey.adaptSpecialStyle, true)
 
             PreferKey.themeMode -> {
@@ -627,12 +627,6 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefBoolean(PreferKey.showReadingMemoryIntro, value)
         }
 
-    var showCardBorder: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.showCardBorder, true)
-        set(value) {
-            appCtx.putPrefBoolean(PreferKey.showCardBorder, value)
-        }
-
     var contentSelectSpeakMod: Int
         get() = appCtx.getPrefInt(PreferKey.contentSelectSpeakMod)
         set(value) {
@@ -755,10 +749,10 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefInt(PreferKey.bookshelfSort, value)
         }
 
-    var showBookshelfCardBorder: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.showBookshelfCardBorder, true)
+    var bookshelfCardBorderWidth: Int
+        get() = appCtx.getPrefInt(PreferKey.bookshelfCardBorderWidth, 1)
         set(value) {
-            appCtx.putPrefBoolean(PreferKey.showBookshelfCardBorder, value)
+            appCtx.putPrefInt(PreferKey.bookshelfCardBorderWidth, value)
         }
 
     fun getBookSortByGroupId(groupId: Long): Int {

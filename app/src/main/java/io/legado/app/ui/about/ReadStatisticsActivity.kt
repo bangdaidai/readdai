@@ -37,7 +37,7 @@ import io.legado.app.lib.dialogs.alert
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.HeatmapCacheManager
-import io.legado.app.utils.StatisticsCacheManager
+import io.legado.app.utils.dpToPx
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -157,11 +157,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             if (bgDrawable is android.graphics.drawable.GradientDrawable) {
                 bgDrawable.setColor(cardColor)
                 val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
-                if (AppConfig.showRecordCardBorder) {
-                    bgDrawable.setStroke(2, dividerColor)
-                } else {
-                    bgDrawable.setStroke(0, android.graphics.Color.TRANSPARENT)
-                }
+                bgDrawable.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx(), dividerColor)
             }
         }
 
@@ -213,15 +209,10 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         
         // 设置卡片边框
         val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
-        if (AppConfig.showRecordCardBorder) {
-            binding.navigationCard?.strokeWidth = 2
-            binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
-            binding.heatmapCard?.strokeWidth = 2
-            binding.heatmapCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
-        } else {
-            binding.navigationCard?.strokeWidth = 0
-            binding.heatmapCard?.strokeWidth = 0
-        }
+        binding.navigationCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+        binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
+        binding.heatmapCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+        binding.heatmapCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
     }
 
     private fun updateNavigationButtonColors() {

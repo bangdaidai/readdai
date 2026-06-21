@@ -85,8 +85,8 @@ fun ReadingSummaryCard(
         .fillMaxWidth()
         .padding(horizontal = 16.dp, vertical = 8.dp)
         .clickable(onClick = onClick)
-    val cardBorder = if (AppConfig.showRecordCardBorder) {
-        BorderStroke(0.5.dp, Color(dividerColor))
+    val cardBorder = if (AppConfig.cardBorderWidth > 0) {
+        BorderStroke((AppConfig.cardBorderWidth * 0.5).dp, Color(dividerColor))
     } else {
         null
     }

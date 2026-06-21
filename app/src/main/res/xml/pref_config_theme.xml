@@ -51,12 +51,18 @@
         app:allowDividerBelow="false"
         app:iconSpaceReserved="false" />
 
-    <io.legado.app.lib.prefs.SwitchPreference
-        android:defaultValue="true"
-        android:key="showCardBorder"
-        android:summary="@string/show_card_border_summary"
-        android:title="@string/show_card_border"
-        app:iconSpaceReserved="false" />
+    <io.legado.app.lib.prefs.SeekBarPreference
+        android:clickable="false"
+        android:defaultValue="1"
+        android:key="cardBorderWidth"
+        android:summary="@string/card_border_width_summary"
+        android:title="@string/card_border_width"
+        app:MaxValue="10"
+        app:MinValue="0"
+        app:allowDividerAbove="false"
+        app:allowDividerBelow="false"
+        app:iconSpaceReserved="false"
+        app:selectable="false" />
 
     <io.legado.app.lib.prefs.Preference
         android:key="themeList"

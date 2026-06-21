@@ -18,6 +18,7 @@ import io.legado.app.help.book.TagManager
 import io.legado.app.help.book.getDisplayName
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.config.AppConfig
+import io.legado.app.utils.dpToPx
 import io.legado.app.utils.invisible
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -66,13 +67,8 @@ class BooksAdapterList3(
             val background = cardBg.background
             if (background is android.graphics.drawable.GradientDrawable) {
                 background.setColor(cardColor)
-                // 设置边框
-                if (AppConfig.showBookshelfCardBorder) {
-                    val dividerColor = ThemeStore.dividerColor(context)
-                    background.setStroke(2, dividerColor)
-                } else {
-                    background.setStroke(0, 0)
-                }
+                val dividerColor = ThemeStore.dividerColor(context)
+                background.setStroke((AppConfig.bookshelfCardBorderWidth * 0.5f).dpToPx(), dividerColor)
             }
             
             // 设置卡片左右边距为16dp，让卡片距离屏幕边缘16dp

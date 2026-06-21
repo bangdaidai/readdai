@@ -56,6 +56,7 @@ object PreferKey {
     const val bookshelfLayout = "bookshelfLayout"
     const val bookshelfSort = "bookshelfSort"
     const val showBookshelfCardBorder = "showBookshelfCardBorder"
+    const val bookshelfCardBorderWidth = "bookshelfCardBorderWidth"
     const val bookExportFileName = "bookExportFileName"
     const val bookImportFileName = "bookImportFileName"
     const val episodeExportFileName = "episodeExportFileName"
@@ -198,6 +199,7 @@ object PreferKey {
     const val showBookIntro = "showBookIntro"
     const val showReadingMemoryIntro = "showReadingMemoryIntro"
     const val showCardBorder = "showCardBorder"
+    const val cardBorderWidth = "cardBorderWidth"
 
     const val aiSettings = "aiSettings"
 

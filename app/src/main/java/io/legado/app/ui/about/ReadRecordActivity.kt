@@ -35,6 +35,7 @@ import io.legado.app.ui.book.readRecord.DisplayMode
 import io.legado.app.ui.book.readRecord.ReadRecordUiState
 import io.legado.app.ui.book.readRecord.ReadRecordViewModel
 import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.utils.dpToPx
 import io.legado.app.utils.applyNavigationBarPadding
 import androidx.recyclerview.widget.RecyclerView
 import io.legado.app.utils.startActivityForBook
@@ -190,12 +191,8 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         val calendarSection = binding.root.findViewById<MaterialCardView>(R.id.calendar_section)
         calendarSection?.apply {
             setCardBackgroundColor(cardColor)
-            if (AppConfig.showRecordCardBorder) {
-                strokeWidth = 2
-                strokeColor = dividerColor
-            } else {
-                strokeWidth = 0
-            }
+            strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+            strokeColor = dividerColor
         }
     }
 
@@ -502,11 +499,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             if (bgDrawable is android.graphics.drawable.GradientDrawable) {
                 bgDrawable.setColor(cardColor)
                 val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(itemView.context)
-                if (AppConfig.showRecordCardBorder) {
-                    bgDrawable.setStroke(2, dividerColor)
-                } else {
-                    bgDrawable.setStroke(0, android.graphics.Color.TRANSPARENT)
-                }
+                bgDrawable.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx(), dividerColor)
             }
 
             // 设置汇总按钮

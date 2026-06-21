@@ -14,6 +14,7 @@ import io.legado.app.databinding.ItemReadStatisticsBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
+import io.legado.app.utils.dpToPx
 import kotlinx.coroutines.runBlocking
 
 
@@ -46,12 +47,8 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
             
             // 动态设置边框
             val dividerColor = ThemeStore.dividerColor(context)
-            if (AppConfig.showRecordCardBorder) {
-                materialCardView.strokeWidth = 2
-                materialCardView.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
-            } else {
-                materialCardView.strokeWidth = 0
-            }
+            materialCardView.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+            materialCardView.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
             
             // 隐藏空数据视图
             llEmpty.visibility = View.GONE
