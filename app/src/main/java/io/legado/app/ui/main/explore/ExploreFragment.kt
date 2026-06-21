@@ -75,7 +75,6 @@ import io.legado.app.ui.book.source.edit.BookSourceEditActivity
 import io.legado.app.ui.login.SourceLoginActivity
 import io.legado.app.ui.login.SourceLoginJsExtensions
 import io.legado.app.ui.main.MainFragmentInterface
-import io.legado.app.ui.widget.ModernActionPopup
 import io.legado.app.ui.widget.RoundedTagBarView
 import io.legado.app.ui.widget.SourceSelectDialog
 import io.legado.app.utils.applyMainBottomBarPadding
@@ -153,8 +152,8 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     private val btnDiscoverSourceSearch: android.widget.ImageButton? by lazy {
         modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_source_search)
     }
-    private val btnDiscoverTagFilter: android.widget.ImageButton? by lazy {
-        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_tag_filter)
+    private val btnDiscoverEditSource: android.widget.ImageButton? by lazy {
+        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_edit_source)
     }
     private val btnDiscoverSourceLogin: android.widget.ImageButton? by lazy {
         modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_source_login)
@@ -173,7 +172,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     private var modernModeInitialized = false
     private var usingModernDiscovery = false
     private var sourceMenuPopup: PopupWindow? = null
-    private var tagFilterPopup: PopupWindow? = null
+
     private var discoverSourceFlowJob: Job? = null
     private var discoverBookshelfFlowJob: Job? = null
     private var discoverWarmupJob: Job? = null
@@ -343,8 +342,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     private fun stopModernMode() {
         sourceMenuPopup?.dismiss()
         sourceMenuPopup = null
-        tagFilterPopup?.dismiss()
-        tagFilterPopup = null
         discoverWarmupJob?.cancel()
         discoverWarmupJob = null
         discoverSourceFlowJob?.cancel()
@@ -431,8 +428,8 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         btnDiscoverSourceSearch?.setOnClickListener {
             openDiscoverSearch()
         }
-        btnDiscoverTagFilter?.setOnClickListener {
-            showDiscoverTagFilterMenu()
+        btnDiscoverEditSource?.setOnClickListener {
+            selectedDiscoverSource?.let { editSource(it.bookSourceUrl) }
         }
         btnDiscoverLayoutToggle?.setOnClickListener {
             switchDiscoverBookLayout()
@@ -440,7 +437,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         btnDiscoverModeToggle?.setOnClickListener {
             toggleDiscoveryMode()
         }
-        updateDiscoverTagFilterButtonState()
         updateDiscoverSearchButtonState()
         updateDiscoverModeToggleButtonState()
     }
@@ -450,7 +446,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         if (rowWidth <= 0) return
         val actionsWidth = listOf(
             btnDiscoverSourceSearch,
-            btnDiscoverTagFilter,
+            btnDiscoverEditSource,
             btnDiscoverSourceLogin,
             btnDiscoverLayoutToggle,
             btnDiscoverModeToggle
@@ -555,7 +551,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                         tvDiscoverSourceSelect?.text = getString(R.string.explore_empty)
                         updateDiscoverLoginButtonState()
                         updateDiscoverSearchButtonState()
-                        updateDiscoverTagFilterButtonState()
                         binding.pbDiscoverLoading.gone()
                         return@collect
                     }
@@ -629,8 +624,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         selectedDiscoverSourcePart = source
         AppConfig.modernDiscoverySourceUrl = source.bookSourceUrl
         updateDiscoverLoginButtonState()
-        tagFilterPopup?.dismiss()
-        tagFilterPopup = null
         discoverSourceVersion += 1
         val currentSourceVersion = discoverSourceVersion
         discoverRequestVersion += 1
@@ -648,7 +641,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         selectedDiscoverMajorGroup = null
         renderDiscoverTags(emptyList(), -1)
         renderDiscoverSelects()
-        updateDiscoverTagFilterButtonState()
         viewLifecycleOwner.lifecycleScope.launch {
             val fullSource = withContext(IO) {
                 appDb.bookSourceDao.getBookSource(source.bookSourceUrl)
@@ -683,7 +675,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             selectedDiscoverMajorGroup = null
             renderDiscoverTags(emptyList(), -1)
             renderDiscoverSelects()
-            updateDiscoverTagFilterButtonState()
             clearDiscoverBooksToEmpty(getString(R.string.explore_empty))
             return
         }
@@ -830,9 +821,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         val raw = resolveDiscoverTagText(kind).trim()
         if (raw.isBlank()) return getString(R.string.discovery)
         val normalized = raw
-            .replace("🟣", " ")
-            .replace("🟪", " ")
-            .replace("•", " ")
+            .replace(Regex("^[^\\p{L}\\p{N}]+|[^\\p{L}\\p{N}]+$"), "")
             .replace(Regex("\\s{2,}"), " ")
             .trim()
         return normalized.ifBlank { raw }
@@ -867,7 +856,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
                 renderDiscoverSelects()
                 renderDiscoverTags(emptyList(), -1)
                 clearDiscoverBooksToEmpty(getString(R.string.explore_empty))
-                updateDiscoverTagFilterButtonState()
                 return
             }
         } else {
@@ -894,7 +882,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         }
 
         val tagItems = filtered.filter { it.kind.type != ExploreKind.Type.select }
-        updateDiscoverTagFilterButtonState()
         renderDiscoverSelects()
         val targetIndexByUrl = preferredUrl
             ?.takeIf { it.isNotBlank() }
@@ -914,61 +901,6 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
 
     private fun isDiscoverVisibleGroupItem(item: DiscoverTagItem): Boolean {
         return item.isButton || !item.kind.url.isNullOrBlank()
-    }
-
-    private fun updateDiscoverTagFilterButtonState() {
-        val hasSelectItems = discoverAllTagItems.any { it.kind.type == ExploreKind.Type.select }
-        val enabled = discoverMajorGroups.size > 1 || hasSelectItems
-        btnDiscoverTagFilter?.isVisible = enabled
-        btnDiscoverTagFilter?.isEnabled = enabled
-        btnDiscoverTagFilter?.alpha = if (enabled) 1f else 0.45f
-    }
-
-    private fun showDiscoverTagFilterMenu() {
-        val hasGroups = discoverMajorGroups.size > 1
-        val selectItems = discoverAllTagItems.filter { it.kind.type == ExploreKind.Type.select }.distinctBy { it.kind.title }
-        val buttonItems = discoverAllTagItems.filter { it.isButton }.distinctBy { it.text }
-        val hasSettings = selectItems.isNotEmpty() || buttonItems.isNotEmpty()
-        if (!hasGroups && !hasSettings) return
-        val current = selectedDiscoverMajorGroup
-        val actions = buildList {
-            if (hasGroups) {
-                discoverMajorGroups.forEach { group ->
-                    add(
-                        ModernActionPopup.Action(
-                            (if (group == current) "✓ " else "") + group.limitDiscoverText(10)
-                        ) {
-                            selectedDiscoverMajorGroup = group
-                            applyDiscoverTagFilterAndSelect(preferredUrl = discoverCurrentUrl)
-                        }
-                    )
-                }
-                if (hasSettings) {
-                    add(ModernActionPopup.Action("──────────") {})
-                }
-            }
-            selectItems.forEach { item ->
-                add(
-                    ModernActionPopup.Action(
-                        "${item.text}：${currentDiscoverSelectValue(item)}"
-                    ) {
-                        showDiscoverSelectDialog(item)
-                    }
-                )
-            }
-            buttonItems.forEach { item ->
-                add(
-                    ModernActionPopup.Action(item.text) {
-                        handleDiscoverButtonTag(item)
-                    }
-                )
-            }
-        }
-        tagFilterPopup = ModernActionPopup.show(
-            btnDiscoverTagFilter ?: return,
-            actions,
-            tagFilterPopup
-        )
     }
 
     private fun renderDiscoverTags(items: List<DiscoverTagItem>, selectedIndex: Int) {
@@ -1543,10 +1475,10 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             it.setColorFilter(textColor)
         } ?: android.util.Log.w("ExploreFragment", "btnDiscoverSourceSearch is null!")
         
-        btnDiscoverTagFilter?.let {
-            android.util.Log.d("ExploreFragment", "btnDiscoverTagFilter found, applying color")
+        btnDiscoverEditSource?.let {
+            android.util.Log.d("ExploreFragment", "btnDiscoverEditSource found, applying color")
             it.setColorFilter(textColor)
-        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverTagFilter is null!")
+        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverEditSource is null!")
         
         btnDiscoverSourceLogin?.let {
             android.util.Log.d("ExploreFragment", "btnDiscoverSourceLogin found, applying color")
