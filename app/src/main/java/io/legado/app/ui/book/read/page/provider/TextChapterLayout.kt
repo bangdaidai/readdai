@@ -1322,9 +1322,18 @@ class TextChapterLayout(
         return code == 8203 || code == 8204 || code == 8205 || code == 8288
     }
 
-    private val compiledHighlightRules by lazy {
+    @Volatile
+    private var compiledHighlightRules: List<CompiledHighlightRule>? = null
+
+    private fun getCompiledHighlightRules(): List<CompiledHighlightRule> {
+        return compiledHighlightRules ?: synchronized(this) {
+            compiledHighlightRules ?: buildCompiledRules().also { compiledHighlightRules = it }
+        }
+    }
+
+    private fun buildCompiledRules(): List<CompiledHighlightRule> {
         val protagonistPattern = buildProtagonistPattern()
-        HighlightRuleStore.loadEnabled(appCtx).mapNotNull { rule ->
+        return HighlightRuleStore.loadEnabled(appCtx).mapNotNull { rule ->
             kotlin.runCatching {
                 val pattern = if (rule.useProtagonist) {
                     protagonistPattern ?: return@mapNotNull null
@@ -1350,7 +1359,7 @@ class TextChapterLayout(
         isTitle: Boolean = false
     ): SpannableStringBuilder {
         if (ReadBook.book?.getUseHighlightRule() != true) return spannable
-        compiledHighlightRules.forEach { compiled ->
+        getCompiledHighlightRules().forEach { compiled ->
             if (!compiled.rule.appliesTo(isTitle)) return@forEach
             if (!appliesToBookScope(compiled.rule)) return@forEach
             applyRuleSpans(spannable, compiled.rule, compiled.regex)
