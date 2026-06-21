@@ -341,6 +341,7 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
             try {
                 // 更新当前的筛选条件
                 currentStatusFilter = status
+                currentFilterStatus = status
                 currentReadTypeFilter = readType
                 currentRatingFilter = ratingFilter
                 
