@@ -840,7 +840,8 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     }
 
     private fun applyDiscoverTagFilterAndSelect(preferredUrl: String?) {
-        val hasGroupedItems = discoverAllTagItems.any { !it.group.isNullOrBlank() }
+        val otherGroup = getString(R.string.discover_group_other)
+        val hasGroupedItems = discoverAllTagItems.any { !it.group.isNullOrBlank() && it.group != otherGroup }
         val groupList = discoverAllTagItems
             .mapNotNull { it.group?.takeIf { name -> name.isNotBlank() } }
             .filter { group ->
