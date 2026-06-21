@@ -842,10 +842,18 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             bmp
         }
 
+        // Scale crop coordinates to match actual bitmap dimensions.
+        // decodeBitmap uses inSampleSize (rounded to power of 2 by Android), so bitmap
+        // dimensions may differ from screen pixel dimensions, causing crop misalignment.
+        val scaleY = fullBitmap.height.toFloat() / screenHeight
+
         val bottomNavHeight = if (bottomNav.height > 0) bottomNav.height else (50 * metrics.density).toInt()
-        val srcY = (fullBitmap.height - bottomNavHeight).coerceAtLeast(0)
-        val cropH = bottomNavHeight.coerceAtMost(fullBitmap.height - srcY)
-        val cropped = Bitmap.createBitmap(fullBitmap, 0, srcY, fullBitmap.width, cropH)
+        val scaledNavH = (bottomNavHeight * scaleY).toInt().coerceAtMost(fullBitmap.height)
+        val srcY = (fullBitmap.height - scaledNavH).coerceAtLeast(0)
+        val cropH = scaledNavH.coerceAtMost(fullBitmap.height - srcY)
+        val srcX = 0
+        val cropW = fullBitmap.width
+        val cropped = Bitmap.createBitmap(fullBitmap, srcX, srcY, cropW, cropH)
 
         if (fullDrawable !is BitmapDrawable) {
             fullBitmap.recycle()
