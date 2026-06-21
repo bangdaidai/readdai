@@ -85,7 +85,7 @@ class BooksAdapterGrid(context: Context, callBack: CallBack) :
                 if (background is android.graphics.drawable.GradientDrawable) {
                     background.setColor(cardColor)
                     val dividerColor = ThemeStore.dividerColor(context)
-                    background.setStroke((AppConfig.bookshelfCardBorderWidth * 0.5f).dpToPx(), dividerColor)
+                    background.setStroke((AppConfig.bookshelfCardBorderWidth * 0.5f).dpToPx().toInt(), dividerColor)
                 }
                 root.setPadding(8, 8, 8, 8)
             } else {
@@ -162,7 +162,7 @@ class BooksAdapterGrid(context: Context, callBack: CallBack) :
                 if (background is android.graphics.drawable.GradientDrawable) {
                     background.setColor(cardColor)
                     val dividerColor = ThemeStore.dividerColor(context)
-                    background.setStroke((AppConfig.bookshelfCardBorderWidth * 0.5f).dpToPx(), dividerColor)
+                    background.setStroke((AppConfig.bookshelfCardBorderWidth * 0.5f).dpToPx().toInt(), dividerColor)
                 }
                 root.setPadding(8, 8, 8, 8)
             } else {

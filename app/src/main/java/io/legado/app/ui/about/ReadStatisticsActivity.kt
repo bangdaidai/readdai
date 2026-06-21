@@ -37,6 +37,7 @@ import io.legado.app.lib.dialogs.alert
 import io.legado.app.utils.setEdgeEffectColor
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.HeatmapCacheManager
+import io.legado.app.utils.StatisticsCacheManager
 import io.legado.app.utils.dpToPx
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -157,7 +158,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             if (bgDrawable is android.graphics.drawable.GradientDrawable) {
                 bgDrawable.setColor(cardColor)
                 val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
-                bgDrawable.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx(), dividerColor)
+                bgDrawable.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt(), dividerColor)
             }
         }
 
@@ -209,9 +210,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         
         // 设置卡片边框
         val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(this)
-        binding.navigationCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+        binding.navigationCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
         binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
-        binding.heatmapCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+        binding.heatmapCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
         binding.heatmapCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
     }
 

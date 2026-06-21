@@ -191,7 +191,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
         val calendarSection = binding.root.findViewById<MaterialCardView>(R.id.calendar_section)
         calendarSection?.apply {
             setCardBackgroundColor(cardColor)
-            strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+            strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
             strokeColor = dividerColor
         }
     }
@@ -499,7 +499,7 @@ class ReadRecordActivity : BaseActivity<ActivityReadRecordBinding>() {
             if (bgDrawable is android.graphics.drawable.GradientDrawable) {
                 bgDrawable.setColor(cardColor)
                 val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(itemView.context)
-                bgDrawable.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx(), dividerColor)
+                bgDrawable.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt(), dividerColor)
             }
 
             // 设置汇总按钮

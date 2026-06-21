@@ -47,7 +47,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
             
             // 动态设置边框
             val dividerColor = ThemeStore.dividerColor(context)
-            materialCardView.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx()
+            materialCardView.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
             materialCardView.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
             
             // 隐藏空数据视图
