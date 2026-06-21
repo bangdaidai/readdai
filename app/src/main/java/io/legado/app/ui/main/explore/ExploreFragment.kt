@@ -33,6 +33,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.script.rhino.runScriptWithContext
@@ -157,6 +158,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     }
     private val btnDiscoverSourceLogin: android.widget.ImageButton? by lazy {
         modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_source_login)
+    }
+    private val btnDiscoverLayoutToggle: android.widget.ImageButton? by lazy {
+        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_layout_toggle)
     }
     private val btnDiscoverModeToggle: android.widget.ImageButton? by lazy {
         modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_mode_toggle)
@@ -390,10 +394,11 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             selectDiscoverTag(index, item, selectTab = true)
         }
         binding.rvDiscoverSelects.setOnTagClickListener { index ->
-            val item = discoverSelectItems.getOrNull(index) ?: return@setOnTagClickListener
-            showDiscoverSelectDialog(item)
+            val group = discoverMajorGroups.getOrNull(index) ?: return@setOnTagClickListener
+            selectedDiscoverMajorGroup = group
+            applyDiscoverTagFilterAndSelect(preferredUrl = discoverCurrentUrl)
         }
-        binding.rvDiscoverBooks.layoutManager = discoverBookLayoutManager
+        applyDiscoverBookLayout()
         binding.rvDiscoverBooks.adapter = discoverBookAdapter
         binding.rvDiscoverBooks.setEdgeEffectColor(primaryColor)
         binding.rvDiscoverBooks.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -429,6 +434,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         btnDiscoverTagFilter?.setOnClickListener {
             showDiscoverTagFilterMenu()
         }
+        btnDiscoverLayoutToggle?.setOnClickListener {
+            switchDiscoverBookLayout()
+        }
         btnDiscoverModeToggle?.setOnClickListener {
             toggleDiscoveryMode()
         }
@@ -443,7 +451,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         val actionsWidth = listOf(
             btnDiscoverSourceSearch,
             btnDiscoverTagFilter,
-            btnDiscoverSourceLogin
+            btnDiscoverSourceLogin,
+            btnDiscoverLayoutToggle,
+            btnDiscoverModeToggle
         ).filter { it?.isVisible == true }.sumOf { it?.measuredWidth?.takeIf { width -> width > 0 } ?: (it?.layoutParams?.width ?: 0) }
         val spacing = 36.dpToPx()
         val maxWidth = (rowWidth - actionsWidth - spacing).coerceIn(96.dpToPx(), 190.dpToPx())
@@ -476,8 +486,23 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         modernTitleBar?.post(::updateDiscoverSourceNameWidth)
     }
 
+    private fun switchDiscoverBookLayout() {
+        AppConfig.modernDiscoveryLayout = (AppConfig.modernDiscoveryLayout + 1) % DISCOVER_LAYOUT_COUNT
+        applyDiscoverBookLayout()
+    }
+
+    private fun applyDiscoverBookLayout() {
+        val style = AppConfig.modernDiscoveryLayout
+        discoverBookAdapter.layoutStyle = style
+        binding.rvDiscoverBooks.layoutManager = when (style) {
+            1 -> GridLayoutManager(requireContext(), 2)
+            2 -> GridLayoutManager(requireContext(), 3)
+            else -> discoverBookLayoutManager
+        }
+        discoverBookAdapter.notifyDataSetChanged()
+    }
+
     private fun updateDiscoverModeToggleButtonState() {
-        // Update button content description based on current mode
         btnDiscoverModeToggle?.contentDescription = if (AppConfig.modernDiscoveryPage) {
             getString(R.string.discovery_page_mode_legacy)
         } else {
@@ -622,7 +647,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         discoverSelectItems.clear()
         selectedDiscoverMajorGroup = null
         renderDiscoverTags(emptyList(), -1)
-        renderDiscoverSelects(emptyList())
+        renderDiscoverSelects()
         updateDiscoverTagFilterButtonState()
         viewLifecycleOwner.lifecycleScope.launch {
             val fullSource = withContext(IO) {
@@ -657,7 +682,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             discoverMajorGroups.clear()
             selectedDiscoverMajorGroup = null
             renderDiscoverTags(emptyList(), -1)
-            renderDiscoverSelects(emptyList())
+            renderDiscoverSelects()
             updateDiscoverTagFilterButtonState()
             clearDiscoverBooksToEmpty(getString(R.string.explore_empty))
             return
@@ -839,7 +864,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         if (discoverMajorGroups.isEmpty()) {
             selectedDiscoverMajorGroup = null
             if (hasGroupedItems) {
-                renderDiscoverSelects(emptyList())
+                renderDiscoverSelects()
                 renderDiscoverTags(emptyList(), -1)
                 clearDiscoverBooksToEmpty(getString(R.string.explore_empty))
                 updateDiscoverTagFilterButtonState()
@@ -868,10 +893,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             }
         }
 
-        val selectItems = filtered.filter { it.kind.type == ExploreKind.Type.select }
         val tagItems = filtered.filter { it.kind.type != ExploreKind.Type.select }
         updateDiscoverTagFilterButtonState()
-        renderDiscoverSelects(selectItems)
+        renderDiscoverSelects()
         val targetIndexByUrl = preferredUrl
             ?.takeIf { it.isNotBlank() }
             ?.let { url ->
@@ -893,23 +917,49 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     }
 
     private fun updateDiscoverTagFilterButtonState() {
-        val enabled = discoverMajorGroups.size > 1
+        val hasSelectItems = discoverAllTagItems.any { it.kind.type == ExploreKind.Type.select }
+        val enabled = discoverMajorGroups.size > 1 || hasSelectItems
         btnDiscoverTagFilter?.isVisible = enabled
         btnDiscoverTagFilter?.isEnabled = enabled
         btnDiscoverTagFilter?.alpha = if (enabled) 1f else 0.45f
     }
 
     private fun showDiscoverTagFilterMenu() {
-        if (discoverMajorGroups.size <= 1) return
+        val hasGroups = discoverMajorGroups.size > 1
+        val selectItems = discoverAllTagItems.filter { it.kind.type == ExploreKind.Type.select }.distinctBy { it.kind.title }
+        val buttonItems = discoverAllTagItems.filter { it.isButton }.distinctBy { it.text }
+        val hasSettings = selectItems.isNotEmpty() || buttonItems.isNotEmpty()
+        if (!hasGroups && !hasSettings) return
         val current = selectedDiscoverMajorGroup
         val actions = buildList {
-            discoverMajorGroups.forEach { group ->
+            if (hasGroups) {
+                discoverMajorGroups.forEach { group ->
+                    add(
+                        ModernActionPopup.Action(
+                            (if (group == current) "✓ " else "") + group.limitDiscoverText(10)
+                        ) {
+                            selectedDiscoverMajorGroup = group
+                            applyDiscoverTagFilterAndSelect(preferredUrl = discoverCurrentUrl)
+                        }
+                    )
+                }
+                if (hasSettings) {
+                    add(ModernActionPopup.Action("──────────") {})
+                }
+            }
+            selectItems.forEach { item ->
                 add(
                     ModernActionPopup.Action(
-                        (if (group == current) "✓ " else "") + group.limitDiscoverText(10)
+                        "${item.text}：${currentDiscoverSelectValue(item)}"
                     ) {
-                        selectedDiscoverMajorGroup = group
-                        applyDiscoverTagFilterAndSelect(preferredUrl = discoverCurrentUrl)
+                        showDiscoverSelectDialog(item)
+                    }
+                )
+            }
+            buttonItems.forEach { item ->
+                add(
+                    ModernActionPopup.Action(item.text) {
+                        handleDiscoverButtonTag(item)
                     }
                 )
             }
@@ -944,21 +994,17 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         )
     }
 
-    private fun renderDiscoverSelects(items: List<DiscoverTagItem>) {
-        discoverSelectItems.clear()
-        discoverSelectItems.addAll(items)
-        if (items.isEmpty()) {
+    private fun renderDiscoverSelects() {
+        if (discoverMajorGroups.isEmpty()) {
             binding.rvDiscoverSelects.gone()
             binding.rvDiscoverSelects.submitItems(emptyList(), -1)
             return
         }
         binding.rvDiscoverSelects.visible()
+        val selectedIndex = discoverMajorGroups.indexOf(selectedDiscoverMajorGroup)
         binding.rvDiscoverSelects.submitItems(
-            items.map {
-                val value = currentDiscoverSelectValue(it)
-                RoundedTagBarView.Item("${it.text}：${value}", 1f)
-            },
-            -1
+            discoverMajorGroups.map { RoundedTagBarView.Item(it, 1f) },
+            selectedIndex
         )
     }
 
@@ -1507,6 +1553,11 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             it.setColorFilter(textColor)
         } ?: android.util.Log.w("ExploreFragment", "btnDiscoverSourceLogin is null!")
         
+        btnDiscoverLayoutToggle?.let {
+            android.util.Log.d("ExploreFragment", "btnDiscoverLayoutToggle found, applying color")
+            it.setColorFilter(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverLayoutToggle is null!")
+        
         btnDiscoverModeToggle?.let {
             android.util.Log.d("ExploreFragment", "btnDiscoverModeToggle found, applying color")
             it.setColorFilter(textColor)
@@ -2018,9 +2069,10 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         }
     }
 
-    companion object {
+    private companion object {
         private const val DISCOVER_DIALOG_WIDTH_RATIO = 0.90f
         private const val DISCOVER_DIALOG_HEIGHT_RATIO = 0.72f
+        const val DISCOVER_LAYOUT_COUNT = 3
     }
 
 }

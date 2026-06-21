@@ -47,6 +47,7 @@ object PreferKey {
     const val mergeDiscoveryRss = "mergeDiscoveryRss"
     const val mergedDiscoveryRssTarget = "mergedDiscoveryRssTarget"
     const val modernDiscoverySourceUrl = "modernDiscoverySourceUrl"
+    const val modernDiscoveryLayout = "modernDiscoveryLayout"
     const val modernRssSourceUrl = "modernRssSourceUrl"
     const val enableReview = "enableReview"
     const val showRss = "showRss"
