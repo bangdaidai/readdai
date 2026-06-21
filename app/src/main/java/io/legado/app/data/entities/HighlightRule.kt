@@ -21,6 +21,7 @@ data class HighlightRule(
     var bgImageScale: Float = 1f,
     var scope: String? = null,
     var excludeScope: String? = null,
+    var useProtagonist: Boolean = false,
 ) {
 
     fun styleSummary(): String {

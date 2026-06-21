@@ -69,6 +69,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import java.util.LinkedList
+import java.util.regex.Pattern
 import kotlin.math.roundToInt
 import splitties.init.appCtx
 
@@ -1322,14 +1323,26 @@ class TextChapterLayout(
     }
 
     private val compiledHighlightRules by lazy {
+        val protagonistPattern = buildProtagonistPattern()
         HighlightRuleStore.loadEnabled(appCtx).mapNotNull { rule ->
             kotlin.runCatching {
+                val pattern = if (rule.useProtagonist) {
+                    protagonistPattern ?: return@mapNotNull null
+                } else {
+                    rule.pattern
+                }
                 CompiledHighlightRule(
                     rule = rule,
-                    regex = Regex(rule.pattern)
+                    regex = Regex(pattern)
                 )
             }.getOrNull()
         }
+    }
+
+    private fun buildProtagonistPattern(): String? {
+        val names = appDb.bookProtagonistDao.getByBook(book.bookUrl).map { it.name }
+        if (names.isEmpty()) return null
+        return names.joinToString("|") { Pattern.quote(it) }
     }
 
     private fun applyHighlightRules(
@@ -1339,9 +1352,26 @@ class TextChapterLayout(
         if (ReadBook.book?.getUseHighlightRule() != true) return spannable
         compiledHighlightRules.forEach { compiled ->
             if (!compiled.rule.appliesTo(isTitle)) return@forEach
+            if (!appliesToBookScope(compiled.rule)) return@forEach
             applyRuleSpans(spannable, compiled.rule, compiled.regex)
         }
         return spannable
+    }
+
+    private fun appliesToBookScope(rule: io.legado.app.data.entities.HighlightRule): Boolean {
+        val scope = rule.scope
+        if (!scope.isNullOrBlank()) {
+            if (!scope.contains(book.name) && !scope.contains(book.origin)) {
+                return false
+            }
+        }
+        val excludeScope = rule.excludeScope
+        if (!excludeScope.isNullOrBlank()) {
+            if (excludeScope.contains(book.name) || excludeScope.contains(book.origin)) {
+                return false
+            }
+        }
+        return true
     }
 
     private fun applyRuleSpans(

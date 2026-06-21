@@ -54,7 +54,7 @@ object HighlightRuleStore {
     }
 
     fun loadEnabled(context: Context): List<HighlightRule> {
-        return load(context).filter { it.enabled && it.pattern.isNotBlank() }
+        return load(context).filter { it.enabled && (it.pattern.isNotBlank() || it.useProtagonist) }
     }
 
     fun save(context: Context, rules: List<HighlightRule>) {
@@ -234,6 +234,20 @@ object HighlightRuleStore {
                 group = HighlightRuleGroupStore.DEFAULT_GROUP,
                 enabled = false,
                 textColor = 0xFF20B2AA.toInt()
+            ),
+            HighlightRule(
+                id = "protagonist_default",
+                name = "主角高亮",
+                pattern = "",
+                sampleText = "张三轻轻推开门，李四紧随其后。",
+                group = HighlightRuleGroupStore.DEFAULT_GROUP,
+                enabled = true,
+                useProtagonist = true,
+                textColor = 0xFFE67E22.toInt(),
+                bold = true,
+                underlineMode = 3,
+                underlineWidth = 0.5f,
+                underlineColor = 0xFFE67E22.toInt()
             )
         )
     }
@@ -264,6 +278,7 @@ object HighlightRuleStore {
                     bgImageScale = safeRule.bgImageScale.takeIf { it != 1f } ?: builtin.bgImageScale,
                     scope = safeRule.scope,
                     excludeScope = safeRule.excludeScope,
+                    useProtagonist = builtin.useProtagonist,
                 )
             } else {
                 safeRule.copy(
@@ -289,6 +304,7 @@ object HighlightRuleStore {
         val bgImage = runCatching { rule.bgImage }.getOrNull()?.takeIf { it.isNotBlank() }
         val scope = runCatching { rule.scope }.getOrNull()?.takeIf { it.isNotBlank() }
         val excludeScope = runCatching { rule.excludeScope }.getOrNull()?.takeIf { it.isNotBlank() }
+        val useProtagonist = runCatching { rule.useProtagonist }.getOrDefault(false)
         return HighlightRule(
             id = id,
             name = name,
@@ -310,6 +326,7 @@ object HighlightRuleStore {
             bgImageScale = runCatching { rule.bgImageScale }.getOrDefault(1f).coerceIn(0.1f, 5f),
             scope = scope,
             excludeScope = excludeScope,
+            useProtagonist = useProtagonist,
         )
     }
 
@@ -355,7 +372,8 @@ object HighlightRuleStore {
         "ellipsis_default",
         "number_default",
         "english_default",
-        "date_time_default"
+        "date_time_default",
+        "protagonist_default"
     )
 
     private val legacyBuiltinPatterns = mapOf(
