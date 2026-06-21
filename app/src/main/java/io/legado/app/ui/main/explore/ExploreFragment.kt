@@ -850,6 +850,11 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         discoverMajorGroups.clear()
         discoverMajorGroups.addAll(groupList)
 
+        // If no source-defined major groups (only default fallback group), hide the selects bar
+        if (!hasGroupedItems) {
+            discoverMajorGroups.clear()
+        }
+
         if (discoverMajorGroups.isEmpty()) {
             selectedDiscoverMajorGroup = null
             if (hasGroupedItems) {
