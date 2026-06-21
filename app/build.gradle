@@ -181,6 +181,17 @@ android {
                     'proguard-rules.pro',
                     'cronet-proguard-rules.pro'
         }
+        releaseNoR8 {
+            signingConfig signingConfigs.release
+            applicationIdSuffix '.releaseNoR8'
+            manifestPlaceholders.put("app_name", "@string/app_name")
+
+            minifyEnabled false
+            shrinkResources = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                    'proguard-rules.pro',
+                    'cronet-proguard-rules.pro'
+        }
     }
 
     // 📦 构建维度与渠道
