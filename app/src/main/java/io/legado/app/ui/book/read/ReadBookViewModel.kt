@@ -294,6 +294,7 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                 // 保存旧书的阅读记录和标签关联关系
                 val oldMemory = oldBook?.let { appDb.readingMemoryDao.getByBookUrl(it.bookUrl) }
                 val oldTagRelations = oldBook?.let { appDb.bookTagRelationDao.getRelationsByBook(it.bookUrl) } ?: emptyList()
+                val oldProtagonists = oldBook?.let { appDb.bookProtagonistDao.getByBook(it.bookUrl) } ?: emptyList()
 
                 oldBook?.delete()
                 appDb.bookDao.insert(newBook)
@@ -305,6 +306,20 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                         relation.copy(bookUrl = newBook.bookUrl)
                     }
                     appDb.bookTagRelationDao.insertAll(newTagRelations)
+                }
+
+                // 迁移主角名到新书
+                if (oldProtagonists.isNotEmpty()) {
+                    val newProtagonists = oldProtagonists.map { protagonist ->
+                        BookProtagonist(
+                            bookUrl = newBook.bookUrl,
+                            name = protagonist.name,
+                            isCustom = protagonist.isCustom,
+                            createTime = protagonist.createTime,
+                            updateTime = System.currentTimeMillis()
+                        )
+                    }
+                    appDb.bookProtagonistDao.insertAll(newProtagonists)
                 }
 
                 // 保存旧书的阅读记录
