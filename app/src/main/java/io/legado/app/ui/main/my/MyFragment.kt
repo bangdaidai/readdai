@@ -29,6 +29,7 @@ import io.legado.app.ui.book.readingmemory.ReadingMemoryActivity
 import io.legado.app.ui.book.vector.VectorBooksActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
 import io.legado.app.ui.book.tag.manage.BookTagManageActivity
+import io.legado.app.ui.book.bookplate.BookplateManageActivity
 import io.legado.app.ui.book.toc.rule.TxtTocRuleActivity
 import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
@@ -160,6 +161,7 @@ class MyFragment() : BaseFragment(R.layout.fragment_my_config), MainFragmentInte
                 "replaceManage" -> startActivity<ReplaceRuleActivity>()
                 "highlightRuleManage" -> HighlightRuleActivity.start(requireContext())
                 "dictRuleManage" -> startActivity<DictRuleActivity>()
+                "bookplateManage" -> startActivity<BookplateManageActivity>()
                 "txtTocRuleManage" -> startActivity<TxtTocRuleActivity>()
                 "bookmark" -> startActivity<AllBookmarkActivity>()
                 "bookTagManage" -> {

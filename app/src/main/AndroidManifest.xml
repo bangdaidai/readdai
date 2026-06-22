@@ -290,6 +290,11 @@
             android:name=".ui.book.tag.manage.BookTagManageActivity"
             android:launchMode="singleTop"
             android:screenOrientation="behind" />
+        <!-- 藏书票模板管理 -->
+        <activity
+            android:name=".ui.book.bookplate.BookplateManageActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
         <!-- 排除标签管理 -->
         <activity
             android:name=".ui.book.tag.excluded.ExcludedTagManageActivity"

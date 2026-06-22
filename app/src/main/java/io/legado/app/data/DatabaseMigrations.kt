@@ -22,7 +22,8 @@ object DatabaseMigrations {
             migration_35_36, migration_36_37, migration_37_38, migration_38_39,
             migration_39_40, migration_40_41, migration_41_42, migration_42_43,
             migration_88_89, migration_89_90, migration_93_94, migration_97_98,
-            migration_98_99, migration_99_100, migration_101_102, migration_102_103, migration_103_104
+            migration_98_99, migration_99_100, migration_101_102, migration_102_103, migration_103_104,
+            migration_104_105
         )
     }
 
@@ -616,4 +617,22 @@ object DatabaseMigrations {
             """.trimIndent())
         }
     }
+
+    val migration_104_105 = object : Migration(104, 105) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS `bookplateTemplates` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `htmlContent` TEXT NOT NULL,
+                    `isBuiltin` INTEGER NOT NULL DEFAULT 0,
+                    `createTime` INTEGER NOT NULL DEFAULT 0,
+                    `updateTime` INTEGER NOT NULL DEFAULT 0
+                )
+            """.trimIndent())
+        }
+    }
+
+    @Suppress("ClassName")
+    class Migration_104_105 : AutoMigrationSpec
 }

@@ -281,6 +281,16 @@ object PreferKey {
     const val showBookplate = "showBookplate"
     const val showReadingTicket = "showReadingTicket"
     const val readingTicketPosition = "readingTicketPosition"
+    const val selectedBookplateTemplateId = "selectedBookplateTemplateId"
+    const val bpShowBasicInfo = "bp_show_basic_info"
+    const val bpShowProgress = "bp_show_progress"
+    const val bpShowStatistics = "bp_show_statistics"
+    const val bpShowRatingReview = "bp_show_rating_review"
+    const val bpShowAnnotation = "bp_show_annotation"
+    const val bpShowProtagonist = "bp_show_protagonist"
+    const val bpShowTags = "bp_show_tags"
+    const val bpShowSource = "bp_show_source"
+    const val bpShowRank = "bp_show_rank"
 
     // 高亮规则配置
     const val highlightRuleItems = "highlightRuleItems"

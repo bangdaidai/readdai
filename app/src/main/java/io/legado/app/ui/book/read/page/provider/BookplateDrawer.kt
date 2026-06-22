@@ -264,7 +264,16 @@ object BookplateDrawer {
         currentY += 22.dpToPx()
 
         // 阅读时间（实际累计阅读时长，不到一天换算成小时/分钟）
-        val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
+        val totalReadMillis = run {
+            var time = appDb.readSessionDao.getTotalReadTimeByNameAndAuthorSync(book.name, book.author)
+            if (time == null || time == 0L) {
+                time = appDb.readSessionDao.getTotalReadTimeByBookNameSync(book.name)
+            }
+            if (time == null || time == 0L) {
+                time = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl)
+            }
+            time ?: 0L
+        }
         val readingTimeStr = if (totalReadMillis > 0) {
             val totalMinutes = totalReadMillis / (60 * 1000L)
             val days = totalMinutes / (24 * 60)

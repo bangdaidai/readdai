@@ -61,9 +61,15 @@ interface ReadSessionDao {
 
     @Query("SELECT SUM(duration) FROM readSession WHERE bookName = :bookName")
     suspend fun getTotalReadTime(bookName: String): Long?
-    
+
+    @Query("SELECT SUM(duration) FROM readSession WHERE bookName = :bookName")
+    fun getTotalReadTimeByBookNameSync(bookName: String): Long?
+
     @Query("SELECT SUM(duration) FROM readSession WHERE bookName = :bookName AND author = :author")
     suspend fun getTotalReadTime(bookName: String, author: String): Long?
+
+    @Query("SELECT SUM(duration) FROM readSession WHERE bookName = :bookName AND author = :author")
+    fun getTotalReadTimeByNameAndAuthorSync(bookName: String, author: String): Long?
 
     // 总计统计
     @Query(

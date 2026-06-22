@@ -206,7 +206,16 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             val noteCount = appDb.bookAnnotationDao.getByBook(book.name, book.author).size
             drawListRow("书摘条数", "$noteCount", currentY); currentY += 22.dpToPx()
 
-            val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl) ?: 0L
+            val totalReadMillis = run {
+                var time = appDb.readSessionDao.getTotalReadTimeByNameAndAuthorSync(book.name, book.author)
+                if (time == null || time == 0L) {
+                    time = appDb.readSessionDao.getTotalReadTimeByBookNameSync(book.name)
+                }
+                if (time == null || time == 0L) {
+                    time = appDb.readSessionDao.getTotalReadTimeByUrlSync(book.bookUrl)
+                }
+                time ?: 0L
+            }
             val readingTimeStr = if (totalReadMillis > 0) {
                 val m = totalReadMillis / 60000; val d = m / 1440; val h = m / 60
                 when { d > 0 -> "${d} 天"; h > 0 -> "${h} 小时"; else -> "${m} 分钟" }
@@ -398,7 +407,16 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             val noteCount = appDb.bookAnnotationDao.getByBook(memory.bookName, memory.bookAuthor).size
             drawListRow("书摘条数", "$noteCount", currentY); currentY += 22.dpToPx()
 
-            val totalReadMillis = appDb.readSessionDao.getTotalReadTimeByUrlSync(memory.bookUrl) ?: 0L
+            val totalReadMillis = run {
+                var time = appDb.readSessionDao.getTotalReadTimeByNameAndAuthorSync(memory.bookName, memory.bookAuthor)
+                if (time == null || time == 0L) {
+                    time = appDb.readSessionDao.getTotalReadTimeByBookNameSync(memory.bookName)
+                }
+                if (time == null || time == 0L) {
+                    time = appDb.readSessionDao.getTotalReadTimeByUrlSync(memory.bookUrl)
+                }
+                time ?: 0L
+            }
             val readingTimeStr = if (totalReadMillis > 0) {
                 val m = totalReadMillis / 60000; val d = m / 1440; val h = m / 60
                 when { d > 0 -> "${d} 天"; h > 0 -> "${h} 小时"; else -> "${m} 分钟" }
@@ -460,7 +478,9 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             onSave: ((Book) -> Unit)? = null
         ) {
             scope.launch {
-                val bitmap = withContext(Dispatchers.IO) { createBookplateBitmap(context, book) }
+                val bitmap = withContext(Dispatchers.IO) {
+                    io.legado.app.help.book.BookplateGenerator.generate(context, book)
+                }
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
                     val imageView = ImageView(context)
                     imageView.setImageBitmap(bitmap)
@@ -490,7 +510,9 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             onSave: ((io.legado.app.data.entities.ReadingMemory) -> Unit)? = null
         ) {
             scope.launch {
-                val bitmap = withContext(Dispatchers.IO) { createBookplateBitmap(context, memory) }
+                val bitmap = withContext(Dispatchers.IO) {
+                    io.legado.app.help.book.BookplateGenerator.generate(context, memory)
+                }
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
                     val imageView = ImageView(context)
                     imageView.setImageBitmap(bitmap)
@@ -1564,7 +1586,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         lifecycleScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
-                    Companion.createBookplateBitmap(this@ReadingMemoryDetailActivity, book)
+                    io.legado.app.help.book.BookplateGenerator.generate(this@ReadingMemoryDetailActivity, book)
                 }
                 
                 val savedPath = withContext(Dispatchers.IO) {
@@ -1586,7 +1608,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         lifecycleScope.launch {
             try {
                 val bitmap = withContext(Dispatchers.IO) {
-                    Companion.createBookplateBitmap(this@ReadingMemoryDetailActivity, memory)
+                    io.legado.app.help.book.BookplateGenerator.generate(this@ReadingMemoryDetailActivity, memory)
                 }
                 
                 val savedPath = withContext(Dispatchers.IO) {

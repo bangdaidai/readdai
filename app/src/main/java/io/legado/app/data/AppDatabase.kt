@@ -29,7 +29,7 @@ val appDb by lazy {
 }
 
 @Database(
-    version = 104,
+    version = 105,
     exportSchema = true,
     entities = [Book::class, BookGroup::class, BookSource::class, BookChapter::class,
         ReplaceRule::class, SearchBook::class, SearchKeyword::class, Cookie::class,
@@ -37,7 +37,7 @@ val appDb by lazy {
         RssStar::class, TxtTocRule::class, ReadSession::class, HttpTTS::class, Cache::class,
         RuleSub::class, DictRule::class, KeyboardAssist::class, Server::class, BookTag::class, BookTagGroup::class, BookTagRelation::class, ReadingMemory::class, RemovedAutoTag::class, ExcludedTag::class, BookProtagonist::class, TagMapping::class,
         ReadRecord::class, ReadRecordDetail::class, VectorEntity::class, ChunkEntity::class, VectorizedBookEntity::class, ReadingTicket::class,
-        HomepageModule::class, HomepageCustomSet::class],
+        HomepageModule::class, HomepageCustomSet::class, BookplateTemplate::class],
     views = [BookSourcePart::class],
     autoMigrations = [
         AutoMigration(from = 43, to = 44),
@@ -90,7 +90,8 @@ val appDb by lazy {
         AutoMigration(from = 92, to = 93),
         AutoMigration(from = 94, to = 95),
         AutoMigration(from = 95, to = 96),
-        AutoMigration(from = 96, to = 97, spec = DatabaseMigrations.Migration_96_97::class)
+        AutoMigration(from = 96, to = 97, spec = DatabaseMigrations.Migration_96_97::class),
+        AutoMigration(from = 104, to = 105, spec = DatabaseMigrations.Migration_104_105::class)
     ]
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -133,6 +134,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract val readingTicketDao: ReadingTicketDao
     abstract val homepageModuleDao: HomepageModuleDao
     abstract val homepageCustomSetDao: HomepageCustomSetDao
+    abstract val bookplateTemplateDao: BookplateTemplateDao
 
     companion object {
 
