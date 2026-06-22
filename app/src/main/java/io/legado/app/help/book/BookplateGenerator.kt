@@ -8,7 +8,6 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.data.entities.ReadingMemory
 import io.legado.app.help.config.DataVisibilitySettings
-import io.legado.app.ui.book.read.page.provider.BookplateDrawer
 import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.getPrefString
 import kotlinx.coroutines.Dispatchers
@@ -136,7 +135,7 @@ object BookplateGenerator {
             BookplateHtmlRenderer.render(context, template, data)
         }
 
-        bitmap ?: BookplateDrawer.createBitmap(context, memory)
+        bitmap ?: io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
     }
 
     suspend fun getOrCreateBuiltinTemplate(): BookplateTemplate {

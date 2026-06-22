@@ -43,7 +43,6 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        setSupportToolbar(binding.titleBar.toolbar)
         binding.titleBar.title = "藏书票模板"
 
         val root = binding.root
