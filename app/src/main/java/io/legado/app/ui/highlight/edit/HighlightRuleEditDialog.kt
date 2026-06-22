@@ -160,6 +160,7 @@ class HighlightRuleEditDialog(
         binding.etExcludeScope.setHintTextColor(secondaryTextColor)
         binding.etSampleText.setTextColor(primaryTextColor)
         binding.etSampleText.setHintTextColor(secondaryTextColor)
+        binding.etSampleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, ReadBookConfig.textSize.toFloat())
         binding.tvPreview.setTextSize(TypedValue.COMPLEX_UNIT_SP, ReadBookConfig.textSize.toFloat())
 
         binding.tvRegexToggle.setTextColor(primaryTextColor)
