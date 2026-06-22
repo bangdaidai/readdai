@@ -1,0 +1,604 @@
+design.md
+# 技术设计：HTML 模板藏书票
+ 
+Feature Name: html-bookplate-template
+Updated: 2026-06-22
+ 
+## 描述
+ 
+将硬编码的 Canvas 藏书票绘制扩展为支持用户自定义 HTML 模板的系统。用户可创建、编辑、预览 HTML 模板，通过覆盖书籍详情页全部 40+ 数据字段的变量体系生成个性化藏书票。系统提供数据可见性设置，用户可独立控制各类数据的开闭。保留现有 Canvas"经典风格"作为备选。
+ 
+## 架构
+ 
+```mermaid
+graph TD
+    A["触发入口: onBookEnd / 菜单"] --> B["BookplateGenerator"]
+    B --> C{"模板类型?"}
+    C -->|经典风格| D["BookplateDrawer.draw()"]
+    C -->|HTML模板| E["BookplateHtmlRenderer"]
+    E --> F["加载 DataVisibilitySettings"]
+    F --> G["查询 BookplateData 全部字段"]
+    G --> H["按可见性开关过滤变量"]
+    H --> I["替换 HTML 模板变量"]
+    I --> J["WebView 离屏渲染"]
+    J --> K["生成 Bitmap"]
+    D --> K
+    K --> L["AlertDialog 展示 + 保存相册"]
+ 
+    M["设置: 藏书票设置"] --> N["DataVisibilitySettings"]
+    N --> O["SharedPreferences 8 个开关"]
+ 
+    P["模板编辑器"] --> Q["变量面板: 40+ 变量"]
+    Q --> R["分类: 基本信息/进度/统计/书摘/主角/标签"]
+    P --> S["BookplateTemplateDao"]
+    S --> T["(Room) bookplateTemplates"]
+```
+ 
+## 组件与接口
+ 
+### 1. 数据层
+ 
+#### 1.1 BookplateTemplate 实体（新增）
+ 
+`app/src/main/java/io/legado/app/data/entities/BookplateTemplate.kt`
+ 
+```kotlin
+@Entity(tableName = "bookplateTemplates")
+data class BookplateTemplate(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String = "",          // 模板名称
+    val htmlContent: String = "",   // HTML 模板内容
+    @ColumnInfo(defaultValue = "0") val isBuiltin: Boolean = false,
+    @ColumnInfo(defaultValue = "0") val createTime: Long = 0L,
+    @ColumnInfo(defaultValue = "0") val updateTime: Long = 0L
+)
+```
+ 
+#### 1.2 BookplateTemplateDao（新增）
+ 
+`app/src/main/java/io/legado/app/data/dao/BookplateTemplateDao.kt`
+ 
+```kotlin
+@Dao
+interface BookplateTemplateDao {
+    @Insert suspend fun insert(template: BookplateTemplate): Long
+    @Update suspend fun update(template: BookplateTemplate)
+    @Delete suspend fun delete(template: BookplateTemplate)
+    @Query("SELECT * FROM bookplateTemplates ORDER BY updateTime DESC")
+    suspend fun getAll(): List<BookplateTemplate>
+    @Query("SELECT * FROM bookplateTemplates WHERE id = :id")
+    suspend fun getById(id: Long): BookplateTemplate?
+    @Query("SELECT * FROM bookplateTemplates WHERE isBuiltin = 1 LIMIT 1")
+    suspend fun getBuiltin(): BookplateTemplate?
+    @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1")
+    suspend fun deleteBuiltin()
+}
+```
+ 
+#### 1.3 BookplateData 数据类（新增）
+ 
+`app/src/main/java/io/legado/app/data/entities/BookplateData.kt`
+ 
+统一的藏书票数据容器，覆盖全部 40+ 可用字段：
+ 
+```kotlin
+data class BookplateData(
+    // === 基本信息 ===
+    val bookName: String = "",
+    val author: String = "",
+    val coverUrl: String = "",
+    val intro: String = "",
+    val kind: String = "",
+    val wordCount: String = "",
+    val originName: String = "",
+    val totalChapterNum: Int = 0,
+    val latestChapterTitle: String = "",
+    val typeText: String = "",       // "文本" / "音频" / "图片"
+    val charset: String = "",
+ 
+    // === 阅读状态与进度 ===
+    val readingStatusText: String = "",  // "在读" / "读完" / "弃文" / "待读"
+    val readingProgress: String = "",    // "75%"
+    val readChapters: String = "",       // "90/120"
+    val unreadChapters: Int = 0,
+    val readIteration: Int = 0,
+    val readIterationText: String = "",  // "初读" / "二刷" / "三刷" / "N刷"
+    val durChapterTitle: String = "",
+ 
+    // === 阅读统计 ===
+    val totalReadTime: String = "",      // "12 小时 30 分钟"
+    val totalReadHours: Long = 0,
+    val totalReadMinutes: Long = 0,
+    val readingDays: Int = 0,
+    val maxDayReadTime: String = "",     // "3 小时 15 分钟"
+    val maxDayReadDate: String = "",
+    val totalReadWords: String = "",     // "67.50万字"
+    val remainingWords: String = "",     // "22.50万字"
+ 
+    // === 日期与时间 ===
+    val firstReadTime: String = "",      // "2025/01/15"
+    val lastReadTime: String = "",       // "2025/03/20"
+    val finishReadTime: String = "",     // "2025/03/20"
+    val addBookshelfTime: String = "",   // "2025/01/10"
+    val lastCheckTime: String = "",
+    val lastReadTimeRelative: String = "", // "今天" / "昨天" / "3天前"
+ 
+    // === 评分与书评 ===
+    val rating: Float = 0f,
+    val ratingStars: String = "",        // "★★★★☆"
+    val ratingMax: Int = 5,
+    val reviewContent: String = "",
+ 
+    // === 书摘与想法 ===
+    val annotationCount: Int = 0,
+    val thoughtCount: Int = 0,
+    val latestAnnotation: String = "",
+    val latestAnnotationNote: String = "",
+    val latestAnnotationChapter: String = "",
+ 
+    // === 主角信息 ===
+    val protagonists: String = "",       // "叶文洁, 罗辑, 史强"
+ 
+    // === 标签 ===
+    val tags: String = "",               // "#科幻 #长篇"
+    val tagCount: Int = 0,
+ 
+    // === 书源信息 ===
+    val bookSourceName: String = "",
+    val bookSourceGroup: String = "",
+ 
+    // === 全局统计 ===
+    val readTimeRank: String = ""        // "第 3 名"
+)
+```
+ 
+#### 1.4 BookplateDataBuilder（新增）
+ 
+`app/src/main/java/io/legado/app/help/book/BookplateDataBuilder.kt`
+ 
+负责从多个数据源（Book, ReadSession, BookAnnotation, BookProtagonist, BookTag, BookSource）构建完整的 BookplateData 对象。所有查询并行执行。
+ 
+```kotlin
+object BookplateDataBuilder {
+    suspend fun build(book: Book): BookplateData
+    suspend fun build(memory: ReadingMemory): BookplateData
+}
+```
+ 
+#### 1.5 DataVisibilitySettings（新增）
+ 
+`app/src/main/java/io/legado/app/help/config/DataVisibilitySettings.kt`
+ 
+```kotlin
+object DataVisibilitySettings {
+    // 8 个开关，默认值
+    fun isBasicInfoVisible(): Boolean = appCtx.getPrefBoolean("bp_show_basic_info", true)
+    fun isProgressVisible(): Boolean = appCtx.getPrefBoolean("bp_show_progress", true)
+    fun isStatisticsVisible(): Boolean = appCtx.getPrefBoolean("bp_show_statistics", true)
+    fun isRatingReviewVisible(): Boolean = appCtx.getPrefBoolean("bp_show_rating_review", true)
+    fun isAnnotationVisible(): Boolean = appCtx.getPrefBoolean("bp_show_annotation", true)
+    fun isProtagonistVisible(): Boolean = appCtx.getPrefBoolean("bp_show_protagonist", false)
+    fun isTagsVisible(): Boolean = appCtx.getPrefBoolean("bp_show_tags", false)
+    fun isSourceVisible(): Boolean = appCtx.getPrefBoolean("bp_show_source", false)
+    fun isRankVisible(): Boolean = appCtx.getPrefBoolean("bp_show_rank", false)
+ 
+    fun setVisibility(key: String, value: Boolean)
+}
+```
+ 
+#### 1.6 AppDatabase 变更
+ 
+- `@Database(version = 105, entities = [..., BookplateTemplate::class])`
+- 添加 `abstract fun bookplateTemplateDao(): BookplateTemplateDao`
+- 自动迁移：`autoMigrations = [AutoMigration(from = 104, to = 105)]`
+- 迁移内容：创建 `bookplateTemplates` 表 + 插入内置默认模板
+ 
+#### 1.7 偏好设置新增
+ 
+`app/src/main/java/io/legado/app/constant/PreferKey.kt`
+ 
+```kotlin
+const val selectedBookplateTemplateId = "selectedBookplateTemplateId"
+const val bpShowBasicInfo = "bp_show_basic_info"
+const val bpShowProgress = "bp_show_progress"
+const val bpShowStatistics = "bp_show_statistics"
+const val bpShowRatingReview = "bp_show_rating_review"
+const val bpShowAnnotation = "bp_show_annotation"
+const val bpShowProtagonist = "bp_show_protagonist"
+const val bpShowTags = "bp_show_tags"
+const val bpShowSource = "bp_show_source"
+const val bpShowRank = "bp_show_rank"
+```
+ 
+### 2. 渲染层
+ 
+#### 2.1 BookplateHtmlRenderer（新增）
+ 
+`app/src/main/java/io/legado/app/help/book/BookplateHtmlRenderer.kt`
+ 
+```kotlin
+object BookplateHtmlRenderer {
+    suspend fun render(
+        context: Context,
+        template: BookplateTemplate,
+        data: BookplateData,
+        visibility: DataVisibilitySettings
+    ): Bitmap?
+}
+```
+ 
+**渲染流程：**
+1. 调用 `applyVisibility(data, visibility)` 根据开关清零不可见字段
+2. 遍历模板 HTML，替换所有 `{{变量}}` 占位符
+3. 创建 WebView 实例，加载替换后的 HTML
+4. 等待 `onPageFinished` 回调
+5. 调用 `WebView.capturePicture()` 或 `draw(canvas)` 导出 Bitmap
+6. 超时 5 秒，超时返回 null
+ 
+**变量替换映射表**（按分类，共 41 个变量）：
+ 
+```
+{{bookName}}            → data.bookName
+{{author}}              → data.author
+{{coverUrl}}            → data.coverUrl
+{{intro}}               → data.intro (HTML 转义)
+{{kind}}                → data.kind
+{{wordCount}}           → data.wordCount
+{{originName}}          → data.originName
+{{totalChapterNum}}     → data.totalChapterNum
+{{latestChapterTitle}}  → data.latestChapterTitle
+{{typeText}}            → data.typeText
+{{charset}}             → data.charset
+ 
+{{readingStatusText}}   → data.readingStatusText
+{{readingProgress}}     → data.readingProgress
+{{readChapters}}        → data.readChapters
+{{unreadChapters}}      → data.unreadChapters
+{{readIteration}}       → data.readIteration
+{{readIterationText}}   → data.readIterationText
+{{durChapterTitle}}     → data.durChapterTitle
+ 
+{{totalReadTime}}       → data.totalReadTime
+{{totalReadHours}}      → data.totalReadHours
+{{totalReadMinutes}}     → data.totalReadMinutes
+{{readingDays}}         → data.readingDays
+{{maxDayReadTime}}      → data.maxDayReadTime
+{{maxDayReadDate}}      → data.maxDayReadDate
+{{totalReadWords}}      → data.totalReadWords
+{{remainingWords}}      → data.remainingWords
+ 
+{{firstReadTime}}       → data.firstReadTime
+{{lastReadTime}}        → data.lastReadTime
+{{finishReadTime}}      → data.finishReadTime
+{{addBookshelfTime}}    → data.addBookshelfTime
+{{lastCheckTime}}       → data.lastCheckTime
+{{lastReadTimeRelative}} → data.lastReadTimeRelative
+ 
+{{rating}}              → data.rating
+{{ratingStars}}         → data.ratingStars
+{{ratingMax}}           → data.ratingMax
+{{reviewContent}}       → data.reviewContent (HTML 转义)
+ 
+{{annotationCount}}     → data.annotationCount
+{{thoughtCount}}        → data.thoughtCount
+{{latestAnnotation}}    → data.latestAnnotation (HTML 转义, 截断 200 字)
+{{latestAnnotationNote}} → data.latestAnnotationNote (HTML 转义)
+{{latestAnnotationChapter}} → data.latestAnnotationChapter
+ 
+{{protagonists}}        → data.protagonists
+ 
+{{tags}}                → data.tags
+{{tagCount}}            → data.tagCount
+ 
+{{bookSourceName}}      → data.bookSourceName
+{{bookSourceGroup}}     → data.bookSourceGroup
+ 
+{{readTimeRank}}        → data.readTimeRank
+```
+ 
+#### 2.2 可见性过滤逻辑
+ 
+```kotlin
+private fun applyVisibility(data: BookplateData, settings: DataVisibilitySettings): BookplateData {
+    return data.copy(
+        // 基本信息关 → 清空基本信息
+        bookName = if (settings.isBasicInfoVisible()) data.bookName else "",
+        author = if (settings.isBasicInfoVisible()) data.author else "",
+        intro = if (settings.isBasicInfoVisible()) data.intro else "",
+        // ... 同理处理其他字段
+        // 进度关 → 清空进度字段
+        readingProgress = if (settings.isProgressVisible()) data.readingProgress else "",
+        // ...
+        // 书摘关 → 清空书摘字段
+        annotationCount = if (settings.isAnnotationVisible()) data.annotationCount else 0,
+        // ...
+    )
+}
+```
+ 
+#### 2.3 BookplateGenerator（新增/重构）
+ 
+`app/src/main/java/io/legado/app/help/book/BookplateGenerator.kt`
+ 
+```kotlin
+object BookplateGenerator {
+    suspend fun generate(context: Context, book: Book): Bitmap
+    suspend fun generate(context: Context, memory: ReadingMemory): Bitmap
+}
+```
+ 
+内部逻辑：
+1. 读取 `selectedBookplateTemplateId` 偏好
+2. 若为 0（经典风格），调用 `BookplateDrawer.createBitmap(context, book)`
+3. 否则：加载模板 → 加载 VisibilitySettings → 构建 BookplateData → 调用 HtmlRenderer.render()
+4. 渲染失败回退经典风格
+ 
+#### 2.4 BookplateDrawer 重构
+ 
+将当前的 `draw(canvas, textPage, book)` 改为 `createBitmap(context, book): Bitmap`，去掉对 `textPage` 的依赖（当前实际未使用）。
+ 
+### 3. UI 层
+ 
+#### 3.1 藏书票设置页（新增）
+ 
+`app/src/main/java/io/legado/app/ui/book/bookplate/BookplateSettingsActivity.kt`
+ 
+设置项布局：
+ 
+```
+┌─────────────────────────────────┐
+│  藏书票设置                      │
+├─────────────────────────────────┤
+│  当前模板: [默认模板 ▸]          │
+├─────────────────────────────────┤
+│  数据可见性                      │
+│  ┌─────────────────────────────┐│
+│  │ 显示基本信息        [●●●]  ││
+│  │ 显示进度信息        [●●●]  ││
+│  │ 显示阅读统计        [●●●]  ││
+│  │ 显示评分书评        [●●●]  ││
+│  │ 显示书摘想法        [●●●]  ││
+│  │ 显示主角信息        [○○○]  ││
+│  │ 显示标签            [○○○]  ││
+│  │ 显示书源信息        [○○○]  ││
+│  │ 显示全局排名        [○○○]  ││
+│  └─────────────────────────────┘│
+└─────────────────────────────────┘
+```
+ 
+点击「当前模板」跳转到模板列表页面。
+ 
+#### 3.2 模板列表页（新增）
+ 
+`app/src/main/java/io/legado/app/ui/book/bookplate/BookplateTemplateListActivity.kt`
+ 
+- RecyclerView 展示模板列表
+- 每项：名称、更新时间、内置标记/用户标记
+- 当前选中项高亮 + 勾选图标
+- FAB 新建模板
+- 长按弹出操作菜单（编辑/删除/重命名）
+- 内置模板不可删除
+ 
+#### 3.3 模板编辑页（新增）
+ 
+`app/src/main/java/io/legado/app/ui/book/bookplate/BookplateTemplateEditActivity.kt`
+ 
+分栏布局：
+ 
+```
+┌──────────────────┬──────────────────────┐
+│ HTML 代码编辑区   │ 变量面板 - 按分类折叠  │
+│                  │ ▸ 基本信息 (11)       │
+│ <html>           │   {{bookName}}        │
+│ <head>...        │   {{author}}          │
+│ <style>          │   {{coverUrl}}        │
+│   body {         │   {{intro}}           │
+│     font: 14px;  │   ...                 │
+│   }              │ ▸ 阅读进度 (6)        │
+│ </style>         │ ▸ 阅读统计 (8)        │
+│ </head>          │ ▸ 日期时间 (6)        │
+│ <body>           │ ▸ 评分书评 (4)        │
+│   <h1>{{bookName}}│ ▸ 书摘想法 (5)        │
+│   </h1>          │ ▸ 主角信息 (1)        │
+│   ...            │ ▸ 标签 (2)            │
+│ </body>          │ ▸ 书源信息 (2)        │
+│ </html>          │ ▸ 全局统计 (1)        │
+│                  │                      │
+├──────────────────┴──────────────────────┤
+│  [预览]  [保存]  [重置为默认]            │
+└─────────────────────────────────────────┘
+```
+ 
+点击变量名 → 在编辑器光标位置插入 `{{variableName}}`
+ 
+预览功能：使用内置示例数据渲染模板，覆盖所有变量。
+ 
+#### 3.4 现有入口修改
+ 
+- 设置 XML：在 `pref_config_other.xml` 中添加「藏书票设置」入口
+- 或通过侧边栏/更多菜单的「我的阅读」入口附近添加
+ 
+### 4. 现有代码修改
+ 
+#### ReadingMemoryDetailActivity.kt
+ 
+- `createBookplateBitmap(Book)` → 改为调用 `BookplateGenerator.generate(context, book)`
+- `createBookplateBitmap(ReadingMemory)` → 改为调用 `BookplateGenerator.generate(context, memory)`
+- `showBookplate()` → 改为在协程中异步生成
+ 
+#### ReadBookActivity.kt
+ 
+- `showReadingTicket()` → 改为使用 `BookplateGenerator.generate(context, book)`
+ 
+#### BookplateDrawer.kt
+ 
+- 重构 `draw()` 为 `createBitmap(context, book): Bitmap` 静态方法
+- 去除对 `TextPage` 的依赖
+- 更新阅读时间查询使用级联回退（已在之前修复）
+ 
+## 数据模型
+ 
+```
+bookplateTemplates
+├── id: Long (PK, autoGenerate)
+├── name: String
+├── htmlContent: String
+├── isBuiltin: Boolean
+├── createTime: Long
+└── updateTime: Long
+ 
+SharedPreferences (新增 9 个 key):
+├── selectedBookplateTemplateId: Long  (0=经典风格)
+├── bpShowBasicInfo: Boolean          (true)
+├── bpShowProgress: Boolean           (true)
+├── bpShowStatistics: Boolean         (true)
+├── bpShowRatingReview: Boolean       (true)
+├── bpShowAnnotation: Boolean         (true)
+├── bpShowProtagonist: Boolean        (false)
+├── bpShowTags: Boolean               (false)
+├── bpShowSource: Boolean             (false)
+└── bpShowRank: Boolean               (false)
+```
+ 
+## 内置默认模板
+ 
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width: 640px; padding: 36px 40px;
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+  }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { font-size: 20px; letter-spacing: 4px; font-weight: 600; }
+  .header h2 { font-size: 14px; font-weight: 400; opacity: 0.85; margin-top: 4px; }
+  .section { margin: 18px 0; }
+  .section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
+    opacity: 0.6; margin-bottom: 8px; padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+  }
+  .field { display: flex; justify-content: space-between; font-size: 14px; margin: 6px 0; }
+  .field .label { opacity: 0.75; }
+  .field .value { font-weight: 500; text-align: right; }
+  .stars { font-size: 16px; letter-spacing: 3px; }
+  .review { font-size: 13px; line-height: 1.7; opacity: 0.9; margin-top: 10px; white-space: pre-wrap; }
+  .divider { border: none; border-top: 1px dashed rgba(255,255,255,0.25); margin: 20px 0; }
+  .footer { text-align: center; font-size: 10px; opacity: 0.5; margin-top: 28px; }
+  .footer p { margin: 2px 0; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Reading Certificate</h1>
+    <h2>=== 阅 读 凭 证 ===</h2>
+  </div>
+ 
+  <div class="section">
+    <div class="section-title">Basic Info / 基本信息</div>
+    <div class="field"><span class="label">书名</span><span class="value">{{bookName}}</span></div>
+    <div class="field"><span class="label">作者</span><span class="value">{{author}}</span></div>
+  </div>
+ 
+  <div class="section">
+    <div class="section-title">Reading Period / 阅读时间</div>
+    <div class="field"><span class="label">开始时间</span><span class="value">{{firstReadTime}}</span></div>
+    <div class="field"><span class="label">结束时间</span><span class="value">{{finishReadTime}}</span></div>
+    <div class="field"><span class="label">阅读天数</span><span class="value">{{readingDays}} 天</span></div>
+    <div class="field"><span class="label">阅读时长</span><span class="value">{{totalReadTime}}</span></div>
+  </div>
+ 
+  <div class="section">
+    <div class="section-title">Reading Stats / 阅读统计</div>
+    <div class="field"><span class="label">阅读进度</span><span class="value">{{readingProgress}}</span></div>
+    <div class="field"><span class="label">已读章节</span><span class="value">{{readChapters}}</span></div>
+    <div class="field"><span class="label">书摘条数</span><span class="value">{{annotationCount}}</span></div>
+    <div class="field"><span class="label">想法条数</span><span class="value">{{thoughtCount}}</span></div>
+  </div>
+ 
+  <hr class="divider">
+ 
+  <div class="section">
+    <div class="section-title">Rating / 评分</div>
+    <div style="font-size: 14px;"><span class="stars">{{ratingStars}}</span> <span style="opacity:0.7;">{{rating}} / {{ratingMax}}</span></div>
+  </div>
+ 
+  <div class="review">{{reviewContent}}</div>
+ 
+  <hr class="divider">
+ 
+  <div class="footer">
+    <p>BAD READS, NO RECEIPTS; GOOD READS, ON REPEAT.</p>
+    <p>烂书不退款，好书请多读。</p>
+  </div>
+</body>
+</html>
+```
+ 
+## 正确性约束
+ 
+1. 模板 ID=0 标识「经典风格」，无需数据库中实际存在
+2. 内置模板删除后，下次访问模板列表时自动重建
+3. 变量名大小写敏感，精确匹配
+4. HTML 渲染超时 5 秒，超时回退经典风格
+5. 渲染 Bitmap 宽度固定 640px，高度自适应（最小 400px）
+6. `{{intro}}` 截断超过 500 字，`{{latestAnnotation}}` 截断超过 200 字
+7. 数据可见性开关的过滤发生在变量替换之前，不可见字段直接置空
+8. 同一书籍的 Bitmap 在 BookplateData 未变更时缓存（可选实现）
+ 
+## 错误处理
+ 
+| 场景 | 处理方式 |
+|------|----------|
+| HTML 模板为空 | 提示，回退经典风格 |
+| HTML 渲染失败（语法错/超时） | 回退经典风格，Toast 提示 |
+| WebView 初始化失败 | 回退经典风格 |
+| BookplateData 构建过程中数据库异常 | 使用空 BookplateData（全部默认值） |
+| 模板引用了不存在的变量 | 替换为空字符串 |
+| 数据可见性全部关闭 | 渲染空内容模板（仅背景），提示用户 |
+ 
+## 测试策略
+ 
+1. **单元测试**：
+   - BookplateDataBuilder 对所有数据源的查询正确性
+   - 变量替换逻辑（包括边界：空值、特殊字符 HTML 转义、截断）
+   - 可见性过滤：每种开关组合的字段清零正确性
+2. **集成测试**：
+   - BookplateGenerator 在选择经典/HTML/不存在模板时的行为
+   - 数据可见性开关对生成结果的影响
+3. **UI 测试**：
+   - 模板列表 CRUD
+   - 模板编辑器变量插入
+   - 设置页开关状态与渲染结果的一致性
+4. **回归测试**：
+   - 经典风格藏书票输出与修改前一致
+   - 阅读完成触发流程不变
+ 
+## 实现阶段
+ 
+| 阶段 | 内容 | 涉及文件 |
+|------|------|----------|
+| 1 | **数据层**：BookplateTemplate 实体 + DAO + BookplateData + 可见性偏好 + DB 迁移 | BookplateTemplate.kt, BookplateTemplateDao.kt, BookplateData.kt, DataVisibilitySettings.kt, AppDatabase.kt, PreferKey.kt |
+| 2 | **核心渲染**：BookplateDataBuilder + BookplateHtmlRenderer + BookplateGenerator + BookplateDrawer 重构 | BookplateDataBuilder.kt, BookplateHtmlRenderer.kt, BookplateGenerator.kt, BookplateDrawer.kt |
+| 3 | **集成现有流程**：修改调用方 | ReadingMemoryDetailActivity.kt, ReadBookActivity.kt |
+| 4 | **模板管理 UI**：列表 + 编辑器 + 变量面板 | BookplateTemplateListActivity.kt, BookplateTemplateEditActivity.kt |
+| 5 | **设置 UI**：藏书票设置页（数据可见性开关 + 模板选择入口） | BookplateSettingsActivity.kt, 设置 XML |
+ 
+## 参考
+ 
+- : BookplateDrawer.kt — 当前 Canvas 绘制实现
+- : ReadingMemoryDetailActivity.kt:72-258 — createBookplateBitmap 静态方法
+- : BookReadingDetailViewModel.kt — 全部 LiveData 字段和数据查询模式
+- : Book.kt — 书籍实体完整字段定义
+- : ReadingMemory.kt — 阅读记忆实体
+- : BookAnnotation.kt — 书摘实体（bookText + content 字段）
+- : BookProtagonist.kt — 主角名实体
+- : AppDatabase.kt — Room 数据库配置（当前版本 104）
+- : PreferKey.kt — 偏好设置 Key 定义
