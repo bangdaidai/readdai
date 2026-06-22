@@ -104,7 +104,7 @@ object BookplateDataBuilder {
             originName = book.originName ?: "",
             totalChapterNum = book.totalChapterNum,
             latestChapterTitle = book.latestChapterTitle ?: "",
-            typeText = book.typeText,
+            typeText = typeText,
             charset = book.charset ?: "",
 
             readingStatusText = readingStatusText,
