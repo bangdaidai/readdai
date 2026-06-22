@@ -13,7 +13,12 @@ object HighlightRulePreview {
     fun build(rule: HighlightRule): CharSequence {
         val text = rule.normalizedSampleText()
         val spannable = SpannableStringBuilder(text)
-        val regex = kotlin.runCatching { Regex(rule.pattern) }.getOrNull() ?: return spannable
+        val pattern = if (rule.useProtagonist && rule.pattern.isBlank()) {
+            extractProtagonistPattern(text)
+        } else {
+            rule.pattern
+        }
+        val regex = kotlin.runCatching { Regex(pattern) }.getOrNull() ?: return spannable
         regex.findAll(text).forEachIndexed { index, match ->
             val start = match.range.first
             val end = match.range.last + 1
@@ -116,5 +121,15 @@ object HighlightRulePreview {
             }
         }
         return spannable
+    }
+
+    private fun extractProtagonistPattern(text: String): String {
+        val names = Regex("[\\p{IsHan}]{2,4}").findAll(text)
+            .map { it.value }
+            .distinct()
+            .take(10)
+            .toList()
+        if (names.isEmpty()) return "."
+        return names.joinToString("|") { java.util.regex.Pattern.quote(it) }
     }
 }

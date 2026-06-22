@@ -410,19 +410,22 @@ class HighlightRuleEditDialog(
     private fun saveRule() {
         val name = binding.etName.text?.toString()?.trim().orEmpty()
         val pattern = binding.etPattern.text?.toString()?.trim().orEmpty()
-        if (pattern.isBlank()) {
+        val useProtagonist = editingRule.useProtagonist
+        if (!useProtagonist && pattern.isBlank()) {
             toastOnUi(R.string.highlight_rule_pattern_required)
             return
         }
-        val regexError = validatePattern(pattern)
-        if (regexError != null) {
-            binding.tvPatternError.visibility = View.VISIBLE
-            binding.tvPatternError.text = regexError
-            return
+        if (!useProtagonist) {
+            val regexError = validatePattern(pattern)
+            if (regexError != null) {
+                binding.tvPatternError.visibility = View.VISIBLE
+                binding.tvPatternError.text = regexError
+                return
+            }
         }
         editingRule = editingRule.copy(
             id = editingRule.id.ifBlank { System.currentTimeMillis().toString() },
-            name = name.ifBlank { pattern },
+            name = name.ifBlank { pattern.ifBlank { editingRule.name } },
             pattern = pattern,
             sampleText = binding.etSampleText.text?.toString().orEmpty(),
             group = groupItems.getOrElse(binding.spGroup.selectedItemPosition) {
