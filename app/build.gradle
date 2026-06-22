@@ -188,11 +188,12 @@ android {
 
             matchingFallbacks = ['release']
 
-            minifyEnabled false
+            minifyEnabled true
             shrinkResources = false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
                     'proguard-rules.pro',
-                    'cronet-proguard-rules.pro'
+                    'cronet-proguard-rules.pro',
+                    'proguard-no-r8.pro'
         }
     }
 
