@@ -41,6 +41,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookAnnotation
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.BookProtagonist
 import io.legado.app.data.entities.Bookmark
 import io.legado.app.data.entities.BookProgress
 import io.legado.app.data.entities.BookSource
@@ -1597,8 +1598,22 @@ $content
                     val newBook = oldBook?.migrateTo(book, toc, isOfficialSource)
                     if (newBook != null) {
                         newBook.removeType(BookType.updateError)
+                        val oldProtagonists = appDb.bookProtagonistDao.getByBook(oldBook.bookUrl)
                         oldBook.delete()
                         appDb.bookDao.insert(newBook)
+                        // 迁移主角名到新书
+                        if (oldProtagonists.isNotEmpty()) {
+                            val newProtagonists = oldProtagonists.map { protagonist ->
+                                BookProtagonist(
+                                    bookUrl = newBook.bookUrl,
+                                    name = protagonist.name,
+                                    isCustom = protagonist.isCustom,
+                                    createTime = protagonist.createTime,
+                                    updateTime = System.currentTimeMillis()
+                                )
+                            }
+                            appDb.bookProtagonistDao.insertAll(newProtagonists)
+                        }
                         // 保存旧书的阅读记录
                         val oldMemory = appDb.readingMemoryDao.getByBookUrl(oldBook.bookUrl)
                         if (oldMemory != null) {

@@ -8,6 +8,7 @@ import io.legado.app.constant.AppLog
 import io.legado.app.constant.BookType
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.BookProtagonist
 import io.legado.app.data.entities.BookSource
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.isLocal
@@ -185,6 +186,7 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
                         val isOfficialSource = source.bookSourceGroup?.contains("正版") == true
                         val migratedBook = book.migrateTo(newBook, toc, isOfficialSource)
                         migratedBook.removeType(BookType.updateError)
+                        val oldProtagonists = appDb.bookProtagonistDao.getByBook(book.bookUrl)
                         // 保存旧书的阅读记录
                         val oldMemory = appDb.readingMemoryDao.getByBookUrl(book.bookUrl)
                         if (oldMemory != null) {
@@ -204,6 +206,19 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
                         book.delete()
                         appDb.bookDao.insert(migratedBook)
                         appDb.bookChapterDao.insert(*toc.toTypedArray())
+                        // 迁移主角名到新书
+                        if (oldProtagonists.isNotEmpty()) {
+                            val newProtagonists = oldProtagonists.map { protagonist ->
+                                BookProtagonist(
+                                    bookUrl = migratedBook.bookUrl,
+                                    name = protagonist.name,
+                                    isCustom = protagonist.isCustom,
+                                    createTime = protagonist.createTime,
+                                    updateTime = System.currentTimeMillis()
+                                )
+                            }
+                            appDb.bookProtagonistDao.insertAll(newProtagonists)
+                        }
                     }
                 delay(changeSourceDelay)
             }

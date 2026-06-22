@@ -17,6 +17,7 @@ import io.legado.app.constant.EventBus
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.BookProtagonist
 import io.legado.app.data.entities.BookSource
 import io.legado.app.data.entities.ReadingMemory
 import io.legado.app.exception.NoBooksDirException
@@ -422,6 +423,7 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                 // 保存旧书的阅读记录和标签关联关系
                 val oldMemory = oldBook?.let { appDb.readingMemoryDao.getByBookUrl(it.bookUrl) }
                 val oldTagRelations = oldBook?.let { appDb.bookTagRelationDao.getRelationsByBook(it.bookUrl) } ?: emptyList()
+                val oldProtagonists = oldBook?.let { appDb.bookProtagonistDao.getByBook(it.bookUrl) } ?: emptyList()
 
                 oldBook?.delete()
                 appDb.bookDao.insert(newBook)
@@ -433,6 +435,20 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                         relation.copy(bookUrl = newBook.bookUrl)
                     }
                     appDb.bookTagRelationDao.insertAll(newTagRelations)
+                }
+
+                // 迁移主角名到新书
+                if (oldProtagonists.isNotEmpty()) {
+                    val newProtagonists = oldProtagonists.map { protagonist ->
+                        BookProtagonist(
+                            bookUrl = newBook.bookUrl,
+                            name = protagonist.name,
+                            isCustom = protagonist.isCustom,
+                            createTime = protagonist.createTime,
+                            updateTime = System.currentTimeMillis()
+                        )
+                    }
+                    appDb.bookProtagonistDao.insertAll(newProtagonists)
                 }
 
                 // 同步更新我的阅读记录
