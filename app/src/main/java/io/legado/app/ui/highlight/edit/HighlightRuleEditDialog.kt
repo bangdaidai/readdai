@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.databinding.DialogHighlightRuleEditBinding
+import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.highlight.HighlightRuleGroupStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.bottomBackground
@@ -158,6 +160,7 @@ class HighlightRuleEditDialog(
         binding.etExcludeScope.setHintTextColor(secondaryTextColor)
         binding.etSampleText.setTextColor(primaryTextColor)
         binding.etSampleText.setHintTextColor(secondaryTextColor)
+        binding.tvPreview.setTextSize(TypedValue.COMPLEX_UNIT_SP, ReadBookConfig.textSize.toFloat())
 
         binding.tvRegexToggle.setTextColor(primaryTextColor)
         binding.tvWidthMinus.setTextColor(primaryTextColor)
