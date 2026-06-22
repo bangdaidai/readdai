@@ -632,7 +632,4 @@ object DatabaseMigrations {
             """.trimIndent())
         }
     }
-
-    @Suppress("ClassName")
-    class Migration_104_105 : AutoMigrationSpec
 }
