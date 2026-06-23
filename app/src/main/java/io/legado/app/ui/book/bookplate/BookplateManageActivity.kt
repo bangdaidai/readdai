@@ -333,7 +333,7 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
     }
 
     private fun showBookplateDialog(bitmap: android.graphics.Bitmap, fileName: String) {
-        io.legado.app.ui.widget.dialog.BookplateDialog.show(bitmap, fileName)
+        io.legado.app.ui.widget.dialog.BookplateDialog.show(this@BookplateManageActivity, bitmap, fileName)
     }
 
     private fun deleteTemplate(template: BookplateTemplate) {

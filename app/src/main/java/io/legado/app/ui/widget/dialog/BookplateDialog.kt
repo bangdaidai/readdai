@@ -11,8 +11,7 @@ import java.io.FileOutputStream
 
 object BookplateDialog {
 
-    fun show(bitmap: Bitmap, fileName: String) {
-        val context = appCtx
+    fun show(context: android.content.Context, bitmap: Bitmap, fileName: String) {
         val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
             setCanceledOnTouchOutside(false)
             setCancelable(true)
