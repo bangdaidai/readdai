@@ -96,6 +96,23 @@ object BookplateGenerator {
 </html>
     """.trimIndent()
 
+    fun prewarmWebView(context: Context) {
+        try {
+            BookplateLogger.log("GEN", "WebView预热开始")
+            val data = getPreviewData()
+            val template = BookplateTemplate(
+                name = "_prewarm",
+                htmlContent = DEFAULT_TEMPLATE_HTML,
+                isBuiltin = true
+            )
+            val prewarmStart = System.currentTimeMillis()
+            io.legado.app.help.book.BookplateHtmlRenderer.render(context, template, data)
+            BookplateLogger.log("GEN", "WebView预热完成, 耗时=${System.currentTimeMillis() - prewarmStart}ms")
+        } catch (e: Exception) {
+            BookplateLogger.log("GEN", "WebView预热异常: ${e.message}")
+        }
+    }
+
     suspend fun generate(context: Context, book: Book): Bitmap = withContext(Dispatchers.IO) {
         BookplateLogger.log("GEN", "开始生成藏书票 (Book): ${book.name} - ${book.author}")
         val selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
