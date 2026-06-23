@@ -109,7 +109,7 @@ object BookplateHtmlRenderer {
                 wv.clearHistory()
                 wv.webViewClient = WebViewClient()
                 wv.stopLoading()
-                wv.layout(0, 0, IMAGE_WIDTH, IMAGE_WIDTH)
+                wv.layout(0, 0, IMAGE_WIDTH, 1)
             }
             return wv
         }
@@ -132,7 +132,7 @@ object BookplateHtmlRenderer {
                 setBackgroundColor(0x00000000)
                 setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 setInitialScale(100)
-                layout(0, 0, IMAGE_WIDTH, IMAGE_WIDTH)
+                layout(0, 0, IMAGE_WIDTH, 1)
             }
             deferred.complete(wv)
             wv
@@ -283,10 +283,11 @@ object BookplateHtmlRenderer {
         return try {
             webView.measure(
                 View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY)
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
             )
-            webView.layout(0, 0, IMAGE_WIDTH, IMAGE_WIDTH)
-            BookplateLogger.log("RENDER", "预设布局: ${IMAGE_WIDTH}x${IMAGE_WIDTH}")
+            BookplateLogger.log("RENDER", "预设宽度: ${IMAGE_WIDTH}, 初始高度: ${webView.measuredHeight}")
+            webView.layout(0, 0, IMAGE_WIDTH, webView.measuredHeight.coerceAtLeast(1))
+
 
             val pageLoaded = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 suspendCancellableCoroutine<Boolean> { continuation ->
@@ -335,29 +336,31 @@ object BookplateHtmlRenderer {
         }
     }
 
-    private fun captureFullBitmap(webView: WebView, startTime: Long): Bitmap? {
-        val measureWidth = View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY)
-        val measureHeightUnspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-
-        webView.measure(measureWidth, measureHeightUnspecified)
-        val contentHeight = webView.measuredHeight
-        BookplateLogger.log("RENDER", "首次测量内容高度: $contentHeight")
+    private suspend fun captureFullBitmap(webView: WebView, startTime: Long): Bitmap? {
+        val heightDeferred = CompletableDeferred<Int>()
+        webView.settings.javaScriptEnabled = true
+        webView.evaluateJavascript("document.documentElement.scrollHeight") { result ->
+            webView.settings.javaScriptEnabled = false
+            heightDeferred.complete(result.toIntOrNull() ?: 0)
+        }
+        val contentHeight = heightDeferred.await()
+        BookplateLogger.log("RENDER", "JS测量内容高度: $contentHeight")
 
         if (contentHeight <= 0) {
             BookplateLogger.log("RENDER", "内容高度为0，无法渲染")
             return null
         }
 
+        webView.measure(
+            View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
+        )
         webView.layout(0, 0, IMAGE_WIDTH, contentHeight)
 
-        val measureHeightExact = View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
-        webView.measure(measureWidth, measureHeightExact)
-        webView.layout(0, 0, IMAGE_WIDTH, webView.measuredHeight.coerceAtLeast(contentHeight))
-
-        BookplateLogger.log("RENDER", "最终布局: ${IMAGE_WIDTH}x${webView.measuredHeight}")
+        BookplateLogger.log("RENDER", "最终布局: ${IMAGE_WIDTH}x$contentHeight")
 
         return try {
-            Bitmap.createBitmap(IMAGE_WIDTH, webView.measuredHeight, Bitmap.Config.ARGB_8888).also { bmp ->
+            Bitmap.createBitmap(IMAGE_WIDTH, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
                 val canvas = Canvas(bmp)
                 webView.draw(canvas)
             }
