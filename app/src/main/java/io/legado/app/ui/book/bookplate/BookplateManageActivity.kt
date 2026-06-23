@@ -313,11 +313,9 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
     private fun previewTemplate(template: BookplateTemplate) {
         lifecycleScope.launch {
             val previewData = BookplateGenerator.getPreviewData()
-            val bitmap = withContext(Dispatchers.Main) {
-                io.legado.app.help.book.BookplateHtmlRenderer.render(
-                    this@BookplateManageActivity, template, previewData
-                )
-            }
+            val bitmap = io.legado.app.help.book.BookplateHtmlRenderer.render(
+                this@BookplateManageActivity, template, previewData
+            )
             if (bitmap != null) {
                 val imageView = android.widget.ImageView(this@BookplateManageActivity).apply {
                     setImageBitmap(bitmap)
