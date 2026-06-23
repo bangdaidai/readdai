@@ -11,6 +11,8 @@ import io.legado.app.help.config.DataVisibilitySettings
 import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.getPrefString
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 
@@ -97,19 +99,21 @@ object BookplateGenerator {
     """.trimIndent()
 
     fun prewarmWebView(context: Context) {
-        try {
-            BookplateLogger.log("GEN", "WebView预热开始")
-            val data = getPreviewData()
-            val template = BookplateTemplate(
-                name = "_prewarm",
-                htmlContent = DEFAULT_TEMPLATE_HTML,
-                isBuiltin = true
-            )
-            val prewarmStart = System.currentTimeMillis()
-            io.legado.app.help.book.BookplateHtmlRenderer.render(context, template, data)
-            BookplateLogger.log("GEN", "WebView预热完成, 耗时=${System.currentTimeMillis() - prewarmStart}ms")
-        } catch (e: Exception) {
-            BookplateLogger.log("GEN", "WebView预热异常: ${e.message}")
+        GlobalScope.launch(Dispatchers.Main) {
+            try {
+                BookplateLogger.log("GEN", "WebView预热开始")
+                val data = getPreviewData()
+                val template = BookplateTemplate(
+                    name = "_prewarm",
+                    htmlContent = DEFAULT_TEMPLATE_HTML,
+                    isBuiltin = true
+                )
+                val prewarmStart = System.currentTimeMillis()
+                BookplateHtmlRenderer.render(context, template, data)
+                BookplateLogger.log("GEN", "WebView预热完成, 耗时=${System.currentTimeMillis() - prewarmStart}ms")
+            } catch (e: Exception) {
+                BookplateLogger.log("GEN", "WebView预热异常: ${e.message}")
+            }
         }
     }
 

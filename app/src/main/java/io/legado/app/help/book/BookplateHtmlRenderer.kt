@@ -105,7 +105,7 @@ object BookplateHtmlRenderer {
             val wv = it.await()
             withContext(Dispatchers.Main) {
                 wv.clearHistory()
-                wv.webViewClient = null
+                wv.webViewClient = WebViewClient()
                 wv.stopLoading()
                 wv.layout(0, 0, IMAGE_WIDTH, IMAGE_WIDTH)
             }
@@ -327,7 +327,7 @@ object BookplateHtmlRenderer {
         } finally {
             try {
                 webView.stopLoading()
-                webView.webViewClient = null
+                webView.webViewClient = WebViewClient()
             } catch (_: Exception) {
             }
         }
