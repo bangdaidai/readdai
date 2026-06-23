@@ -129,8 +129,8 @@ object BookplateHtmlRenderer {
                         mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     }
                 }
-                setBackgroundColor(0x00000000)
-                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                setBackgroundColor(android.graphics.Color.WHITE)
+                setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                 setInitialScale(100)
                 layout(0, 0, IMAGE_WIDTH, 1)
             }
@@ -363,6 +363,7 @@ object BookplateHtmlRenderer {
         return try {
             Bitmap.createBitmap(IMAGE_WIDTH, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
                 val canvas = Canvas(bmp)
+                canvas.drawColor(android.graphics.Color.WHITE)
                 webView.draw(canvas)
             }
         } catch (e: Exception) {
