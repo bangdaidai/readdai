@@ -4,14 +4,17 @@ import android.app.AlertDialog
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
-import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
+import android.content.Intent
 import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.view.setPadding
 import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
@@ -22,12 +25,12 @@ import io.legado.app.databinding.ActivityBookTagManageBinding
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.help.book.BookplateLogger
 import io.legado.app.lib.theme.accentColor
-import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.putPrefLong
+import io.legado.app.utils.showHelp
 import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,6 +44,16 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
     private val container by lazy { FrameLayout(this) }
     private var templates = listOf<BookplateTemplate>()
     private var selectedId = 0L
+    // 临时存储模板数据，用于完整编辑页面
+    var tempTemplateData: Triple<BookplateTemplate?, String, String>? = null
+
+    // 跳转到完整编辑页面的 result launcher
+    private val templateEditLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // 完整编辑页面已保存，刷新列表
+            loadAndShowList()
+        }
+    }
 
     override val binding by lazy {
         ActivityBookTagManageBinding.inflate(layoutInflater)
@@ -71,6 +84,10 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
                 }
                 R.id.menu_log -> {
                     showLogDialog()
+                    true
+                }
+                R.id.menu_help -> {
+                    showHelp("bookplateTemplateHelp")
                     true
                 }
                 else -> false
@@ -116,12 +133,7 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         }
 
         // Classic style entry
-        val classicView = createTemplateItemView(
-            name = "经典风格",
-            subtitle = "Canvas 绘制的固定样式藏书票",
-            isSelected = selectedId == 0L,
-            isBuiltin = true
-        )
+        val classicView = createClassicItemView(isSelected = selectedId == 0L)
         classicView.setOnClickListener {
             appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
             selectedId = 0L
@@ -131,22 +143,7 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         linearLayout.addView(classicView)
 
         templates.forEach { template ->
-            val itemView = createTemplateItemView(
-                name = template.name,
-                subtitle = if (template.isBuiltin) "内置模板" else "用户模板",
-                isSelected = template.id == selectedId,
-                isBuiltin = template.isBuiltin
-            )
-            itemView.setOnClickListener {
-                appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, template.id)
-                selectedId = template.id
-                showTemplateList()
-                toastOnUi("已选择: ${template.name}")
-            }
-            itemView.setOnLongClickListener {
-                showTemplateOptions(template)
-                true
-            }
+            val itemView = createTemplateItemView(template)
             linearLayout.addView(itemView)
         }
 
@@ -154,46 +151,25 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         container.addView(scrollView)
     }
 
-    private fun createTemplateItemView(
-        name: String,
-        subtitle: String,
-        isSelected: Boolean,
-        isBuiltin: Boolean
-    ): LinearLayout {
+    private fun createClassicItemView(isSelected: Boolean): LinearLayout {
         val itemLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(16.dpToPx(), 12.dpToPx(), 16.dpToPx(), 12.dpToPx())
             gravity = Gravity.CENTER_VERTICAL
-            // 选中颜色使用卡片背景色
-            setBackgroundColor(if (isSelected) backgroundColor else 0x00000000)
-        }
-
-        val textLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            isClickable = true
+            isFocusable = true
         }
 
         val nameView = TextView(this).apply {
-            text = name
+            text = "经典风格"
             setTextColor(primaryTextColor)
             textSize = 16f
-            setTypeface(Typeface.DEFAULT, if (isSelected) Typeface.BOLD else Typeface.NORMAL)
         }
-        textLayout.addView(nameView)
-
-        val subtitleView = TextView(this).apply {
-            text = subtitle
-            setTextColor(primaryTextColor and 0x66000000)
-            textSize = 12f
-        }
-        textLayout.addView(subtitleView)
-
-        itemLayout.addView(textLayout)
+        itemLayout.addView(nameView)
 
         if (isSelected) {
             val checkView = TextView(this).apply {
                 text = "\u2713"
-                // 对勾使用强调色
                 setTextColor(accentColor)
                 textSize = 20f
                 setTypeface(Typeface.DEFAULT_BOLD)
@@ -204,66 +180,115 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         return itemLayout
     }
 
-    private fun showTemplateOptions(template: BookplateTemplate) {
-        val options = if (template.isBuiltin) {
-            arrayOf("编辑", "复制新建", "预览", "重置为默认")
-        } else {
-            arrayOf("编辑", "复制新建", "预览", "删除")
+    private fun createTemplateItemView(template: BookplateTemplate): LinearLayout {
+        val isSelected = template.id == selectedId
+        val itemLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(16.dpToPx(), 12.dpToPx(), 8.dpToPx(), 12.dpToPx())
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
         }
-        AlertDialog.Builder(this)
-            .setTitle(template.name)
-            .setItems(options) { _, which ->
-                when (options[which]) {
-                    "编辑" -> showEditTemplateDialog(template)
-                    "复制新建" -> duplicateTemplate(template)
-                    "预览" -> previewTemplate(template)
-                    "重置为默认" -> resetToDefault()
-                    "删除" -> deleteTemplate(template)
+
+        // 文字区域
+        val textLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+
+        val nameView = TextView(this).apply {
+            text = template.name
+            setTextColor(primaryTextColor)
+            textSize = 16f
+        }
+        textLayout.addView(nameView)
+
+        itemLayout.addView(textLayout)
+
+        // 选中标记
+        if (isSelected) {
+            val checkView = TextView(this).apply {
+                text = "\u2713"
+                setTextColor(accentColor)
+                textSize = 20f
+                setTypeface(Typeface.DEFAULT_BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply { marginEnd = 4.dpToPx() }
+            }
+            itemLayout.addView(checkView)
+        }
+
+        // 按钮区域
+        val btnLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        // 编辑按钮
+        val editBtn = ImageView(this).apply {
+            setImageResource(R.drawable.ic_edit)
+            setColorFilter(primaryTextColor)
+            layoutParams = LinearLayout.LayoutParams(40.dpToPx(), 40.dpToPx())
+            setPadding(8.dpToPx())
+            setOnClickListener {
+                showEditTemplateDialog(template)
+            }
+        }
+        btnLayout.addView(editBtn)
+
+        // 预览按钮
+        val previewBtn = ImageView(this).apply {
+            setImageResource(R.drawable.ic_view_list)
+            setColorFilter(primaryTextColor)
+            layoutParams = LinearLayout.LayoutParams(40.dpToPx(), 40.dpToPx())
+            setPadding(8.dpToPx())
+            setOnClickListener {
+                previewTemplate(template)
+            }
+        }
+        btnLayout.addView(previewBtn)
+
+        // 删除按钮（仅用户模板显示）
+        if (!template.isBuiltin) {
+            val deleteBtn = ImageView(this).apply {
+                setImageResource(R.drawable.ic_delete)
+                setColorFilter(primaryTextColor)
+                layoutParams = LinearLayout.LayoutParams(40.dpToPx(), 40.dpToPx())
+                setPadding(8.dpToPx())
+                setOnClickListener {
+                    deleteTemplate(template)
                 }
             }
-            .setNegativeButton("取消", null)
-            .show()
+            btnLayout.addView(deleteBtn)
+        }
+
+        itemLayout.addView(btnLayout)
+
+        // 点击整行也可选中
+        itemLayout.setOnClickListener {
+            if (!isSelected) {
+                appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, template.id)
+                selectedId = template.id
+                showTemplateList()
+            }
+        }
+
+        return itemLayout
     }
 
     private fun showEditTemplateDialog(template: BookplateTemplate?) {
-        val editTitle = EditText(this).apply {
-            setHint("模板名称")
-            setText(template?.name ?: "")
-        }
-        val editContent = EditText(this).apply {
-            setHint("HTML 模板内容")
-            setText(template?.htmlContent ?: BookplateGenerator.DEFAULT_TEMPLATE_HTML)
-            minLines = 10
-            maxLines = 20
-            gravity = Gravity.TOP
-            setHorizontallyScrolling(true)
-            textSize = 12f
-        }
+        // 保存模板数据到临时变量，供完整编辑页面使用
+        tempTemplateData = Triple(
+            template,
+            template?.name ?: "",
+            template?.htmlContent ?: BookplateGenerator.DEFAULT_TEMPLATE_HTML
+        )
 
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(32.dpToPx(), 16.dpToPx(), 32.dpToPx(), 16.dpToPx())
-            addView(editTitle)
-            addView(View(this@BookplateManageActivity).apply {
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 8.dpToPx())
-            })
-            addView(editContent)
-        }
-
-        val scrollView = ScrollView(this).apply { addView(layout) }
-
-        val title = if (template == null) "新建模板" else "编辑模板"
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setView(scrollView)
-            .setPositiveButton("保存") { _, _ ->
-                val name = editTitle.text.toString().trim().ifEmpty { "未命名模板" }
-                val html = editContent.text.toString().trim()
-                saveTemplate(template, name, html)
-            }
-            .setNegativeButton("取消", null)
-            .setCancelable(true)
-            .show()
+        // 跳转到完整编辑页面
+        val intent = Intent(this, BookplateTemplateEditActivity::class.java)
+        templateEditLauncher.launch(intent)
     }
 
     private fun saveTemplate(existing: BookplateTemplate?, name: String, html: String) {
@@ -293,16 +318,6 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
             toastOnUi("模板已保存")
             loadAndShowList()
         }
-    }
-
-    private fun duplicateTemplate(template: BookplateTemplate) {
-        showEditTemplateDialog(
-            BookplateTemplate(
-                name = "${template.name} (副本)",
-                htmlContent = template.htmlContent,
-                isBuiltin = false
-            )
-        )
     }
 
     private fun previewTemplate(template: BookplateTemplate) {
