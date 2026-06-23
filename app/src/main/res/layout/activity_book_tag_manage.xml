@@ -9,7 +9,6 @@
         android:id="@+id/titleBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:contentLayout="@layout/view_search"
         app:title="@string/book_tag_manage" />
 
     <FrameLayout

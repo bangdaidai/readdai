@@ -159,7 +159,8 @@ object BookplateHtmlRenderer {
         data: BookplateData,
         settings: DataVisibilitySettings = DataVisibilitySettings
     ): Bitmap? {
-        val cacheKey = "${data.bookName}_${data.author}_${template.id}"
+        // 缓存键加入模板内容哈希，避免模板更新后返回旧缓存
+        val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}"
         synchronized(bitmapCache) {
             bitmapCache[cacheKey]?.let {
                 BookplateLogger.log("RENDER", "命中缓存")

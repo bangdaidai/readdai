@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -12,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
+import io.legado.app.R
 import io.legado.app.base.BaseActivity
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
@@ -19,6 +21,7 @@ import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.databinding.ActivityBookTagManageBinding
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.help.book.BookplateLogger
+import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
@@ -45,6 +48,7 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         binding.titleBar.title = "藏书票模板"
+        initMenu()
 
         val root = binding.root
         if (root is ViewGroup) {
@@ -55,6 +59,23 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         }
 
         loadAndShowList()
+    }
+
+    private fun initMenu() {
+        binding.titleBar.toolbar.inflateMenu(R.menu.bookplate_menu)
+        binding.titleBar.toolbar.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.menu_add -> {
+                    showEditTemplateDialog(null)
+                    true
+                }
+                R.id.menu_log -> {
+                    showLogDialog()
+                    true
+                }
+                else -> false
+            }
+        }
     }
 
     override fun onResume() {
@@ -109,15 +130,6 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         }
         linearLayout.addView(classicView)
 
-        // Separator
-        val separator = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 1.dpToPx()
-            ).apply { setMargins(0, 8.dpToPx(), 0, 8.dpToPx()) }
-            setBackgroundColor(0x22000000)
-        }
-        linearLayout.addView(separator)
-
         templates.forEach { template ->
             val itemView = createTemplateItemView(
                 name = template.name,
@@ -138,33 +150,6 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
             linearLayout.addView(itemView)
         }
 
-        // Add new template button
-        val addButton = TextView(this).apply {
-            text = "+ 新建模板"
-            setTextColor(primaryColor)
-            textSize = 16f
-            gravity = Gravity.CENTER
-            setPadding(0, 16.dpToPx(), 0, 16.dpToPx())
-            setTypeface(Typeface.DEFAULT_BOLD)
-        }
-        addButton.setOnClickListener {
-            showEditTemplateDialog(null)
-        }
-        linearLayout.addView(addButton)
-
-        val logButton = TextView(this).apply {
-            text = "+ 查看日志"
-            setTextColor(primaryColor)
-            textSize = 16f
-            gravity = Gravity.CENTER
-            setPadding(0, 16.dpToPx(), 0, 16.dpToPx())
-            setTypeface(Typeface.DEFAULT_BOLD)
-        }
-        logButton.setOnClickListener {
-            showLogDialog()
-        }
-        linearLayout.addView(logButton)
-
         scrollView.addView(linearLayout)
         container.addView(scrollView)
     }
@@ -179,7 +164,8 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
             orientation = LinearLayout.HORIZONTAL
             setPadding(16.dpToPx(), 12.dpToPx(), 16.dpToPx(), 12.dpToPx())
             gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(if (isSelected) primaryColor and 0x22FFFFFF else 0x00000000)
+            // 选中颜色使用卡片背景色
+            setBackgroundColor(if (isSelected) backgroundColor else 0x00000000)
         }
 
         val textLayout = LinearLayout(this).apply {
@@ -207,9 +193,10 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         if (isSelected) {
             val checkView = TextView(this).apply {
                 text = "\u2713"
-                setTextColor(primaryColor)
+                // 对勾使用强调色
+                setTextColor(accentColor)
                 textSize = 20f
-            setTypeface(Typeface.DEFAULT_BOLD)
+                setTypeface(Typeface.DEFAULT_BOLD)
             }
             itemLayout.addView(checkView)
         }
@@ -286,7 +273,7 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
                 return@launch
             }
             val now = System.currentTimeMillis()
-            val template = if (existing != null) {
+            val templateToSave = if (existing != null) {
                 existing.copy(name = name, htmlContent = html, updateTime = now)
             } else {
                 BookplateTemplate(
@@ -296,13 +283,13 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
                     updateTime = now
                 )
             }
-            withContext(Dispatchers.IO) {
-                if (existing != null) {
-                    appDb.bookplateTemplateDao.update(template)
-                } else {
-                    appDb.bookplateTemplateDao.insert(template)
-                }
+            val savedId = withContext(Dispatchers.IO) {
+                // 使用 insertOrUpdate 确保更新生效
+                appDb.bookplateTemplateDao.insert(templateToSave)
             }
+            // 保存后自动选中新/修改的模板
+            appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, savedId)
+            selectedId = savedId
             toastOnUi("模板已保存")
             loadAndShowList()
         }
