@@ -476,10 +476,8 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             book: Book
         ) {
             scope.launch {
-                val bitmap = withContext(Dispatchers.IO) {
-                    io.legado.app.help.book.BookplateGenerator.generate(context, book)
-                }
-                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                val bitmap = io.legado.app.help.book.BookplateGenerator.generate(context, book)
+                withContext(Dispatchers.Main) {
                     io.legado.app.ui.widget.dialog.BookplateDialog.show(context, bitmap, "藏书票_${book.name}")
                 }
             }
@@ -491,10 +489,8 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             memory: io.legado.app.data.entities.ReadingMemory
         ) {
             scope.launch {
-                val bitmap = withContext(Dispatchers.IO) {
-                    io.legado.app.help.book.BookplateGenerator.generate(context, memory)
-                }
-                kotlinx.coroutines.withContext(Dispatchers.Main) {
+                val bitmap = io.legado.app.help.book.BookplateGenerator.generate(context, memory)
+                withContext(Dispatchers.Main) {
                     io.legado.app.ui.widget.dialog.BookplateDialog.show(context, bitmap, "藏书票_${memory.bookName}")
                 }
             }

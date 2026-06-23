@@ -4,10 +4,12 @@ import android.app.Dialog
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.os.Environment
+import android.view.Gravity
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.Toast
-import io.legado.app.utils.setLayout
 import splitties.init.appCtx
 import java.io.File
 import java.io.FileOutputStream
@@ -15,6 +17,14 @@ import java.io.FileOutputStream
 object BookplateDialog {
 
     fun show(context: android.content.Context, bitmap: Bitmap, fileName: String) {
+        val displayMetrics = context.resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        val maxDialogHeight = (screenHeight * 0.85f).toInt()
+        val dialogWidth = (screenWidth * 0.9f).toInt()
+
+        val imageHeight = (dialogWidth.toFloat() / bitmap.width * bitmap.height).toInt()
+
         val dialog = Dialog(context).apply {
             setCanceledOnTouchOutside(false)
             setCancelable(true)
@@ -22,8 +32,7 @@ object BookplateDialog {
 
         val imageView = ImageView(context).apply {
             setImageBitmap(bitmap)
-            scaleType = ImageView.ScaleType.FIT_START
-            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
             isClickable = true
             isLongClickable = true
             setOnLongClickListener {
@@ -36,16 +45,25 @@ object BookplateDialog {
             }
         }
 
-        dialog.setContentView(
-            imageView,
-            ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+        val scrollView = ScrollView(context).apply {
+            isVerticalScrollBarEnabled = false
+            addView(
+                imageView,
+                FrameLayout.LayoutParams(dialogWidth, imageHeight)
             )
+        }
+
+        dialog.setContentView(
+            scrollView,
+            ViewGroup.LayoutParams(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
         )
 
-        dialog.window?.setBackgroundDrawable(ColorDrawable(0xCC000000.toInt()))
-        dialog.setLayout(0.9f, 0f)
+        dialog.window?.apply {
+            setBackgroundDrawable(ColorDrawable(0xCC000000.toInt()))
+            setLayout(dialogWidth, maxDialogHeight.coerceAtMost(imageHeight))
+            setGravity(Gravity.CENTER)
+        }
+
         dialog.show()
     }
 
