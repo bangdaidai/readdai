@@ -97,8 +97,11 @@ object BookplateGenerator {
     """.trimIndent()
 
     suspend fun generate(context: Context, book: Book): Bitmap = withContext(Dispatchers.IO) {
+        BookplateLogger.log("GEN", "开始生成藏书票 (Book): ${book.name} - ${book.author}")
         val selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
+        BookplateLogger.log("GEN", "选中模板ID: $selectedId (0=经典Canvas)")
         if (selectedId == 0L) {
+            BookplateLogger.log("GEN", "使用经典Canvas样式")
             return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, book)
         }
 
@@ -106,20 +109,35 @@ object BookplateGenerator {
             ?: appDb.bookplateTemplateDao.getBuiltin()
             ?: getOrCreateBuiltinTemplate()
         if (template == null || template.htmlContent.isBlank()) {
+            BookplateLogger.log("GEN", "HTML模板为空，回退经典Canvas")
             return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, book)
         }
+        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, builtin=${template.isBuiltin})")
+        BookplateLogger.log("GEN", "模板HTML长度: ${template.htmlContent.length} 字符")
 
+        BookplateLogger.log("GEN", "开始构建数据...")
         val data = BookplateDataBuilder.build(book)
+        BookplateLogger.log("GEN", "数据构建完成: bookName=${data.bookName}, author=${data.author}, progress=${data.readingProgress}")
+
+        BookplateLogger.log("GEN", "开始HTML离屏渲染...")
         val bitmap = withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.render(context, template, data)
         }
 
+        if (bitmap != null) {
+            BookplateLogger.log("GEN", "渲染成功: ${bitmap.width}x${bitmap.height}")
+        } else {
+            BookplateLogger.log("GEN", "渲染失败(返回null)，回退经典Canvas")
+        }
         bitmap ?: io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, book)
     }
 
     suspend fun generate(context: Context, memory: ReadingMemory): Bitmap = withContext(Dispatchers.IO) {
+        BookplateLogger.log("GEN", "开始生成藏书票 (ReadingMemory): ${memory.bookName}")
         val selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
+        BookplateLogger.log("GEN", "选中模板ID: $selectedId (0=经典Canvas)")
         if (selectedId == 0L) {
+            BookplateLogger.log("GEN", "使用经典Canvas样式")
             return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
         }
 
@@ -127,14 +145,26 @@ object BookplateGenerator {
             ?: appDb.bookplateTemplateDao.getBuiltin()
             ?: getOrCreateBuiltinTemplate()
         if (template == null || template.htmlContent.isBlank()) {
+            BookplateLogger.log("GEN", "HTML模板为空，回退经典Canvas")
             return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
         }
+        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, builtin=${template.isBuiltin})")
+        BookplateLogger.log("GEN", "模板HTML长度: ${template.htmlContent.length} 字符")
 
+        BookplateLogger.log("GEN", "开始构建数据...")
         val data = BookplateDataBuilder.build(memory)
+        BookplateLogger.log("GEN", "数据构建完成: bookName=${data.bookName}, author=${data.author}, progress=${data.readingProgress}")
+
+        BookplateLogger.log("GEN", "开始HTML离屏渲染...")
         val bitmap = withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.render(context, template, data)
         }
 
+        if (bitmap != null) {
+            BookplateLogger.log("GEN", "渲染成功: ${bitmap.width}x${bitmap.height}")
+        } else {
+            BookplateLogger.log("GEN", "渲染失败(返回null)，回退经典Canvas")
+        }
         bitmap ?: io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
     }
 

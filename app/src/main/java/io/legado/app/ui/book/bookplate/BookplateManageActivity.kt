@@ -18,6 +18,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.databinding.ActivityBookTagManageBinding
 import io.legado.app.help.book.BookplateGenerator
+import io.legado.app.help.book.BookplateLogger
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
@@ -142,6 +143,19 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
             showEditTemplateDialog(null)
         }
         linearLayout.addView(addButton)
+
+        val logButton = TextView(this).apply {
+            text = "+ 查看日志"
+            setTextColor(primaryColor)
+            textSize = 16f
+            gravity = Gravity.CENTER
+            setPadding(0, 16.dpToPx(), 0, 16.dpToPx())
+            setTypeface(Typeface.DEFAULT_BOLD)
+        }
+        logButton.setOnClickListener {
+            showLogDialog()
+        }
+        linearLayout.addView(logButton)
 
         scrollView.addView(linearLayout)
         container.addView(scrollView)
@@ -333,6 +347,25 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
                 }
             }
             .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun showLogDialog() {
+        val logText = BookplateLogger.dump()
+        val scrollView = ScrollView(this)
+        val textView = TextView(this).apply {
+            text = logText
+            textSize = 11f
+            setTextColor(primaryTextColor)
+            setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
+            setTypeface(Typeface.MONOSPACE)
+        }
+        scrollView.addView(textView)
+        AlertDialog.Builder(this)
+            .setTitle("藏书票日志")
+            .setView(scrollView)
+            .setPositiveButton("清空") { _, _ -> BookplateLogger.clear() }
+            .setNegativeButton("关闭", null)
             .show()
     }
 

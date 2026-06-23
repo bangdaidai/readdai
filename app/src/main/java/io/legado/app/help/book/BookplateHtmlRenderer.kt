@@ -26,12 +26,24 @@ object BookplateHtmlRenderer {
         data: BookplateData,
         settings: DataVisibilitySettings = DataVisibilitySettings
     ): Bitmap? = withContext(Dispatchers.Main) {
+        BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}, 可见性: basic=${settings.isBasicInfoVisible()}")
         val filteredData = applyVisibility(data, settings)
         val html = replaceVariables(template.htmlContent, filteredData)
+        BookplateLogger.log("RENDER", "变量替换后HTML长度: ${html.length}")
 
-        if (html.isBlank()) return@withContext null
+        if (html.isBlank()) {
+            BookplateLogger.log("RENDER", "HTML为空，返回null")
+            return@withContext null
+        }
 
-        renderHtml(context, html)
+        BookplateLogger.log("RENDER", "开始WebView离屏渲染...")
+        val bitmap = renderHtml(context, html)
+        if (bitmap != null) {
+            BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
+        } else {
+            BookplateLogger.log("RENDER", "WebView渲染失败: onPageFinished未完成或超时")
+        }
+        bitmap
     }
 
     private fun applyVisibility(data: BookplateData, settings: DataVisibilitySettings): BookplateData {
@@ -165,20 +177,27 @@ object BookplateHtmlRenderer {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 try {
+                    BookplateLogger.log("RENDER", "onPageFinished触发")
                     view.measure(
                         View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
                     )
                     val measuredW = view.measuredWidth
                     val measuredH = view.measuredHeight
-                    if (measuredW <= 0 || measuredH <= 0) return
+                    BookplateLogger.log("RENDER", "测量结果: ${measuredW}x${measuredH}")
+                    if (measuredW <= 0 || measuredH <= 0) {
+                        BookplateLogger.log("RENDER", "测量尺寸无效，跳过渲染")
+                        return
+                    }
                     view.layout(0, 0, measuredW, measuredH)
 
                     val bitmap = Bitmap.createBitmap(measuredW, measuredH, Bitmap.Config.ARGB_8888)
                     val canvas = Canvas(bitmap)
                     view.draw(canvas)
                     bitmapRef.set(bitmap)
-                } catch (_: Exception) {
+                    BookplateLogger.log("RENDER", "位图创建成功: ${bitmap.width}x${bitmap.height}")
+                } catch (e: Exception) {
+                    BookplateLogger.log("RENDER", "onPageFinished异常: ${e.message}")
                 } finally {
                     latch.countDown()
                 }
@@ -186,9 +205,14 @@ object BookplateHtmlRenderer {
         }
 
         try {
+            BookplateLogger.log("RENDER", "开始加载HTML (${html.length} chars)...")
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-            latch.await(RENDER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        } catch (_: Exception) {
+            val ok = latch.await(RENDER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            if (!ok) {
+                BookplateLogger.log("RENDER", "超时: ${RENDER_TIMEOUT_SECONDS}秒内onPageFinished未完成")
+            }
+        } catch (e: Exception) {
+            BookplateLogger.log("RENDER", "加载异常: ${e.message}")
         } finally {
             webView.destroy()
         }

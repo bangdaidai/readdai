@@ -17,24 +17,36 @@ object BookplateDataBuilder {
     private val dateFormat = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault())
 
     suspend fun build(book: Book): BookplateData = withContext(Dispatchers.IO) {
+        BookplateLogger.log("DATA", "开始构建数据 (Book): ${book.name} - ${book.author}")
         val annotations = appDb.bookAnnotationDao.getByBook(book.name, book.author)
+        BookplateLogger.log("DATA", "书摘数量: ${annotations.size}")
         val reviews = appDb.bookReviewDao.getReviewByBookUrl(book.bookUrl)
+        BookplateLogger.log("DATA", "书评数量: ${reviews.size}")
         val readSessionTotal = run {
             var time = appDb.readSessionDao.getTotalReadTime(book.name, book.author)
             if (time == null || time == 0L) {
+                BookplateLogger.log("DATA", "三级回退: name+author无数据，尝试bookName")
                 time = appDb.readSessionDao.getTotalReadTime(book.name)
             }
             if (time == null || time == 0L) {
+                BookplateLogger.log("DATA", "三级回退: bookName无数据，尝试bookUrl")
                 time = appDb.readSessionDao.getTotalReadTimeByUrl(book.bookUrl)
+            }
+            if (time != null && time > 0L) {
+                BookplateLogger.log("DATA", "总阅读时长: ${time}ms (${time/60000}分钟)")
+            } else {
+                BookplateLogger.log("DATA", "总阅读时长: 无数据")
             }
             time ?: 0L
         }
         val protagonists = appDb.bookProtagonistDao.getByBook(book.bookUrl).map { it.name }
+        BookplateLogger.log("DATA", "主角: ${protagonists.joinToString(",")}")
         val tags = run {
             val relations = appDb.bookTagRelationDao.getRelationsByBook(book.bookUrl)
             val tagIds = relations.map { it.tagId }
             if (tagIds.isNotEmpty()) appDb.bookTagDao.getTagsByIds(tagIds) else emptyList()
         }
+        BookplateLogger.log("DATA", "标签: ${tags.map { it.name }.joinToString(",")}")
 
         val typeText = when {
             (book.type and BookType.video) != 0 -> "视频"
@@ -152,18 +164,30 @@ object BookplateDataBuilder {
 
             readTimeRank = ""
         )
+    }.also {
+        BookplateLogger.log("DATA", "数据构建完成 (Book): ${it.bookName}, 进度=${it.readingProgress}, 时长=${it.totalReadTime}, 评分=${it.rating}")
     }
 
     suspend fun build(memory: ReadingMemory): BookplateData = withContext(Dispatchers.IO) {
+        BookplateLogger.log("DATA", "开始构建数据 (ReadingMemory): ${memory.bookName}")
         val annotations = appDb.bookAnnotationDao.getByBook(memory.bookName, memory.bookAuthor)
+        BookplateLogger.log("DATA", "书摘数量: ${annotations.size}")
         val reviews = appDb.bookReviewDao.getReviewByBookUrl(memory.bookUrl)
+        BookplateLogger.log("DATA", "书评数量: ${reviews.size}")
         val readSessionTotal = run {
             var time = appDb.readSessionDao.getTotalReadTime(memory.bookName, memory.bookAuthor)
             if (time == null || time == 0L) {
+                BookplateLogger.log("DATA", "三级回退: name+author无数据，尝试bookName")
                 time = appDb.readSessionDao.getTotalReadTime(memory.bookName)
             }
             if (time == null || time == 0L) {
+                BookplateLogger.log("DATA", "三级回退: bookName无数据，尝试bookUrl")
                 time = appDb.readSessionDao.getTotalReadTimeByUrl(memory.bookUrl)
+            }
+            if (time != null && time > 0L) {
+                BookplateLogger.log("DATA", "总阅读时长: ${time}ms (${time/60000}分钟)")
+            } else {
+                BookplateLogger.log("DATA", "总阅读时长: 无数据")
             }
             time ?: 0L
         }
@@ -249,6 +273,8 @@ object BookplateDataBuilder {
             bookSourceName = "",
             bookSourceGroup = ""
         )
+    }.also {
+        BookplateLogger.log("DATA", "数据构建完成 (Memory): ${it.bookName}, 进度=${it.readingProgress}, 时长=${it.totalReadTime}")
     }
 
     private fun buildStars(rating: Float): String {
