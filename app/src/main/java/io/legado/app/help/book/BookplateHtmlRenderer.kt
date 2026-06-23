@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -293,7 +295,7 @@ object BookplateHtmlRenderer {
                             val loadTime = System.currentTimeMillis() - startTime
                             BookplateLogger.log("RENDER", "onPageFinished触发, 耗时=${loadTime}ms, postDelayed ${CSS_LAYOUT_DELAY_MS}ms")
                             if (continuation.isActive) {
-                                view?.postDelayed({
+                                Handler(Looper.getMainLooper()).postDelayed({
                                     if (continuation.isActive) {
                                         continuation.resume(true) {}
                                     }
