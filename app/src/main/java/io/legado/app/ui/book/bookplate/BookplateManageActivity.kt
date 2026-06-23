@@ -24,7 +24,9 @@ import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.databinding.ActivityBookTagManageBinding
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.help.book.BookplateLogger
+import io.legado.app.help.IntentData
 import io.legado.app.lib.theme.accentColor
+import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.utils.dpToPx
@@ -44,8 +46,6 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
     private val container by lazy { FrameLayout(this) }
     private var templates = listOf<BookplateTemplate>()
     private var selectedId = 0L
-    // 临时存储模板数据，用于完整编辑页面
-    var tempTemplateData: Triple<BookplateTemplate?, String, String>? = null
 
     // 跳转到完整编辑页面的 result launcher
     private val templateEditLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -279,12 +279,12 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
     }
 
     private fun showEditTemplateDialog(template: BookplateTemplate?) {
-        // 保存模板数据到临时变量，供完整编辑页面使用
-        tempTemplateData = Triple(
+        val data = Triple(
             template,
             template?.name ?: "",
             template?.htmlContent ?: BookplateGenerator.DEFAULT_TEMPLATE_HTML
         )
+        IntentData.put("bookplateTemplateData", data)
 
         // 跳转到完整编辑页面
         val intent = Intent(this, BookplateTemplateEditActivity::class.java)

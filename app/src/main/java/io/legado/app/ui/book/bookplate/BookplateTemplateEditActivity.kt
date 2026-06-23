@@ -13,6 +13,7 @@ import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.databinding.DialogBookplateTemplateEditBinding
+import io.legado.app.help.IntentData
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.help.book.BookplateHtmlRenderer
 import io.legado.app.lib.theme.accentColor
@@ -22,7 +23,6 @@ import io.legado.app.utils.putPrefLong
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.showHelp
 import io.legado.app.utils.toastOnUi
-import io.legado.app.ui.widget.TextDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,10 +38,10 @@ class BookplateTemplateEditActivity : BaseActivity<DialogBookplateTemplateEditBi
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        // 获取从对话框传递过来的临时数据
-        existingTemplate = BookplateManageActivity.tempTemplateData?.first
-        val name = BookplateManageActivity.tempTemplateData?.second ?: ""
-        val html = BookplateManageActivity.tempTemplateData?.third
+        val templateData = IntentData.get<Triple<BookplateTemplate?, String, String>>("bookplateTemplateData")
+        existingTemplate = templateData?.first
+        val name = templateData?.second ?: ""
+        val html = templateData?.third
             ?: BookplateGenerator.DEFAULT_TEMPLATE_HTML
 
         // 设置初始值
