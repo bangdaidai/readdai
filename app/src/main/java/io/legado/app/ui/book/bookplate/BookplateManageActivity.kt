@@ -3,35 +3,26 @@ package io.legado.app.ui.book.bookplate
 import android.app.AlertDialog
 import android.graphics.Typeface
 import android.os.Bundle
-import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
-import android.content.Intent
-import android.widget.EditText
-import androidx.activity.result.contract.ActivityResultContracts
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ScrollView
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.TextView
 import androidx.core.view.setPadding
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.databinding.ActivityBookTagManageBinding
+import io.legado.app.databinding.ItemBookplateClassicBinding
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.help.book.BookplateLogger
-import io.legado.app.help.IntentData
-import io.legado.app.lib.theme.accentColor
-import io.legado.app.lib.theme.backgroundColor
-import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.putPrefLong
+import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.showHelp
 import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.Dispatchers
@@ -39,21 +30,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 
-class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
-    fullScreen = false, theme = io.legado.app.constant.Theme.Auto, toolBarTheme = io.legado.app.constant.Theme.Auto
-) {
+class BookplateManageActivity :
+    BaseActivity<ActivityBookTagManageBinding>(
+        fullScreen = false,
+        theme = io.legado.app.constant.Theme.Auto,
+        toolBarTheme = io.legado.app.constant.Theme.Auto
+    ),
+    BookplateTemplateAdapter.CallBack {
 
-    private val container by lazy { FrameLayout(this) }
     private var templates = listOf<BookplateTemplate>()
     private var selectedId = 0L
-
-    // 跳转到完整编辑页面的 result launcher
-    private val templateEditLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            // 完整编辑页面已保存，刷新列表
-            loadAndShowList()
-        }
+    private val adapter by lazy {
+        BookplateTemplateAdapter(this, this)
     }
+    private var classicBinding: ItemBookplateClassicBinding? = null
 
     override val binding by lazy {
         ActivityBookTagManageBinding.inflate(layoutInflater)
@@ -61,36 +51,42 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         binding.titleBar.title = "藏书票模板"
-        initMenu()
-
-        val root = binding.root
-        if (root is ViewGroup) {
-            root.addView(container, ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            ))
-        }
-
+        initRecyclerView()
         loadAndShowList()
     }
 
-    private fun initMenu() {
-        binding.titleBar.toolbar.inflateMenu(R.menu.bookplate_menu)
-        binding.titleBar.toolbar.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.menu_add -> {
-                    showEditTemplateDialog(null)
-                    true
+    override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.bookplate_menu, menu)
+        return super.onCompatCreateOptionsMenu(menu)
+    }
+
+    override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.menu_add -> {
+                showEditDialog(null)
+                return true
+            }
+            R.id.menu_log -> {
+                showLogDialog()
+                return true
+            }
+            R.id.menu_help -> {
+                showHelp("bookplateTemplateHelp")
+                return true
+            }
+        }
+        return super.onCompatOptionsItemSelected(item)
+    }
+
+    private fun initRecyclerView() {
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
+        binding.recyclerView.adapter = adapter
+        adapter.addHeaderView { parent ->
+            ItemBookplateClassicBinding.inflate(layoutInflater, parent, false).also {
+                classicBinding = it
+                it.root.setOnClickListener {
+                    onClassicSelect()
                 }
-                R.id.menu_log -> {
-                    showLogDialog()
-                    true
-                }
-                R.id.menu_help -> {
-                    showHelp("bookplateTemplateHelp")
-                    true
-                }
-                else -> false
             }
         }
     }
@@ -104,7 +100,6 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
         lifecycleScope.launch {
             templates = withContext(Dispatchers.IO) {
                 val all = appDb.bookplateTemplateDao.getAll()
-                // 清除并发竞争产生的重复内置模板
                 val builtins = all.filter { it.isBuiltin }
                 if (builtins.size > 1) {
                     builtins.drop(1).forEach { appDb.bookplateTemplateDao.deleteById(it.id) }
@@ -116,208 +111,46 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
                 templates = listOf(builtin)
             }
             selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
-            showTemplateList()
+            adapter.setItems(templates, adapter.diffItemCallback)
+            adapter.setSelectedId(selectedId)
+            updateClassicSelected()
         }
     }
 
-    private fun showTemplateList() {
-        container.removeAllViews()
-
-        val scrollView = ScrollView(this).apply {
-            setBackgroundColor(backgroundColor)
-        }
-
-        val linearLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
-        }
-
-        // Classic style entry
-        val classicView = createClassicItemView(isSelected = selectedId == 0L)
-        classicView.setOnClickListener {
-            appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
-            selectedId = 0L
-            showTemplateList()
-            toastOnUi("已选择经典风格")
-        }
-        linearLayout.addView(classicView)
-
-        templates.forEach { template ->
-            val itemView = createTemplateItemView(template)
-            linearLayout.addView(itemView)
-        }
-
-        scrollView.addView(linearLayout)
-        container.addView(scrollView)
+    private fun updateClassicSelected() {
+        classicBinding?.cbClassic?.isChecked = selectedId == 0L
     }
 
-    private fun createClassicItemView(isSelected: Boolean): LinearLayout {
-        val itemLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(16.dpToPx(), 12.dpToPx(), 16.dpToPx(), 12.dpToPx())
-            gravity = Gravity.CENTER_VERTICAL
-            isClickable = true
-            isFocusable = true
-        }
-
-        val nameView = TextView(this).apply {
-            text = "经典风格"
-            setTextColor(primaryTextColor)
-            textSize = 16f
-        }
-        itemLayout.addView(nameView)
-
-        if (isSelected) {
-            val checkView = TextView(this).apply {
-                text = "\u2713"
-                setTextColor(accentColor)
-                textSize = 20f
-                setTypeface(Typeface.DEFAULT_BOLD)
-            }
-            itemLayout.addView(checkView)
-        }
-
-        return itemLayout
+    private fun onClassicSelect() {
+        appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
+        selectedId = 0L
+        adapter.setSelectedId(0L)
+        updateClassicSelected()
+        toastOnUi("已选择经典风格")
     }
 
-    private fun createTemplateItemView(template: BookplateTemplate): LinearLayout {
-        val isSelected = template.id == selectedId
-        val itemLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(16.dpToPx(), 12.dpToPx(), 8.dpToPx(), 12.dpToPx())
-            gravity = Gravity.CENTER_VERTICAL
-            isClickable = true
-            isFocusable = true
-        }
-
-        // 文字区域
-        val textLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        val nameView = TextView(this).apply {
-            text = template.name
-            setTextColor(primaryTextColor)
-            textSize = 16f
-        }
-        textLayout.addView(nameView)
-
-        itemLayout.addView(textLayout)
-
-        // 选中标记
-        if (isSelected) {
-            val checkView = TextView(this).apply {
-                text = "\u2713"
-                setTextColor(accentColor)
-                textSize = 20f
-                setTypeface(Typeface.DEFAULT_BOLD)
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply { marginEnd = 4.dpToPx() }
-            }
-            itemLayout.addView(checkView)
-        }
-
-        // 按钮区域
-        val btnLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-
-        // 编辑按钮
-        val editBtn = ImageView(this).apply {
-            setImageResource(R.drawable.ic_edit)
-            setColorFilter(primaryTextColor)
-            layoutParams = LinearLayout.LayoutParams(40.dpToPx(), 40.dpToPx())
-            setPadding(8.dpToPx())
-            setOnClickListener {
-                showEditTemplateDialog(template)
-            }
-        }
-        btnLayout.addView(editBtn)
-
-        // 预览按钮
-        val previewBtn = ImageView(this).apply {
-            setImageResource(R.drawable.ic_view_list)
-            setColorFilter(primaryTextColor)
-            layoutParams = LinearLayout.LayoutParams(40.dpToPx(), 40.dpToPx())
-            setPadding(8.dpToPx())
-            setOnClickListener {
-                previewTemplate(template)
-            }
-        }
-        btnLayout.addView(previewBtn)
-
-        // 删除按钮（仅用户模板显示）
-        if (!template.isBuiltin) {
-            val deleteBtn = ImageView(this).apply {
-                setImageResource(R.drawable.ic_delete)
-                setColorFilter(primaryTextColor)
-                layoutParams = LinearLayout.LayoutParams(40.dpToPx(), 40.dpToPx())
-                setPadding(8.dpToPx())
-                setOnClickListener {
-                    deleteTemplate(template)
-                }
-            }
-            btnLayout.addView(deleteBtn)
-        }
-
-        itemLayout.addView(btnLayout)
-
-        // 点击整行也可选中
-        itemLayout.setOnClickListener {
-            if (!isSelected) {
-                appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, template.id)
-                selectedId = template.id
-                showTemplateList()
-            }
-        }
-
-        return itemLayout
+    override fun onSelect(item: BookplateTemplate) {
+        appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, item.id)
+        selectedId = item.id
+        adapter.setSelectedId(item.id)
+        updateClassicSelected()
+        toastOnUi("已选择 ${item.name}")
     }
 
-    private fun showEditTemplateDialog(template: BookplateTemplate?) {
-        val data = Triple(
-            template,
-            template?.name ?: "",
-            template?.htmlContent ?: BookplateGenerator.DEFAULT_TEMPLATE_HTML
-        )
-        IntentData.put("bookplateTemplateData", data)
-
-        // 跳转到完整编辑页面
-        val intent = Intent(this, BookplateTemplateEditActivity::class.java)
-        templateEditLauncher.launch(intent)
+    override fun onPreview(item: BookplateTemplate) {
+        previewTemplate(item)
     }
 
-    private fun saveTemplate(existing: BookplateTemplate?, name: String, html: String) {
-        lifecycleScope.launch {
-            if (html.isBlank()) {
-                toastOnUi("模板内容不能为空")
-                return@launch
-            }
-            val now = System.currentTimeMillis()
-            val templateToSave = if (existing != null) {
-                existing.copy(name = name, htmlContent = html, updateTime = now)
-            } else {
-                BookplateTemplate(
-                    name = name,
-                    htmlContent = html,
-                    createTime = now,
-                    updateTime = now
-                )
-            }
-            val savedId = withContext(Dispatchers.IO) {
-                // 使用 insertOrUpdate 确保更新生效
-                appDb.bookplateTemplateDao.insert(templateToSave)
-            }
-            // 保存后自动选中新/修改的模板
-            appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, savedId)
-            selectedId = savedId
-            toastOnUi("模板已保存")
-            loadAndShowList()
-        }
+    override fun onEdit(item: BookplateTemplate) {
+        showEditDialog(item)
+    }
+
+    override fun onDelete(item: BookplateTemplate) {
+        deleteTemplate(item)
+    }
+
+    private fun showEditDialog(template: BookplateTemplate?) {
+        showDialogFragment(BookplateTemplateEditDialog(template?.id))
     }
 
     private fun previewTemplate(template: BookplateTemplate) {
@@ -356,7 +189,7 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
 
     private fun showLogDialog() {
         val logText = BookplateLogger.dump()
-        val scrollView = ScrollView(this)
+        val scrollView = android.widget.ScrollView(this)
         val textView = TextView(this).apply {
             text = logText
             textSize = 11f
@@ -373,20 +206,4 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
             .show()
     }
 
-    private fun resetToDefault() {
-        AlertDialog.Builder(this)
-            .setTitle("重置为默认")
-            .setMessage("将内置模板恢复为系统默认样式？")
-            .setPositiveButton("确定") { _, _ ->
-                lifecycleScope.launch {
-                    withContext(Dispatchers.IO) {
-                        appDb.bookplateTemplateDao.deleteBuiltin()
-                    }
-                    loadAndShowList()
-                    toastOnUi("已重置")
-                }
-            }
-            .setNegativeButton("取消", null)
-            .show()
-    }
 }
