@@ -1421,7 +1421,7 @@ $content
         runOnUiThread {
             ReadBook.book?.let { book ->
                 io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.showBookplate(
-                    this, lifecycleScope, book, showSaveButton = false
+                    this, lifecycleScope, book
                 )
             }
         }

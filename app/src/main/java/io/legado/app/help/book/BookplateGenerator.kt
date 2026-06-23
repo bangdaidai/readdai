@@ -25,7 +25,7 @@ object BookplateGenerator {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    width: 640px; padding: 36px 40px;
+    width: 100%; max-width: 1080px; padding: 48px 56px;
     font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff;

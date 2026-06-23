@@ -15,8 +15,9 @@ import kotlinx.coroutines.withContext
 
 object BookplateHtmlRenderer {
 
-    private const val IMAGE_WIDTH = 640
+    private const val IMAGE_WIDTH = 1080
     private const val RENDER_TIMEOUT_MS = 5000L
+    private const val CSS_LAYOUT_DELAY_MS = 100L
 
     suspend fun render(
         context: Context,
@@ -177,11 +178,11 @@ object BookplateHtmlRenderer {
 
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    BookplateLogger.log("RENDER", "onPageFinished触发, postDelayed 300ms等待CSS布局...")
+                    BookplateLogger.log("RENDER", "onPageFinished触发, postDelayed ${CSS_LAYOUT_DELAY_MS}ms等待CSS布局...")
                     view?.postDelayed({
                         renderComplete = true
-                        BookplateLogger.log("RENDER", "300ms延迟完成, renderComplete=true")
-                    }, 300)
+                        BookplateLogger.log("RENDER", "${CSS_LAYOUT_DELAY_MS}ms延迟完成, renderComplete=true")
+                    }, CSS_LAYOUT_DELAY_MS)
                 }
             }
 

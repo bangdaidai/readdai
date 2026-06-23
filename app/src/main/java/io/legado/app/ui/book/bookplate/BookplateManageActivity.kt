@@ -325,19 +325,15 @@ class BookplateManageActivity : BaseActivity<ActivityBookTagManageBinding>(
                 this@BookplateManageActivity, template, previewData
             )
             if (bitmap != null) {
-                val imageView = android.widget.ImageView(this@BookplateManageActivity).apply {
-                    setImageBitmap(bitmap)
-                    scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-                }
-                AlertDialog.Builder(this@BookplateManageActivity)
-                    .setTitle("预览 - ${template.name}")
-                    .setView(imageView)
-                    .setPositiveButton("确定", null)
-                    .show()
+                showBookplateDialog(bitmap, "藏书票预览_${template.name}")
             } else {
                 toastOnUi("渲染失败，请检查模板语法")
             }
         }
+    }
+
+    private fun showBookplateDialog(bitmap: android.graphics.Bitmap, fileName: String) {
+        io.legado.app.ui.widget.dialog.BookplateDialog.show(bitmap, fileName)
     }
 
     private fun deleteTemplate(template: BookplateTemplate) {

@@ -473,60 +473,29 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         fun showBookplate(
             context: android.content.Context,
             scope: kotlinx.coroutines.CoroutineScope,
-            book: Book,
-            showSaveButton: Boolean = false,
-            onSave: ((Book) -> Unit)? = null
+            book: Book
         ) {
             scope.launch {
                 val bitmap = withContext(Dispatchers.IO) {
                     io.legado.app.help.book.BookplateGenerator.generate(context, book)
                 }
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
-                    val imageView = ImageView(context)
-                    imageView.setImageBitmap(bitmap)
-                    imageView.scaleType = ImageView.ScaleType.FIT_CENTER
-                    val padding = 16.dpToPx()
-                    imageView.setPadding(padding, padding, padding, padding)
-                    val builder = AlertDialog.Builder(context)
-                        .setTitle("藏书票")
-                        .setView(imageView)
-                        .setPositiveButton("确定", null)
-                    if (showSaveButton) {
-                        builder.setNeutralButton("保存图片") { _, _ -> onSave?.invoke(book) }
-                    }
-                    builder.show()
+                    io.legado.app.ui.widget.dialog.BookplateDialog.show(bitmap, "藏书票_${book.name}")
                 }
             }
         }
 
-        /**
-         * 显示藏书票弹窗（基于ReadingMemory的重载方法，即使书籍已从书架删除也能显示藏书票）
-         */
         fun showBookplate(
             context: android.content.Context,
             scope: kotlinx.coroutines.CoroutineScope,
-            memory: io.legado.app.data.entities.ReadingMemory,
-            showSaveButton: Boolean = false,
-            onSave: ((io.legado.app.data.entities.ReadingMemory) -> Unit)? = null
+            memory: io.legado.app.data.entities.ReadingMemory
         ) {
             scope.launch {
                 val bitmap = withContext(Dispatchers.IO) {
                     io.legado.app.help.book.BookplateGenerator.generate(context, memory)
                 }
                 kotlinx.coroutines.withContext(Dispatchers.Main) {
-                    val imageView = ImageView(context)
-                    imageView.setImageBitmap(bitmap)
-                    imageView.scaleType = ImageView.ScaleType.FIT_CENTER
-                    val padding = 16.dpToPx()
-                    imageView.setPadding(padding, padding, padding, padding)
-                    val builder = AlertDialog.Builder(context)
-                        .setTitle("藏书票")
-                        .setView(imageView)
-                        .setPositiveButton("确定", null)
-                    if (showSaveButton) {
-                        builder.setNeutralButton("保存图片") { _, _ -> onSave?.invoke(memory) }
-                    }
-                    builder.show()
+                    io.legado.app.ui.widget.dialog.BookplateDialog.show(bitmap, "藏书票_${memory.bookName}")
                 }
             }
         }
@@ -1575,57 +1544,13 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
     }
     
     private fun showBookplate(book: Book) {
-        Companion.showBookplate(this, lifecycleScope, book, showSaveButton = true) { saveBookplateAsImage(it) }
+        Companion.showBookplate(this, lifecycleScope, book)
     }
     
     private fun showBookplate(memory: io.legado.app.data.entities.ReadingMemory) {
-        Companion.showBookplate(this, lifecycleScope, memory, showSaveButton = true) { saveBookplateAsImage(it) }
+        Companion.showBookplate(this, lifecycleScope, memory)
     }
     
-    private fun saveBookplateAsImage(book: Book) {
-        lifecycleScope.launch {
-            try {
-                val bitmap = withContext(Dispatchers.IO) {
-                    io.legado.app.help.book.BookplateGenerator.generate(this@ReadingMemoryDetailActivity, book)
-                }
-                
-                val savedPath = withContext(Dispatchers.IO) {
-                    saveBitmapToGallery(bitmap, "藏书票_${book.name}")
-                }
-                
-                if (savedPath != null) {
-                    toastOnUi("已保存到: $savedPath")
-                } else {
-                    toastOnUi("保存失败")
-                }
-            } catch (e: Exception) {
-                toastOnUi("保存失败: ${e.localizedMessage}")
-            }
-        }
-    }
-    
-    private fun saveBookplateAsImage(memory: io.legado.app.data.entities.ReadingMemory) {
-        lifecycleScope.launch {
-            try {
-                val bitmap = withContext(Dispatchers.IO) {
-                    io.legado.app.help.book.BookplateGenerator.generate(this@ReadingMemoryDetailActivity, memory)
-                }
-                
-                val savedPath = withContext(Dispatchers.IO) {
-                    saveBitmapToGallery(bitmap, "藏书票_${memory.bookName}")
-                }
-                
-                if (savedPath != null) {
-                    toastOnUi("已保存到: $savedPath")
-                } else {
-                    toastOnUi("保存失败")
-                }
-            } catch (e: Exception) {
-                toastOnUi("保存失败: ${e.localizedMessage}")
-            }
-        }
-    }
-
     private fun wrapTextForBookplate(text: String, paint: android.graphics.Paint, maxWidth: Float): List<String> {
         val lines = mutableListOf<String>()
         val paragraphs = text.split("\n")
@@ -1666,34 +1591,6 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         return lines
     }
     
-    private fun saveBitmapToGallery(bitmap: android.graphics.Bitmap, fileName: String): String? {
-        return try {
-            val context = appCtx
-            val imagesDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES)
-            val legReadDir = java.io.File(imagesDir, "LegRead")
-            if (!legReadDir.exists()) {
-                legReadDir.mkdirs()
-            }
-            
-            val safeFileName = fileName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
-            val file = java.io.File(legReadDir, "${safeFileName}_${System.currentTimeMillis()}.png")
-            
-            val outputStream = java.io.FileOutputStream(file)
-            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, outputStream)
-            outputStream.flush()
-            outputStream.close()
-            
-            val mediaScanIntent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-            mediaScanIntent.data = android.net.Uri.fromFile(file)
-            context.sendBroadcast(mediaScanIntent)
-            
-            file.absolutePath
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
     /**
      * 格式化阅读时长
      */
