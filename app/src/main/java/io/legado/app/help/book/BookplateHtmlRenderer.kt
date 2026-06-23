@@ -4,8 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import io.legado.app.data.entities.BookplateData
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.help.config.DataVisibilitySettings
@@ -166,18 +168,26 @@ object BookplateHtmlRenderer {
             .replace("\"", "&quot;")
     }
 
-    private fun renderHtml(context: Context, html: String): Bitmap? {
+    private suspend fun renderHtml(context: Context, html: String): Bitmap? {
         val bitmapRef = AtomicReference<Bitmap?>()
         val latch = CountDownLatch(1)
 
-        val webView = WebView(context.applicationContext)
+        val webView = WebView(context)
         webView.settings.javaScriptEnabled = false
         webView.settings.domStorageEnabled = false
+        webView.setBackgroundColor(0x00000000)
+
+        val activity = context as? android.app.Activity
+        val decorView = activity?.window?.decorView as? ViewGroup
+        BookplateLogger.log("RENDER", "Activity=${activity != null}, decorView=${decorView != null}")
+
+        val container = FrameLayout(context)
+        container.addView(webView, FrameLayout.LayoutParams(1, 1))
 
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
+                BookplateLogger.log("RENDER", "onPageFinished触发")
                 try {
-                    BookplateLogger.log("RENDER", "onPageFinished触发")
                     view.measure(
                         View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -185,17 +195,16 @@ object BookplateHtmlRenderer {
                     val measuredW = view.measuredWidth
                     val measuredH = view.measuredHeight
                     BookplateLogger.log("RENDER", "测量结果: ${measuredW}x${measuredH}")
-                    if (measuredW <= 0 || measuredH <= 0) {
-                        BookplateLogger.log("RENDER", "测量尺寸无效，跳过渲染")
-                        return
+                    if (measuredW > 0 && measuredH > 0) {
+                        view.layout(0, 0, measuredW, measuredH)
+                        val bitmap = Bitmap.createBitmap(measuredW, measuredH, Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(bitmap)
+                        view.draw(canvas)
+                        bitmapRef.set(bitmap)
+                        BookplateLogger.log("RENDER", "位图创建成功: ${bitmap.width}x${bitmap.height}")
+                    } else {
+                        BookplateLogger.log("RENDER", "测量尺寸无效: ${measuredW}x${measuredH}")
                     }
-                    view.layout(0, 0, measuredW, measuredH)
-
-                    val bitmap = Bitmap.createBitmap(measuredW, measuredH, Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(bitmap)
-                    view.draw(canvas)
-                    bitmapRef.set(bitmap)
-                    BookplateLogger.log("RENDER", "位图创建成功: ${bitmap.width}x${bitmap.height}")
                 } catch (e: Exception) {
                     BookplateLogger.log("RENDER", "onPageFinished异常: ${e.message}")
                 } finally {
@@ -205,15 +214,21 @@ object BookplateHtmlRenderer {
         }
 
         try {
-            BookplateLogger.log("RENDER", "开始加载HTML (${html.length} chars)...")
+            decorView?.addView(container, ViewGroup.LayoutParams(1, 1))
+            BookplateLogger.log("RENDER", "附加WebView到视图层级, 开始加载HTML (${html.length} chars)...")
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-            val ok = latch.await(RENDER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+
+            BookplateLogger.log("RENDER", "切换到IO线程等待onPageFinished...")
+            val ok = withContext(Dispatchers.IO) {
+                latch.await(RENDER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            }
             if (!ok) {
                 BookplateLogger.log("RENDER", "超时: ${RENDER_TIMEOUT_SECONDS}秒内onPageFinished未完成")
             }
         } catch (e: Exception) {
-            BookplateLogger.log("RENDER", "加载异常: ${e.message}")
+            BookplateLogger.log("RENDER", "渲染异常: ${e.message}")
         } finally {
+            decorView?.removeView(container)
             webView.destroy()
         }
 
