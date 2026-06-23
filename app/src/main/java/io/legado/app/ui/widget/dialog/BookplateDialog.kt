@@ -52,7 +52,7 @@ object BookplateDialog {
 
             val intent = android.content.Intent(android.content.Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
             intent.data = android.net.Uri.fromFile(file)
-            context.sendBroadcast(intent)
+            appCtx.sendBroadcast(intent)
         } catch (e: Exception) {
             Toast.makeText(appCtx, "保存失败: ${e.message}", Toast.LENGTH_SHORT).show()
         }
