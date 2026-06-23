@@ -36,6 +36,9 @@ interface BookplateTemplateDao {
     @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1")
     suspend fun deleteBuiltin()
 
+    @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1 AND id != :keepId")
+    suspend fun deleteBuiltinExcept(keepId: Long)
+
     @Query("DELETE FROM bookplateTemplates WHERE id = :id")
     suspend fun deleteById(id: Long)
 }

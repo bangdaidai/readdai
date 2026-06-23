@@ -181,6 +181,8 @@ object BookplateGenerator {
             updateTime = now
         )
         val id = appDb.bookplateTemplateDao.insert(template)
+        // 清理并发竞争产生的重复内置模板
+        appDb.bookplateTemplateDao.deleteBuiltinExcept(id)
         return template.copy(id = id)
     }
 
