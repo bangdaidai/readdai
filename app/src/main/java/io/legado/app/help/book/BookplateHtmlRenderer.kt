@@ -3,9 +3,7 @@ package io.legado.app.help.book
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.os.Handler
-import android.os.Looper
-import android.util.Base64
+import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import io.legado.app.data.entities.BookplateData
@@ -160,7 +158,6 @@ object BookplateHtmlRenderer {
         val bitmapRef = AtomicReference<Bitmap?>()
         val latch = CountDownLatch(1)
 
-        val handler = Handler(Looper.getMainLooper())
         val webView = WebView(context.applicationContext)
         webView.settings.javaScriptEnabled = false
         webView.settings.domStorageEnabled = false
@@ -168,17 +165,17 @@ object BookplateHtmlRenderer {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 try {
-                    val contentWidth = view.width
-                    val contentHeight = view.height
-                    val measuredWidth = view.measuredWidth
-                    val measuredHeight = view.measuredHeight
+                    view.measure(
+                        View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    )
+                    val measuredW = view.measuredWidth
+                    val measuredH = view.measuredHeight
+                    if (measuredW <= 0 || measuredH <= 0) return
+                    view.layout(0, 0, measuredW, measuredH)
 
-                    val w = if (measuredWidth > 0) measuredWidth else IMAGE_WIDTH
-                    val h = if (measuredHeight > 0) measuredHeight else 400
-
-                    val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                    val bitmap = Bitmap.createBitmap(measuredW, measuredH, Bitmap.Config.ARGB_8888)
                     val canvas = Canvas(bitmap)
-                    view.layout(0, 0, w, h)
                     view.draw(canvas)
                     bitmapRef.set(bitmap)
                 } catch (_: Exception) {
@@ -189,14 +186,11 @@ object BookplateHtmlRenderer {
         }
 
         try {
-            webView.layout(0, 0, IMAGE_WIDTH, 400)
-            val encodedHtml = Base64.encodeToString(html.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-
             latch.await(RENDER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         } catch (_: Exception) {
         } finally {
-            handler.post { webView.destroy() }
+            webView.destroy()
         }
 
         return bitmapRef.get()
