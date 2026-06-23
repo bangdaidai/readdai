@@ -2,9 +2,12 @@ package io.legado.app.ui.widget.dialog
 
 import android.app.Dialog
 import android.graphics.Bitmap
+import android.graphics.drawable.ColorDrawable
 import android.os.Environment
+import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
+import io.legado.app.utils.setLayout
 import splitties.init.appCtx
 import java.io.File
 import java.io.FileOutputStream
@@ -12,14 +15,15 @@ import java.io.FileOutputStream
 object BookplateDialog {
 
     fun show(context: android.content.Context, bitmap: Bitmap, fileName: String) {
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
+        val dialog = Dialog(context).apply {
             setCanceledOnTouchOutside(false)
             setCancelable(true)
         }
 
         val imageView = ImageView(context).apply {
             setImageBitmap(bitmap)
-            scaleType = ImageView.ScaleType.FIT_CENTER
+            scaleType = ImageView.ScaleType.FIT_START
+            adjustViewBounds = true
             isClickable = true
             isLongClickable = true
             setOnLongClickListener {
@@ -32,7 +36,16 @@ object BookplateDialog {
             }
         }
 
-        dialog.setContentView(imageView)
+        dialog.setContentView(
+            imageView,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        dialog.window?.setBackgroundDrawable(ColorDrawable(0xCC000000.toInt()))
+        dialog.setLayout(0.9f, 0f)
         dialog.show()
     }
 

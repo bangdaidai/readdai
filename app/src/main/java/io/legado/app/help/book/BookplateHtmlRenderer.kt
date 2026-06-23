@@ -9,6 +9,7 @@ import android.webkit.WebViewClient
 import io.legado.app.data.entities.BookplateData
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.help.config.DataVisibilitySettings
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -17,7 +18,36 @@ object BookplateHtmlRenderer {
 
     private const val IMAGE_WIDTH = 1080
     private const val RENDER_TIMEOUT_MS = 5000L
-    private const val CSS_LAYOUT_DELAY_MS = 100L
+    private const val CSS_LAYOUT_DELAY_MS = 50L
+    private const val POLL_INTERVAL_MS = 20L
+
+    @Volatile
+    private var cachedWebViewDeferred: CompletableDeferred<WebView>? = null
+
+    private suspend fun getWebView(context: Context): WebView {
+        cachedWebViewDeferred?.let { return it.await() }
+        val deferred = CompletableDeferred<WebView>()
+        cachedWebViewDeferred = deferred
+        return withContext(Dispatchers.Main) {
+            val wv = WebView(context.applicationContext).apply {
+                settings.javaScriptEnabled = false
+                settings.domStorageEnabled = false
+                setBackgroundColor(0x00000000)
+            }
+            deferred.complete(wv)
+            wv
+        }
+    }
+
+    fun destroyWebView() {
+        cachedWebViewDeferred?.let { deferred ->
+            if (deferred.isCompleted) {
+                val wv = deferred.getCompleted()
+                try { wv.destroy() } catch (_: Exception) {}
+            }
+        }
+        cachedWebViewDeferred = null
+    }
 
     suspend fun render(
         context: Context,
@@ -25,7 +55,7 @@ object BookplateHtmlRenderer {
         data: BookplateData,
         settings: DataVisibilitySettings = DataVisibilitySettings
     ): Bitmap? = withContext(Dispatchers.Main) {
-        BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}, 可见性: basic=${settings.isBasicInfoVisible()}")
+        BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}")
         val filteredData = applyVisibility(data, settings)
         val html = replaceVariables(template.htmlContent, filteredData)
         BookplateLogger.log("RENDER", "变量替换后HTML长度: ${html.length}")
@@ -40,7 +70,7 @@ object BookplateHtmlRenderer {
         if (bitmap != null) {
             BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
         } else {
-            BookplateLogger.log("RENDER", "WebView渲染失败: onPageFinished未完成或超时")
+            BookplateLogger.log("RENDER", "WebView渲染失败")
         }
         bitmap
     }
@@ -166,43 +196,33 @@ object BookplateHtmlRenderer {
     }
 
     private suspend fun renderHtml(context: Context, html: String): Bitmap? {
+        BookplateLogger.log("RENDER", "获取WebView实例...")
+        val webView = getWebView(context)
+
         var renderComplete = false
 
-        val webView = WebView(context.applicationContext)
-        BookplateLogger.log("RENDER", "创建WebView, 开始加载HTML...")
-
         try {
-            webView.settings.javaScriptEnabled = false
-            webView.settings.domStorageEnabled = false
-            webView.setBackgroundColor(0x00000000)
-
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    BookplateLogger.log("RENDER", "onPageFinished触发, postDelayed ${CSS_LAYOUT_DELAY_MS}ms等待CSS布局...")
+                    BookplateLogger.log("RENDER", "onPageFinished触发, postDelayed ${CSS_LAYOUT_DELAY_MS}ms")
                     view?.postDelayed({
                         renderComplete = true
-                        BookplateLogger.log("RENDER", "${CSS_LAYOUT_DELAY_MS}ms延迟完成, renderComplete=true")
+                        BookplateLogger.log("RENDER", "CSS布局延迟完成")
                     }, CSS_LAYOUT_DELAY_MS)
                 }
             }
 
-            // Pre-measure/layout before loading to initialize rendering engine
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(600, View.MeasureSpec.EXACTLY)
-            )
-            webView.layout(0, 0, IMAGE_WIDTH, 600)
-            BookplateLogger.log("RENDER", "预测量布局: ${IMAGE_WIDTH}x600")
-
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
 
+            val startTime = System.currentTimeMillis()
+            val maxAttempts = (RENDER_TIMEOUT_MS / POLL_INTERVAL_MS).toInt()
             var attempts = 0
-            val maxAttempts = (RENDER_TIMEOUT_MS / 50).toInt()
             while (!renderComplete && attempts < maxAttempts) {
-                delay(50)
+                delay(POLL_INTERVAL_MS)
                 attempts++
             }
-            BookplateLogger.log("RENDER", "轮询结束: renderComplete=$renderComplete attempts=$attempts")
+            val elapsed = System.currentTimeMillis() - startTime
+            BookplateLogger.log("RENDER", "轮询完成: renderComplete=$renderComplete elapsed=${elapsed}ms")
 
             val bitmap = try {
                 webView.measure(
@@ -211,7 +231,7 @@ object BookplateHtmlRenderer {
                 )
                 val w = webView.measuredWidth.coerceAtLeast(IMAGE_WIDTH)
                 val h = webView.measuredHeight
-                BookplateLogger.log("RENDER", "二次测量: ${w}x${h}")
+                BookplateLogger.log("RENDER", "测量结果: ${w}x${h}")
 
                 if (w > 0 && h > 0) {
                     webView.layout(0, 0, w, h)
@@ -227,16 +247,10 @@ object BookplateHtmlRenderer {
                 null
             }
 
-            if (bitmap != null) {
-                BookplateLogger.log("RENDER", "位图创建成功: ${bitmap.width}x${bitmap.height}")
-            } else {
-                BookplateLogger.log("RENDER", "位图创建失败")
-            }
             return bitmap
         } finally {
             try {
                 webView.stopLoading()
-                webView.destroy()
             } catch (_: Exception) {
             }
         }
