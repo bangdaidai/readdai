@@ -4,23 +4,19 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
-import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.FrameLayout
 import io.legado.app.data.entities.BookplateData
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.help.config.DataVisibilitySettings
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 
 object BookplateHtmlRenderer {
 
     private const val IMAGE_WIDTH = 640
-    private const val RENDER_TIMEOUT_SECONDS = 5L
+    private const val RENDER_TIMEOUT_MS = 5000L
 
     suspend fun render(
         context: Context,
@@ -169,69 +165,79 @@ object BookplateHtmlRenderer {
     }
 
     private suspend fun renderHtml(context: Context, html: String): Bitmap? {
-        val bitmapRef = AtomicReference<Bitmap?>()
-        val latch = CountDownLatch(1)
+        var renderComplete = false
 
-        val webView = WebView(context)
-        webView.settings.javaScriptEnabled = false
-        webView.settings.domStorageEnabled = false
-        webView.setBackgroundColor(0x00000000)
-
-        val activity = context as? android.app.Activity
-        val decorView = activity?.window?.decorView as? ViewGroup
-        BookplateLogger.log("RENDER", "Activity=${activity != null}, decorView=${decorView != null}")
-
-        val container = FrameLayout(context)
-        container.addView(webView, FrameLayout.LayoutParams(1, 1))
-
-        webView.webViewClient = object : WebViewClient() {
-            override fun onPageFinished(view: WebView, url: String) {
-                BookplateLogger.log("RENDER", "onPageFinished触发")
-                try {
-                    view.measure(
-                        View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                    )
-                    val measuredW = view.measuredWidth
-                    val measuredH = view.measuredHeight
-                    BookplateLogger.log("RENDER", "测量结果: ${measuredW}x${measuredH}")
-                    if (measuredW > 0 && measuredH > 0) {
-                        view.layout(0, 0, measuredW, measuredH)
-                        val bitmap = Bitmap.createBitmap(measuredW, measuredH, Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(bitmap)
-                        view.draw(canvas)
-                        bitmapRef.set(bitmap)
-                        BookplateLogger.log("RENDER", "位图创建成功: ${bitmap.width}x${bitmap.height}")
-                    } else {
-                        BookplateLogger.log("RENDER", "测量尺寸无效: ${measuredW}x${measuredH}")
-                    }
-                } catch (e: Exception) {
-                    BookplateLogger.log("RENDER", "onPageFinished异常: ${e.message}")
-                } finally {
-                    latch.countDown()
-                }
-            }
-        }
+        val webView = WebView(context.applicationContext)
+        BookplateLogger.log("RENDER", "创建WebView, 开始加载HTML...")
 
         try {
-            decorView?.addView(container, ViewGroup.LayoutParams(1, 1))
-            BookplateLogger.log("RENDER", "附加WebView到视图层级, 开始加载HTML (${html.length} chars)...")
+            webView.settings.javaScriptEnabled = false
+            webView.settings.domStorageEnabled = false
+            webView.setBackgroundColor(0x00000000)
+
+            webView.webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    BookplateLogger.log("RENDER", "onPageFinished触发, postDelayed 300ms等待CSS布局...")
+                    view?.postDelayed({
+                        renderComplete = true
+                        BookplateLogger.log("RENDER", "300ms延迟完成, renderComplete=true")
+                    }, 300)
+                }
+            }
+
+            // Pre-measure/layout before loading to initialize rendering engine
+            webView.measure(
+                View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(600, View.MeasureSpec.EXACTLY)
+            )
+            webView.layout(0, 0, IMAGE_WIDTH, 600)
+            BookplateLogger.log("RENDER", "预测量布局: ${IMAGE_WIDTH}x600")
+
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
 
-            BookplateLogger.log("RENDER", "切换到IO线程等待onPageFinished...")
-            val ok = withContext(Dispatchers.IO) {
-                latch.await(RENDER_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            var attempts = 0
+            val maxAttempts = (RENDER_TIMEOUT_MS / 50).toInt()
+            while (!renderComplete && attempts < maxAttempts) {
+                delay(50)
+                attempts++
             }
-            if (!ok) {
-                BookplateLogger.log("RENDER", "超时: ${RENDER_TIMEOUT_SECONDS}秒内onPageFinished未完成")
-            }
-        } catch (e: Exception) {
-            BookplateLogger.log("RENDER", "渲染异常: ${e.message}")
-        } finally {
-            decorView?.removeView(container)
-            webView.destroy()
-        }
+            BookplateLogger.log("RENDER", "轮询结束: renderComplete=$renderComplete attempts=$attempts")
 
-        return bitmapRef.get()
+            val bitmap = try {
+                webView.measure(
+                    View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+                val w = webView.measuredWidth.coerceAtLeast(IMAGE_WIDTH)
+                val h = webView.measuredHeight
+                BookplateLogger.log("RENDER", "二次测量: ${w}x${h}")
+
+                if (w > 0 && h > 0) {
+                    webView.layout(0, 0, w, h)
+                    Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888).also { bmp ->
+                        val canvas = Canvas(bmp)
+                        webView.draw(canvas)
+                    }
+                } else {
+                    null
+                }
+            } catch (e: Exception) {
+                BookplateLogger.log("RENDER", "位图创建异常: ${e.message}")
+                null
+            }
+
+            if (bitmap != null) {
+                BookplateLogger.log("RENDER", "位图创建成功: ${bitmap.width}x${bitmap.height}")
+            } else {
+                BookplateLogger.log("RENDER", "位图创建失败")
+            }
+            return bitmap
+        } finally {
+            try {
+                webView.stopLoading()
+                webView.destroy()
+            } catch (_: Exception) {
+            }
+        }
     }
 }
