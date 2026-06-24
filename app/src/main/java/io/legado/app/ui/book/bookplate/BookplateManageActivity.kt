@@ -214,6 +214,7 @@ class BookplateManageActivity :
             setTextColor(primaryTextColor)
             setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
             setTypeface(Typeface.MONOSPACE)
+            setTextIsSelectable(true)
         }
         scrollView.addView(textView)
         AlertDialog.Builder(this)
