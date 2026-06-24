@@ -6,6 +6,7 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Environment
 import android.view.Gravity
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.ScrollView
@@ -19,11 +20,8 @@ object BookplateDialog {
     fun show(context: android.content.Context, bitmap: Bitmap, fileName: String) {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
-        val screenHeight = displayMetrics.heightPixels
-        val maxDialogHeight = (screenHeight * 0.85f).toInt()
+        val screenHeight = displayMetrics.heightMetrics.heightPixels
         val dialogWidth = (screenWidth * 0.9f).toInt()
-
-        val imageHeight = (dialogWidth.toFloat() / bitmap.width * bitmap.height).toInt()
 
         val dialog = Dialog(context).apply {
             setCanceledOnTouchOutside(false)
@@ -46,21 +44,19 @@ object BookplateDialog {
         }
 
         val scrollView = ScrollView(context).apply {
-            isVerticalScrollBarEnabled = false
+            isVerticalScrollBarEnabled = true
             addView(
                 imageView,
-                FrameLayout.LayoutParams(dialogWidth, imageHeight)
+                FrameLayout.LayoutParams(dialogWidth, FrameLayout.LayoutParams.WRAP_CONTENT)
             )
         }
 
-        dialog.setContentView(
-            scrollView,
-            ViewGroup.LayoutParams(dialogWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
-        )
+        dialog.setContentView(scrollView)
 
         dialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(0xCC000000.toInt()))
-            setLayout(dialogWidth, maxDialogHeight.coerceAtMost(imageHeight))
+            // 使用 WRAP_CONTENT 让对话框高度自适应内容
+            setLayout(dialogWidth, WindowManager.LayoutParams.WRAP_CONTENT)
             setGravity(Gravity.CENTER)
         }
 
