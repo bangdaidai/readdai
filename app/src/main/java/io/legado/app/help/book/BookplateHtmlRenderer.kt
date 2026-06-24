@@ -258,7 +258,8 @@ object BookplateHtmlRenderer {
                 View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
             )
-            BookplateLogger.log("RENDER", "测量: ${webView.measuredWidth}x${webView.measuredHeight}")
+            val initialH = webView.measuredHeight.coerceAtLeast(1)
+            BookplateLogger.log("RENDER", "测量: ${webView.measuredWidth}x${initialH}")
 
             val heightDeferred = CompletableDeferred<Int>()
 
@@ -292,20 +293,27 @@ object BookplateHtmlRenderer {
                         val measuredH = webView.measuredHeight
                         BookplateLogger.log("RENDER", "WebView测量高度: ${measuredH}")
 
-                        // 用 JavaScript 获取内容实际占据的高度
+                        // 用 scrollHeight 获取内容实际占据的高度（比 offsetHeight 更准确）
                         webView.evaluateJavascript(
-                            "(document.documentElement.offsetHeight || document.body.offsetHeight || 0)"
+                            "(document.body.scrollHeight || document.documentElement.scrollHeight || 0)"
                         ) { jsResult ->
                             val jsH = jsResult.trim('"').toIntOrNull() ?: 0
-                            BookplateLogger.log("RENDER", "JS内容高度: ${jsH}")
-                            val finalH = maxOf(measuredH, jsH, 1)
+                            BookplateLogger.log("RENDER", "JS scrollHeight: ${jsH}")
+
+                            // 优先使用 WebView 测量的高度，JS scrollHeight 作为参考
+                            // 避免 offsetHeight 在某些 WebView 版本中返回膨胀值导致底部大片空白
+                            val finalH = if (jsH > 0 && jsH < measuredH * 1.5) {
+                                maxOf(measuredH, jsH)
+                            } else {
+                                measuredH
+                            }.coerceAtLeast(1)
                             heightDeferred.complete(finalH)
                         }
                     }, 200)
                 }
             }
 
-            webView.layout(0, 0, width, 0)
+            webView.layout(0, 0, width, initialH)
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
             BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
 
