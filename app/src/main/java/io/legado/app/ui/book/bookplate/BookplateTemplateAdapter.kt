@@ -2,11 +2,8 @@ package io.legado.app.ui.book.bookplate
 
 import android.content.Context
 import android.os.Bundle
-import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.DiffUtil
-import io.legado.app.R
 import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.BookplateTemplate
@@ -18,6 +15,7 @@ class BookplateTemplateAdapter(
 ) : RecyclerAdapter<BookplateTemplate, ItemBookplateTemplateBinding>(context) {
 
     private var selectedId = 0L
+    private var ignoreNextChange = false
 
     val diffItemCallback = object : DiffUtil.ItemCallback<BookplateTemplate>() {
         override fun areItemsTheSame(
@@ -49,6 +47,7 @@ class BookplateTemplateAdapter(
 
     fun setSelectedId(id: Long) {
         selectedId = id
+        ignoreNextChange = true
         notifyItemRangeChanged(getHeaderCount(), itemCount - getHeaderCount())
     }
 
@@ -63,9 +62,9 @@ class BookplateTemplateAdapter(
         payloads: MutableList<Any>
     ) {
         binding.apply {
-            cbTemplate.text = item.name
-            cbTemplate.isChecked = item.id == selectedId
-            cbTemplate.setOnCheckedChangeListener(null)
+            tvTemplateName.text = item.name
+            ignoreNextChange = true
+            swApply.isChecked = item.id == selectedId
         }
     }
 
@@ -73,56 +72,39 @@ class BookplateTemplateAdapter(
         holder: ItemViewHolder,
         binding: ItemBookplateTemplateBinding
     ) {
-        holder.itemView.setOnClickListener {
-            getItem(holder.layoutPosition)?.let { item ->
-                callBack.onSelect(item)
+        binding.swApply.setOnCheckedChangeListener { _, isChecked ->
+            if (ignoreNextChange) {
+                ignoreNextChange = false
+                return@setOnCheckedChangeListener
+            }
+            if (isChecked) {
+                getItemByLayoutPosition(holder.layoutPosition)?.let { item ->
+                    callBack.onApply(item)
+                }
+            } else {
+                ignoreNextChange = true
+                binding.swApply.isChecked = true
             }
         }
         binding.ivPreview.setOnClickListener {
-            getItem(holder.layoutPosition)?.let { item ->
+            getItemByLayoutPosition(holder.layoutPosition)?.let { item ->
                 callBack.onPreview(item)
             }
         }
         binding.ivEdit.setOnClickListener {
-            getItem(holder.layoutPosition)?.let { item ->
+            getItemByLayoutPosition(holder.layoutPosition)?.let { item ->
                 callBack.onEdit(item)
             }
         }
-        binding.ivMenuMore.setOnClickListener { view ->
-            getItem(holder.layoutPosition)?.let { item ->
-                showPopupMenu(view, item)
+        binding.ivDelete.setOnClickListener {
+            getItemByLayoutPosition(holder.layoutPosition)?.let { item ->
+                callBack.onDelete(item)
             }
         }
-    }
-
-    private fun showPopupMenu(view: View, item: BookplateTemplate) {
-        val popup = PopupMenu(context, view)
-        popup.menuInflater.inflate(R.menu.bookplate_item_menu, popup.menu)
-        if (item.isBuiltin) {
-            popup.menu.findItem(R.id.menu_delete)?.isVisible = false
-        }
-        popup.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menu_preview -> {
-                    callBack.onPreview(item)
-                    true
-                }
-                R.id.menu_edit -> {
-                    callBack.onEdit(item)
-                    true
-                }
-                R.id.menu_delete -> {
-                    callBack.onDelete(item)
-                    true
-                }
-                else -> false
-            }
-        }
-        popup.show()
     }
 
     interface CallBack {
-        fun onSelect(item: BookplateTemplate)
+        fun onApply(item: BookplateTemplate)
         fun onPreview(item: BookplateTemplate)
         fun onEdit(item: BookplateTemplate)
         fun onDelete(item: BookplateTemplate)

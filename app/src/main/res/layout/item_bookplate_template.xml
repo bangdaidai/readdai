@@ -9,19 +9,30 @@
     android:paddingStart="16dp"
     android:paddingEnd="8dp">
 
-    <androidx.appcompat.widget.AppCompatCheckBox
-        android:id="@+id/cb_template"
+    <TextView
+        android:id="@+id/tv_template_name"
         android:layout_width="0dp"
         android:layout_height="36dp"
-        android:layout_marginEnd="12dp"
+        android:ellipsize="end"
         android:gravity="center_vertical"
-        android:singleLine="true"
+        android:maxLines="1"
         android:textColor="@color/primaryText"
+        android:textSize="15sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/iv_preview"
+        app:layout_constraintEnd_toStartOf="@id/sw_apply"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="模板名称" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/sw_apply"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_marginEnd="4dp"
+        android:contentDescription="@string/apply"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/iv_preview"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/iv_preview"
@@ -30,7 +41,7 @@
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/preview"
         android:padding="6dp"
-        android:src="@drawable/ic_view_list"
+        android:src="@drawable/ic_visibility_off"
         android:tint="@color/primaryText"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/iv_edit"
@@ -46,17 +57,17 @@
         android:src="@drawable/ic_edit"
         android:tint="@color/primaryText"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/iv_menu_more"
+        app:layout_constraintEnd_toStartOf="@id/iv_delete"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.AppCompatImageView
-        android:id="@+id/iv_menu_more"
+        android:id="@+id/iv_delete"
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/more_menu"
+        android:contentDescription="@string/delete"
         android:padding="6dp"
-        android:src="@drawable/ic_more_vert"
+        android:src="@drawable/ic_delete"
         android:tint="@color/primaryText"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

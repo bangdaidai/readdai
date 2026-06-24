@@ -3,6 +3,7 @@ package io.legado.app.help.book
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -25,6 +26,7 @@ object BookplateHtmlRenderer {
     private const val RENDER_TIMEOUT_MS = 5000L
     private const val CSS_LAYOUT_DELAY_MS = 60L
     private const val MAX_CACHE_SIZE = 16
+    private const val HEIGHT_TIMEOUT_MS = 3000L
 
     @Volatile
     private var cachedWebViewDeferred: CompletableDeferred<WebView>? = null
@@ -42,6 +44,14 @@ object BookplateHtmlRenderer {
     private val VARIABLE_REGEX = Regex("\\{\\{(\\w+)\\}\\}")
     private val VIEWPORT_META_REGEX = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE)
     private val HEAD_TAG_REGEX = Regex("<head>", RegexOption.IGNORE_CASE)
+
+    fun clearCache() {
+        synchronized(bitmapCache) {
+            bitmapCache.values.forEach { it.recycle() }
+            bitmapCache.clear()
+        }
+        BookplateLogger.log("RENDER", "缓存已清空")
+    }
 
     private fun ensureViewportMeta(html: String): String {
         if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
@@ -107,7 +117,6 @@ object BookplateHtmlRenderer {
             val wv = it.await()
             withContext(Dispatchers.Main) {
                 wv.clearHistory()
-                wv.webViewClient = WebViewClient()
                 wv.stopLoading()
                 wv.layout(0, 0, IMAGE_WIDTH, 1)
             }
@@ -129,7 +138,7 @@ object BookplateHtmlRenderer {
                         mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     }
                 }
-                setBackgroundColor(android.graphics.Color.WHITE)
+                setBackgroundColor(Color.WHITE)
                 setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                 setInitialScale(100)
                 layout(0, 0, IMAGE_WIDTH, 1)
@@ -159,12 +168,14 @@ object BookplateHtmlRenderer {
         data: BookplateData,
         settings: DataVisibilitySettings = DataVisibilitySettings
     ): Bitmap? {
-        // 缓存键加入模板内容哈希，避免模板更新后返回旧缓存
         val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}"
         synchronized(bitmapCache) {
-            bitmapCache[cacheKey]?.let {
-                BookplateLogger.log("RENDER", "命中缓存")
-                return it
+            bitmapCache[cacheKey]?.let { cached ->
+                if (!cached.isRecycled) {
+                    BookplateLogger.log("RENDER", "命中缓存")
+                    return cached
+                }
+                bitmapCache.remove(cacheKey)
             }
         }
 
@@ -182,6 +193,11 @@ object BookplateHtmlRenderer {
             BookplateLogger.log("RENDER", "开始WebView离屏渲染...")
             val bitmap = renderHtml(context, ensureViewportMeta(html))
             if (bitmap != null) {
+                if (isBitmapBlank(bitmap)) {
+                    BookplateLogger.log("RENDER", "渲染结果全白，丢弃")
+                    bitmap.recycle()
+                    return@withContext null
+                }
                 BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
                 synchronized(bitmapCache) {
                     bitmapCache[cacheKey] = bitmap
@@ -191,6 +207,30 @@ object BookplateHtmlRenderer {
             }
             bitmap
         }
+    }
+
+    private fun isBitmapBlank(bitmap: Bitmap): Boolean {
+        val sampleWidth = minOf(bitmap.width, 10)
+        val sampleHeight = minOf(bitmap.height, 10)
+        var firstColor = 0
+        var allSame = true
+
+        for (y in 1 until sampleHeight) {
+            for (x in 1 until sampleWidth) {
+                val px = bitmap.getPixel(
+                    x * bitmap.width / sampleWidth,
+                    y * bitmap.height / sampleHeight
+                )
+                if (x == 1 && y == 1) {
+                    firstColor = px
+                } else if (px != firstColor) {
+                    allSame = false
+                    break
+                }
+            }
+            if (!allSame) break
+        }
+        return allSame
     }
 
     private fun applyVisibility(data: BookplateData, settings: DataVisibilitySettings): BookplateData {
@@ -289,7 +329,6 @@ object BookplateHtmlRenderer {
             BookplateLogger.log("RENDER", "预设宽度: ${IMAGE_WIDTH}, 初始高度: ${webView.measuredHeight}")
             webView.layout(0, 0, IMAGE_WIDTH, webView.measuredHeight.coerceAtLeast(1))
 
-
             val pageLoaded = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 suspendCancellableCoroutine<Boolean> { continuation ->
                     webView.webViewClient = object : WebViewClient() {
@@ -331,7 +370,6 @@ object BookplateHtmlRenderer {
         } finally {
             try {
                 webView.stopLoading()
-                webView.webViewClient = WebViewClient()
             } catch (_: Exception) {
             }
         }
@@ -342,9 +380,19 @@ object BookplateHtmlRenderer {
         webView.settings.javaScriptEnabled = true
         webView.evaluateJavascript("document.documentElement.scrollHeight") { result ->
             webView.settings.javaScriptEnabled = false
-            heightDeferred.complete(result.toIntOrNull() ?: 0)
+            try {
+                val parsed = result.trim('"').toIntOrNull() ?: 0
+                heightDeferred.complete(parsed)
+            } catch (_: Exception) {
+                heightDeferred.complete(0)
+            }
         }
-        val contentHeight = heightDeferred.await()
+        val contentHeight = withTimeoutOrNull(HEIGHT_TIMEOUT_MS) {
+            heightDeferred.await()
+        } ?: run {
+            BookplateLogger.log("RENDER", "JS高度测量超时")
+            return null
+        }
         BookplateLogger.log("RENDER", "JS测量内容高度: $contentHeight")
 
         if (contentHeight <= 0) {
@@ -363,7 +411,7 @@ object BookplateHtmlRenderer {
         return try {
             Bitmap.createBitmap(IMAGE_WIDTH, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
                 val canvas = Canvas(bmp)
-                canvas.drawColor(android.graphics.Color.WHITE)
+                canvas.drawColor(Color.WHITE)
                 webView.draw(canvas)
             }
         } catch (e: Exception) {

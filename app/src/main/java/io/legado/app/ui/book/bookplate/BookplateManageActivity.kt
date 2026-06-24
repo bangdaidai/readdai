@@ -40,6 +40,7 @@ class BookplateManageActivity :
 
     private var templates = listOf<BookplateTemplate>()
     private var selectedId = 0L
+    private var ignoreClassicSwitch = false
     private val adapter by lazy {
         BookplateTemplateAdapter(this, this)
     }
@@ -84,8 +85,17 @@ class BookplateManageActivity :
         adapter.addHeaderView { parent ->
             ItemBookplateClassicBinding.inflate(layoutInflater, parent, false).also {
                 classicBinding = it
-                it.root.setOnClickListener {
-                    onClassicSelect()
+                it.swClassicApply.setOnCheckedChangeListener { _, isChecked ->
+                    if (ignoreClassicSwitch) {
+                        ignoreClassicSwitch = false
+                        return@setOnCheckedChangeListener
+                    }
+                    if (isChecked) {
+                        onClassicApply()
+                    } else {
+                        ignoreClassicSwitch = true
+                        it.swClassicApply.isChecked = true
+                    }
                 }
             }
         }
@@ -113,28 +123,29 @@ class BookplateManageActivity :
             selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
             adapter.setItems(templates, adapter.diffItemCallback)
             adapter.setSelectedId(selectedId)
-            updateClassicSelected()
+            updateClassicSwitch()
         }
     }
 
-    private fun updateClassicSelected() {
-        classicBinding?.cbClassic?.isChecked = selectedId == 0L
+    private fun updateClassicSwitch() {
+        ignoreClassicSwitch = true
+        classicBinding?.swClassicApply?.isChecked = selectedId == 0L
     }
 
-    private fun onClassicSelect() {
+    private fun onClassicApply() {
         appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
         selectedId = 0L
         adapter.setSelectedId(0L)
-        updateClassicSelected()
+        updateClassicSwitch()
         toastOnUi("已选择经典风格")
     }
 
-    override fun onSelect(item: BookplateTemplate) {
+    override fun onApply(item: BookplateTemplate) {
         appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, item.id)
         selectedId = item.id
         adapter.setSelectedId(item.id)
-        updateClassicSelected()
-        toastOnUi("已选择 ${item.name}")
+        updateClassicSwitch()
+        toastOnUi("已应用 ${item.name}")
     }
 
     override fun onPreview(item: BookplateTemplate) {
@@ -146,11 +157,14 @@ class BookplateManageActivity :
     }
 
     override fun onDelete(item: BookplateTemplate) {
+        if (item.isBuiltin) return
         deleteTemplate(item)
     }
 
     private fun showEditDialog(template: BookplateTemplate?) {
-        showDialogFragment(BookplateTemplateEditDialog(template?.id))
+        val dialog = BookplateTemplateEditDialog(template?.id)
+        dialog.setOnDismissListener { loadAndShowList() }
+        showDialogFragment(dialog)
     }
 
     private fun previewTemplate(template: BookplateTemplate) {
@@ -172,13 +186,17 @@ class BookplateManageActivity :
     }
 
     private fun deleteTemplate(template: BookplateTemplate) {
-        if (template.isBuiltin) return
         AlertDialog.Builder(this)
             .setTitle("删除模板")
             .setMessage("确定要删除 \"${template.name}\" 吗？")
             .setPositiveButton("删除") { _, _ ->
                 lifecycleScope.launch {
                     withContext(Dispatchers.IO) { appDb.bookplateTemplateDao.deleteById(template.id) }
+                    io.legado.app.help.book.BookplateHtmlRenderer.clearCache()
+                    if (selectedId == template.id) {
+                        appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
+                        selectedId = 0L
+                    }
                     toastOnUi("已删除")
                     loadAndShowList()
                 }

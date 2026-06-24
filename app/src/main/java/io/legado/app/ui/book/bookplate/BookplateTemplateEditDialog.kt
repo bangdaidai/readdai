@@ -153,6 +153,8 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
 
             appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, savedId)
 
+            io.legado.app.help.book.BookplateHtmlRenderer.clearCache()
+
             toastOnUi("模板已保存")
             dismissAllowingStateLoss()
         }

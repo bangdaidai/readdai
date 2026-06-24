@@ -102,6 +102,7 @@ object BookplateGenerator {
         GlobalScope.launch(Dispatchers.Main) {
             try {
                 BookplateLogger.log("GEN", "WebView预热开始")
+                BookplateHtmlRenderer.clearCache()
                 val data = getPreviewData()
                 val template = BookplateTemplate(
                     name = "_prewarm",
@@ -110,6 +111,7 @@ object BookplateGenerator {
                 )
                 val prewarmStart = System.currentTimeMillis()
                 BookplateHtmlRenderer.render(context, template, data)
+                BookplateHtmlRenderer.clearCache()
                 BookplateLogger.log("GEN", "WebView预热完成, 耗时=${System.currentTimeMillis() - prewarmStart}ms")
             } catch (e: Exception) {
                 BookplateLogger.log("GEN", "WebView预热异常: ${e.message}")
