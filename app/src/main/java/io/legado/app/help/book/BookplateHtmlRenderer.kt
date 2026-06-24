@@ -23,7 +23,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 object BookplateHtmlRenderer {
 
     private const val RENDER_TIMEOUT_MS = 5000L
-    private const val CSS_LAYOUT_DELAY_MS = 60L
+    private const val CSS_LAYOUT_DELAY_MS = 100L  // 增加等待时间，确保 JS 执行完成
     private const val MAX_CACHE_SIZE = 16
     private const val HEIGHT_TIMEOUT_MS = 3000L
 
@@ -58,10 +58,12 @@ object BookplateHtmlRenderer {
     }
 
     private fun ensureViewportMeta(html: String, width: Int): String {
+        // 不再强制覆盖 viewport，让模板自己控制响应式布局
+        // 仅确保有 viewport meta 标签
         if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
-            return VIEWPORT_META_REGEX.replace(html, """<meta name="viewport" content="width=$width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">""")
+            return html
         }
-        return HEAD_TAG_REGEX.replaceFirst(html, "<head>\n<meta name=\"viewport\" content=\"width=$width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
+        return HEAD_TAG_REGEX.replaceFirst(html, "<head>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
     }
 
     private fun buildVariableMap(data: BookplateData): Map<String, String> {
@@ -215,27 +217,27 @@ object BookplateHtmlRenderer {
     }
 
     private fun isBitmapBlank(bitmap: Bitmap): Boolean {
-        val sampleWidth = minOf(bitmap.width, 10)
-        val sampleHeight = minOf(bitmap.height, 10)
-        var firstColor = 0
-        var allSame = true
+        if (bitmap.width == 0 || bitmap.height == 0) return true
+        val sampleWidth = minOf(bitmap.width, 20)
+        val sampleHeight = minOf(bitmap.height, 20)
+        var whiteCount = 0
+        var totalCount = 0
 
-        for (y in 1 until sampleHeight) {
-            for (x in 1 until sampleWidth) {
-                val px = bitmap.getPixel(
-                    x * bitmap.width / sampleWidth,
-                    y * bitmap.height / sampleHeight
-                )
-                if (x == 1 && y == 1) {
-                    firstColor = px
-                } else if (px != firstColor) {
-                    allSame = false
-                    break
+        // 从多个位置采样，避免边缘白色区域干扰
+        for (y in (bitmap.height / 4) until (bitmap.height * 3 / 4)) {
+            for (x in (bitmap.width / 4) until (bitmap.width * 3 / 4)) {
+                val px = bitmap.getPixel(x, y)
+                totalCount++
+                val r = (px shr 16) and 0xFF
+                val g = (px shr 8) and 0xFF
+                val b = px and 0xFF
+                if (r > 250 && g > 250 && b > 250) {
+                    whiteCount++
                 }
             }
-            if (!allSame) break
         }
-        return allSame
+        // 如果中央区域超过 90% 都是白色，认为是空白
+        return totalCount > 0 && whiteCount > totalCount * 0.9
     }
 
     private fun applyVisibility(data: BookplateData, settings: DataVisibilitySettings): BookplateData {
