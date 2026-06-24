@@ -22,7 +22,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 object BookplateHtmlRenderer {
 
-    private const val IMAGE_WIDTH = 750
     private const val RENDER_TIMEOUT_MS = 5000L
     private const val CSS_LAYOUT_DELAY_MS = 60L
     private const val MAX_CACHE_SIZE = 16
@@ -45,6 +44,11 @@ object BookplateHtmlRenderer {
     private val VIEWPORT_META_REGEX = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE)
     private val HEAD_TAG_REGEX = Regex("<head>", RegexOption.IGNORE_CASE)
 
+    private fun getRenderWidth(context: Context): Int {
+        val screenWidth = context.resources.displayMetrics.widthPixels
+        return (screenWidth * 0.9f).toInt().coerceAtLeast(320)
+    }
+
     fun clearCache() {
         synchronized(bitmapCache) {
             bitmapCache.values.forEach { it.recycle() }
@@ -53,11 +57,11 @@ object BookplateHtmlRenderer {
         BookplateLogger.log("RENDER", "缓存已清空")
     }
 
-    private fun ensureViewportMeta(html: String): String {
+    private fun ensureViewportMeta(html: String, width: Int): String {
         if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
-            return VIEWPORT_META_REGEX.replace(html, """<meta name="viewport" content="width=$IMAGE_WIDTH, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">""")
+            return VIEWPORT_META_REGEX.replace(html, """<meta name="viewport" content="width=$width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">""")
         }
-        return HEAD_TAG_REGEX.replaceFirst(html, "<head>\n<meta name=\"viewport\" content=\"width=$IMAGE_WIDTH, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
+        return HEAD_TAG_REGEX.replaceFirst(html, "<head>\n<meta name=\"viewport\" content=\"width=$width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
     }
 
     private fun buildVariableMap(data: BookplateData): Map<String, String> {
@@ -118,7 +122,7 @@ object BookplateHtmlRenderer {
             withContext(Dispatchers.Main) {
                 wv.clearHistory()
                 wv.stopLoading()
-                wv.layout(0, 0, IMAGE_WIDTH, 1)
+                wv.layout(0, 0, 1, 1)
             }
             return wv
         }
@@ -141,7 +145,7 @@ object BookplateHtmlRenderer {
                 setBackgroundColor(Color.WHITE)
                 setLayerType(View.LAYER_TYPE_SOFTWARE, null)
                 setInitialScale(100)
-                layout(0, 0, IMAGE_WIDTH, 1)
+                layout(0, 0, 1, 1)
             }
             deferred.complete(wv)
             wv
@@ -168,7 +172,8 @@ object BookplateHtmlRenderer {
         data: BookplateData,
         settings: DataVisibilitySettings = DataVisibilitySettings
     ): Bitmap? {
-        val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}"
+        val renderWidth = getRenderWidth(context)
+        val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}_${renderWidth}"
         synchronized(bitmapCache) {
             bitmapCache[cacheKey]?.let { cached ->
                 if (!cached.isRecycled) {
@@ -180,7 +185,7 @@ object BookplateHtmlRenderer {
         }
 
         return withContext(Dispatchers.Main) {
-            BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}")
+            BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}, 宽度=${renderWidth}")
             val filteredData = applyVisibility(data, settings)
             val html = replaceVariables(template.htmlContent, filteredData)
             BookplateLogger.log("RENDER", "变量替换后HTML长度: ${html.length}")
@@ -191,7 +196,7 @@ object BookplateHtmlRenderer {
             }
 
             BookplateLogger.log("RENDER", "开始WebView离屏渲染...")
-            val bitmap = renderHtml(context, ensureViewportMeta(html))
+            val bitmap = renderHtml(context, ensureViewportMeta(html, renderWidth), renderWidth)
             if (bitmap != null) {
                 if (isBitmapBlank(bitmap)) {
                     BookplateLogger.log("RENDER", "渲染结果全白，丢弃")
@@ -316,18 +321,18 @@ object BookplateHtmlRenderer {
         return sb.toString()
     }
 
-    private suspend fun renderHtml(context: Context, html: String): Bitmap? {
+    private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
         BookplateLogger.log("RENDER", "获取WebView实例...")
         val webView = getWebView(context)
         val startTime = System.currentTimeMillis()
 
         return try {
             webView.measure(
-                View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
             )
-            BookplateLogger.log("RENDER", "预设宽度: ${IMAGE_WIDTH}, 初始高度: ${webView.measuredHeight}")
-            webView.layout(0, 0, IMAGE_WIDTH, webView.measuredHeight.coerceAtLeast(1))
+            BookplateLogger.log("RENDER", "预设宽度: $width, 初始高度: ${webView.measuredHeight}")
+            webView.layout(0, 0, width, webView.measuredHeight.coerceAtLeast(1))
 
             val pageLoaded = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 suspendCancellableCoroutine<Boolean> { continuation ->
@@ -361,7 +366,7 @@ object BookplateHtmlRenderer {
 
             BookplateLogger.log("RENDER", "页面加载完成, 开始强制布局...")
 
-            val bitmap = captureFullBitmap(webView, startTime)
+            val bitmap = captureFullBitmap(webView, width, startTime)
             BookplateLogger.log("RENDER", "总耗时=${System.currentTimeMillis() - startTime}ms")
             bitmap
         } catch (e: CancellationException) {
@@ -375,7 +380,7 @@ object BookplateHtmlRenderer {
         }
     }
 
-    private suspend fun captureFullBitmap(webView: WebView, startTime: Long): Bitmap? {
+    private suspend fun captureFullBitmap(webView: WebView, width: Int, startTime: Long): Bitmap? {
         val heightDeferred = CompletableDeferred<Int>()
         webView.settings.javaScriptEnabled = true
         webView.evaluateJavascript("document.documentElement.scrollHeight") { result ->
@@ -401,15 +406,15 @@ object BookplateHtmlRenderer {
         }
 
         webView.measure(
-            View.MeasureSpec.makeMeasureSpec(IMAGE_WIDTH, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
         )
-        webView.layout(0, 0, IMAGE_WIDTH, contentHeight)
+        webView.layout(0, 0, width, contentHeight)
 
-        BookplateLogger.log("RENDER", "最终布局: ${IMAGE_WIDTH}x$contentHeight")
+        BookplateLogger.log("RENDER", "最终布局: ${width}x$contentHeight")
 
         return try {
-            Bitmap.createBitmap(IMAGE_WIDTH, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
+            Bitmap.createBitmap(width, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
                 val canvas = Canvas(bmp)
                 canvas.drawColor(Color.WHITE)
                 webView.draw(canvas)
