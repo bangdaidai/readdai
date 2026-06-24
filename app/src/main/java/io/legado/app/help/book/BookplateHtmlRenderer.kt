@@ -28,6 +28,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 object BookplateHtmlRenderer {
 
+    /** 最近一次渲染失败的原因 */
+    var lastError: String? = null
+        private set
+
     private const val RENDER_TIMEOUT_MS = 8000L
     private const val MAX_CACHE_SIZE = 16
     private const val HEIGHT_TIMEOUT_MS = 3000L
@@ -211,6 +215,7 @@ object BookplateHtmlRenderer {
 
         return withContext(Dispatchers.Main) {
             BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}, 宽度=${renderWidth}")
+            lastError = null
             val filteredData = applyVisibility(data, settings)
 
             // 将封面 URL 转为 base64 data URI，确保 WebView 能加载
@@ -225,23 +230,23 @@ object BookplateHtmlRenderer {
             BookplateLogger.log("RENDER", "变量替换后HTML长度: ${html.length}")
 
             if (html.isBlank()) {
-                BookplateLogger.log("RENDER", "HTML为空，返回null")
+                val msg = "模板变量替换后 HTML 为空，请检查模板中是否使用了 {{变量名}}"
+                BookplateLogger.log("RENDER", msg)
+                lastError = msg
                 return@withContext null
             }
 
             BookplateLogger.log("RENDER", "开始WebView离屏渲染...")
             val processedHtml = ensureViewportMeta(html, renderWidth)
-            // 日志显示 viewport meta 处理结果
             val viewportMatch = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE).find(processedHtml)
             BookplateLogger.log("RENDER", "viewport meta: ${viewportMatch?.value ?: "未找到"}")
             val bitmap = renderHtml(context, processedHtml, renderWidth)
             if (bitmap != null) {
+                lastError = null
                 BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
                 synchronized(bitmapCache) {
                     bitmapCache[cacheKey] = bitmap
                 }
-            } else {
-                BookplateLogger.log("RENDER", "WebView渲染失败")
             }
             bitmap
         }
@@ -273,6 +278,7 @@ object BookplateHtmlRenderer {
             BookplateLogger.log("RENDER", "初始布局: ${width}x${generousH} (screenH=${screenH})")
 
             val heightDeferred = CompletableDeferred<Int>()
+            val webViewErrors = mutableListOf<String>()
 
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -286,7 +292,9 @@ object BookplateHtmlRenderer {
                     description: String?,
                     failingUrl: String?
                 ) {
-                    BookplateLogger.log("RENDER", "WebView错误[$errorCode]: $description ($failingUrl)")
+                    val err = "WebView错误[$errorCode]: $description ($failingUrl)"
+                    webViewErrors.add(err)
+                    BookplateLogger.log("RENDER", err)
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -313,12 +321,26 @@ object BookplateHtmlRenderer {
             val finalHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 heightDeferred.await()
             } ?: run {
-                BookplateLogger.log("RENDER", "页面加载超时")
+                val wvErrors = webViewErrors.takeIf { it.isNotEmpty() }?.joinToString("; ")
+                val msg = buildString {
+                    append("页面加载超时 (${RENDER_TIMEOUT_MS}ms)")
+                    if (wvErrors != null) append(" | $wvErrors")
+                    append("。可能原因: HTML含外部资源加载过慢、模板结构过于复杂")
+                }
+                BookplateLogger.log("RENDER", msg)
+                lastError = msg
                 return null
             }
 
             if (finalHeight <= 0) {
-                BookplateLogger.log("RENDER", "高度为0，渲染失败")
+                val wvErrors = webViewErrors.takeIf { it.isNotEmpty() }?.joinToString("; ")
+                val msg = buildString {
+                    append("内容高度为0，渲染失败")
+                    if (wvErrors != null) append(" | $wvErrors")
+                    append("。可能原因: body内无可见内容、CSS导致高度塌陷、模板未正确使用变量")
+                }
+                BookplateLogger.log("RENDER", msg)
+                lastError = msg
                 return null
             }
 
@@ -338,7 +360,9 @@ object BookplateHtmlRenderer {
 
             captureBitmap(webView, width, finalHeight, startTime)
         } catch (e: CancellationException) {
-            BookplateLogger.log("RENDER", "渲染取消: ${e.message}")
+            val msg = "渲染被取消: ${e.message}"
+            BookplateLogger.log("RENDER", msg)
+            lastError = msg
             null
         } finally {
             try { webView.stopLoading() } catch (_: Exception) {}

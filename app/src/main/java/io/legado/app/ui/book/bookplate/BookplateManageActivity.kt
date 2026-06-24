@@ -176,7 +176,8 @@ class BookplateManageActivity :
             if (bitmap != null) {
                 showBookplateDialog(bitmap, "藏书票预览_${template.name}")
             } else {
-                toastOnUi("渲染失败，请检查模板语法")
+                val error = io.legado.app.help.book.BookplateHtmlRenderer.lastError ?: "未知错误"
+                toastOnUi("渲染失败: $error")
             }
         }
     }

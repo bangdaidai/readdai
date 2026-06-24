@@ -230,7 +230,7 @@ object BookplateGenerator {
         if (bitmap != null) {
             BookplateLogger.log("GEN", "渲染成功: ${bitmap.width}x${bitmap.height}")
         } else {
-            BookplateLogger.log("GEN", "渲染失败(返回null)，回退经典Canvas")
+            BookplateLogger.log("GEN", "渲染失败(返回null), 错误: ${BookplateHtmlRenderer.lastError ?: "未知"}, 回退经典Canvas")
         }
         bitmap ?: io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, book)
     }
@@ -266,7 +266,7 @@ object BookplateGenerator {
         if (bitmap != null) {
             BookplateLogger.log("GEN", "渲染成功: ${bitmap.width}x${bitmap.height}")
         } else {
-            BookplateLogger.log("GEN", "渲染失败(返回null)，回退经典Canvas")
+            BookplateLogger.log("GEN", "渲染失败(返回null), 错误: ${BookplateHtmlRenderer.lastError ?: "未知"}, 回退经典Canvas")
         }
         bitmap ?: io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
     }
