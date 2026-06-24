@@ -60,11 +60,31 @@ object BookplateHtmlRenderer {
         BookplateLogger.log("RENDER", "缓存已清空")
     }
 
+    /**
+     * 强制将 viewport meta 替换为指定的宽度
+     * 无论模板中是否有 viewport meta，都强制使用我们计算的宽度
+     */
     private fun ensureViewportMeta(html: String, width: Int): String {
-        if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
-            return html
+        return if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
+            // 已有 viewport meta，替换 width= 部分
+            VIEWPORT_META_REGEX.replace(html) { matchResult ->
+                val original = matchResult.value
+                // 替换 width= 后面的值（可能是 device-width 或具体数值）
+                val replaced = Regex("""width=\K[^,;]+""").replace(original, width.toString())
+                // 如果原来没有指定 initial-scale，确保添加
+                if (!replaced.contains("initial-scale")) {
+                    replaced.replace(">", ", initial-scale=1.0>")
+                } else {
+                    replaced
+                }
+            }
+        } else {
+            // 没有 viewport meta，直接在 head 标签后插入
+            HEAD_TAG_REGEX.replaceFirst(
+                html,
+                "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
+            )
         }
-        return HEAD_TAG_REGEX.replaceFirst(html, "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
     }
 
     private fun buildVariableMap(data: BookplateData): Map<String, String> {
@@ -135,8 +155,13 @@ object BookplateHtmlRenderer {
                 settings.apply {
                     javaScriptEnabled = true
                     domStorageEnabled = false
+                    // 关键：useWideViewPort = false 让 WebView 严格使用 HTML 中 viewport 指定的宽度
+                    // 如果 HTML 说 width=972，WebView 就用 972px 渲染，不再用 980px 再缩放
                     useWideViewPort = false
+                    // 不启用 overview mode，避免内容被缩放
                     loadWithOverviewMode = false
+                    // 设置移动端 UserAgent
+                    userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
                     setSupportZoom(false)
                     builtInZoomControls = false
                     displayZoomControls = false
@@ -144,9 +169,9 @@ object BookplateHtmlRenderer {
                         mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     }
                 }
+                // 透明背景避免干扰模板背景色
                 setBackgroundColor(Color.TRANSPARENT)
                 setLayerType(View.LAYER_TYPE_SOFTWARE, null)
-                setInitialScale(100)
             }
             deferred.complete(wv)
             wv
@@ -197,7 +222,11 @@ object BookplateHtmlRenderer {
             }
 
             BookplateLogger.log("RENDER", "开始WebView离屏渲染...")
-            val bitmap = renderHtml(context, ensureViewportMeta(html, renderWidth), renderWidth)
+            val processedHtml = ensureViewportMeta(html, renderWidth)
+            // 日志显示 viewport meta 处理结果
+            val viewportMatch = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE).find(processedHtml)
+            BookplateLogger.log("RENDER", "viewport meta: ${viewportMatch?.value ?: "未找到"}")
+            val bitmap = renderHtml(context, processedHtml, renderWidth)
             if (bitmap != null) {
                 BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
                 synchronized(bitmapCache) {
@@ -213,16 +242,14 @@ object BookplateHtmlRenderer {
     /**
      * 核心渲染方法
      *
-     * 关键思路：WebView 必须在正确的尺寸下加载 HTML，否则 Chromium 内部渲染管线
-     * 不会为后续的 layout 变更重新绘制像素。
-     *
-     * 流程：
-     * 1. 先把 WebView layout 成目标宽度 × 足够高度
+     * 简化的单遍渲染流程（无 resize）：
+     * 1. WebView 直接 layout 成目标宽度 × 足够高度
      * 2. 加载 HTML（此时内容以正确宽度渲染）
-     * 3. onPageFinished 后获取实际内容高度
-     * 4. 重新 layout 成精确尺寸
-     * 5. 等待一帧（Choreographer）确保绘制完成
-     * 6. draw() 截图
+     * 3. onPageFinished 后等待足够时间让渲染完成
+     * 4. 获取 scrollHeight（因为初始高度够大，不会被限制）
+     * 5. 创建对应尺寸的 Bitmap，直接截图
+     *
+     * 关键：不使用 resize！因为 resize 后 Chromium 不会重新渲染内容
      */
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
         BookplateLogger.log("RENDER", "获取WebView实例...")
@@ -230,17 +257,17 @@ object BookplateHtmlRenderer {
         val startTime = System.currentTimeMillis()
 
         return try {
-            // 1. 先把 WebView 设为目标宽度 × 足够大的高度
-            //    这样 HTML 加载时就会以正确的宽度渲染内容
-            val initialHeight = context.resources.displayMetrics.heightPixels * 2
+            // ===== 第一步：直接用目标宽度 layout =====
+            // 关键：不要 resize！直接用目标尺寸让 Chromium 渲染
+            val largeHeight = 4096
             webView.measure(
                 View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(initialHeight, View.MeasureSpec.EXACTLY)
+                View.MeasureSpec.makeMeasureSpec(largeHeight, View.MeasureSpec.AT_MOST)
             )
-            webView.layout(0, 0, width, initialHeight)
-            BookplateLogger.log("RENDER", "初始布局: ${width}x${initialHeight}")
+            webView.layout(0, 0, width, largeHeight)
+            BookplateLogger.log("RENDER", "初始布局: ${width}x${largeHeight}")
 
-            // 2. 加载 HTML，等待 onPageFinished
+            // ===== 第二步：加载 HTML，等待渲染完成 =====
             val heightDeferred = CompletableDeferred<Int>()
             val pageLoaded = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 suspendCancellableCoroutine<Boolean> { continuation ->
@@ -248,22 +275,40 @@ object BookplateHtmlRenderer {
                         override fun onPageFinished(view: WebView?, url: String?) {
                             val loadTime = System.currentTimeMillis() - startTime
                             BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
-                            // onPageFinished 表示 HTML 解析完成，但 CSS 布局可能还没完成
-                            // 等待一帧后获取高度
-                            Choreographer.getInstance().postFrameCallback {
-                                Handler(Looper.getMainLooper()).post {
-                                    if (continuation.isActive) {
-                                        // 获取内容高度
-                                        webView.evaluateJavascript(
-                                            "Math.max(document.body?.scrollHeight||0, document.documentElement?.scrollHeight||0)"
-                                        ) { result ->
-                                            val h = result.trim('"').toIntOrNull() ?: 0
-                                            heightDeferred.complete(h)
-                                            continuation.resume(true) {}
-                                        }
+                            // 等待足够时间让 CSS 布局完成（关键：这里要足够长）
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                if (continuation.isActive) {
+                                    // 获取内容实际占据的高度
+                                    // 遍历所有子元素，找到最底部元素的底边位置
+                                    // 这样可以排除 min-height: 100vh 等导致的空白
+                                    webView.evaluateJavascript(
+                                        """
+                                        (function() {
+                                            var body = document.body;
+                                            var html = document.documentElement;
+                                            // 计算所有元素的实际占据范围
+                                            var maxY = 0;
+                                            function checkNode(node) {
+                                                if (node.nodeType === 1) { // Element node
+                                                    var rect = node.getBoundingClientRect();
+                                                    if (rect.bottom > maxY) maxY = rect.bottom;
+                                                }
+                                                var children = node.children || node.childNodes;
+                                                for (var i = 0; i < children.length; i++) {
+                                                    checkNode(children[i]);
+                                                }
+                                            }
+                                            checkNode(document.body);
+                                            return maxY;
+                                        })()
+                                        """.trimIndent()
+                                    ) { result ->
+                                        val h = result.trim('"').toIntOrNull() ?: 0
+                                        heightDeferred.complete(h)
+                                        continuation.resume(true) {}
                                     }
                                 }
-                            }
+                            }, 300) // 等待 300ms 让渲染管线完成
                         }
                     }
 
@@ -281,7 +326,7 @@ object BookplateHtmlRenderer {
                 return null
             }
 
-            // 3. 获取实际内容高度
+            // ===== 第三步：获取内容高度 =====
             val contentHeight = withTimeoutOrNull(HEIGHT_TIMEOUT_MS) {
                 heightDeferred.await()
             } ?: run {
@@ -294,31 +339,19 @@ object BookplateHtmlRenderer {
                 return null
             }
 
-            BookplateLogger.log("RENDER", "内容高度: ${contentHeight}px")
+            // 确保高度不会超过初始高度
+            val finalHeight = contentHeight.coerceAtMost(largeHeight)
+            BookplateLogger.log("RENDER", "内容高度: ${finalHeight}px")
 
-            // 4. 重新 layout 成精确尺寸
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
-            )
-            webView.layout(0, 0, width, contentHeight)
+            // ===== 第四步：创建 Bitmap 截图 =====
+            // 注意：不再 resize！WebView 已经用目标宽度渲染好了
+            // 我们只需要创建正确尺寸的 Bitmap 并绘制 WebView
+            delay(100) // 最后等待一下确保绘制完成
 
-            // 5. 等待一帧确保 Chromium 完成重绘
-            withTimeoutOrNull(1000L) {
-                suspendCancellableCoroutine<Unit> { continuation ->
-                    Choreographer.getInstance().postFrameCallback {
-                        if (continuation.isActive) {
-                            continuation.resume(Unit) {}
-                        }
-                    }
-                }
-            }
+            BookplateLogger.log("RENDER", "开始截图: ${width}x${finalHeight}")
 
-            BookplateLogger.log("RENDER", "开始截图: ${width}x${contentHeight}")
-
-            // 6. 截图
             return try {
-                Bitmap.createBitmap(width, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
+                Bitmap.createBitmap(width, finalHeight, Bitmap.Config.ARGB_8888).also { bmp ->
                     val canvas = Canvas(bmp)
                     canvas.drawColor(Color.WHITE)
                     webView.draw(canvas)
