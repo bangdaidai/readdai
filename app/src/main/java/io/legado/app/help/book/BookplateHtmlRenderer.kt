@@ -150,6 +150,7 @@ object BookplateHtmlRenderer {
             val wv = it.await()
             withContext(Dispatchers.Main) {
                 wv.clearHistory()
+                wv.clearCache(true)
                 wv.stopLoading()
             }
             return wv
