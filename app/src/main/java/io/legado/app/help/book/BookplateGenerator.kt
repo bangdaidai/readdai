@@ -27,72 +27,147 @@ object BookplateGenerator {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    width: 100%; max-width: 100%; padding: 32px 24px;
+    width: 100%; max-width: 100%; padding: 36px 28px;
     font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff;
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #eef0f5; min-height: 100vh;
   }
-  .header { text-align: center; margin-bottom: 24px; }
-  .header h1 { font-size: 20px; letter-spacing: 4px; font-weight: 600; }
-  .header h2 { font-size: 14px; font-weight: 400; opacity: 0.85; margin-top: 4px; }
-  .section { margin: 18px 0; }
+  /* ===== 封面区域 ===== */
+  .cover-section { text-align: center; margin-bottom: 28px; }
+  .cover-img { width: 120px; height: 160px; object-fit: cover; border-radius: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  /* ===== 头部 ===== */
+  .header { text-align: center; margin-bottom: 28px; position: relative; }
+  .header::after {
+    content: ''; display: block; width: 100%; height: 2px;
+    background: repeating-linear-gradient(90deg, rgba(230,200,160,0.25) 0px, rgba(230,200,160,0.35) 6px, transparent 6px, transparent 11px);
+    margin-top: 16px;
+  }
+  .header h1 {
+    font-size: clamp(18px, 5vw, 28px); letter-spacing: 0.3em; font-weight: 650;
+    background: linear-gradient(135deg, #f5e6c8, #e6d4b0); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header h2 { font-size: clamp(10px, 2.5vw, 14px); font-weight: 280; opacity: 0.5; margin-top: 4px; letter-spacing: 0.5em; }
+  /* ===== 通用区块 ===== */
+  .section { margin: 16px 0 20px 0; }
   .section-title {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 3px;
-    opacity: 0.6; margin-bottom: 8px; padding-bottom: 4px;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
+    font-size: clamp(9px, 2vw, 12px); text-transform: uppercase; letter-spacing: 0.35em;
+    opacity: 0.45; margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid rgba(240,220,190,0.12); font-weight: 330;
   }
-  .field { display: flex; justify-content: space-between; font-size: 14px; margin: 6px 0; }
-  .field .label { opacity: 0.75; }
-  .field .value { font-weight: 500; text-align: right; }
-  .stars { font-size: 16px; letter-spacing: 3px; }
-  .review { font-size: 13px; line-height: 1.7; opacity: 0.9; margin-top: 10px; white-space: pre-wrap; }
-  .divider { border: none; border-top: 1px dashed rgba(255,255,255,0.25); margin: 20px 0; }
-  .footer { text-align: center; font-size: 10px; opacity: 0.5; margin-top: 28px; }
-  .footer p { margin: 2px 0; }
+  /* ===== 字段行 ===== */
+  .field { display: flex; justify-content: space-between; font-size: clamp(13px, 3vw, 16px); margin: 8px 0; }
+  .field .label { opacity: 0.6; flex-shrink: 0; }
+  .field .value { font-weight: 480; text-align: right; max-width: 65%; word-break: break-word; }
+  /* ===== 特殊字段 ===== */
+  .field.highlight .value { color: #ffeac2; font-weight: 510; }
+  .field.intro .value { font-size: clamp(12px, 2.8vw, 14px); line-height: 1.6; max-width: 100%; opacity: 0.9; }
+  /* ===== 标签 ===== */
+  .tags { font-size: clamp(12px, 2.8vw, 14px); opacity: 0.85; word-break: break-word; }
+  /* ===== 主角 ===== */
+  .protagonists { font-size: clamp(12px, 2.8vw, 14px); opacity: 0.8; font-style: italic; }
+  /* ===== 评分 ===== */
+  .rating-wrapper { display: flex; align-items: baseline; gap: 14px; margin: 10px 0 6px 0; flex-wrap: wrap; }
+  .stars { font-size: clamp(20px, 5vw, 32px); letter-spacing: 0.15em; color: #f5c542; filter: drop-shadow(0 0 8px rgba(245,197,66,0.25)); }
+  .rating-number { font-size: clamp(13px, 3vw, 16px); opacity: 0.7; }
+  /* ===== 书评 ===== */
+  .review {
+    font-size: clamp(13px, 3vw, 15px); line-height: 1.85; opacity: 0.92; margin-top: 14px;
+    padding: 14px 16px; background: rgba(30,25,42,0.5); border-radius: 8px;
+    border-left: 3px solid rgba(235,195,110,0.3); white-space: pre-wrap; word-break: break-word;
+  }
+  /* ===== 最新书摘 ===== */
+  .annotation {
+    font-size: clamp(12px, 2.8vw, 14px); line-height: 1.7; opacity: 0.88; margin-top: 10px;
+    padding: 12px 14px; background: rgba(20,20,35,0.5); border-radius: 6px; white-space: pre-wrap;
+  }
+  .annotation-chapter { font-size: clamp(10px, 2.2vw, 11px); opacity: 0.5; margin-top: 6px; }
+  /* ===== 分割虚线 ===== */
+  .divider { border: none; border-top: 1px dashed rgba(210,190,165,0.18); margin: 22px 0 18px 0; }
+  /* ===== 底部 ===== */
+  .footer { text-align: center; font-size: clamp(9px, 2vw, 11px); opacity: 0.35; margin-top: 30px; padding-top: 18px; border-top: 1px dashed rgba(180,160,140,0.12); }
+  .footer p { margin: 3px 0; letter-spacing: 0.1em; font-weight: 290; }
+  .footer p:last-child { font-style: italic; font-size: clamp(8px, 1.8vw, 10px); opacity: 0.5; }
+  /* ===== 状态标签 ===== */
+  .status { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 11px; opacity: 0.8; }
+  .status.reading { background: rgba(76,175,80,0.25); }
+  .status.finished { background: rgba(33,150,243,0.25); }
+  .status.abandoned { background: rgba(244,67,54,0.25); }
+  .status.pending { background: rgba(158,158,158,0.25); }
 </style>
 </head>
 <body>
+  <!-- 头部 -->
   <div class="header">
-    <h1>Reading Certificate</h1>
-    <h2>=== 阅 读 凭 证 ===</h2>
+    <h1>{{bookName}}</h1>
+    <h2>BY {{author}}</h2>
   </div>
 
+  <!-- 基本信息 -->
   <div class="section">
     <div class="section-title">Basic Info / 基本信息</div>
-    <div class="field"><span class="label">书名</span><span class="value">{{bookName}}</span></div>
-    <div class="field"><span class="label">作者</span><span class="value">{{author}}</span></div>
+    <div class="field"><span class="label">类型</span><span class="value">{{typeText}}</span></div>
+    <div class="field"><span class="label">分类</span><span class="value">{{kind}}</span></div>
+    <div class="field"><span class="label">字数</span><span class="value">{{wordCount}}</span></div>
+    <div class="field"><span class="label">来源</span><span class="value">{{bookSourceName}}</span></div>
+    <div class="field"><span class="label">阅读状态</span><span class="value"><span class="status {{readingStatusText}}">{{readingStatusText}}</span></span></div>
+    <div class="field intro"><span class="label">简介</span><span class="value intro">{{intro}}</span></div>
   </div>
 
+  <!-- 阅读进度 -->
   <div class="section">
-    <div class="section-title">Reading Period / 阅读时间</div>
-    <div class="field"><span class="label">开始时间</span><span class="value">{{firstReadTime}}</span></div>
-    <div class="field"><span class="label">结束时间</span><span class="value">{{finishReadTime}}</span></div>
-    <div class="field"><span class="label">阅读天数</span><span class="value">{{readingDays}} 天</span></div>
-    <div class="field"><span class="label">阅读时长</span><span class="value">{{totalReadTime}}</span></div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Reading Stats / 阅读统计</div>
-    <div class="field"><span class="label">阅读进度</span><span class="value">{{readingProgress}}</span></div>
+    <div class="section-title">Progress / 阅读进度</div>
+    <div class="field highlight"><span class="label">当前进度</span><span class="value">{{readingProgress}}</span></div>
     <div class="field"><span class="label">已读章节</span><span class="value">{{readChapters}}</span></div>
+    <div class="field"><span class="label">剩余章节</span><span class="value">{{unreadChapters}}</span></div>
+    <div class="field"><span class="label">最近阅读</span><span class="value">{{durChapterTitle}}</span></div>
+    <div class="field"><span class="label">最新章节</span><span class="value">{{latestChapterTitle}}</span></div>
+  </div>
+
+  <!-- 阅读时间 -->
+  <div class="section">
+    <div class="section-title">Time / 阅读时间</div>
+    <div class="field"><span class="label">首读时间</span><span class="value">{{firstReadTime}}</span></div>
+    <div class="field"><span class="label">最近阅读</span><span class="value">{{lastReadTime}}</span></div>
+    <div class="field"><span class="label">读完时间</span><span class="value">{{finishReadTime}}</span></div>
+    <div class="field"><span class="label">阅读天数</span><span class="value">{{readingDays}} 天</span></div>
+    <div class="field highlight"><span class="label">总阅读时长</span><span class="value">{{totalReadTime}}</span></div>
+  </div>
+
+  <!-- 阅读统计 -->
+  <div class="section">
+    <div class="section-title">Statistics / 阅读统计</div>
+    <div class="field"><span class="label">已读字数</span><span class="value">{{totalReadWords}}</span></div>
+    <div class="field"><span class="label">剩余字数</span><span class="value">{{remainingWords}}</span></div>
     <div class="field"><span class="label">书摘条数</span><span class="value">{{annotationCount}}</span></div>
     <div class="field"><span class="label">想法条数</span><span class="value">{{thoughtCount}}</span></div>
+    <div class="field"><span class="label">主角</span><span class="value protagonists">{{protagonists}}</span></div>
+    <div class="field"><span class="label">标签</span><span class="value tags">{{tags}}</span></div>
   </div>
 
   <hr class="divider">
 
+  <!-- 评分 -->
   <div class="section">
     <div class="section-title">Rating / 评分</div>
-    <div style="font-size: 14px;"><span class="stars">{{ratingStars}}</span> <span style="opacity:0.7;">{{rating}} / {{ratingMax}}</span></div>
+    <div class="rating-wrapper">
+      <span class="stars">{{ratingStars}}</span>
+      <span class="rating-number">{{rating}} / {{ratingMax}}</span>
+    </div>
   </div>
 
+  <!-- 书评 -->
   <div class="review">{{reviewContent}}</div>
+
+  <!-- 最新书摘 -->
+  <div class="annotation">{{latestAnnotation}}</div>
+  <div class="annotation-chapter">{{latestAnnotationChapter}}</div>
 
   <hr class="divider">
 
+  <!-- 底部 -->
   <div class="footer">
+    <p>✦ 好书如挚友，常读常新 ✦</p>
     <p>BAD READS, NO RECEIPTS; GOOD READS, ON REPEAT.</p>
-    <p>烂书不退款，好书请多读。</p>
   </div>
 </body>
 </html>
