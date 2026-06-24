@@ -20,7 +20,9 @@ import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.code.CodeEditActivity
+import io.legado.app.utils.applyTint
 import io.legado.app.utils.putPrefLong
+import io.legado.app.utils.setLayout
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers
