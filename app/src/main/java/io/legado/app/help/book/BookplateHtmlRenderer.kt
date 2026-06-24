@@ -156,24 +156,21 @@ object BookplateHtmlRenderer {
             val wv = WebView(context.applicationContext).apply {
                 settings.apply {
                     javaScriptEnabled = true
-                    domStorageEnabled = false
-                    // 关键：useWideViewPort = false 让 WebView 严格使用 HTML 中 viewport 指定的宽度
-                    // 如果 HTML 说 width=972，WebView 就用 972px 渲染，不再用 980px 再缩放
+                    domStorageEnabled = true
                     useWideViewPort = false
-                    // 不启用 overview mode，避免内容被缩放
                     loadWithOverviewMode = false
-                    // 设置移动端 UserAgent
                     userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
                     setSupportZoom(false)
                     builtInZoomControls = false
                     displayZoomControls = false
+                    // 允许加载网络资源和文件，使外部图片/字体可用
+                    blockNetworkLoads = false
+                    blockNetworkImage = false
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                     }
                 }
-                // 透明背景避免干扰模板背景色
                 setBackgroundColor(Color.TRANSPARENT)
-                setLayerType(View.LAYER_TYPE_SOFTWARE, null)
             }
             deferred.complete(wv)
             wv
@@ -262,19 +259,21 @@ object BookplateHtmlRenderer {
         BookplateLogger.log("RENDER", "获取WebView实例...")
         val webView = getWebView(context)
         val startTime = System.currentTimeMillis()
+        // 用足够大的初始高度，让 vh、min-height: 100vh、% 高度等 CSS 正确解析
+        val screenH = context.resources.displayMetrics.heightPixels
+        val generousH = maxOf(screenH * 3, 6000)
 
         return try {
-            // 让 WebView 用目标宽度，高度不限制（用 WRAP_CONTENT 的效果）
+            // 先用目标宽度 + 充裕高度 layout，确保 CSS vh/百分比 有正确参考值
             webView.measure(
                 View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                View.MeasureSpec.makeMeasureSpec(generousH, View.MeasureSpec.EXACTLY)
             )
-            val initialH = webView.measuredHeight.coerceAtLeast(1)
-            BookplateLogger.log("RENDER", "测量: ${webView.measuredWidth}x${initialH}")
+            webView.layout(0, 0, width, generousH)
+            BookplateLogger.log("RENDER", "初始布局: ${width}x${generousH} (screenH=${screenH})")
 
             val heightDeferred = CompletableDeferred<Int>()
 
-            // 设置 WebViewClient
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     BookplateLogger.log("RENDER", "页面开始加载: ${System.currentTimeMillis() - startTime}ms")
@@ -294,37 +293,20 @@ object BookplateHtmlRenderer {
                     val loadTime = System.currentTimeMillis() - startTime
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
-                    // 等待渲染完成
                     Handler(Looper.getMainLooper()).postDelayed({
-                        // 让 WebView 自己测量内容尺寸
-                        webView.measure(
-                            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                        )
-                        val measuredH = webView.measuredHeight
-                        BookplateLogger.log("RENDER", "WebView测量高度: ${measuredH}")
-
-                        // 用 scrollHeight 获取内容实际占据的高度（比 offsetHeight 更准确）
+                        // 用 JS scrollHeight 获取内容实际高度
                         webView.evaluateJavascript(
-                            "(document.body.scrollHeight || document.documentElement.scrollHeight || 0)"
+                            "Math.max(document.body.scrollHeight||0, document.documentElement.scrollHeight||0, document.body.offsetHeight||0, document.documentElement.offsetHeight||0)"
                         ) { jsResult ->
                             val jsH = jsResult.trim('"').toIntOrNull() ?: 0
-                            BookplateLogger.log("RENDER", "JS scrollHeight: ${jsH}")
-
-                            // 优先使用 WebView 测量的高度，JS scrollHeight 作为参考
-                            // 避免 offsetHeight 在某些 WebView 版本中返回膨胀值导致底部大片空白
-                            val finalH = if (jsH > 0 && jsH < measuredH * 1.5) {
-                                maxOf(measuredH, jsH)
-                            } else {
-                                measuredH
-                            }.coerceAtLeast(1)
+                            BookplateLogger.log("RENDER", "JS内容高度: ${jsH}")
+                            val finalH = jsH.coerceAtLeast(1)
                             heightDeferred.complete(finalH)
                         }
                     }, 200)
                 }
             }
 
-            webView.layout(0, 0, width, initialH)
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
             BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
 
@@ -342,31 +324,41 @@ object BookplateHtmlRenderer {
 
             BookplateLogger.log("RENDER", "最终尺寸: ${width}x${finalHeight}")
 
-            // layout 成最终尺寸
+            // 重新 layout 到精确的内容高度
+            webView.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(finalHeight, View.MeasureSpec.EXACTLY)
+            )
             webView.layout(0, 0, width, finalHeight)
 
             // 等待绘制完成
-            delay(100)
+            delay(150)
 
             BookplateLogger.log("RENDER", "开始截图")
 
-            return try {
-                Bitmap.createBitmap(width, finalHeight, Bitmap.Config.ARGB_8888).also { bmp ->
-                    val canvas = Canvas(bmp)
-                    canvas.drawColor(Color.WHITE)
-                    webView.draw(canvas)
-                }
-            } catch (e: Exception) {
-                BookplateLogger.log("RENDER", "截图异常: ${e.message}")
-                null
-            }.also {
-                BookplateLogger.log("RENDER", "总耗时=${System.currentTimeMillis() - startTime}ms")
-            }
+            captureBitmap(webView, width, finalHeight, startTime)
         } catch (e: CancellationException) {
             BookplateLogger.log("RENDER", "渲染取消: ${e.message}")
             null
         } finally {
             try { webView.stopLoading() } catch (_: Exception) {}
+        }
+    }
+
+    private fun captureBitmap(webView: WebView, width: Int, height: Int, startTime: Long): Bitmap? {
+        // 软件绘制兼容性最好，所有设备都能正确捕获
+        webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        return try {
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bmp ->
+                val canvas = Canvas(bmp)
+                canvas.drawColor(Color.WHITE)
+                webView.draw(canvas)
+            }
+        } catch (e: Exception) {
+            BookplateLogger.log("RENDER", "截图异常: ${e.message}")
+            null
+        }.also {
+            BookplateLogger.log("RENDER", "总耗时=${System.currentTimeMillis() - startTime}ms")
         }
     }
 
