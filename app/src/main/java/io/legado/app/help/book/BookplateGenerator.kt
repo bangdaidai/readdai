@@ -102,6 +102,11 @@ object BookplateGenerator {
     <h2>BY {{author}}</h2>
   </div>
 
+  <!-- 封面 -->
+  <div class="cover-section">
+    <img src="{{coverUrl}}" class="cover-img" onerror="this.parentElement.style.display='none'" />
+  </div>
+
   <!-- 基本信息 -->
   <div class="section">
     <div class="section-title">Basic Info / 基本信息</div>

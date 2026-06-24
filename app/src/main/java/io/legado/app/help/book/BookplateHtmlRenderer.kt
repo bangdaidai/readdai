@@ -2,17 +2,19 @@ package io.legado.app.help.book
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.view.Choreographer
+import android.util.Base64
 import android.view.View
-import android.view.WindowManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.net.URI
 import io.legado.app.data.entities.BookplateData
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.help.config.DataVisibilitySettings
@@ -213,7 +215,16 @@ object BookplateHtmlRenderer {
         return withContext(Dispatchers.Main) {
             BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}, 宽度=${renderWidth}")
             val filteredData = applyVisibility(data, settings)
-            val html = replaceVariables(template.htmlContent, filteredData)
+
+            // 将封面 URL 转为 base64 data URI，确保 WebView 能加载
+            val coverDataUri = coverUrlToDataUri(filteredData.coverUrl)
+            val dataWithCover = if (coverDataUri != null) {
+                filteredData.copy(coverUrl = coverDataUri)
+            } else {
+                filteredData
+            }
+
+            val html = replaceVariables(template.htmlContent, dataWithCover)
             BookplateLogger.log("RENDER", "变量替换后HTML长度: ${html.length}")
 
             if (html.isBlank()) {
@@ -459,5 +470,49 @@ object BookplateHtmlRenderer {
             }
         }
         return sb.toString()
+    }
+
+    /**
+     * 将封面 URL 转为 base64 data URI，确保 WebView 能加载
+     * file:// 和 content:// 需要转 base64，http(s):// 直接使用原 URL
+     */
+    private fun coverUrlToDataUri(url: String): String? {
+        if (url.isBlank()) return null
+
+        // HTTP(S) URL 直接返回，WebView 可以加载
+        if (url.startsWith("http://") || url.startsWith("https://")) return url
+
+        // 已经是 data URI，直接返回
+        if (url.startsWith("data:")) return url
+
+        return try {
+            val bitmap = when {
+                url.startsWith("file://") -> {
+                    val file = File(URI(url))
+                    if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
+                }
+                url.startsWith("content://") -> {
+                    // content:// 不在此上下文中处理，返回 null
+                    null
+                }
+                else -> {
+                    val file = File(url)
+                    if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
+                }
+            }
+
+            if (bitmap != null) {
+                val outputStream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+                val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
+                bitmap.recycle()
+                "data:image/jpeg;base64,$base64"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            BookplateLogger.log("RENDER", "封面转换失败: ${e.message}")
+            null
+        }
     }
 }
