@@ -203,17 +203,6 @@ object BookplateHtmlRenderer {
         settings: DataVisibilitySettings = DataVisibilitySettings
     ): Bitmap? {
         val renderWidth = getRenderWidth(context)
-        val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}_${renderWidth}"
-        synchronized(bitmapCache) {
-            bitmapCache[cacheKey]?.let { cached ->
-                if (!cached.isRecycled) {
-                    BookplateLogger.log("RENDER", "命中缓存")
-                    return cached
-                }
-                bitmapCache.remove(cacheKey)
-            }
-        }
-
         return withContext(Dispatchers.Main) {
             BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}, 宽度=${renderWidth}")
             lastError = null
@@ -245,9 +234,6 @@ object BookplateHtmlRenderer {
             if (bitmap != null) {
                 lastError = null
                 BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
-                synchronized(bitmapCache) {
-                    bitmapCache[cacheKey] = bitmap
-                }
             }
             bitmap
         }
@@ -303,8 +289,8 @@ object BookplateHtmlRenderer {
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
                     Handler(Looper.getMainLooper()).postDelayed({
-                        // 通过遍历所有子元素底部位置获取实际内容高度
-                        // scrollHeight 在 viewport 高于内容时等于 viewport 高度，不可靠
+                        // 遍历所有元素，取 getBoundingClientRect().bottom 最大值
+                        // 不能用 body.offsetHeight（会等于100vh即generousH）
                         webView.evaluateJavascript(
                             """(function(){
                                 var maxBottom = 0;
@@ -313,9 +299,14 @@ object BookplateHtmlRenderer {
                                     var b = elems[i].getBoundingClientRect().bottom;
                                     if (b > maxBottom) maxBottom = b;
                                 }
-                                return Math.max(Math.round(maxBottom),
-                                    document.body.getBoundingClientRect().height||0,
-                                    document.body.offsetHeight||0);
+                                if (maxBottom <= 0) {
+                                    maxBottom = Math.max(
+                                        document.body.offsetHeight||0,
+                                        document.body.scrollHeight||0,
+                                        document.documentElement.scrollHeight||0
+                                    );
+                                }
+                                return Math.round(maxBottom);
                             })()"""
                         ) { jsResult ->
                             val jsH = jsResult.trim('"').toIntOrNull() ?: 0
@@ -358,17 +349,9 @@ object BookplateHtmlRenderer {
 
             BookplateLogger.log("RENDER", "最终尺寸: ${width}x${finalHeight}")
 
-            // 重新 layout 到精确的内容高度
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(finalHeight, View.MeasureSpec.EXACTLY)
-            )
-            webView.layout(0, 0, width, finalHeight)
-
-            // 等待绘制完成
-            delay(150)
-
-            BookplateLogger.log("RENDER", "开始截图")
+            // 不重新 layout！保持 generousH 布局，避免 vh 值重新计算导致内容塌缩
+            // 直接截取 generous 布局中的内容区域
+            BookplateLogger.log("RENDER", "开始截图(保持generous布局)...")
 
             captureBitmap(webView, width, finalHeight, startTime)
         } catch (e: CancellationException) {
