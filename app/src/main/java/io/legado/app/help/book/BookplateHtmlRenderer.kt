@@ -302,16 +302,27 @@ object BookplateHtmlRenderer {
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
                     Handler(Looper.getMainLooper()).postDelayed({
-                        // 用 JS scrollHeight 获取内容实际高度
+                        // 通过遍历所有子元素底部位置获取实际内容高度
+                        // scrollHeight 在 viewport 高于内容时等于 viewport 高度，不可靠
                         webView.evaluateJavascript(
-                            "Math.max(document.body.scrollHeight||0, document.documentElement.scrollHeight||0, document.body.offsetHeight||0, document.documentElement.offsetHeight||0)"
+                            """(function(){
+                                var maxBottom = 0;
+                                var elems = document.body.getElementsByTagName('*');
+                                for (var i = 0; i < elems.length; i++) {
+                                    var b = elems[i].getBoundingClientRect().bottom;
+                                    if (b > maxBottom) maxBottom = b;
+                                }
+                                return Math.max(Math.round(maxBottom),
+                                    document.body.getBoundingClientRect().height||0,
+                                    document.body.offsetHeight||0);
+                            })()"""
                         ) { jsResult ->
                             val jsH = jsResult.trim('"').toIntOrNull() ?: 0
                             BookplateLogger.log("RENDER", "JS内容高度: ${jsH}")
                             val finalH = jsH.coerceAtLeast(1)
                             heightDeferred.complete(finalH)
                         }
-                    }, 200)
+                    }, 300)
                 }
             }
 
