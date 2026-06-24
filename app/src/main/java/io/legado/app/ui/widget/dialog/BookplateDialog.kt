@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.os.Environment
 import android.view.Gravity
-import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.ScrollView
@@ -19,7 +18,9 @@ object BookplateDialog {
     fun show(context: android.content.Context, bitmap: Bitmap, fileName: String) {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
         val dialogWidth = (screenWidth * 0.9f).toInt()
+        val dialogHeight = (screenHeight * 0.9f).toInt()
 
         val dialog = Dialog(context).apply {
             setCanceledOnTouchOutside(false)
@@ -55,7 +56,7 @@ object BookplateDialog {
         dialog.setContentView(scrollView)
         dialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(0xCC000000.toInt()))
-            setLayout(dialogWidth, WindowManager.LayoutParams.MATCH_PARENT)
+            setLayout(dialogWidth, dialogHeight)
             setGravity(Gravity.CENTER)
         }
 
