@@ -275,36 +275,29 @@ object BookplateHtmlRenderer {
                         override fun onPageFinished(view: WebView?, url: String?) {
                             val loadTime = System.currentTimeMillis() - startTime
                             BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
-                            // 等待足够时间让 CSS 布局完成（关键：这里要足够长）
+                            // 等待足够时间让 CSS 布局完成
                             Handler(Looper.getMainLooper()).postDelayed({
                                 if (continuation.isActive) {
-                                    // 获取内容实际占据的高度
-                                    // 遍历所有子元素，找到最底部元素的底边位置
-                                    // 这样可以排除 min-height: 100vh 等导致的空白
+                                    // 获取内容高度 - 同时获取 scrollHeight 和 offsetHeight，取较大值
                                     webView.evaluateJavascript(
                                         """
                                         (function() {
                                             var body = document.body;
                                             var html = document.documentElement;
-                                            // 计算所有元素的实际占据范围
-                                            var maxY = 0;
-                                            function checkNode(node) {
-                                                if (node.nodeType === 1) { // Element node
-                                                    var rect = node.getBoundingClientRect();
-                                                    if (rect.bottom > maxY) maxY = rect.bottom;
-                                                }
-                                                var children = node.children || node.childNodes;
-                                                for (var i = 0; i < children.length; i++) {
-                                                    checkNode(children[i]);
-                                                }
-                                            }
-                                            checkNode(document.body);
-                                            return maxY;
+                                            // scrollHeight 是滚动高度，offsetHeight 是实际显示高度
+                                            var sh = html.scrollHeight;
+                                            var oh = Math.max(body?.offsetHeight || 0, html.offsetHeight);
+                                            // 返回两者中较大的值
+                                            return Math.max(sh, oh) + ":" + sh + ":" + oh;
                                         })()
                                         """.trimIndent()
                                     ) { result ->
-                                        val h = result.trim('"').toIntOrNull() ?: 0
-                                        heightDeferred.complete(h)
+                                        val parts = result.trim('"').split(":")
+                                        val totalHeight = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                        val scrollHeight = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                        val offsetHeight = parts.getOrNull(2)?.toIntOrNull() ?: 0
+                                        BookplateLogger.log("RENDER", "高度: total=${totalHeight}, scroll=${scrollHeight}, offset=${offsetHeight}")
+                                        heightDeferred.complete(totalHeight)
                                         continuation.resume(true) {}
                                     }
                                 }
