@@ -66,14 +66,14 @@ object BookplateHtmlRenderer {
      */
     private fun ensureViewportMeta(html: String, width: Int): String {
         return if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
-            // 已有 viewport meta，替换 width= 部分
+            // 已有 viewport meta，替换 width= 后面的值
             VIEWPORT_META_REGEX.replace(html) { matchResult ->
                 val original = matchResult.value
-                // 替换 width= 后面的值（可能是 device-width 或具体数值）
-                val replaced = Regex("""width=\K[^,;]+""").replace(original, width.toString())
+                // 简单替换 width= 后面的内容（可能是 device-width 或具体数值）
+                val replaced = original.replaceFirst(Regex("""width=[^,;]+"""), "width=${width}")
                 // 如果原来没有指定 initial-scale，确保添加
                 if (!replaced.contains("initial-scale")) {
-                    replaced.replace(">", ", initial-scale=1.0>")
+                    replaced.replaceFirst(">", ", initial-scale=1.0>")
                 } else {
                     replaced
                 }
