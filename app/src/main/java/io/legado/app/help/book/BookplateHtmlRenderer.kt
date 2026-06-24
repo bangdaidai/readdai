@@ -203,6 +203,17 @@ object BookplateHtmlRenderer {
         settings: DataVisibilitySettings = DataVisibilitySettings
     ): Bitmap? {
         val renderWidth = getRenderWidth(context)
+        val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}_${renderWidth}"
+        synchronized(bitmapCache) {
+            bitmapCache[cacheKey]?.let { cached ->
+                if (!cached.isRecycled) {
+                    BookplateLogger.log("RENDER", "命中缓存")
+                    return cached
+                }
+                bitmapCache.remove(cacheKey)
+            }
+        }
+
         return withContext(Dispatchers.Main) {
             BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}, 宽度=${renderWidth}")
             lastError = null
@@ -234,6 +245,9 @@ object BookplateHtmlRenderer {
             if (bitmap != null) {
                 lastError = null
                 BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
+                synchronized(bitmapCache) {
+                    bitmapCache[cacheKey] = bitmap
+                }
             }
             bitmap
         }
