@@ -223,6 +223,7 @@ object BookplateGenerator {
         BookplateLogger.log("GEN", "数据构建完成: bookName=${data.bookName}, author=${data.author}, progress=${data.readingProgress}")
 
         BookplateLogger.log("GEN", "开始HTML离屏渲染...")
+        BookplateHtmlRenderer.clearCache() // 确保不使用上次渲染缓存
         val bitmap = withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.render(context, template, data)
         }
@@ -259,6 +260,7 @@ object BookplateGenerator {
         BookplateLogger.log("GEN", "数据构建完成: bookName=${data.bookName}, author=${data.author}, progress=${data.readingProgress}")
 
         BookplateLogger.log("GEN", "开始HTML离屏渲染...")
+        BookplateHtmlRenderer.clearCache() // 确保不使用上次渲染缓存
         val bitmap = withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.render(context, template, data)
         }
