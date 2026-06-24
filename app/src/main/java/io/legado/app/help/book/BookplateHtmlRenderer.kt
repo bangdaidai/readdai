@@ -281,56 +281,68 @@ object BookplateHtmlRenderer {
             val heightDeferred = CompletableDeferred<Int>()
             val webViewErrors = mutableListOf<String>()
 
-            webView.webViewClient = object : WebViewClient() {
-                override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                    BookplateLogger.log("RENDER", "页面开始加载: ${System.currentTimeMillis() - startTime}ms")
-                }
-
-                @Suppress("DEPRECATION")
-                override fun onReceivedError(
-                    view: WebView?,
-                    errorCode: Int,
-                    description: String?,
-                    failingUrl: String?
-                ) {
-                    val err = "WebView错误[$errorCode]: $description ($failingUrl)"
-                    webViewErrors.add(err)
-                    BookplateLogger.log("RENDER", err)
-                }
-
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    val loadTime = System.currentTimeMillis() - startTime
-                    BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
-
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        // 遍历所有元素，取 getBoundingClientRect().bottom 最大值
-                        // 不能用 body.offsetHeight（会等于100vh即generousH）
-                        webView.evaluateJavascript(
-                            """(function(){
-                                var maxBottom = 0;
-                                var elems = document.body.getElementsByTagName('*');
-                                for (var i = 0; i < elems.length; i++) {
-                                    var b = elems[i].getBoundingClientRect().bottom;
-                                    if (b > maxBottom) maxBottom = b;
-                                }
-                                if (maxBottom <= 0) {
-                                    maxBottom = Math.max(
-                                        document.body.offsetHeight||0,
-                                        document.body.scrollHeight||0,
-                                        document.documentElement.scrollHeight||0
-                                    );
-                                }
-                                return Math.round(maxBottom);
-                            })()"""
-                        ) { jsResult ->
-                            val jsH = jsResult.trim('"').toIntOrNull() ?: 0
-                            BookplateLogger.log("RENDER", "JS内容高度: ${jsH}")
-                            val finalH = jsH.coerceAtLeast(1)
-                            heightDeferred.complete(finalH)
-                        }
-                    }, 300)
-                }
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                BookplateLogger.log("RENDER", "页面开始加载: ${System.currentTimeMillis() - startTime}ms")
             }
+
+            @Suppress("DEPRECATION")
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                val err = "WebView错误[$errorCode]: $description ($failingUrl)"
+                webViewErrors.add(err)
+                BookplateLogger.log("RENDER", err)
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                val loadTime = System.currentTimeMillis() - startTime
+                BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
+
+                // 轮询测量：每 400ms 测一次，最多 5 次，取最大值
+                val measurements = mutableListOf<Int>()
+                val maxPolls = 5
+                val pollInterval = 400L
+
+                fun doPoll(pollCount: Int) {
+                    if (pollCount >= maxPolls) {
+                        val finalH = measurements.maxOrNull()?.coerceAtLeast(1) ?: 1
+                        BookplateLogger.log("RENDER", "轮询完成(${pollCount}次): max=$finalH, all=$measurements")
+                        heightDeferred.complete(finalH)
+                        return
+                    }
+                    webView.evaluateJavascript(
+                        """(function(){
+                            var maxBottom = 0;
+                            var elems = document.body.getElementsByTagName('*');
+                            for (var i = 0; i < elems.length; i++) {
+                                var b = elems[i].getBoundingClientRect().bottom;
+                                if (b > maxBottom) maxBottom = b;
+                            }
+                            if (maxBottom <= 0) {
+                                maxBottom = Math.max(
+                                    document.body.offsetHeight||0,
+                                    document.body.scrollHeight||0,
+                                    document.documentElement.scrollHeight||0
+                                );
+                            }
+                            return Math.round(maxBottom);
+                        })()"""
+                    ) { jsResult ->
+                        val h = jsResult.trim('"').toIntOrNull() ?: 0
+                        measurements.add(h)
+                        BookplateLogger.log("RENDER", "轮询高度[${pollCount + 1}]: $h")
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            doPoll(pollCount + 1)
+                        }, pollInterval)
+                    }
+                }
+                Handler(Looper.getMainLooper()).postDelayed({ doPoll(0) }, 500)
+            }
+        }
 
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
             BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
