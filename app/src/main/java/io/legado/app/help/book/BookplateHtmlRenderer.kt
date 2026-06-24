@@ -22,7 +22,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 object BookplateHtmlRenderer {
 
-    private const val IMAGE_WIDTH = 1080
+    private const val IMAGE_WIDTH = 750
     private const val RENDER_TIMEOUT_MS = 5000L
     private const val CSS_LAYOUT_DELAY_MS = 60L
     private const val MAX_CACHE_SIZE = 16
