@@ -20,7 +20,7 @@ object BookplateDialog {
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
         val dialogWidth = (screenWidth * 0.9f).toInt()
-        val dialogHeight = (screenHeight * 0.9f).toInt()
+        val dialogHeight = (screenHeight * 0.8f).toInt()
 
         val dialog = Dialog(context).apply {
             setCanceledOnTouchOutside(false)
