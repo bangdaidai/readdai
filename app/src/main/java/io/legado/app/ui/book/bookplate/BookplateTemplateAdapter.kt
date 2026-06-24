@@ -29,8 +29,8 @@ class BookplateTemplateAdapter(
             oldItem: BookplateTemplate,
             newItem: BookplateTemplate
         ): Boolean {
-            return oldItem.name == newItem.name
-                    && oldItem.isBuiltin == newItem.isBuiltin
+            // 强制返回 false，确保每次都刷新列表（开关状态需要更新）
+            return false
         }
 
         override fun getChangePayload(oldItem: BookplateTemplate, newItem: BookplateTemplate): Any? {
@@ -48,7 +48,8 @@ class BookplateTemplateAdapter(
     fun setSelectedId(id: Long) {
         selectedId = id
         ignoreNextChange = true
-        notifyItemRangeChanged(getHeaderCount(), itemCount - getHeaderCount())
+        // 使用 notifyDataSetChanged 确保整个列表刷新，因为 DiffUtil 是异步的
+        notifyDataSetChanged()
     }
 
     override fun getViewBinding(parent: ViewGroup): ItemBookplateTemplateBinding {

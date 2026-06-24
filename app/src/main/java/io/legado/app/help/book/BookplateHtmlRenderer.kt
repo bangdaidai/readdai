@@ -23,7 +23,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 object BookplateHtmlRenderer {
 
     private const val RENDER_TIMEOUT_MS = 5000L
-    private const val CSS_LAYOUT_DELAY_MS = 100L  // 增加等待时间，确保 JS 执行完成
+    private const val CSS_LAYOUT_DELAY_MS = 60L
     private const val MAX_CACHE_SIZE = 16
     private const val HEIGHT_TIMEOUT_MS = 3000L
 
@@ -329,26 +329,28 @@ object BookplateHtmlRenderer {
         val startTime = System.currentTimeMillis()
 
         return try {
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
-            BookplateLogger.log("RENDER", "预设宽度: $width, 初始高度: ${webView.measuredHeight}")
-            webView.layout(0, 0, width, webView.measuredHeight.coerceAtLeast(1))
+            // 先 layout 成小尺寸，等 loadData 后再调整
+            webView.layout(0, 0, 1, 1)
+
+            val heightDeferred = CompletableDeferred<Int>()
 
             val pageLoaded = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 suspendCancellableCoroutine<Boolean> { continuation ->
                     webView.webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView?, url: String?) {
                             val loadTime = System.currentTimeMillis() - startTime
-                            BookplateLogger.log("RENDER", "onPageFinished触发, 耗时=${loadTime}ms, postDelayed ${CSS_LAYOUT_DELAY_MS}ms")
-                            if (continuation.isActive) {
-                                Handler(Looper.getMainLooper()).postDelayed({
-                                    if (continuation.isActive) {
-                                        continuation.resume(true) {}
-                                    }
-                                }, CSS_LAYOUT_DELAY_MS)
-                            }
+                            BookplateLogger.log("RENDER", "onPageFinished触发, 耗时=${loadTime}ms, 等待布局完成...")
+
+                            // 等待几个 frame 让渲染完成
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                // 获取内容高度
+                                webView.settings.javaScriptEnabled = true
+                                webView.evaluateJavascript("document.documentElement.scrollHeight") { result ->
+                                    webView.settings.javaScriptEnabled = false
+                                    val h = result.trim('"').toIntOrNull() ?: 0
+                                    heightDeferred.complete(h)
+                                }
+                            }, 50)
                         }
                     }
 
@@ -366,11 +368,45 @@ object BookplateHtmlRenderer {
                 return null
             }
 
-            BookplateLogger.log("RENDER", "页面加载完成, 开始强制布局...")
+            val contentHeight = withTimeoutOrNull(HEIGHT_TIMEOUT_MS) {
+                heightDeferred.await()
+            } ?: run {
+                BookplateLogger.log("RENDER", "高度获取超时")
+                return null
+            }
 
-            val bitmap = captureFullBitmap(webView, width, startTime)
-            BookplateLogger.log("RENDER", "总耗时=${System.currentTimeMillis() - startTime}ms")
-            bitmap
+            if (contentHeight <= 0) {
+                BookplateLogger.log("RENDER", "内容高度为0")
+                return null
+            }
+
+            BookplateLogger.log("RENDER", "内容高度: ${width}x${contentHeight}")
+
+            // 强制 WebView layout 成正确尺寸
+            webView.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
+            )
+            webView.layout(0, 0, width, contentHeight)
+
+            // 再等待一帧确保绘制完成
+            delay(30)
+
+            BookplateLogger.log("RENDER", "开始截图...")
+
+            // 直接用 WebView 绘制到 Bitmap
+            return try {
+                Bitmap.createBitmap(width, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
+                    val canvas = Canvas(bmp)
+                    canvas.drawColor(Color.WHITE)
+                    webView.draw(canvas)
+                }
+            } catch (e: Exception) {
+                BookplateLogger.log("RENDER", "截图异常: ${e.message}")
+                null
+            }.also {
+                BookplateLogger.log("RENDER", "总耗时=${System.currentTimeMillis() - startTime}ms")
+            }
         } catch (e: CancellationException) {
             BookplateLogger.log("RENDER", "渲染取消: ${e.message}")
             null
@@ -385,7 +421,15 @@ object BookplateHtmlRenderer {
     private suspend fun captureFullBitmap(webView: WebView, width: Int, startTime: Long): Bitmap? {
         val heightDeferred = CompletableDeferred<Int>()
         webView.settings.javaScriptEnabled = true
-        webView.evaluateJavascript("document.documentElement.scrollHeight") { result ->
+        // 获取更大的高度值
+        webView.evaluateJavascript("""
+            Math.max(
+                document.body ? document.body.scrollHeight : 0,
+                document.documentElement ? document.documentElement.scrollHeight : 0,
+                document.body ? document.body.offsetHeight : 0,
+                document.documentElement ? document.documentElement.offsetHeight : 0
+            )
+        """.trimIndent()) { result ->
             webView.settings.javaScriptEnabled = false
             try {
                 val parsed = result.trim('"').toIntOrNull() ?: 0
@@ -394,29 +438,35 @@ object BookplateHtmlRenderer {
                 heightDeferred.complete(0)
             }
         }
-        val contentHeight = withTimeoutOrNull(HEIGHT_TIMEOUT_MS) {
+        val jsHeight = withTimeoutOrNull(HEIGHT_TIMEOUT_MS) {
             heightDeferred.await()
         } ?: run {
             BookplateLogger.log("RENDER", "JS高度测量超时")
             return null
         }
-        BookplateLogger.log("RENDER", "JS测量内容高度: $contentHeight")
+        BookplateLogger.log("RENDER", "JS测量内容高度: $jsHeight")
 
-        if (contentHeight <= 0) {
+        if (jsHeight <= 0) {
             BookplateLogger.log("RENDER", "内容高度为0，无法渲染")
             return null
         }
 
+        // 额外等待确保渲染完成
+        delay(100)
+
+        // 使用 JS 高度和 measure 后的高度中的较大值
         webView.measure(
             View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
-        webView.layout(0, 0, width, contentHeight)
+        val measuredHeight = webView.measuredHeight.coerceAtLeast(jsHeight)
 
-        BookplateLogger.log("RENDER", "最终布局: ${width}x$contentHeight")
+        webView.layout(0, 0, width, measuredHeight)
+
+        BookplateLogger.log("RENDER", "最终布局: ${width}x$measuredHeight (js=$jsHeight, measured=${webView.measuredHeight})")
 
         return try {
-            Bitmap.createBitmap(width, contentHeight, Bitmap.Config.ARGB_8888).also { bmp ->
+            Bitmap.createBitmap(width, measuredHeight, Bitmap.Config.ARGB_8888).also { bmp ->
                 val canvas = Canvas(bmp)
                 canvas.drawColor(Color.WHITE)
                 webView.draw(canvas)
