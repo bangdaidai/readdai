@@ -20,7 +20,7 @@ object BookplateDialog {
     fun show(context: android.content.Context, bitmap: Bitmap, fileName: String) {
         val displayMetrics = context.resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
-        val screenHeight = displayMetrics.heightMetrics.heightPixels
+        val screenHeight = displayMetrics.heightPixels
         val dialogWidth = (screenWidth * 0.9f).toInt()
 
         val dialog = Dialog(context).apply {

@@ -251,8 +251,6 @@ object BookplateHtmlRenderer {
         BookplateLogger.log("RENDER", "获取WebView实例...")
         val webView = getWebView(context)
         val startTime = System.currentTimeMillis()
-        val errors = mutableListOf<String>()
-        val consoleErrors = mutableListOf<String>()
 
         return try {
             // 让 WebView 用目标宽度，高度不限制（用 WRAP_CONTENT 的效果）
@@ -262,160 +260,68 @@ object BookplateHtmlRenderer {
             )
             BookplateLogger.log("RENDER", "测量: ${webView.measuredWidth}x${webView.measuredHeight}")
 
-            val heightDeferred = CompletableDeferred<Pair<Int, Int>>()
-            val pageLoaded = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
-                suspendCancellableCoroutine<Boolean> { continuation ->
-                    webView.webViewClient = object : WebViewClient() {
-                        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                            BookplateLogger.log("RENDER", "页面开始加载: ${System.currentTimeMillis() - startTime}ms")
+            val heightDeferred = CompletableDeferred<Int>()
+
+            // 设置 WebViewClient
+            webView.webViewClient = object : WebViewClient() {
+                override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                    BookplateLogger.log("RENDER", "页面开始加载: ${System.currentTimeMillis() - startTime}ms")
+                }
+
+                @Suppress("DEPRECATION")
+                override fun onReceivedError(
+                    view: WebView?,
+                    errorCode: Int,
+                    description: String?,
+                    failingUrl: String?
+                ) {
+                    BookplateLogger.log("RENDER", "WebView错误[$errorCode]: $description ($failingUrl)")
+                }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    val loadTime = System.currentTimeMillis() - startTime
+                    BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
+
+                    // 等待渲染完成
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        // 让 WebView 自己测量内容尺寸
+                        webView.measure(
+                            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                        )
+                        val measuredH = webView.measuredHeight
+                        BookplateLogger.log("RENDER", "WebView测量高度: ${measuredH}")
+
+                        // 用 JavaScript 获取内容实际占据的高度
+                        webView.evaluateJavascript(
+                            "(document.documentElement.offsetHeight || document.body.offsetHeight || 0)"
+                        ) { jsResult ->
+                            val jsH = jsResult.trim('"').toIntOrNull() ?: 0
+                            BookplateLogger.log("RENDER", "JS内容高度: ${jsH}")
+                            val finalH = maxOf(measuredH, jsH, 1)
+                            heightDeferred.complete(finalH)
                         }
-
-                        override fun onReceivedError(
-                            view: WebView?,
-                            errorCode: Int,
-                            description: String?,
-                            failingUrl: String?
-                        ) {
-                            val err = "WebView错误[$errorCode]: $description ($failingUrl)"
-                            errors.add(err)
-                            BookplateLogger.log("RENDER", err)
-                        }
-
-                        override fun onReceivedHttpError(
-                            view: WebView?,
-                            request: WebResourceRequest?,
-                            errorResponse: WebResourceResponse?
-                        ) {
-                            if (request?.isForMainFrame == true) {
-                                val err = "HTTP错误: ${errorResponse?.statusCode} (${request.url})"
-                                errors.add(err)
-                                BookplateLogger.log("RENDER", err)
-                            }
-                        }
-
-                        override fun onPageFinished(view: WebView?, url: String?) {
-                            val loadTime = System.currentTimeMillis() - startTime
-                            BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms, 错误数=${errors.size}")
-                            if (errors.isNotEmpty()) {
-                                errors.forEach { BookplateLogger.log("RENDER", "错误详情: $it") }
-                            }
-
-                            // 等待渲染完成
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                if (continuation.isActive) {
-                                    // 检查 DOM 是否有解析错误
-                                    webView.evaluateJavascript(
-                                        """
-                                        (function() {
-                                            var parser = new DOMParser();
-                                            var doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
-                                            var parseError = doc.querySelector('parsererror');
-                                            if (parseError) {
-                                                return 'HTML解析错误: ' + parseError.textContent.substring(0, 200);
-                                            }
-                                            // 检查 body 是否为空或异常
-                                            if (!document.body) {
-                                                return '错误: document.body 不存在';
-                                            }
-                                            if (document.body.children.length === 0) {
-                                                return '警告: body 内没有子元素';
-                                            }
-                                            return 'OK';
-                                        })()
-                                        """.trimIndent()
-                                    ) { result ->
-                                        val checkResult = result.trim('"')
-                                        if (checkResult != "OK") {
-                                            BookplateLogger.log("RENDER", "模板语法检查: $checkResult")
-                                        }
-                                    }
-
-                                    // 让 WebView 自己测量内容尺寸
-                                    webView.measure(
-                                        View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                                    )
-                                    val measuredH = webView.measuredHeight
-                                    BookplateLogger.log("RENDER", "WebView测量高度: ${measuredH}")
-
-                                    // 再用 JavaScript 获取内容实际占据的高度
-                                    webView.evaluateJavascript(
-                                        "(document.documentElement.offsetHeight || document.body.offsetHeight || 0)"
-                                    ) { jsResult ->
-                                        val jsH = jsResult.trim('"').toIntOrNull() ?: 0
-                                        BookplateLogger.log("RENDER", "JS内容高度: ${jsH}")
-                                        // 取两者的较大值
-                                        heightDeferred.complete(Pair(measuredH, jsH))
-                                        continuation.resume(true) {}
-                                    }
-                                }
-                            }, 200)
-                        }
-                    }
-
-                    // 设置 JS console 监听
-                    webView.setWebChromeClient(object : WebChromeClient() {
-                        override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-                            consoleMessage?.let { msg ->
-                                if (msg.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
-                                    val err = "JS控制台错误: ${msg.message()} (${msg.sourceId()}:${msg.lineNumber()})"
-                                    consoleErrors.add(err)
-                                    BookplateLogger.log("RENDER", err)
-                                }
-                            }
-                            return super.onConsoleMessage(consoleMessage)
-                        }
-                    })
-
-                    webView.layout(0, 0, width, 0)
-                    webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-                    BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
-
-                    continuation.invokeOnCancellation {
-                        try { webView.stopLoading() } catch (_: Exception) {}
-                    }
+                    }, 200)
                 }
             }
 
-            if (pageLoaded != true) {
-                BookplateLogger.log("RENDER", "页面加载超时 (${RENDER_TIMEOUT_MS}ms)")
-                if (errors.isNotEmpty()) {
-                    BookplateLogger.log("RENDER", "=== 加载错误 ===")
-                    errors.forEach { BookplateLogger.log("RENDER", "  - $it") }
-                }
-                if (consoleErrors.isNotEmpty()) {
-                    BookplateLogger.log("RENDER", "=== JS控制台错误 ===")
-                    consoleErrors.forEach { BookplateLogger.log("RENDER", "  - $it") }
-                }
-                // 超时时仍然尝试获取高度
-                BookplateLogger.log("RENDER", "超时后尝试获取高度...")
-                webView.measure(
-                    View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                )
-                val measuredH = webView.measuredHeight
-                BookplateLogger.log("RENDER", "超时后测量高度: ${measuredH}")
-                if (measuredH > 0) {
-                    BookplateLogger.log("RENDER", "虽然超时但仍有内容，继续渲染")
-                }
-                return null
-            }
+            webView.layout(0, 0, width, 0)
+            webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+            BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
 
-            val (measuredH, jsH) = withTimeoutOrNull(HEIGHT_TIMEOUT_MS) {
+            val finalHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 heightDeferred.await()
             } ?: run {
-                BookplateLogger.log("RENDER", "高度获取超时")
+                BookplateLogger.log("RENDER", "页面加载超时")
                 return null
             }
-
-            // 取 WebView 测量高度和 JS 高度中的较大值
-            val finalHeight = maxOf(measuredH, jsH, 1)
-            BookplateLogger.log("RENDER", "最终尺寸: ${width}x${finalHeight}")
 
             if (finalHeight <= 0) {
                 BookplateLogger.log("RENDER", "高度为0，渲染失败")
                 return null
             }
+
+            BookplateLogger.log("RENDER", "最终尺寸: ${width}x${finalHeight}")
 
             // layout 成最终尺寸
             webView.layout(0, 0, width, finalHeight)
