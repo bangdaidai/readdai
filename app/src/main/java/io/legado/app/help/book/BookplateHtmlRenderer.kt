@@ -6,8 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import android.util.Base64
 import android.view.View
 import android.webkit.WebView
@@ -22,7 +20,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -32,9 +29,10 @@ object BookplateHtmlRenderer {
     var lastError: String? = null
         private set
 
-    private const val RENDER_TIMEOUT_MS = 8000L
+    private const val RENDER_TIMEOUT_MS = 10000L
     private const val MAX_CACHE_SIZE = 16
-    private const val HEIGHT_TIMEOUT_MS = 3000L
+    // 限制最大初始布局高度，防止超出GPU纹理上限或OOM
+    private const val MAX_GENEROUS_HEIGHT = 6000
 
     @Volatile
     private var cachedWebViewDeferred: CompletableDeferred<WebView>? = null
@@ -52,6 +50,7 @@ object BookplateHtmlRenderer {
     private val VARIABLE_REGEX = Regex("\\{\\{(\\w+)\\}\\}")
     private val VIEWPORT_META_REGEX = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE)
     private val HEAD_TAG_REGEX = Regex("<head>", RegexOption.IGNORE_CASE)
+    private const val HEIGHT_MARKER = "__BP_HEIGHT__:"
 
     private fun getRenderWidth(context: Context): Int {
         val screenWidth = context.resources.displayMetrics.widthPixels
@@ -66,18 +65,11 @@ object BookplateHtmlRenderer {
         BookplateLogger.log("RENDER", "缓存已清空")
     }
 
-    /**
-     * 强制将 viewport meta 替换为指定的宽度
-     * 无论模板中是否有 viewport meta，都强制使用我们计算的宽度
-     */
     private fun ensureViewportMeta(html: String, width: Int): String {
         return if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
-            // 已有 viewport meta，替换 width= 后面的值
             VIEWPORT_META_REGEX.replace(html) { matchResult ->
                 val original = matchResult.value
-                // 简单替换 width= 后面的内容（可能是 device-width 或具体数值）
                 val replaced = original.replaceFirst(Regex("""width=[^,;]+"""), "width=${width}")
-                // 如果原来没有指定 initial-scale，确保添加
                 if (!replaced.contains("initial-scale")) {
                     replaced.replaceFirst(">", ", initial-scale=1.0>")
                 } else {
@@ -85,7 +77,6 @@ object BookplateHtmlRenderer {
                 }
             }
         } else {
-            // 没有 viewport meta，直接在 head 标签后插入
             HEAD_TAG_REGEX.replaceFirst(
                 html,
                 "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
@@ -149,12 +140,28 @@ object BookplateHtmlRenderer {
         cachedWebViewDeferred?.let {
             val wv = it.await()
             withContext(Dispatchers.Main) {
+                wv.stopLoading()
                 wv.clearHistory()
                 wv.clearCache(true)
-                wv.stopLoading()
+                // 清除上一次渲染残留的JS全局状态和定时器
+                wv.evaluateJavascript("""
+                    (function(){
+                        try {
+                            var id = window.setTimeout(function(){}, 0);
+                            while(id--) { 
+                                window.clearTimeout(id); 
+                                window.clearInterval(id); 
+                            }
+                        } catch(e){}
+                        delete window.__BOOKPLATE_HEIGHT__;
+                    })()
+                """, null)
+                // 确保LayerType处于正常状态
+                wv.setLayerType(View.LAYER_TYPE_NONE, null)
             }
             return wv
         }
+
         val deferred = CompletableDeferred<WebView>()
         cachedWebViewDeferred = deferred
         return withContext(Dispatchers.Main) {
@@ -168,7 +175,6 @@ object BookplateHtmlRenderer {
                     setSupportZoom(false)
                     builtInZoomControls = false
                     displayZoomControls = false
-                    // 允许加载网络资源和文件，使外部图片/字体可用
                     blockNetworkLoads = false
                     blockNetworkImage = false
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -204,6 +210,7 @@ object BookplateHtmlRenderer {
     ): Bitmap? {
         val renderWidth = getRenderWidth(context)
         val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}_${renderWidth}"
+        
         synchronized(bitmapCache) {
             bitmapCache[cacheKey]?.let { cached ->
                 if (!cached.isRecycled) {
@@ -219,7 +226,6 @@ object BookplateHtmlRenderer {
             lastError = null
             val filteredData = applyVisibility(data, settings)
 
-            // 将封面 URL 转为 base64 data URI，确保 WebView 能加载
             val coverDataUri = coverUrlToDataUri(filteredData.coverUrl)
             val dataWithCover = if (coverDataUri != null) {
                 filteredData.copy(coverUrl = coverDataUri)
@@ -239,9 +245,8 @@ object BookplateHtmlRenderer {
 
             BookplateLogger.log("RENDER", "开始WebView离屏渲染...")
             val processedHtml = ensureViewportMeta(html, renderWidth)
-            val viewportMatch = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE).find(processedHtml)
-            BookplateLogger.log("RENDER", "viewport meta: ${viewportMatch?.value ?: "未找到"}")
             val bitmap = renderHtml(context, processedHtml, renderWidth)
+            
             if (bitmap != null) {
                 lastError = null
                 BookplateLogger.log("RENDER", "WebView渲染成功: ${bitmap.width}x${bitmap.height}")
@@ -255,28 +260,26 @@ object BookplateHtmlRenderer {
 
     /**
      * 核心渲染方法
-     *
-     * 自适应方案：
-     * 1. WebView 直接用目标宽度，不限制高度
-     * 2. 让 WebView 自己测量内容尺寸
-     * 3. 用 WebView 测量出的尺寸创建 Bitmap
+     * 修复策略：
+     * 1. 使用 generousH 进行初始布局，确保 vh/% 正确解析
+     * 2. 通过 JS 轮询等待高度稳定（解决资源异步加载问题）
+     * 3. 获取真实高度后，重新 layout 到精确高度再截图（解决Canvas裁切问题）
      */
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
         BookplateLogger.log("RENDER", "获取WebView实例...")
         val webView = getWebView(context)
         val startTime = System.currentTimeMillis()
-        // 用足够大的初始高度，让 vh、min-height: 100vh、% 高度等 CSS 正确解析
+        
         val screenH = context.resources.displayMetrics.heightPixels
-        val generousH = maxOf(screenH * 3, 6000)
+        val generousH = minOf(maxOf(screenH * 2, 3000), MAX_GENEROUS_HEIGHT)
 
         return try {
-            // 先用目标宽度 + 充裕高度 layout，确保 CSS vh/百分比 有正确参考值
             webView.measure(
                 View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(generousH, View.MeasureSpec.EXACTLY)
             )
             webView.layout(0, 0, width, generousH)
-            BookplateLogger.log("RENDER", "初始布局: ${width}x${generousH} (screenH=${screenH})")
+            BookplateLogger.log("RENDER", "初始布局: ${width}x${generousH}")
 
             val heightDeferred = CompletableDeferred<Int>()
             val webViewErrors = mutableListOf<String>()
@@ -288,10 +291,7 @@ object BookplateHtmlRenderer {
 
                 @Suppress("DEPRECATION")
                 override fun onReceivedError(
-                    view: WebView?,
-                    errorCode: Int,
-                    description: String?,
-                    failingUrl: String?
+                    view: WebView?, errorCode: Int, description: String?, failingUrl: String?
                 ) {
                     val err = "WebView错误[$errorCode]: $description ($failingUrl)"
                     webViewErrors.add(err)
@@ -302,39 +302,43 @@ object BookplateHtmlRenderer {
                     val loadTime = System.currentTimeMillis() - startTime
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        // 临时移除 body 的 min-height/height 约束(模板常设 min-height:100vh),
-                        // 用 scrollHeight 获取真实内容高度, 再恢复原样式
-                        webView.evaluateJavascript(
-                            """(function(){
-                                document.body.style.minHeight = 'auto';
-                                document.body.style.height = 'auto';
-                                var h = document.body.scrollHeight
-                                    || document.documentElement.scrollHeight
-                                    || 0;
-                                document.body.style.minHeight = '';
-                                document.body.style.height = '';
-                                if (h <= 0) {
-                                    var maxBottom = 0;
-                                    var elems = document.body.getElementsByTagName('*');
-                                    for (var i = 0; i < elems.length; i++) {
-                                        var b = elems[i].getBoundingClientRect().bottom;
-                                        if (b > maxBottom) maxBottom = b;
-                                    }
-                                    h = maxBottom || Math.max(
-                                        document.body.offsetHeight||0,
-                                        document.documentElement.scrollHeight||0
-                                    );
-                                }
+                    // 【核心修复】注入轮询脚本，等待高度稳定后再通过 title 传回
+                    view?.evaluateJavascript("""
+                        (function(){
+                            function getH(){
+                                document.body.style.minHeight='auto';
+                                document.body.style.height='auto';
+                                var h=Math.max(
+                                    document.body.scrollHeight||0,
+                                    document.documentElement.scrollHeight||0,
+                                    document.body.offsetHeight||0
+                                );
+                                document.body.style.minHeight='';
+                                document.body.style.height='';
                                 return Math.round(h);
-                            })()"""
-                        ) { jsResult ->
-                            val jsH = jsResult.trim('"').toIntOrNull() ?: 0
-                            BookplateLogger.log("RENDER", "JS内容高度: ${jsH}")
-                            val finalH = jsH.coerceAtLeast(1)
-                            heightDeferred.complete(finalH)
-                        }
-                    }, 300)
+                            }
+                            var last=0, stable=0, n=0;
+                            var t=setInterval(function(){
+                                var h=getH();
+                                if(h===last && h>0) stable++; else stable=0;
+                                last=h; n++;
+                                // 连续3次高度相同 或 轮询60次(3秒) 则返回
+                                if(stable>=3 || n>=60){
+                                    clearInterval(t);
+                                    document.title='$HEIGHT_MARKER'+h;
+                                }
+                            },50);
+                        })()
+                    """, null)
+                }
+
+                // 【核心修复】通过 onReceivedTitle 接收异步计算出的稳定高度
+                override fun onReceivedTitle(view: WebView?, title: String?) {
+                    if (title != null && title.startsWith(HEIGHT_MARKER)) {
+                        val h = title.removePrefix(HEIGHT_MARKER).toIntOrNull() ?: 0
+                        BookplateLogger.log("RENDER", "稳定内容高度: $h")
+                        heightDeferred.complete(h.coerceAtLeast(1))
+                    }
                 }
             }
 
@@ -348,7 +352,6 @@ object BookplateHtmlRenderer {
                 val msg = buildString {
                     append("页面加载超时 (${RENDER_TIMEOUT_MS}ms)")
                     if (wvErrors != null) append(" | $wvErrors")
-                    append("。可能原因: HTML含外部资源加载过慢、模板结构过于复杂")
                 }
                 BookplateLogger.log("RENDER", msg)
                 lastError = msg
@@ -356,22 +359,21 @@ object BookplateHtmlRenderer {
             }
 
             if (finalHeight <= 0) {
-                val wvErrors = webViewErrors.takeIf { it.isNotEmpty() }?.joinToString("; ")
-                val msg = buildString {
-                    append("内容高度为0，渲染失败")
-                    if (wvErrors != null) append(" | $wvErrors")
-                    append("。可能原因: body内无可见内容、CSS导致高度塌陷、模板未正确使用变量")
-                }
+                val msg = "内容高度为0，渲染失败。可能原因: body内无可见内容或CSS导致高度塌陷"
                 BookplateLogger.log("RENDER", msg)
                 lastError = msg
                 return null
             }
 
-            BookplateLogger.log("RENDER", "最终尺寸: ${width}x${finalHeight}")
-
-            // 不重新 layout！保持 generousH 布局，避免 vh 值重新计算导致内容塌缩
-            // 直接截取 generous 布局中的内容区域
-            BookplateLogger.log("RENDER", "开始截图(保持generous布局)...")
+            // 【核心修复】重新 layout 到精确高度，避免 Canvas 与 WebView 尺寸不匹配导致截断
+            BookplateLogger.log("RENDER", "重新layout到精确高度: ${width}x${finalHeight}")
+            webView.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(finalHeight, View.MeasureSpec.EXACTLY)
+            )
+            webView.layout(0, 0, width, finalHeight)
+            // 给一帧时间让精确布局生效
+            delay(80)
 
             captureBitmap(webView, width, finalHeight, startTime)
         } catch (e: CancellationException) {
@@ -384,9 +386,30 @@ object BookplateHtmlRenderer {
         }
     }
 
+    /**
+     * 【核心修复】优先使用硬件渲染截图，失败时降级为软件渲染
+     * 并在截图后强制恢复 LAYER_TYPE_NONE，防止污染缓存的 WebView
+     */
     private fun captureBitmap(webView: WebView, width: Int, height: Int, startTime: Long): Bitmap? {
-        // 软件绘制兼容性最好，所有设备都能正确捕获
-        webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+        var bitmap = tryCapture(webView, width, height)
+
+        if (bitmap == null || isBitmapBlank(bitmap)) {
+            BookplateLogger.log("RENDER", "硬件截图失败/空白，降级为软件渲染")
+            webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+            try {
+                bitmap?.recycle()
+                bitmap = tryCapture(webView, width, height)
+            } finally {
+                // 必须恢复，否则缓存的WebView永远是软件渲染
+                webView.setLayerType(View.LAYER_TYPE_NONE, null)
+            }
+        }
+
+        BookplateLogger.log("RENDER", "截图总耗时=${System.currentTimeMillis() - startTime}ms")
+        return bitmap
+    }
+
+    private fun tryCapture(webView: WebView, width: Int, height: Int): Bitmap? {
         return try {
             Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { bmp ->
                 val canvas = Canvas(bmp)
@@ -396,8 +419,6 @@ object BookplateHtmlRenderer {
         } catch (e: Exception) {
             BookplateLogger.log("RENDER", "截图异常: ${e.message}")
             null
-        }.also {
-            BookplateLogger.log("RENDER", "总耗时=${System.currentTimeMillis() - startTime}ms")
         }
     }
 
@@ -412,9 +433,7 @@ object BookplateHtmlRenderer {
                 val r = (px shr 16) and 0xFF
                 val g = (px shr 8) and 0xFF
                 val b = px and 0xFF
-                if (r > 250 && g > 250 && b > 250) {
-                    whiteCount++
-                }
+                if (r > 250 && g > 250 && b > 250) whiteCount++
             }
         }
         return totalCount > 0 && whiteCount > totalCount * 0.9
@@ -433,7 +452,6 @@ object BookplateHtmlRenderer {
             latestChapterTitle = if (settings.isBasicInfoVisible()) data.latestChapterTitle else "",
             typeText = if (settings.isBasicInfoVisible()) data.typeText else "",
             charset = if (settings.isBasicInfoVisible()) data.charset else "",
-
             readingStatusText = if (settings.isProgressVisible()) data.readingStatusText else "",
             readingProgress = if (settings.isProgressVisible()) data.readingProgress else "",
             readChapters = if (settings.isProgressVisible()) data.readChapters else "0/0",
@@ -441,7 +459,6 @@ object BookplateHtmlRenderer {
             readIteration = if (settings.isProgressVisible()) data.readIteration else 0,
             readIterationText = if (settings.isProgressVisible()) data.readIterationText else "",
             durChapterTitle = if (settings.isProgressVisible()) data.durChapterTitle else "",
-
             totalReadTime = if (settings.isStatisticsVisible()) data.totalReadTime else "",
             totalReadHours = if (settings.isStatisticsVisible()) data.totalReadHours else 0,
             totalReadMinutes = if (settings.isStatisticsVisible()) data.totalReadMinutes else 0,
@@ -450,33 +467,26 @@ object BookplateHtmlRenderer {
             maxDayReadDate = if (settings.isStatisticsVisible()) data.maxDayReadDate else "",
             totalReadWords = if (settings.isStatisticsVisible()) data.totalReadWords else "",
             remainingWords = if (settings.isStatisticsVisible()) data.remainingWords else "",
-
             firstReadTime = if (settings.isBasicInfoVisible()) data.firstReadTime else "____/__/__",
             lastReadTime = if (settings.isBasicInfoVisible()) data.lastReadTime else "____/__/__",
             finishReadTime = if (settings.isBasicInfoVisible()) data.finishReadTime else "____/__/__",
             addBookshelfTime = if (settings.isBasicInfoVisible()) data.addBookshelfTime else "____/__/__",
             lastCheckTime = if (settings.isBasicInfoVisible()) data.lastCheckTime else "____/__/__",
             lastReadTimeRelative = if (settings.isBasicInfoVisible()) data.lastReadTimeRelative else "",
-
             rating = if (settings.isRatingReviewVisible()) data.rating else 0f,
             ratingStars = if (settings.isRatingReviewVisible()) data.ratingStars else "☆☆☆☆☆",
             ratingMax = if (settings.isRatingReviewVisible()) data.ratingMax else 5,
             reviewContent = if (settings.isRatingReviewVisible()) data.reviewContent else "",
-
             annotationCount = if (settings.isAnnotationVisible()) data.annotationCount else 0,
             thoughtCount = if (settings.isAnnotationVisible()) data.thoughtCount else 0,
             latestAnnotation = if (settings.isAnnotationVisible()) data.latestAnnotation else "",
             latestAnnotationNote = if (settings.isAnnotationVisible()) data.latestAnnotationNote else "",
             latestAnnotationChapter = if (settings.isAnnotationVisible()) data.latestAnnotationChapter else "",
-
             protagonists = if (settings.isProtagonistVisible()) data.protagonists else "未知",
-
             tags = if (settings.isTagsVisible()) data.tags else "",
             tagCount = if (settings.isTagsVisible()) data.tagCount else 0,
-
             bookSourceName = if (settings.isSourceVisible()) data.bookSourceName else "",
             bookSourceGroup = if (settings.isSourceVisible()) data.bookSourceGroup else "",
-
             readTimeRank = if (settings.isRankVisible()) data.readTimeRank else ""
         )
     }
@@ -503,17 +513,9 @@ object BookplateHtmlRenderer {
         return sb.toString()
     }
 
-    /**
-     * 将封面 URL 转为 base64 data URI，确保 WebView 能加载
-     * file:// 和 content:// 需要转 base64，http(s):// 直接使用原 URL
-     */
     private fun coverUrlToDataUri(url: String): String? {
         if (url.isBlank()) return null
-
-        // HTTP(S) URL 直接返回，WebView 可以加载
         if (url.startsWith("http://") || url.startsWith("https://")) return url
-
-        // 已经是 data URI，直接返回
         if (url.startsWith("data:")) return url
 
         return try {
@@ -522,10 +524,7 @@ object BookplateHtmlRenderer {
                     val file = File(URI(url))
                     if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
                 }
-                url.startsWith("content://") -> {
-                    // content:// 不在此上下文中处理，返回 null
-                    null
-                }
+                url.startsWith("content://") -> null
                 else -> {
                     val file = File(url)
                     if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
@@ -534,7 +533,8 @@ object BookplateHtmlRenderer {
 
             if (bitmap != null) {
                 val outputStream = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+                // 压缩封面以减小 Base64 体积，避免超出 WebView 加载限制
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
                 val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
                 bitmap.recycle()
                 "data:image/jpeg;base64,$base64"
