@@ -10,7 +10,6 @@ import android.util.Base64
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.webkit.WebChromeClient
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URI
@@ -51,7 +50,6 @@ object BookplateHtmlRenderer {
     private val VARIABLE_REGEX = Regex("\\{\\{(\\w+)\\}\\}")
     private val VIEWPORT_META_REGEX = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE)
     private val HEAD_TAG_REGEX = Regex("<head>", RegexOption.IGNORE_CASE)
-    private const val HEIGHT_MARKER = "__BP_HEIGHT__:"
 
     private fun getRenderWidth(context: Context): Int {
         val screenWidth = context.resources.displayMetrics.widthPixels
@@ -303,12 +301,13 @@ object BookplateHtmlRenderer {
                     val loadTime = System.currentTimeMillis() - startTime
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
-                    // 【核心修复】注入轮询脚本，等待高度稳定后再通过 title 传回
+                    // 【核心修复】注入轮询脚本，等待高度稳定后通过 JavascriptInterface 传回
                     view?.evaluateJavascript("""
                         (function(){
                             function getH(){
-                                document.body.style.minHeight='auto';
+                                document.body.style.minHeight='0px';
                                 document.body.style.height='auto';
+                                document.body.style.overflow='hidden';
                                 var h=Math.max(
                                     document.body.scrollHeight||0,
                                     document.documentElement.scrollHeight||0,
@@ -316,6 +315,7 @@ object BookplateHtmlRenderer {
                                 );
                                 document.body.style.minHeight='';
                                 document.body.style.height='';
+                                document.body.style.overflow='';
                                 return Math.round(h);
                             }
                             var last=0, stable=0, n=0;
@@ -323,10 +323,9 @@ object BookplateHtmlRenderer {
                                 var h=getH();
                                 if(h===last && h>0) stable++; else stable=0;
                                 last=h; n++;
-                                // 连续3次高度相同 或 轮询60次(3秒) 则返回
                                 if(stable>=3 || n>=60){
                                     clearInterval(t);
-                                    document.title='$HEIGHT_MARKER'+h;
+                                    window.HeightBridge.onHeightReady(h);
                                 }
                             },50);
                         })()
@@ -335,16 +334,14 @@ object BookplateHtmlRenderer {
 
             }
 
-            // 【核心修复】通过 onReceivedTitle 接收异步计算出的稳定高度
-            webView.webChromeClient = object : WebChromeClient() {
-                override fun onReceivedTitle(view: WebView?, title: String?) {
-                    if (title != null && title.startsWith(HEIGHT_MARKER)) {
-                        val h = title.removePrefix(HEIGHT_MARKER).toIntOrNull() ?: 0
-                        BookplateLogger.log("RENDER", "稳定内容高度: $h")
-                        heightDeferred.complete(h.coerceAtLeast(1))
-                    }
+            // 【核心修复】通过 JavascriptInterface 接收异步计算出的稳定高度
+            webView.addJavascriptInterface(object {
+                @android.webkit.JavascriptInterface
+                fun onHeightReady(height: Int) {
+                    BookplateLogger.log("RENDER", "稳定内容高度: $height")
+                    heightDeferred.complete(height.coerceAtLeast(1))
                 }
-            }
+            }, "HeightBridge")
 
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
             BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
