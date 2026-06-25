@@ -65,8 +65,12 @@ object BookplateHtmlRenderer {
     }
 
     private fun ensureViewportMeta(html: String, width: Int): String {
-        return if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
-            VIEWPORT_META_REGEX.replace(html) { matchResult ->
+        val withoutMinHeight = HEAD_TAG_REGEX.replaceFirst(
+            html,
+            "<head>\n<style>body{min-height:0!important}</style>"
+        )
+        return if (VIEWPORT_META_REGEX.containsMatchIn(withoutMinHeight)) {
+            VIEWPORT_META_REGEX.replace(withoutMinHeight) { matchResult ->
                 val original = matchResult.value
                 val replaced = original.replaceFirst(Regex("""width=[^,;]+"""), "width=${width}")
                 if (!replaced.contains("initial-scale")) {
@@ -77,7 +81,7 @@ object BookplateHtmlRenderer {
             }
         } else {
             HEAD_TAG_REGEX.replaceFirst(
-                html,
+                withoutMinHeight,
                 "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
             )
         }
@@ -260,9 +264,10 @@ object BookplateHtmlRenderer {
     /**
      * 核心渲染方法
      * 修复策略：
-     * 1. 使用 generousH 进行初始布局，确保 vh/% 正确解析
-     * 2. 通过 JS 轮询等待高度稳定（解决资源异步加载问题）
-     * 3. 获取真实高度后，重新 layout 到精确高度再截图（解决Canvas裁切问题）
+     * 1. 使用 generousH 进行初始布局，确保所有内容完整渲染
+     * 2. 注入CSS移除 body min-height，防止 body 被强制撑开
+     * 3. 通过 JS 轮询等待高度稳定
+     * 4. 保持 generous 布局直接截图，然后根据稳定高度裁剪，避免 re-layout 导致的截断
      */
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
         BookplateLogger.log("RENDER", "获取WebView实例...")
@@ -301,21 +306,17 @@ object BookplateHtmlRenderer {
                     val loadTime = System.currentTimeMillis() - startTime
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
-                    // 【核心修复】注入轮询脚本，等待高度稳定后通过 JavascriptInterface 传回
                     view?.evaluateJavascript("""
                         (function(){
+                            document.body.style.minHeight='0px';
                             function getH(){
-                                document.body.style.minHeight='0px';
                                 document.body.style.height='auto';
-                                document.body.style.overflow='hidden';
                                 var h=Math.max(
                                     document.body.scrollHeight||0,
                                     document.documentElement.scrollHeight||0,
                                     document.body.offsetHeight||0
                                 );
-                                document.body.style.minHeight='';
                                 document.body.style.height='';
-                                document.body.style.overflow='';
                                 return Math.round(h);
                             }
                             var last=0, stable=0, n=0;
@@ -323,18 +324,17 @@ object BookplateHtmlRenderer {
                                 var h=getH();
                                 if(h===last && h>0) stable++; else stable=0;
                                 last=h; n++;
-                                if(stable>=3 || n>=60){
+                                if(stable>=5 || n>=80){
                                     clearInterval(t);
                                     window.HeightBridge.onHeightReady(h);
                                 }
-                            },50);
+                            },80);
                         })()
                     """, null)
                 }
 
             }
 
-            // 【核心修复】通过 JavascriptInterface 接收异步计算出的稳定高度
             webView.addJavascriptInterface(object {
                 @android.webkit.JavascriptInterface
                 fun onHeightReady(height: Int) {
@@ -366,17 +366,20 @@ object BookplateHtmlRenderer {
                 return null
             }
 
-            // 【核心修复】重新 layout 到精确高度，避免 Canvas 与 WebView 尺寸不匹配导致截断
-            BookplateLogger.log("RENDER", "重新layout到精确高度: ${width}x${finalHeight}")
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(finalHeight, View.MeasureSpec.EXACTLY)
-            )
-            webView.layout(0, 0, width, finalHeight)
-            // 给一帧时间让精确布局生效
-            delay(80)
+            // 等待内容在 generous 布局下完全渲染稳定后截图，然后裁剪到精确内容高度
+            delay(120)
+            BookplateLogger.log("RENDER", "截图并裁剪到内容高度: ${width}x${finalHeight}")
 
-            captureBitmap(webView, width, finalHeight, startTime)
+            val fullBitmap = captureBitmap(webView, width, generousH, startTime)
+            if (fullBitmap != null) {
+                val cropHeight = finalHeight.coerceAtMost(fullBitmap.height)
+                val cropped = Bitmap.createBitmap(fullBitmap, 0, 0, width, cropHeight)
+                if (cropped != fullBitmap) {
+                    fullBitmap.recycle()
+                }
+                return cropped
+            }
+            null
         } catch (e: CancellationException) {
             val msg = "渲染被取消: ${e.message}"
             BookplateLogger.log("RENDER", msg)

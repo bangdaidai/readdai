@@ -152,6 +152,7 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
             }
 
             appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, savedId)
+            appCtx.putPrefLong("lastBookplateTemplateId", savedId)
 
             io.legado.app.help.book.BookplateHtmlRenderer.clearCache()
 

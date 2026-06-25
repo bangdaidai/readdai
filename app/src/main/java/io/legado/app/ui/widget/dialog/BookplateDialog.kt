@@ -20,7 +20,7 @@ object BookplateDialog {
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
         val dialogWidth = (screenWidth * 0.9f).toInt()
-        val dialogHeight = (screenHeight * 0.8f).toInt()
+        val maxDialogHeight = (screenHeight * 0.85f).toInt()
 
         val dialog = Dialog(context).apply {
             setCanceledOnTouchOutside(false)
@@ -43,20 +43,21 @@ object BookplateDialog {
             }
         }
 
-        val imageHeight = (dialogWidth.toFloat() / bitmap.width * bitmap.height).toInt()
+        val imageHeight = ((dialogWidth.toFloat() / bitmap.width) * bitmap.height).toInt()
+        val actualDialogHeight = minOf(imageHeight, maxDialogHeight)
 
         val scrollView = ScrollView(context).apply {
-            isVerticalScrollBarEnabled = true
+            isVerticalScrollBarEnabled = actualDialogHeight < imageHeight
             addView(
                 imageView,
-                FrameLayout.LayoutParams(dialogWidth, imageHeight)
+                FrameLayout.LayoutParams(dialogWidth, imageHeight.coerceAtLeast(1))
             )
         }
 
         dialog.setContentView(scrollView)
         dialog.window?.apply {
             setBackgroundDrawable(ColorDrawable(0xCC000000.toInt()))
-            setLayout(dialogWidth, dialogHeight)
+            setLayout(dialogWidth, actualDialogHeight)
             setGravity(Gravity.CENTER)
         }
 

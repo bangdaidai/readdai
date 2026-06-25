@@ -93,10 +93,26 @@ class BookplateManageActivity :
                     if (isChecked) {
                         onClassicApply()
                     } else {
-                        ignoreClassicSwitch = true
-                        it.swClassicApply.isChecked = true
+                        applyLastNonClassicTemplate()
                     }
                 }
+            }
+        }
+    }
+
+    private fun applyLastNonClassicTemplate() {
+        val lastNonZeroId = appCtx.getPrefLong("lastBookplateTemplateId", 0L)
+        if (lastNonZeroId > 0L && templates.any { it.id == lastNonZeroId }) {
+            val template = templates.first { it.id == lastNonZeroId }
+            onApply(template)
+        } else {
+            val firstTemplate = templates.firstOrNull()
+            if (firstTemplate != null) {
+                onApply(firstTemplate)
+            } else {
+                ignoreClassicSwitch = true
+                classicBinding?.swClassicApply?.isChecked = true
+                toastOnUi("暂无可用的模板")
             }
         }
     }
@@ -142,6 +158,7 @@ class BookplateManageActivity :
 
     override fun onApply(item: BookplateTemplate) {
         appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, item.id)
+        appCtx.putPrefLong("lastBookplateTemplateId", item.id)
         selectedId = item.id
         adapter.setSelectedId(item.id)
         updateClassicSwitch()
