@@ -66,12 +66,9 @@ object BookplateHtmlRenderer {
     }
 
     private fun ensureViewportMeta(html: String, width: Int): String {
-        val withoutMinHeight = HEAD_TAG_REGEX.replaceFirst(
-            html,
-            "<head>\n<style>body{min-height:0!important}</style>"
-        )
-        return if (VIEWPORT_META_REGEX.containsMatchIn(withoutMinHeight)) {
-            VIEWPORT_META_REGEX.replace(withoutMinHeight) { matchResult ->
+        // 不再注入 body{min-height:0!important}，避免干扰高度测量
+        return if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
+            VIEWPORT_META_REGEX.replace(html) { matchResult ->
                 val original = matchResult.value
                 val replaced = original.replaceFirst(Regex("""width=[^,;]+"""), "width=${width}")
                 if (!replaced.contains("initial-scale")) {
@@ -82,7 +79,7 @@ object BookplateHtmlRenderer {
             }
         } else {
             HEAD_TAG_REGEX.replaceFirst(
-                withoutMinHeight,
+                html,
                 "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
             )
         }
@@ -270,7 +267,10 @@ object BookplateHtmlRenderer {
     /**
      * 核心渲染方法
      *
-     * 关键修复：不再依赖JS返回的高度，而是用Android的View测量机制重新计算真实高度
+     * 关键修复：
+     * 1. 不在 ensureViewportMeta 中注入 body{min-height:0!important}
+     * 2. 在 onPageFinished 中用JS动态设置 min-height=0
+     * 3. 然后用 View.measure(UNSPECIFIED) 获取真实内容高度
      */
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
         val t0 = System.currentTimeMillis()
@@ -320,6 +320,12 @@ object BookplateHtmlRenderer {
                     onPageFinishedCalled = true
                     val loadTime = System.currentTimeMillis() - t0
                     BookplateLogger.log("RENDER", "onPageFinished: +${loadTime}ms")
+                    
+                    // 注入JS：把body的min-height设为0，让body收缩到内容实际高度
+                    view?.evaluateJavascript("""
+                        document.body.style.minHeight = '0px';
+                        document.body.style.height = 'auto';
+                    """, null)
                 }
             }
 
@@ -327,19 +333,18 @@ object BookplateHtmlRenderer {
             val t3 = System.currentTimeMillis()
             BookplateLogger.log("RENDER", "loadDataWithBaseURL完成: +${t3 - t0}ms, 开始等待页面加载...")
 
-            // 关键修复：不再依赖JS返回的高度，而是用Android的View测量机制
+            // 等待页面加载完成，然后用View.measure获取真实高度
             val contentHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 // 等待页面加载完成
                 while (!onPageFinishedCalled) {
                     delay(50)
                 }
                 
-                // 给渲染一点时间
+                // 给JS执行和重排一点时间
                 delay(300)
                 
-                // 使用Android的View测量机制获取真实高度
+                // 用UNSPECIFIED模式重新测量，获取不被裁剪时的真实高度
                 withContext(Dispatchers.Main) {
-                    // 用UNSPECIFIED模式重新测量，获取不被裁剪时的真实高度
                     webView.measure(
                         View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
                         View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -348,15 +353,20 @@ object BookplateHtmlRenderer {
                     val measuredHeight = webView.measuredHeight
                     BookplateLogger.log("RENDER", "View测量高度: ${measuredHeight}px")
                     
-                    if (measuredHeight > 0) {
-                        // 加50px安全边距
-                        val finalHeight = measuredHeight + 50
+                    if (measuredHeight > 0 && measuredHeight < generousH) {
+                        // 加20px安全边距
+                        val finalHeight = measuredHeight + 20
                         BookplateLogger.log("RENDER", "使用View测量高度: ${finalHeight}px")
                         heightDeferred.complete(finalHeight)
+                    } else if (measuredHeight > 0) {
+                        // 测量高度接近generousH，说明可能有内容撑满，直接使用
+                        val finalHeight = measuredHeight
+                        BookplateLogger.log("RENDER", "测量高度接近最大值，直接使用: ${finalHeight}px")
+                        heightDeferred.complete(finalHeight)
                     } else {
-                        // 备用方案：使用generousH的一半
-                        val fallbackHeight = generousH.coerceAtMost(2500)
-                        BookplateLogger.log("RENDER", "View测量高度为0，使用备用高度: ${fallbackHeight}px")
+                        // 备用方案
+                        val fallbackHeight = 800
+                        BookplateLogger.log("RENDER", "View测量高度异常，使用备用高度: ${fallbackHeight}px")
                         heightDeferred.complete(fallbackHeight)
                     }
                 }
@@ -364,19 +374,7 @@ object BookplateHtmlRenderer {
                 heightDeferred.await()
             } ?: run {
                 val elapsed = System.currentTimeMillis() - t0
-                val diagnoseInfo = buildString {
-                    append("=== 超时诊断 ===")
-                    append("\n总耗时: ${elapsed}ms, 超时阈值: ${RENDER_TIMEOUT_MS}ms")
-                    append("\nonPageFinished触发: $onPageFinishedCalled")
-                    if (webViewErrors.isNotEmpty()) {
-                        append("\nWebView错误: ${webViewErrors.joinToString("; ")}")
-                    }
-                }
-                BookplateLogger.log("RENDER", diagnoseInfo)
-                
-                val msg = "页面加载超时 (${RENDER_TIMEOUT_MS}ms, 实际${elapsed}ms)"
-                BookplateLogger.log("RENDER", msg)
-                lastError = msg
+                BookplateLogger.log("RENDER", "页面加载超时 (+${elapsed}ms)")
                 try {
                     webView.destroy()
                     cachedWebViewDeferred = null
@@ -391,7 +389,6 @@ object BookplateHtmlRenderer {
                 return null
             }
 
-            // ====== 核心变更：不 re-layout，直接在 generous 布局下截图再裁剪 ======
             val t4 = System.currentTimeMillis()
             BookplateLogger.log("RENDER", "等待截图前稳定: delay(150ms)")
             delay(150)
