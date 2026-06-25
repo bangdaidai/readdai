@@ -292,29 +292,20 @@ object BookplateHtmlRenderer {
                     val loadTime = System.currentTimeMillis() - startTime
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
+                    // 永久移除 body min-height，让 body 收缩到内容高度，再用 scrollHeight 精确测量
                     view?.evaluateJavascript("""
                         (function(){
-                            function measure(){
-                                var maxBottom=0;
-                                var elems=document.body.getElementsByTagName('*');
-                                for(var i=0;i<elems.length;i++){
-                                    var r=elems[i].getBoundingClientRect();
-                                    if(r.width>0||r.height>0){
-                                        if(r.bottom>maxBottom) maxBottom=r.bottom;
-                                    }
-                                }
-                                var style=getComputedStyle(document.body);
-                                var padBottom=parseInt(style.paddingBottom)||0;
-                                return Math.ceil(maxBottom+padBottom);
-                            }
+                            document.body.style.minHeight='0px';
+                            document.body.style.height='auto';
+                            document.body.style.overflow='hidden';
                             var last=0, stable=0, n=0;
                             var t=setInterval(function(){
-                                var h=measure();
+                                var h=document.body.scrollHeight||0;
                                 if(h===last && h>0) stable++; else stable=0;
                                 last=h; n++;
                                 if(stable>=5 || n>=80){
                                     clearInterval(t);
-                                    window.HeightBridge.onHeightReady(h);
+                                    window.HeightBridge.onHeightReady(Math.round(h));
                                 }
                             },80);
                         })()
@@ -359,6 +350,7 @@ object BookplateHtmlRenderer {
                 return null
             }
 
+            // body 已收缩到内容高度，直接在 generousH 视口截图并裁剪到 contentHeight
             BookplateLogger.log("RENDER", "截图并裁剪到内容高度: ${width}x$contentHeight")
             val fullBitmap = captureBitmap(webView, width, generousH, startTime)
             if (fullBitmap != null) {
