@@ -303,24 +303,30 @@ object BookplateHtmlRenderer {
                     BookplateLogger.log("RENDER", "onPageFinished, 耗时=${loadTime}ms")
 
                     Handler(Looper.getMainLooper()).postDelayed({
-                        // 遍历所有元素，取 getBoundingClientRect().bottom 最大值
-                        // 不能用 body.offsetHeight（会等于100vh即generousH）
+                        // 临时移除 body 的 min-height/height 约束(模板常设 min-height:100vh),
+                        // 用 scrollHeight 获取真实内容高度, 再恢复原样式
                         webView.evaluateJavascript(
                             """(function(){
-                                var maxBottom = 0;
-                                var elems = document.body.getElementsByTagName('*');
-                                for (var i = 0; i < elems.length; i++) {
-                                    var b = elems[i].getBoundingClientRect().bottom;
-                                    if (b > maxBottom) maxBottom = b;
-                                }
-                                if (maxBottom <= 0) {
-                                    maxBottom = Math.max(
+                                document.body.style.minHeight = 'auto';
+                                document.body.style.height = 'auto';
+                                var h = document.body.scrollHeight
+                                    || document.documentElement.scrollHeight
+                                    || 0;
+                                document.body.style.minHeight = '';
+                                document.body.style.height = '';
+                                if (h <= 0) {
+                                    var maxBottom = 0;
+                                    var elems = document.body.getElementsByTagName('*');
+                                    for (var i = 0; i < elems.length; i++) {
+                                        var b = elems[i].getBoundingClientRect().bottom;
+                                        if (b > maxBottom) maxBottom = b;
+                                    }
+                                    h = maxBottom || Math.max(
                                         document.body.offsetHeight||0,
-                                        document.body.scrollHeight||0,
                                         document.documentElement.scrollHeight||0
                                     );
                                 }
-                                return Math.round(maxBottom);
+                                return Math.round(h);
                             })()"""
                         ) { jsResult ->
                             val jsH = jsResult.trim('"').toIntOrNull() ?: 0
