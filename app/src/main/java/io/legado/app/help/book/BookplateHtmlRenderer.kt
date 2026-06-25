@@ -66,10 +66,12 @@ object BookplateHtmlRenderer {
     }
 
     private fun ensureViewportMeta(html: String, width: Int): String {
-        // 关键修复：不再强制注入body{min-height:0!important}
-        // 保留模板原有的CSS样式
-        return if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
-            VIEWPORT_META_REGEX.replace(html) { matchResult ->
+        val withoutMinHeight = HEAD_TAG_REGEX.replaceFirst(
+            html,
+            "<head>\n<style>body{min-height:0!important}</style>"
+        )
+        return if (VIEWPORT_META_REGEX.containsMatchIn(withoutMinHeight)) {
+            VIEWPORT_META_REGEX.replace(withoutMinHeight) { matchResult ->
                 val original = matchResult.value
                 val replaced = original.replaceFirst(Regex("""width=[^,;]+"""), "width=${width}")
                 if (!replaced.contains("initial-scale")) {
@@ -80,7 +82,7 @@ object BookplateHtmlRenderer {
             }
         } else {
             HEAD_TAG_REGEX.replaceFirst(
-                html,
+                withoutMinHeight,
                 "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
             )
         }
@@ -266,19 +268,16 @@ object BookplateHtmlRenderer {
     }
 
     /**
-     * 核心渲染方法 - 修复高度测量问题
+     * 核心渲染方法
      *
-     * 关键改进：
-     * 1. 不再强制注入 body{min-height:0!important}
-     * 2. 使用更智能的高度测量方法，优先查找内容容器
-     * 3. 增加安全边距，避免内容被截断
+     * 关键修复：不再依赖JS返回的高度，而是用Android的View测量机制重新计算真实高度
      */
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
         val t0 = System.currentTimeMillis()
         val screenW = context.resources.displayMetrics.widthPixels
         val screenH = context.resources.displayMetrics.heightPixels
         val density = context.resources.displayMetrics.density
-        val generousH = minOf(maxOf(screenH * 2, 3500), MAX_GENEROUS_HEIGHT)
+        val generousH = minOf(maxOf(screenH * 2, 3000), MAX_GENEROUS_HEIGHT)
 
         BookplateLogger.log("RENDER", "========== 渲染开始 ==========")
         BookplateLogger.log("RENDER", "屏幕: ${screenW}x${screenH}px, density=$density, renderWidth=$width, generousH=$generousH")
@@ -301,11 +300,7 @@ object BookplateHtmlRenderer {
 
             val heightDeferred = CompletableDeferred<Int>()
             val webViewErrors = mutableListOf<String>()
-            // 记录所有 JS 采样的高度值，用于诊断
-            val heightSamples = mutableListOf<Int>()
             var onPageFinishedCalled = false
-            var jsInjected = false
-            var jsInjectionResult: String? = null
 
             webView.webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
@@ -325,153 +320,47 @@ object BookplateHtmlRenderer {
                     onPageFinishedCalled = true
                     val loadTime = System.currentTimeMillis() - t0
                     BookplateLogger.log("RENDER", "onPageFinished: +${loadTime}ms")
-
-                    // 修复后的JS轮询脚本
-                    // 1. 不再强制修改body样式
-                    // 2. 智能检测内容容器高度
-                    // 3. 考虑边距影响
-                    val jsCode = """
-(function(){
-    // 保存原始样式，不修改模板布局
-    var originalBodyStyles = {
-        minHeight: document.body.style.minHeight,
-        height: document.body.style.height
-    };
-    
-    // 智能获取实际内容高度
-    function getActualHeight() {
-        var maxH = 0;
-        
-        // 方法1: 查找常见的内容容器
-        var selectors = [
-            '.bookplate',
-            '.bookplate-card', 
-            '.card',
-            '.container',
-            '.content',
-            'main',
-            '#app',
-            '#root'
-        ];
-        
-        for (var i = 0; i < selectors.length; i++) {
-            var el = document.querySelector(selectors[i]);
-            if (el) {
-                var rect = el.getBoundingClientRect();
-                var style = window.getComputedStyle(el);
-                var marginTop = parseFloat(style.marginTop) || 0;
-                var marginBottom = parseFloat(style.marginBottom) || 0;
-                var totalH = el.scrollHeight + marginTop + marginBottom;
-                maxH = Math.max(maxH, totalH);
-            }
-        }
-        
-        // 方法2: 使用getBoundingClientRect获取body内所有内容的实际范围
-        if (maxH <= 0) {
-            var bodyChildren = document.body.children;
-            var minTop = Infinity;
-            var maxBottom = -Infinity;
-            
-            for (var i = 0; i < bodyChildren.length; i++) {
-                var child = bodyChildren[i];
-                var rect = child.getBoundingClientRect();
-                if (rect.height > 0) {
-                    minTop = Math.min(minTop, rect.top);
-                    maxBottom = Math.max(maxBottom, rect.bottom);
                 }
             }
-            
-            if (isFinite(minTop) && isFinite(maxBottom)) {
-                maxH = maxBottom - minTop + 40; // 加40px安全边距
-            }
-        }
-        
-        // 方法3: 回退到文档高度
-        if (maxH <= 0) {
-            maxH = Math.max(
-                document.documentElement.scrollHeight,
-                document.body.scrollHeight,
-                document.body.offsetHeight
-            );
-        }
-        
-        return Math.max(Math.round(maxH), 1);
-    }
-    
-    // 采样并等待稳定
-    var samples = [];
-    var last = -1;
-    var stable = 0;
-    var n = 0;
-    var maxAttempts = 50;
-    
-    function measureAndReport() {
-        var h = getActualHeight();
-        samples.push(h);
-        
-        if (h === last && h > 0) {
-            stable++;
-        } else {
-            stable = 0;
-        }
-        
-        last = h;
-        n++;
-        
-        // 稳定条件：连续3次相同高度，或达到最大尝试次数
-        if ((stable >= 3 && h > 0) || n >= maxAttempts) {
-            clearInterval(window.__bookplateTimer__);
-            delete window.__bookplateTimer__;
-            
-            // 恢复原始body样式
-            document.body.style.minHeight = originalBodyStyles.minHeight;
-            document.body.style.height = originalBodyStyles.height;
-            
-            window.HeightBridge.onHeightReady(h, JSON.stringify(samples));
-        }
-    }
-    
-    // 立即开始测量
-    measureAndReport();
-    window.__bookplateTimer__ = setInterval(measureAndReport, 100);
-})()
-                    """.trimIndent()
-
-                    view?.evaluateJavascript(jsCode) { result ->
-                        jsInjected = true
-                        jsInjectionResult = result
-                        BookplateLogger.log("RENDER", "JS注入完成: result=${result ?: "null"}")
-                    }
-                }
-            }
-
-            webView.addJavascriptInterface(object {
-                @android.webkit.JavascriptInterface
-                fun onHeightReady(height: Int, samplesJson: String) {
-                    val elapsed = System.currentTimeMillis() - t0
-                    BookplateLogger.log("RENDER", "HeightBridge回调: height=$height, +${elapsed}ms")
-                    BookplateLogger.log("RENDER", "采样序列(${samplesJson.length}字): $samplesJson")
-                    try {
-                        val arr = JSONArray(samplesJson)
-                        for (i in 0 until arr.length()) {
-                            heightSamples.add(arr.getInt(i))
-                        }
-                    } catch (e: Exception) {
-                        BookplateLogger.log("RENDER", "解析采样序列异常: ${e.message}")
-                    }
-                    
-                    // 增加5%的安全边距，确保内容不被截断
-                    val safeHeight = (height * 1.05f).toInt().coerceAtLeast(100)
-                    BookplateLogger.log("RENDER", "原始高度: ${height}px, 加安全边距后: ${safeHeight}px")
-                    heightDeferred.complete(safeHeight)
-                }
-            }, "HeightBridge")
 
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
             val t3 = System.currentTimeMillis()
-            BookplateLogger.log("RENDER", "loadDataWithBaseURL完成: +${t3 - t0}ms, 开始等待高度稳定...")
+            BookplateLogger.log("RENDER", "loadDataWithBaseURL完成: +${t3 - t0}ms, 开始等待页面加载...")
 
+            // 关键修复：不再依赖JS返回的高度，而是用Android的View测量机制
             val contentHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
+                // 等待页面加载完成
+                while (!onPageFinishedCalled) {
+                    delay(50)
+                }
+                
+                // 给渲染一点时间
+                delay(300)
+                
+                // 使用Android的View测量机制获取真实高度
+                withContext(Dispatchers.Main) {
+                    // 用UNSPECIFIED模式重新测量，获取不被裁剪时的真实高度
+                    webView.measure(
+                        View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    )
+                    
+                    val measuredHeight = webView.measuredHeight
+                    BookplateLogger.log("RENDER", "View测量高度: ${measuredHeight}px")
+                    
+                    if (measuredHeight > 0) {
+                        // 加50px安全边距
+                        val finalHeight = measuredHeight + 50
+                        BookplateLogger.log("RENDER", "使用View测量高度: ${finalHeight}px")
+                        heightDeferred.complete(finalHeight)
+                    } else {
+                        // 备用方案：使用generousH的一半
+                        val fallbackHeight = generousH.coerceAtMost(2500)
+                        BookplateLogger.log("RENDER", "View测量高度为0，使用备用高度: ${fallbackHeight}px")
+                        heightDeferred.complete(fallbackHeight)
+                    }
+                }
+                
                 heightDeferred.await()
             } ?: run {
                 val elapsed = System.currentTimeMillis() - t0
@@ -479,44 +368,24 @@ object BookplateHtmlRenderer {
                     append("=== 超时诊断 ===")
                     append("\n总耗时: ${elapsed}ms, 超时阈值: ${RENDER_TIMEOUT_MS}ms")
                     append("\nonPageFinished触发: $onPageFinishedCalled")
-                    append("\nJS注入完成: $jsInjected, 返回: $jsInjectionResult")
-                    append("\nHeightBridge回调: ${if (heightSamples.isEmpty()) "从未触发" else "已触发(但Deferred未complete?)"}")
-                    if (heightSamples.isNotEmpty()) {
-                        append("\n采样数: ${heightSamples.size}, 值: ${heightSamples.joinToString(",")}")
-                    }
                     if (webViewErrors.isNotEmpty()) {
                         append("\nWebView错误: ${webViewErrors.joinToString("; ")}")
                     }
                 }
                 BookplateLogger.log("RENDER", diagnoseInfo)
-
-                // 超时后使用最后一个采样高度作为备用
-                val fallbackHeight = if (heightSamples.isNotEmpty()) {
-                    heightSamples.last()
-                } else {
-                    generousH.coerceAtMost(2500)
-                }
                 
-                BookplateLogger.log("RENDER", "使用备用高度: ${fallbackHeight}px")
-                fallbackHeight
-            }
-
-            // 高度采样分析
-            if (heightSamples.isNotEmpty()) {
-                val minH = heightSamples.minOrNull() ?: 0
-                val maxH = heightSamples.maxOrNull() ?: 0
-                val avgH = heightSamples.average().toInt()
-                val fluctuation = maxH - minH
-                BookplateLogger.log("RENDER", "采样分析: count=${heightSamples.size}, min=$minH, max=$maxH, avg=$avgH, 波动=$fluctuation, final=$contentHeight")
-                if (fluctuation > 50) {
-                    BookplateLogger.log("RENDER", "警告: 高度波动较大(${fluctuation}px), 可能存在异步资源加载或CSS动画")
-                }
-            } else {
-                BookplateLogger.log("RENDER", "警告: 采样序列为空, HeightBridge回调可能未传递samples")
+                val msg = "页面加载超时 (${RENDER_TIMEOUT_MS}ms, 实际${elapsed}ms)"
+                BookplateLogger.log("RENDER", msg)
+                lastError = msg
+                try {
+                    webView.destroy()
+                    cachedWebViewDeferred = null
+                } catch (_: Exception) {}
+                return null
             }
 
             if (contentHeight <= 0) {
-                val msg = "内容高度为0，渲染失败。可能原因: body内无可见内容或CSS导致高度塌陷"
+                val msg = "内容高度为0，渲染失败"
                 BookplateLogger.log("RENDER", msg)
                 lastError = msg
                 return null
@@ -527,7 +396,7 @@ object BookplateHtmlRenderer {
             BookplateLogger.log("RENDER", "等待截图前稳定: delay(150ms)")
             delay(150)
 
-            val captureH = minOf(generousH, contentHeight + 200) // 加200px安全边距
+            val captureH = minOf(generousH, contentHeight + 200)
             BookplateLogger.log("RENDER", "截图: ${width}x${captureH} (contentHeight=$contentHeight, generousH=$generousH)")
 
             val fullBitmap = captureBitmap(webView, width, captureH, t4)
