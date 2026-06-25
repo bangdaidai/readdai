@@ -66,12 +66,10 @@ object BookplateHtmlRenderer {
     }
 
     private fun ensureViewportMeta(html: String, width: Int): String {
-        val withoutMinHeight = HEAD_TAG_REGEX.replaceFirst(
-            html,
-            "<head>\n<style>body{min-height:0!important}</style>"
-        )
-        return if (VIEWPORT_META_REGEX.containsMatchIn(withoutMinHeight)) {
-            VIEWPORT_META_REGEX.replace(withoutMinHeight) { matchResult ->
+        // 关键修复：不再强制注入body{min-height:0!important}
+        // 保留模板原有的CSS样式
+        return if (VIEWPORT_META_REGEX.containsMatchIn(html)) {
+            VIEWPORT_META_REGEX.replace(html) { matchResult ->
                 val original = matchResult.value
                 val replaced = original.replaceFirst(Regex("""width=[^,;]+"""), "width=${width}")
                 if (!replaced.contains("initial-scale")) {
@@ -82,7 +80,7 @@ object BookplateHtmlRenderer {
             }
         } else {
             HEAD_TAG_REGEX.replaceFirst(
-                withoutMinHeight,
+                html,
                 "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
             )
         }
@@ -268,21 +266,19 @@ object BookplateHtmlRenderer {
     }
 
     /**
-     * 核心渲染方法
+     * 核心渲染方法 - 修复高度测量问题
      *
-     * 策略：
-     * 1. 使用 generousH 初始布局，确保所有内容完整渲染
-     * 2. CSS注入 + JS 内联样式双重移除 body min-height
-     * 3. JS 轮询等待高度稳定，同时记录每次采样的高度值
-     * 4. 保持 generous 布局直接截图，按稳定高度 CROP，禁止 re-layout（re-layout 会导致 WebView clip 内容）
-     * 5. 超时时主动探针查询 body.scrollHeight 等诊断信息
+     * 关键改进：
+     * 1. 不再强制注入 body{min-height:0!important}
+     * 2. 使用更智能的高度测量方法，优先查找内容容器
+     * 3. 增加安全边距，避免内容被截断
      */
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
         val t0 = System.currentTimeMillis()
         val screenW = context.resources.displayMetrics.widthPixels
         val screenH = context.resources.displayMetrics.heightPixels
         val density = context.resources.displayMetrics.density
-        val generousH = minOf(maxOf(screenH * 2, 3000), MAX_GENEROUS_HEIGHT)
+        val generousH = minOf(maxOf(screenH * 2, 3500), MAX_GENEROUS_HEIGHT)
 
         BookplateLogger.log("RENDER", "========== 渲染开始 ==========")
         BookplateLogger.log("RENDER", "屏幕: ${screenW}x${screenH}px, density=$density, renderWidth=$width, generousH=$generousH")
@@ -330,28 +326,114 @@ object BookplateHtmlRenderer {
                     val loadTime = System.currentTimeMillis() - t0
                     BookplateLogger.log("RENDER", "onPageFinished: +${loadTime}ms")
 
-                    // JS 轮询脚本：每 100ms 采样一次 body.scrollHeight
-                    // 同时将 minHeight 设为 0（内联样式）移除 CSS 强制的 min-height
-                    // height=auto 让 body 收缩到内容高度
+                    // 修复后的JS轮询脚本
+                    // 1. 不再强制修改body样式
+                    // 2. 智能检测内容容器高度
+                    // 3. 考虑边距影响
                     val jsCode = """
 (function(){
-    document.body.style.minHeight='0px';
-    document.body.style.height='auto';
-    var samples=[];
-    var last=-1, stable=0, n=0;
-    function measure(){
-        var h=document.body.scrollHeight||0;
-        if(h!==last){ samples.push(h); }
-        if(h===last && h>0) stable++; else stable=0;
-        last=h; n++;
-        if(stable>=6 || n>=100){
+    // 保存原始样式，不修改模板布局
+    var originalBodyStyles = {
+        minHeight: document.body.style.minHeight,
+        height: document.body.style.height
+    };
+    
+    // 智能获取实际内容高度
+    function getActualHeight() {
+        var maxH = 0;
+        
+        // 方法1: 查找常见的内容容器
+        var selectors = [
+            '.bookplate',
+            '.bookplate-card', 
+            '.card',
+            '.container',
+            '.content',
+            'main',
+            '#app',
+            '#root'
+        ];
+        
+        for (var i = 0; i < selectors.length; i++) {
+            var el = document.querySelector(selectors[i]);
+            if (el) {
+                var rect = el.getBoundingClientRect();
+                var style = window.getComputedStyle(el);
+                var marginTop = parseFloat(style.marginTop) || 0;
+                var marginBottom = parseFloat(style.marginBottom) || 0;
+                var totalH = el.scrollHeight + marginTop + marginBottom;
+                maxH = Math.max(maxH, totalH);
+            }
+        }
+        
+        // 方法2: 使用getBoundingClientRect获取body内所有内容的实际范围
+        if (maxH <= 0) {
+            var bodyChildren = document.body.children;
+            var minTop = Infinity;
+            var maxBottom = -Infinity;
+            
+            for (var i = 0; i < bodyChildren.length; i++) {
+                var child = bodyChildren[i];
+                var rect = child.getBoundingClientRect();
+                if (rect.height > 0) {
+                    minTop = Math.min(minTop, rect.top);
+                    maxBottom = Math.max(maxBottom, rect.bottom);
+                }
+            }
+            
+            if (isFinite(minTop) && isFinite(maxBottom)) {
+                maxH = maxBottom - minTop + 40; // 加40px安全边距
+            }
+        }
+        
+        // 方法3: 回退到文档高度
+        if (maxH <= 0) {
+            maxH = Math.max(
+                document.documentElement.scrollHeight,
+                document.body.scrollHeight,
+                document.body.offsetHeight
+            );
+        }
+        
+        return Math.max(Math.round(maxH), 1);
+    }
+    
+    // 采样并等待稳定
+    var samples = [];
+    var last = -1;
+    var stable = 0;
+    var n = 0;
+    var maxAttempts = 50;
+    
+    function measureAndReport() {
+        var h = getActualHeight();
+        samples.push(h);
+        
+        if (h === last && h > 0) {
+            stable++;
+        } else {
+            stable = 0;
+        }
+        
+        last = h;
+        n++;
+        
+        // 稳定条件：连续3次相同高度，或达到最大尝试次数
+        if ((stable >= 3 && h > 0) || n >= maxAttempts) {
             clearInterval(window.__bookplateTimer__);
             delete window.__bookplateTimer__;
-            window.HeightBridge.onHeightReady(Math.round(h), JSON.stringify(samples));
+            
+            // 恢复原始body样式
+            document.body.style.minHeight = originalBodyStyles.minHeight;
+            document.body.style.height = originalBodyStyles.height;
+            
+            window.HeightBridge.onHeightReady(h, JSON.stringify(samples));
         }
     }
-    measure();
-    window.__bookplateTimer__ = setInterval(measure, 100);
+    
+    // 立即开始测量
+    measureAndReport();
+    window.__bookplateTimer__ = setInterval(measureAndReport, 100);
 })()
                     """.trimIndent()
 
@@ -377,7 +459,11 @@ object BookplateHtmlRenderer {
                     } catch (e: Exception) {
                         BookplateLogger.log("RENDER", "解析采样序列异常: ${e.message}")
                     }
-                    heightDeferred.complete(height.coerceAtLeast(1))
+                    
+                    // 增加5%的安全边距，确保内容不被截断
+                    val safeHeight = (height * 1.05f).toInt().coerceAtLeast(100)
+                    BookplateLogger.log("RENDER", "原始高度: ${height}px, 加安全边距后: ${safeHeight}px")
+                    heightDeferred.complete(safeHeight)
                 }
             }, "HeightBridge")
 
@@ -404,37 +490,15 @@ object BookplateHtmlRenderer {
                 }
                 BookplateLogger.log("RENDER", diagnoseInfo)
 
-                // 超时后主动探针查询当前高度
-                BookplateLogger.log("RENDER", "执行超时探针查询...")
-                try {
-                    val probeDeferred = CompletableDeferred<String>()
-                    webView.evaluateJavascript("""
-(function(){
-    var bh=document.body.scrollHeight||0;
-    var bo=document.body.offsetHeight||0;
-    var dh=document.documentElement.scrollHeight||0;
-    var bmh=getComputedStyle(document.body).minHeight;
-    var bh2=getComputedStyle(document.body).height;
-    return JSON.stringify({bodyScrollHeight:bh, bodyOffsetHeight:bo, docScrollHeight:dh, bodyComputedMinHeight:bmh, bodyComputedHeight:bh2});
-})()
-                    """.trimIndent()) { result ->
-                        probeDeferred.complete(result ?: "null")
-                    }
-                    val probeResult = withTimeoutOrNull(3000L) { probeDeferred.await() }
-                    BookplateLogger.log("RENDER", "探针结果: $probeResult")
-                } catch (e: Exception) {
-                    BookplateLogger.log("RENDER", "探针异常: ${e.message}")
+                // 超时后使用最后一个采样高度作为备用
+                val fallbackHeight = if (heightSamples.isNotEmpty()) {
+                    heightSamples.last()
+                } else {
+                    generousH.coerceAtMost(2500)
                 }
-
-                val msg = "页面加载超时 (${RENDER_TIMEOUT_MS}ms, 实际${elapsed}ms): onPageFinished=$onPageFinishedCalled, jsInjected=$jsInjected, heightBridgeCalled=${heightSamples.isNotEmpty()}"
-                BookplateLogger.log("RENDER", msg)
-                lastError = msg
-                BookplateLogger.log("RENDER", "销毁卡死WebView防止污染后续渲染")
-                try {
-                    webView.destroy()
-                    cachedWebViewDeferred = null
-                } catch (_: Exception) {}
-                return null
+                
+                BookplateLogger.log("RENDER", "使用备用高度: ${fallbackHeight}px")
+                fallbackHeight
             }
 
             // 高度采样分析
@@ -459,8 +523,6 @@ object BookplateHtmlRenderer {
             }
 
             // ====== 核心变更：不 re-layout，直接在 generous 布局下截图再裁剪 ======
-            // re-layout 到精确高度会导致 WebView 的 draw() 裁剪超出 view bounds 的内容
-            // 保持 generous 高度确保所有内容都被渲染，然后 crop 到稳定高度
             val t4 = System.currentTimeMillis()
             BookplateLogger.log("RENDER", "等待截图前稳定: delay(150ms)")
             delay(150)
