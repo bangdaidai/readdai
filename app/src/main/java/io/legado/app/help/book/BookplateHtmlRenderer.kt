@@ -322,8 +322,8 @@ object BookplateHtmlRenderer {
                 }
             }, "HeightBridge")
 
-            webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-            BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
+            webView.loadUrl("data:text/html;charset=UTF-8;base64,${Base64.encodeToString(html.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)}")
+            BookplateLogger.log("RENDER", "loadUrl完成, 开始计时...")
 
             val contentHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 heightDeferred.await()
