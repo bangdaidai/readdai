@@ -10,6 +10,7 @@ import android.util.Base64
 import android.view.View
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URI
@@ -332,7 +333,10 @@ object BookplateHtmlRenderer {
                     """, null)
                 }
 
-                // 【核心修复】通过 onReceivedTitle 接收异步计算出的稳定高度
+            }
+
+            // 【核心修复】通过 onReceivedTitle 接收异步计算出的稳定高度
+            webView.webChromeClient = object : WebChromeClient() {
                 override fun onReceivedTitle(view: WebView?, title: String?) {
                     if (title != null && title.startsWith(HEIGHT_MARKER)) {
                         val h = title.removePrefix(HEIGHT_MARKER).toIntOrNull() ?: 0
