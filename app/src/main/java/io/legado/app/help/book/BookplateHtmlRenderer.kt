@@ -350,18 +350,15 @@ object BookplateHtmlRenderer {
                 return null
             }
 
-            // body 已收缩到内容高度，直接在 generousH 视口截图并裁剪到 contentHeight
-            BookplateLogger.log("RENDER", "截图并裁剪到内容高度: ${width}x$contentHeight")
-            val fullBitmap = captureBitmap(webView, width, generousH, startTime)
-            if (fullBitmap != null) {
-                val cropHeight = contentHeight.coerceAtMost(fullBitmap.height)
-                val cropped = Bitmap.createBitmap(fullBitmap, 0, 0, width, cropHeight)
-                if (cropped != fullBitmap) {
-                    fullBitmap.recycle()
-                }
-                return cropped
-            }
-            null
+            // body.minHeight 已被 JS 设为 0px（内联样式优先级高于 CSS），
+            // 重 layout 到内容高度后 body 仍保持收缩状态，直接截图即可
+            webView.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
+            )
+            webView.layout(0, 0, width, contentHeight)
+            BookplateLogger.log("RENDER", "重layout到内容高度: ${width}x$contentHeight")
+            captureBitmap(webView, width, contentHeight, startTime)
         } catch (e: CancellationException) {
             val msg = "渲染被取消: ${e.message}"
             BookplateLogger.log("RENDER", msg)
