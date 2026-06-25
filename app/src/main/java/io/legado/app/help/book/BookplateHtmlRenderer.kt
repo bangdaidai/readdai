@@ -66,7 +66,6 @@ object BookplateHtmlRenderer {
             bitmapCache.values.forEach { it.recycle() }
             bitmapCache.clear()
         }
-        BookplateLogger.log("RENDER", "缓存已清空")
     }
 
     private fun ensureViewportMeta(html: String, width: Int): String {
@@ -221,7 +220,6 @@ object BookplateHtmlRenderer {
         synchronized(bitmapCache) {
             bitmapCache[cacheKey]?.let { cached ->
                 if (!cached.isRecycled) {
-                    BookplateLogger.log("RENDER", "命中缓存")
                     return cached
                 }
                 bitmapCache.remove(cacheKey)
@@ -229,27 +227,19 @@ object BookplateHtmlRenderer {
         }
 
         return withContext(Dispatchers.Main) {
-            BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}(id=${template.id}), 宽度=${renderWidth}")
             lastError = null
             val filteredData = applyVisibility(data, settings)
 
-            val coverStart = System.currentTimeMillis()
             val coverDataUri = coverUrlToDataUri(filteredData.coverUrl)
-            BookplateLogger.log("RENDER", "封面转换耗时: ${System.currentTimeMillis() - coverStart}ms")
             val dataWithCover = if (coverDataUri != null) {
                 filteredData.copy(coverUrl = coverDataUri)
             } else {
                 filteredData
             }
 
-            val htmlStart = System.currentTimeMillis()
             val html = replaceVariables(template.htmlContent, dataWithCover)
-            BookplateLogger.log("RENDER", "变量替换耗时: ${System.currentTimeMillis() - htmlStart}ms, HTML长度: ${html.length}")
-
             if (html.isBlank()) {
-                val msg = "模板变量替换后 HTML 为空"
-                BookplateLogger.log("RENDER", msg)
-                lastError = msg
+                lastError = "模板变量替换后 HTML 为空"
                 return@withContext null
             }
 
@@ -266,7 +256,6 @@ object BookplateHtmlRenderer {
     }
 
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
-        val t0 = System.currentTimeMillis()
         val webView = getWebView(context)
         val heightDeferred = CompletableDeferred<Int>()
 
@@ -275,7 +264,6 @@ object BookplateHtmlRenderer {
                 override fun onContentHeight(height: Int) {
                     if (!heightDeferred.isCompleted) {
                         val safeHeight = height.coerceAtMost(MAX_GENEROUS_HEIGHT) + HEIGHT_MARGIN
-                        BookplateLogger.log("RENDER", "JS获取文档真实高度: $height, 最终布局高度:$safeHeight")
                         heightDeferred.complete(safeHeight)
                     }
                 }
@@ -286,9 +274,7 @@ object BookplateHtmlRenderer {
                 override fun onReceivedError(
                     view: WebView?, errorCode: Int, description: String?, failingUrl: String?
                 ) {
-                    val err = "WebView错误[code=$errorCode]: $description"
-                    BookplateLogger.log("RENDER", err)
-                    lastError = err
+                    lastError = "WebView错误[code=$errorCode]: $description"
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -340,9 +326,7 @@ object BookplateHtmlRenderer {
         val contentHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
             heightDeferred.await()
         } ?: run {
-            val msg = "页面高度获取超时"
-            BookplateLogger.log("RENDER", msg)
-            lastError = msg
+            lastError = "页面高度获取超时"
             try {
                 webView.stopLoading()
             } catch (_: Exception) {}
@@ -364,18 +348,17 @@ object BookplateHtmlRenderer {
 
         delay(150)
 
-        val bitmap = captureBitmap(webView, width, contentHeight, t0)
+        val bitmap = captureBitmap(webView, width, contentHeight)
         if (bitmap == null) {
             lastError = "截图生成失败"
         }
         return bitmap
     }
 
-    private fun captureBitmap(webView: WebView, width: Int, height: Int, startTime: Long): Bitmap? {
+    private fun captureBitmap(webView: WebView, width: Int, height: Int): Bitmap? {
         var bitmap = tryCapture(webView, width, height)
 
         if (bitmap == null || isBitmapBlank(bitmap)) {
-            BookplateLogger.log("RENDER", "硬件渲染截图空白，降级软件渲染")
             webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
             try {
                 bitmap?.recycle()
@@ -385,7 +368,6 @@ object BookplateHtmlRenderer {
             }
         }
 
-        BookplateLogger.log("RENDER", "截图耗时=${System.currentTimeMillis() - startTime}ms")
         return bitmap
     }
 
@@ -397,7 +379,7 @@ object BookplateHtmlRenderer {
                 webView.draw(canvas)
             }
         } catch (e: Exception) {
-            BookplateLogger.log("RENDER", "截图异常: ${e.message}")
+            lastError = e.message
             null
         }
     }
@@ -412,7 +394,7 @@ object BookplateHtmlRenderer {
                 val r = (px shr 16) and 0xFF
                 val g = (px shr 8) and 0xFF
                 val b = px and 0xFF
-                if (r > 250 && g > 250) whiteCount++
+                if (r > 250 && g > 250 && b > 250) whiteCount++
                 totalCount++
             }
         }
@@ -521,7 +503,7 @@ object BookplateHtmlRenderer {
                 null
             }
         } catch (e: Exception) {
-            BookplateLogger.log("RENDER", "封面转换失败: ${e.message}")
+            lastError = e.message
             null
         }
     }
