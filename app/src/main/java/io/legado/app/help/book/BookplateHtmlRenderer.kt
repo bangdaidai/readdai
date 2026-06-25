@@ -19,7 +19,6 @@ import io.legado.app.help.config.DataVisibilitySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -146,20 +145,7 @@ object BookplateHtmlRenderer {
                 wv.stopLoading()
                 wv.clearHistory()
                 wv.clearCache(true)
-                // 清除上一次渲染残留的JS全局状态和定时器
-                wv.evaluateJavascript("""
-                    (function(){
-                        try {
-                            var id = window.setTimeout(function(){}, 0);
-                            while(id--) { 
-                                window.clearTimeout(id); 
-                                window.clearInterval(id); 
-                            }
-                        } catch(e){}
-                        delete window.__BOOKPLATE_HEIGHT__;
-                    })()
-                """, null)
-                // 确保LayerType处于正常状态
+                wv.removeJavascriptInterface("HeightBridge")
                 wv.setLayerType(View.LAYER_TYPE_NONE, null)
             }
             return wv
@@ -308,20 +294,22 @@ object BookplateHtmlRenderer {
 
                     view?.evaluateJavascript("""
                         (function(){
-                            document.body.style.minHeight='0px';
-                            function getH(){
-                                document.body.style.height='auto';
-                                var h=Math.max(
-                                    document.body.scrollHeight||0,
-                                    document.documentElement.scrollHeight||0,
-                                    document.body.offsetHeight||0
-                                );
-                                document.body.style.height='';
-                                return Math.round(h);
+                            function measure(){
+                                var maxBottom=0;
+                                var elems=document.body.getElementsByTagName('*');
+                                for(var i=0;i<elems.length;i++){
+                                    var r=elems[i].getBoundingClientRect();
+                                    if(r.width>0||r.height>0){
+                                        if(r.bottom>maxBottom) maxBottom=r.bottom;
+                                    }
+                                }
+                                var style=getComputedStyle(document.body);
+                                var padBottom=parseInt(style.paddingBottom)||0;
+                                return Math.ceil(maxBottom+padBottom);
                             }
                             var last=0, stable=0, n=0;
                             var t=setInterval(function(){
-                                var h=getH();
+                                var h=measure();
                                 if(h===last && h>0) stable++; else stable=0;
                                 last=h; n++;
                                 if(stable>=5 || n>=80){
@@ -346,7 +334,7 @@ object BookplateHtmlRenderer {
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
             BookplateLogger.log("RENDER", "loadDataWithBaseURL完成, 开始计时...")
 
-            val finalHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
+            val contentHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 heightDeferred.await()
             } ?: run {
                 val wvErrors = webViewErrors.takeIf { it.isNotEmpty() }?.joinToString("; ")
@@ -356,23 +344,25 @@ object BookplateHtmlRenderer {
                 }
                 BookplateLogger.log("RENDER", msg)
                 lastError = msg
+                BookplateLogger.log("RENDER", "销毁卡死的WebView以防止污染后续渲染")
+                try {
+                    webView.destroy()
+                    cachedWebViewDeferred = null
+                } catch (_: Exception) {}
                 return null
             }
 
-            if (finalHeight <= 0) {
+            if (contentHeight <= 0) {
                 val msg = "内容高度为0，渲染失败。可能原因: body内无可见内容或CSS导致高度塌陷"
                 BookplateLogger.log("RENDER", msg)
                 lastError = msg
                 return null
             }
 
-            // 等待内容在 generous 布局下完全渲染稳定后截图，然后裁剪到精确内容高度
-            delay(120)
-            BookplateLogger.log("RENDER", "截图并裁剪到内容高度: ${width}x${finalHeight}")
-
+            BookplateLogger.log("RENDER", "截图并裁剪到内容高度: ${width}x$contentHeight")
             val fullBitmap = captureBitmap(webView, width, generousH, startTime)
             if (fullBitmap != null) {
-                val cropHeight = finalHeight.coerceAtMost(fullBitmap.height)
+                val cropHeight = contentHeight.coerceAtMost(fullBitmap.height)
                 val cropped = Bitmap.createBitmap(fullBitmap, 0, 0, width, cropHeight)
                 if (cropped != fullBitmap) {
                     fullBitmap.recycle()
