@@ -157,12 +157,7 @@ object BookplateHtmlRenderer {
             wv.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(v: WebView?, u: String?) {
                     pageFinished = true
-                    v?.measure(
-                        View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                    )
-                    contentHeight = v?.measuredHeight ?: 0
-                    BookplateLogger.log("RENDER", "onPageFinished, 内容高度: ${contentHeight}px")
+                    BookplateLogger.log("RENDER", "onPageFinished")
                 }
             }
 
@@ -172,14 +167,16 @@ object BookplateHtmlRenderer {
             withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 while (!pageFinished) delay(30)
             } ?: run {
-                BookplateLogger.log("RENDER", "页面加载超时, 手动测量")
-                wv.measure(
-                    View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                )
-                contentHeight = wv.measuredHeight.coerceAtLeast(100)
-                BookplateLogger.log("RENDER", "超时手动测量高度: ${contentHeight}px")
+                BookplateLogger.log("RENDER", "页面加载超时, 未触发onPageFinished")
             }
+
+            delay(100)
+            wv.measure(
+                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            contentHeight = wv.measuredHeight
+            BookplateLogger.log("RENDER", "onPageFinished后测量, 内容高度: ${contentHeight}px")
 
             if (contentHeight <= 100) {
                 BookplateLogger.log("RENDER", "内容高度不足($contentHeight), 渲染失败")
