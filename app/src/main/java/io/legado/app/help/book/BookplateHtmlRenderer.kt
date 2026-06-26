@@ -22,15 +22,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
 
 object BookplateHtmlRenderer {
 
     var lastError: String? = null
         private set
 
-    private const val RENDER_TIMEOUT_MS = 10000L
+    private const val RENDER_TIMEOUT_MS = 12000L
     private const val MAX_CACHE_SIZE = 16
-    private const val MAX_GENEROUS_HEIGHT = 16000
+    private const val SAFETY_MARGIN = 15   // px
 
     @Volatile
     private var cachedWebViewDeferred: CompletableDeferred<WebView>? = null
@@ -38,410 +39,266 @@ object BookplateHtmlRenderer {
     private val bitmapCache = object : LinkedHashMap<String, Bitmap>(MAX_CACHE_SIZE, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Bitmap>?): Boolean {
             val shouldRemove = size > MAX_CACHE_SIZE
-            if (shouldRemove && eldest != null) {
-                eldest.value.recycle()
-            }
+            if (shouldRemove && eldest != null) eldest.value.recycle()
             return shouldRemove
         }
     }
 
     private val VARIABLE_REGEX = Regex("\\{\\{(\\w+)\\}\\}")
     private val HEAD_TAG_REGEX = Regex("<head>", RegexOption.IGNORE_CASE)
+    private val VIEWPORT_META_REGEX = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE)
 
-    private fun getRenderWidth(context: Context): Int {
-        val screenWidth = context.resources.displayMetrics.widthPixels
-        return (screenWidth * 0.92f).toInt().coerceAtLeast(360)
-    }
+    private fun getRenderWidth(ctx: Context): Int =
+        (ctx.resources.displayMetrics.widthPixels * 0.92f).toInt().coerceAtLeast(360)
 
     fun clearCache() {
-        synchronized(bitmapCache) {
-            bitmapCache.values.forEach { it.recycle() }
-            bitmapCache.clear()
-        }
+        synchronized(bitmapCache) { bitmapCache.values.forEach { it.recycle() }; bitmapCache.clear() }
         BookplateLogger.log("RENDER", "缓存已清空")
     }
 
-    // 不再注入任何样式，完全尊重模板原始CSS
-    private fun ensureViewportMeta(html: String, width: Int): String {
-        val viewportTag = "<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
-        return if (HEAD_TAG_REGEX.containsMatchIn(html)) {
-            HEAD_TAG_REGEX.replaceFirst(html, "<head>\n$viewportTag\n")
-        } else {
-            "$viewportTag\n$html"
-        }
+    /* ── 只加 viewport，绝不注入 body 样式 ── */
+    private fun ensureViewportMeta(html: String, w: Int): String {
+        val vp = "<meta name=\"viewport\" content=\"width=$w, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
+        return if (HEAD_TAG_REGEX.containsMatchIn(html))
+            HEAD_TAG_REGEX.replaceFirst(html, "<head>\n$vp\n")
+        else "$vp\n$html"
     }
 
-    private fun buildVariableMap(data: BookplateData): Map<String, String> {
-        return mapOf(
-            "bookName" to data.bookName,
-            "author" to data.author,
-            "coverUrl" to data.coverUrl,
-            "intro" to escapeHtml(data.intro),
-            "kind" to data.kind,
-            "wordCount" to data.wordCount,
-            "originName" to data.originName,
-            "totalChapterNum" to data.totalChapterNum.toString(),
-            "latestChapterTitle" to data.latestChapterTitle,
-            "typeText" to data.typeText,
-            "charset" to data.charset,
-            "readingStatusText" to data.readingStatusText,
-            "readingProgress" to data.readingProgress,
-            "readChapters" to data.readChapters,
-            "unreadChapters" to data.unreadChapters.toString(),
-            "readIteration" to data.readIteration.toString(),
-            "readIterationText" to data.readIterationText,
-            "durChapterTitle" to data.durChapterTitle,
-            "totalReadTime" to data.totalReadTime,
-            "totalReadHours" to data.totalReadHours.toString(),
-            "totalReadMinutes" to data.totalReadMinutes.toString(),
-            "readingDays" to data.readingDays.toString(),
-            "maxDayReadTime" to data.maxDayReadTime,
-            "maxDayReadDate" to data.maxDayReadDate,
-            "totalReadWords" to data.totalReadWords,
-            "remainingWords" to data.remainingWords,
-            "firstReadTime" to data.firstReadTime,
-            "lastReadTime" to data.lastReadTime,
-            "finishReadTime" to data.finishReadTime,
-            "addBookshelfTime" to data.addBookshelfTime,
-            "lastCheckTime" to data.lastCheckTime,
-            "lastReadTimeRelative" to data.lastReadTimeRelative,
-            "rating" to data.rating.toString(),
-            "ratingStars" to data.ratingStars,
-            "ratingMax" to data.ratingMax.toString(),
-            "reviewContent" to escapeHtml(data.reviewContent),
-            "annotationCount" to data.annotationCount.toString(),
-            "thoughtCount" to data.thoughtCount.toString(),
-            "latestAnnotation" to escapeHtml(data.latestAnnotation),
-            "latestAnnotationNote" to escapeHtml(data.latestAnnotationNote),
-            "latestAnnotationChapter" to data.latestAnnotationChapter,
-            "protagonists" to data.protagonists,
-            "tags" to data.tags,
-            "tagCount" to data.tagCount.toString(),
-            "bookSourceName" to data.bookSourceName,
-            "bookSourceGroup" to data.bookSourceGroup,
-            "readTimeRank" to data.readTimeRank
-        )
-    }
+    private fun buildVariableMap(d: BookplateData) = mapOf(
+        "bookName" to d.bookName, "author" to d.author, "coverUrl" to d.coverUrl,
+        "intro" to escapeHtml(d.intro), "kind" to d.kind, "wordCount" to d.wordCount,
+        "originName" to d.originName, "totalChapterNum" to d.totalChapterNum.toString(),
+        "latestChapterTitle" to d.latestChapterTitle, "typeText" to d.typeText, "charset" to d.charset,
+        "readingStatusText" to d.readingStatusText, "readingProgress" to d.readingProgress,
+        "readChapters" to d.readChapters, "unreadChapters" to d.unreadChapters.toString(),
+        "readIteration" to d.readIteration.toString(), "readIterationText" to d.readIterationText,
+        "durChapterTitle" to d.durChapterTitle, "totalReadTime" to d.totalReadTime,
+        "totalReadHours" to d.totalReadHours.toString(), "totalReadMinutes" to d.totalReadMinutes.toString(),
+        "readingDays" to d.readingDays.toString(), "maxDayReadTime" to d.maxDayReadTime,
+        "maxDayReadDate" to d.maxDayReadDate, "totalReadWords" to d.totalReadWords,
+        "remainingWords" to d.remainingWords, "firstReadTime" to d.firstReadTime,
+        "lastReadTime" to d.lastReadTime, "finishReadTime" to d.finishReadTime,
+        "addBookshelfTime" to d.addBookshelfTime, "lastCheckTime" to d.lastCheckTime,
+        "lastReadTimeRelative" to d.lastReadTimeRelative, "rating" to d.rating.toString(),
+        "ratingStars" to d.ratingStars, "ratingMax" to d.ratingMax.toString(),
+        "reviewContent" to escapeHtml(d.reviewContent), "annotationCount" to d.annotationCount.toString(),
+        "thoughtCount" to d.thoughtCount.toString(), "latestAnnotation" to escapeHtml(d.latestAnnotation),
+        "latestAnnotationNote" to escapeHtml(d.latestAnnotationNote),
+        "latestAnnotationChapter" to d.latestAnnotationChapter, "protagonists" to d.protagonists,
+        "tags" to d.tags, "tagCount" to d.tagCount.toString(),
+        "bookSourceName" to d.bookSourceName, "bookSourceGroup" to d.bookSourceGroup,
+        "readTimeRank" to d.readTimeRank
+    )
 
-    private suspend fun getWebView(context: Context): WebView {
+    private suspend fun getWebView(ctx: Context): WebView {
         cachedWebViewDeferred?.let {
             val wv = it.await()
             withContext(Dispatchers.Main) {
-                wv.stopLoading()
-                wv.clearHistory()
-                wv.clearCache(true)
+                wv.stopLoading(); wv.clearHistory(); wv.clearCache(true)
                 wv.removeJavascriptInterface("HeightBridge")
                 wv.setLayerType(View.LAYER_TYPE_NONE, null)
             }
             return wv
         }
-
-        val deferred = CompletableDeferred<WebView>()
-        cachedWebViewDeferred = deferred
+        val d = CompletableDeferred<WebView>()
+        cachedWebViewDeferred = d
         return withContext(Dispatchers.Main) {
-            val wv = WebView(context.applicationContext).apply {
+            val wv = WebView(ctx.applicationContext).apply {
                 settings.apply {
-                    javaScriptEnabled = true
-                    domStorageEnabled = true
-                    useWideViewPort = false
-                    loadWithOverviewMode = false
+                    javaScriptEnabled = true; domStorageEnabled = true
+                    useWideViewPort = false; loadWithOverviewMode = false
                     userAgentString = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-                    setSupportZoom(false)
-                    builtInZoomControls = false
-                    displayZoomControls = false
-                    blockNetworkLoads = false
-                    blockNetworkImage = false
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    setSupportZoom(false); builtInZoomControls = false; displayZoomControls = false
+                    blockNetworkLoads = false; blockNetworkImage = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                         mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                    }
                 }
                 setBackgroundColor(Color.TRANSPARENT)
             }
-            deferred.complete(wv)
-            wv
+            d.complete(wv); wv
         }
     }
 
     fun destroyWebView() {
-        synchronized(bitmapCache) {
-            bitmapCache.values.forEach { it.recycle() }
-            bitmapCache.clear()
-        }
-        cachedWebViewDeferred?.let { deferred ->
-            if (deferred.isCompleted) {
-                val wv = deferred.getCompleted()
-                try { wv.destroy() } catch (_: Exception) {}
-            }
-        }
+        synchronized(bitmapCache) { bitmapCache.values.forEach { it.recycle() }; bitmapCache.clear() }
+        cachedWebViewDeferred?.takeIf { it.isCompleted }?.let { try { it.getCompleted().destroy() } catch (_: Exception) {} }
         cachedWebViewDeferred = null
     }
 
-    suspend fun render(
-        context: Context,
-        template: BookplateTemplate,
-        data: BookplateData,
-        settings: DataVisibilitySettings = DataVisibilitySettings
-    ): Bitmap? {
-        val renderWidth = getRenderWidth(context)
-        val cacheKey = "${data.bookName}_${data.author}_${template.id}_${template.htmlContent.hashCode()}_${renderWidth}"
-        
-        synchronized(bitmapCache) {
-            bitmapCache[cacheKey]?.let { cached ->
-                if (!cached.isRecycled) {
-                    BookplateLogger.log("RENDER", "命中缓存")
-                    return cached
-                }
-                bitmapCache.remove(cacheKey)
-            }
-        }
-
+    suspend fun render(ctx: Context, tpl: BookplateTemplate, data: BookplateData,
+                       cfg: DataVisibilitySettings = DataVisibilitySettings): Bitmap? {
+        val w = getRenderWidth(ctx)
+        val key = "${data.bookName}_${data.author}_${tpl.id}_${tpl.htmlContent.hashCode()}_$w"
+        synchronized(bitmapCache) { bitmapCache[key]?.takeIf { !it.isRecycled }?.let { return it }; bitmapCache.remove(key) }
         return withContext(Dispatchers.Main) {
-            BookplateLogger.log("RENDER", "开始渲染: 模板=${template.name}(id=${template.id}), 宽度=${renderWidth}")
             lastError = null
-            val filteredData = applyVisibility(data, settings)
-
-            val coverDataUri = coverUrlToDataUri(filteredData.coverUrl)
-            val dataWithCover = if (coverDataUri != null) {
-                filteredData.copy(coverUrl = coverDataUri)
-            } else {
-                filteredData
-            }
-
-            val html = replaceVariables(template.htmlContent, dataWithCover)
-            if (html.isBlank()) {
-                lastError = "模板变量替换后 HTML 为空"
-                return@withContext null
-            }
-
-            val processedHtml = ensureViewportMeta(html, renderWidth)
-            val bitmap = renderHtml(context, processedHtml, renderWidth)
-            
-            if (bitmap != null) {
-                synchronized(bitmapCache) {
-                    bitmapCache[cacheKey] = bitmap
-                }
-            }
-            bitmap
+            val fd = applyVisibility(data, cfg)
+            val cov = coverUrlToDataUri(fd.coverUrl)
+            val d = if (cov != null) fd.copy(coverUrl = cov) else fd
+            val html = replaceVariables(tpl.htmlContent, d)
+            if (html.isBlank()) { lastError = "HTML为空"; return@withContext null }
+            renderHtml(ctx, ensureViewportMeta(html, w), w)
+                ?.also { synchronized(bitmapCache) { bitmapCache[key] = it } }
         }
     }
 
-    /**
-     * 核心渲染方法 — 完全对齐 Reeden 流程
-     * 
-     * 关键原则：
-     * 1. 不注入任何额外CSS
-     * 2. 用 UNSPECIFIED 让 WebView 自然布局
-     * 3. 不依赖 JS 测量高度
-     * 4. 直接使用 measuredHeight 作为最终高度
-     */
-    private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
+    /* ═════════════════════ 核心 ═════════════════════ */
+    private suspend fun renderHtml(ctx: Context, html: String, w: Int): Bitmap? {
         val t0 = System.currentTimeMillis()
+        val screenH = ctx.resources.displayMetrics.heightPixels
+        val initH = (screenH * 2).coerceIn(1200, 6000)   // ① 合理初始高度
 
         BookplateLogger.log("RENDER", "========== 渲染开始 ==========")
-        BookplateLogger.log("RENDER", "renderWidth=$width")
+        BookplateLogger.log("RENDER", "width=$w  initH=$initH")
 
-        val webView = getWebView(context)
+        val wv = getWebView(ctx)
+        wv.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(initH, View.MeasureSpec.EXACTLY))
+        wv.layout(0, 0, w, initH)
 
         return try {
-            // ====== 第一步：用 UNSPECIFIED 让 WebView 自然布局 ======
-            // 这是最关键的一步：不指定高度，让内容决定高度
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
-            
-            // 获取自然高度
-            val naturalHeight = webView.measuredHeight
-            BookplateLogger.log("RENDER", "初始自然高度: ${naturalHeight}px")
-            
-            // 用自然高度布局，避免撑大
-            val layoutHeight = maxOf(naturalHeight, 100)
-            webView.layout(0, 0, width, layoutHeight)
-            BookplateLogger.log("RENDER", "初始布局: ${width}x${layoutHeight}")
+            var finished = false
+            var jsHeight = 0
 
-            // ====== 第二步：加载内容 ======
-            var onPageFinishedCalled = false
-            var contentHeight = 0
-
-            webView.webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    onPageFinishedCalled = true
-                    val loadTime = System.currentTimeMillis() - t0
-                    BookplateLogger.log("RENDER", "onPageFinished: +${loadTime}ms")
-                    
-                    // 页面加载完成后，再次用 UNSPECIFIED 测量真实内容高度
-                    view?.measure(
-                        View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                    )
-                    contentHeight = view?.measuredHeight ?: 0
-                    BookplateLogger.log("RENDER", "页面加载后内容高度: ${contentHeight}px")
+            wv.webViewClient = object : WebViewClient() {
+                override fun onPageFinished(v: WebView?, u: String?) {
+                    finished = true
+                    // ② 等渲染后精确测高
+                    v?.evaluateJavascript("""
+(function(){
+  document.body.style.minHeight='0px';
+  document.body.style.height='auto';
+  setTimeout(function(){
+    var maxB=0;
+    function walk(n){
+      var s=window.getComputedStyle(n);
+      if(s.display!=='none'&&s.visibility!=='hidden'){
+        var r=n.getBoundingClientRect();
+        if(r.width>0&&r.height>0) maxB=Math.max(maxB,r.bottom);
+        for(var i=0;i<n.children.length;i++) walk(n.children[i]);
+      }
+    }
+    walk(document.body);
+    var bs=parseFloat(window.getComputedStyle(document.body).paddingBottom)||0;
+    window.HeightBridge.onHeightReady(Math.round(maxB+bs+$SAFETY_MARGIN));
+  },200);
+})()
+                    """.trimIndent(), null)
                 }
             }
 
-            webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-            BookplateLogger.log("RENDER", "loadDataWithBaseURL完成: +${System.currentTimeMillis() - t0}ms")
+            wv.addJavascriptInterface(object {
+                @android.webkit.JavascriptInterface
+                fun onHeightReady(h: Int) { jsHeight = h.coerceAtLeast(60) }
+            }, "HeightBridge")
 
-            // ====== 第三步：等待页面加载完成 ======
+            wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+
             withTimeoutOrNull(RENDER_TIMEOUT_MS) {
-                while (!onPageFinishedCalled) {
-                    delay(50)
-                }
-            } ?: run {
-                BookplateLogger.log("RENDER", "页面加载超时")
-                return null
+                while (!finished || jsHeight == 0) delay(50)
             }
+            if (jsHeight <= 0) jsHeight = initH   // ③ 超时保底
 
-            // 给渲染一些稳定时间
-            delay(200)
+            BookplateLogger.log("RENDER", "JS测得内容高度=${jsHeight}px")
 
-            // ====== 第四步：再次测量最终内容高度 ======
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
-            val finalHeight = webView.measuredHeight
-            BookplateLogger.log("RENDER", "最终内容高度: ${finalHeight}px")
+            // ④ 用真实高度重布局
+            val fh = jsHeight.coerceAtMost(initH * 3)
+            wv.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                       View.MeasureSpec.makeMeasureSpec(fh, View.MeasureSpec.EXACTLY))
+            wv.layout(0, 0, w, fh)
+            delay(120)
 
-            if (finalHeight <= 0) {
-                BookplateLogger.log("RENDER", "内容高度为0，渲染失败")
-                return null
+            BookplateLogger.log("RENDER", "截图 ${w}x$fh")
+            val bmp = Bitmap.createBitmap(w, fh, Bitmap.Config.ARGB_8888).also {
+                Canvas(it).drawColor(Color.WHITE); wv.draw(Canvas(it))
             }
-
-            // ====== 第五步：用最终高度重新布局并截图 ======
-            webView.layout(0, 0, width, finalHeight)
-            
-            BookplateLogger.log("RENDER", "截图: ${width}x${finalHeight}")
-
-            val bitmap = try {
-                Bitmap.createBitmap(width, finalHeight, Bitmap.Config.ARGB_8888).also { bmp ->
-                    val canvas = Canvas(bmp)
-                    canvas.drawColor(Color.WHITE)
-                    webView.draw(canvas)
-                }
-            } catch (e: Exception) {
-                BookplateLogger.log("RENDER", "截图异常: ${e.message}")
-                null
-            }
-
-            if (bitmap != null) {
-                val totalTime = System.currentTimeMillis() - t0
-                BookplateLogger.log("RENDER", "========== 渲染成功: ${bitmap.width}x${bitmap.height}, 总耗时=${totalTime}ms ==========")
-            }
-
-            bitmap
-        } catch (e: CancellationException) {
-            BookplateLogger.log("RENDER", "渲染被取消")
-            null
-        } finally {
-            try { webView.stopLoading() } catch (_: Exception) {}
-        }
+            BookplateLogger.log("RENDER", "========== 成功 ${bmp.width}x${bmp.height} 总=${System.currentTimeMillis()-t0}ms ==========")
+            bmp
+        } catch (e: CancellationException) { lastError = "取消"; null }
+          finally { try{wv.stopLoading()}catch(_:Exception){} }
     }
 
-    private fun applyVisibility(data: BookplateData, settings: DataVisibilitySettings): BookplateData {
-        return data.copy(
-            bookName = if (settings.isBasicInfoVisible()) data.bookName else "",
-            author = if (settings.isBasicInfoVisible()) data.author else "",
-            coverUrl = if (settings.isBasicInfoVisible()) data.coverUrl else "",
-            intro = if (settings.isBasicInfoVisible()) data.intro else "",
-            kind = if (settings.isBasicInfoVisible()) data.kind else "",
-            wordCount = if (settings.isBasicInfoVisible()) data.wordCount else "",
-            originName = if (settings.isBasicInfoVisible()) data.originName else "",
-            totalChapterNum = if (settings.isBasicInfoVisible()) data.totalChapterNum else 0,
-            latestChapterTitle = if (settings.isBasicInfoVisible()) data.latestChapterTitle else "",
-            typeText = if (settings.isBasicInfoVisible()) data.typeText else "",
-            charset = if (settings.isBasicInfoVisible()) data.charset else "",
-            readingStatusText = if (settings.isProgressVisible()) data.readingStatusText else "",
-            readingProgress = if (settings.isProgressVisible()) data.readingProgress else "",
-            readChapters = if (settings.isProgressVisible()) data.readChapters else "0/0",
-            unreadChapters = if (settings.isProgressVisible()) data.unreadChapters else 0,
-            readIteration = if (settings.isProgressVisible()) data.readIteration else 0,
-            readIterationText = if (settings.isProgressVisible()) data.readIterationText else "",
-            durChapterTitle = if (settings.isProgressVisible()) data.durChapterTitle else "",
-            totalReadTime = if (settings.isStatisticsVisible()) data.totalReadTime else "",
-            totalReadHours = if (settings.isStatisticsVisible()) data.totalReadHours else 0,
-            totalReadMinutes = if (settings.isStatisticsVisible()) data.totalReadMinutes else 0,
-            readingDays = if (settings.isStatisticsVisible()) data.readingDays else 0,
-            maxDayReadTime = if (settings.isStatisticsVisible()) data.maxDayReadTime else "",
-            maxDayReadDate = if (settings.isStatisticsVisible()) data.maxDayReadDate else "",
-            totalReadWords = if (settings.isStatisticsVisible()) data.totalReadWords else "",
-            remainingWords = if (settings.isStatisticsVisible()) data.remainingWords else "",
-            firstReadTime = if (settings.isBasicInfoVisible()) data.firstReadTime else "____/__/__",
-            lastReadTime = if (settings.isBasicInfoVisible()) data.lastReadTime else "____/__/__",
-            finishReadTime = if (settings.isBasicInfoVisible()) data.finishReadTime else "____/__/__",
-            addBookshelfTime = if (settings.isBasicInfoVisible()) data.addBookshelfTime else "____/__/__",
-            lastCheckTime = if (settings.isBasicInfoVisible()) data.lastCheckTime else "____/__/__",
-            lastReadTimeRelative = if (settings.isBasicInfoVisible()) data.lastReadTimeRelative else "",
-            rating = if (settings.isRatingReviewVisible()) data.rating else 0f,
-            ratingStars = if (settings.isRatingReviewVisible()) data.ratingStars else "☆☆☆☆☆",
-            ratingMax = if (settings.isRatingReviewVisible()) data.ratingMax else 5,
-            reviewContent = if (settings.isRatingReviewVisible()) data.reviewContent else "",
-            annotationCount = if (settings.isAnnotationVisible()) data.annotationCount else 0,
-            thoughtCount = if (settings.isAnnotationVisible()) data.thoughtCount else 0,
-            latestAnnotation = if (settings.isAnnotationVisible()) data.latestAnnotation else "",
-            latestAnnotationNote = if (settings.isAnnotationVisible()) data.latestAnnotationNote else "",
-            latestAnnotationChapter = if (settings.isAnnotationVisible()) data.latestAnnotationChapter else "",
-            protagonists = if (settings.isProtagonistVisible()) data.protagonists else "未知",
-            tags = if (settings.isTagsVisible()) data.tags else "",
-            tagCount = if (settings.isTagsVisible()) data.tagCount else 0,
-            bookSourceName = if (settings.isSourceVisible()) data.bookSourceName else "",
-            bookSourceGroup = if (settings.isSourceVisible()) data.bookSourceGroup else "",
-            readTimeRank = if (settings.isRankVisible()) data.readTimeRank else ""
-        )
+    /* ── 辅助 ── */
+    private fun applyVisibility(d: BookplateData, s: DataVisibilitySettings) = d.copy(
+        bookName=if(s.isBasicInfoVisible())d.bookName else "",
+        author=if(s.isBasicInfoVisible())d.author else "",
+        coverUrl=if(s.isBasicInfoVisible())d.coverUrl else "",
+        intro=if(s.isBasicInfoVisible())d.intro else "",
+        kind=if(s.isBasicInfoVisible())d.kind else "",
+        wordCount=if(s.isBasicInfoVisible())d.wordCount else "",
+        originName=if(s.isBasicInfoVisible())d.originName else "",
+        totalChapterNum=if(s.isBasicInfoVisible())d.totalChapterNum else 0,
+        latestChapterTitle=if(s.isBasicInfoVisible())d.latestChapterTitle else "",
+        typeText=if(s.isBasicInfoVisible())d.typeText else "",
+        charset=if(s.isBasicInfoVisible())d.charset else "",
+        readingStatusText=if(s.isProgressVisible())d.readingStatusText else "",
+        readingProgress=if(s.isProgressVisible())d.readingProgress else "",
+        readChapters=if(s.isProgressVisible())d.readChapters else "0/0",
+        unreadChapters=if(s.isProgressVisible())d.unreadChapters else 0,
+        readIteration=if(s.isProgressVisible())d.readIteration else 0,
+        readIterationText=if(s.isProgressVisible())d.readIterationText else "",
+        durChapterTitle=if(s.isProgressVisible())d.durChapterTitle else "",
+        totalReadTime=if(s.isStatisticsVisible())d.totalReadTime else "",
+        totalReadHours=if(s.isStatisticsVisible())d.totalReadHours else 0,
+        totalReadMinutes=if(s.isStatisticsVisible())d.totalReadMinutes else 0,
+        readingDays=if(s.isStatisticsVisible())d.readingDays else 0,
+        maxDayReadTime=if(s.isStatisticsVisible())d.maxDayReadTime else "",
+        maxDayReadDate=if(s.isStatisticsVisible())d.maxDayReadDate else "",
+        totalReadWords=if(s.isStatisticsVisible())d.totalReadWords else "",
+        remainingWords=if(s.isStatisticsVisible())d.remainingWords else "",
+        firstReadTime=if(s.isBasicInfoVisible())d.firstReadTime else "____/__/__",
+        lastReadTime=if(s.isBasicInfoVisible())d.lastReadTime else "____/__/__",
+        finishReadTime=if(s.isBasicInfoVisible())d.finishReadTime else "____/__/__",
+        addBookshelfTime=if(s.isBasicInfoVisible())d.addBookshelfTime else "____/__/__",
+        lastCheckTime=if(s.isBasicInfoVisible())d.lastCheckTime else "____/__/__",
+        lastReadTimeRelative=if(s.isBasicInfoVisible())d.lastReadTimeRelative else "",
+        rating=if(s.isRatingReviewVisible())d.rating else 0f,
+        ratingStars=if(s.isRatingReviewVisible())d.ratingStars else "☆☆☆☆☆",
+        ratingMax=if(s.isRatingReviewVisible())d.ratingMax else 5,
+        reviewContent=if(s.isRatingReviewVisible())d.reviewContent else "",
+        annotationCount=if(s.isAnnotationVisible())d.annotationCount else 0,
+        thoughtCount=if(s.isAnnotationVisible())d.thoughtCount else 0,
+        latestAnnotation=if(s.isAnnotationVisible())d.latestAnnotation else "",
+        latestAnnotationNote=if(s.isAnnotationVisible())d.latestAnnotationNote else "",
+        latestAnnotationChapter=if(s.isAnnotationVisible())d.latestAnnotationChapter else "",
+        protagonists=if(s.isProtagonistVisible())d.protagonists else "未知",
+        tags=if(s.isTagsVisible())d.tags else "",
+        tagCount=if(s.isTagsVisible())d.tagCount else 0,
+        bookSourceName=if(s.isSourceVisible())d.bookSourceName else "",
+        bookSourceGroup=if(s.isSourceVisible())d.bookSourceGroup else "",
+        readTimeRank=if(s.isRankVisible())d.readTimeRank else ""
+    )
+
+    private fun replaceVariables(h: String, d: BookplateData): String {
+        val m = buildVariableMap(d)
+        return VARIABLE_REGEX.replace(h) { m[it.groupValues[1]] ?: it.value }
     }
 
-    private fun replaceVariables(html: String, data: BookplateData): String {
-        val varMap = buildVariableMap(data)
-        return VARIABLE_REGEX.replace(html) { matchResult ->
-            varMap[matchResult.groupValues[1]] ?: matchResult.value
-        }
-    }
-
-    private fun escapeHtml(text: String): String {
-        if (text.isEmpty()) return text
-        val sb = StringBuilder(text.length + 16)
-        for (c in text) {
-            when (c) {
-                '&' -> sb.append("&amp;")
-                '<' -> sb.append("&lt;")
-                '>' -> sb.append("&gt;")
-                '"' -> sb.append("&quot;")
-                else -> sb.append(c)
-            }
+    private fun escapeHtml(t: String): String {
+        if (t.isEmpty()) return t
+        val sb = StringBuilder(t.length + 8)
+        for (c in t) when (c) {
+            '&' -> sb.append("&amp;"); '<' -> sb.append("&lt;"); '>' -> sb.append("&gt;")
+            '"' -> sb.append("&quot;"); else -> sb.append(c)
         }
         return sb.toString()
     }
 
-    private fun coverUrlToDataUri(url: String): String? {
-        if (url.isBlank()) return null
-        if (url.startsWith("http://") || url.startsWith("https://")) return url
-        if (url.startsWith("data:")) return url
-
+    private fun coverUrlToDataUri(u: String): String? {
+        if (u.isBlank() || u.startsWith("http") || u.startsWith("data:")) return u.ifBlank { null }
         return try {
-            val bitmap = when {
-                url.startsWith("file://") -> {
-                    val file = File(URI(url))
-                    if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
-                }
-                url.startsWith("content://") -> null
-                else -> {
-                    val file = File(url)
-                    if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
-                }
+            val f = when {
+                u.startsWith("file://") -> File(URI(u))
+                else -> File(u)
             }
-
-            if (bitmap != null) {
-                val outputStream = ByteArrayOutputStream()
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-                val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
-                bitmap.recycle()
-                "data:image/jpeg;base64,$base64"
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            BookplateLogger.log("RENDER", "封面转换失败: ${e.message}")
-            null
-        }
+            if (f.exists()) {
+                val baos = ByteArrayOutputStream()
+                BitmapFactory.decodeFile(f.absolutePath)?.let {
+                    it.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                    it.recycle()
+                    "data:image/jpeg;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+                }
+            } else null
+        } catch (_: Exception) { null }
     }
 }
