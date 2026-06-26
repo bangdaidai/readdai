@@ -97,9 +97,20 @@ object BookplateHtmlRenderer {
                 wv.clearCache(true)
                 wv.removeJavascriptInterface("HeightBridge")
                 wv.setLayerType(View.LAYER_TYPE_NONE, null)
+            }
+            val blankDone = CompletableDeferred<Unit>()
+            withContext(Dispatchers.Main) {
+                wv.webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(v: WebView?, url: String?) {
+                        if (url == "about:blank") {
+                            blankDone.complete(Unit)
+                        }
+                    }
+                }
                 wv.loadUrl("about:blank")
             }
-            delay(150)
+            withTimeoutOrNull(3000L) { blankDone.await() }
+            BookplateLogger.log("RENDER", "about:blank 已重置, measuredHeight=${wv.measuredHeight}")
             return wv
         }
         val d = CompletableDeferred<WebView>()
@@ -153,17 +164,6 @@ object BookplateHtmlRenderer {
         val wv = getWebView(ctx)
 
         return try {
-            wv.webViewClient = null
-
-            wv.measure(
-                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
-            val naturalHeight = wv.measuredHeight.coerceAtLeast(100)
-            BookplateLogger.log("RENDER", "初始自然高度: ${naturalHeight}px")
-
-            wv.layout(0, 0, w, naturalHeight)
-
             var pageFinished = false
             var contentHeight = 0
 
@@ -187,31 +187,28 @@ object BookplateHtmlRenderer {
             withTimeoutOrNull(RENDER_TIMEOUT_MS) {
                 while (!pageFinished) delay(30)
             } ?: run {
-                BookplateLogger.log("RENDER", "页面加载超时")
+                BookplateLogger.log("RENDER", "页面加载超时, 手动测量")
+                wv.measure(
+                    View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+                contentHeight = wv.measuredHeight.coerceAtLeast(100)
+                BookplateLogger.log("RENDER", "超时手动测量高度: ${contentHeight}px")
             }
 
-            if (!pageFinished) {
-                if (contentHeight == 0) {
-                    wv.measure(
-                        View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                    )
-                    contentHeight = wv.measuredHeight.coerceAtLeast(100)
-                    BookplateLogger.log("RENDER", "超时后手动测量: ${contentHeight}px")
-                }
-                if (contentHeight <= 100) {
-                    BookplateLogger.log("RENDER", "内容高度不足，渲染失败")
-                    return null
-                }
+            if (contentHeight <= 100) {
+                BookplateLogger.log("RENDER", "内容高度不足($contentHeight), 渲染失败")
+                return null
             }
 
             delay(300)
 
+            // 用已知的高度做最终 measure + layout
             wv.measure(
                 View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
             )
-            val finalHeight = wv.measuredHeight.coerceAtLeast(100)
+            val finalHeight = wv.measuredHeight.coerceAtLeast(contentHeight)
             BookplateLogger.log("RENDER", "最终内容高度: ${finalHeight}px")
 
             if (finalHeight <= 0) {
