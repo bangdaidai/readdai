@@ -104,15 +104,20 @@ object BookplateHtmlRenderer {
             withContext(Dispatchers.Main) {
                 wv.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(v: WebView?, url: String?) {
-                        if (url == "about:blank") {
-                            blankDone.complete(Unit)
-                        }
+                        blankDone.complete(Unit)
                     }
                 }
                 wv.loadUrl("about:blank")
             }
             withTimeoutOrNull(3000L) { blankDone.await() }
-            BookplateLogger.log("RENDER", "about:blank 已重置, measuredHeight=${wv.measuredHeight}")
+            withContext(Dispatchers.Main) {
+                wv.webViewClient = noopClient
+                wv.measure(
+                    View.MeasureSpec.makeMeasureSpec(1, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+            }
+            BookplateLogger.log("RENDER", "about:blank 已重置")
             return wv
         }
         val d = CompletableDeferred<WebView>()
@@ -171,15 +176,13 @@ object BookplateHtmlRenderer {
 
             wv.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(v: WebView?, u: String?) {
-                    if (u != null && u != "about:blank") {
-                        pageFinished = true
-                        v?.measure(
-                            View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                        )
-                        contentHeight = v?.measuredHeight ?: 0
-                        BookplateLogger.log("RENDER", "onPageFinished, 内容高度: ${contentHeight}px")
-                    }
+                    pageFinished = true
+                    v?.measure(
+                        View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    )
+                    contentHeight = v?.measuredHeight ?: 0
+                    BookplateLogger.log("RENDER", "onPageFinished, 内容高度: ${contentHeight}px")
                 }
             }
 
