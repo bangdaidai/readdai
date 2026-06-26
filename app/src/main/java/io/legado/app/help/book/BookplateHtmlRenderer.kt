@@ -171,6 +171,13 @@ object BookplateHtmlRenderer {
         val wv = getWebView(ctx)
 
         return try {
+            // 给 WebView 一个初始布局框架。about:blank 已重置,高度接近 0,不会污染后续测量
+            wv.measure(
+                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            wv.layout(0, 0, w, wv.measuredHeight.coerceAtLeast(1))
+
             var pageFinished = false
             var contentHeight = 0
 
@@ -184,6 +191,65 @@ object BookplateHtmlRenderer {
                     contentHeight = v?.measuredHeight ?: 0
                     BookplateLogger.log("RENDER", "onPageFinished, 内容高度: ${contentHeight}px")
                 }
+            }
+
+            wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+
+            BookplateLogger.log("RENDER", "等待页面加载完成...")
+            withTimeoutOrNull(RENDER_TIMEOUT_MS) {
+                while (!pageFinished) delay(30)
+            } ?: run {
+                BookplateLogger.log("RENDER", "页面加载超时, 手动测量")
+                wv.measure(
+                    View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                )
+                contentHeight = wv.measuredHeight.coerceAtLeast(100)
+                BookplateLogger.log("RENDER", "超时手动测量高度: ${contentHeight}px")
+            }
+
+            if (contentHeight <= 100) {
+                BookplateLogger.log("RENDER", "内容高度不足($contentHeight), 渲染失败")
+                return null
+            }
+
+            delay(300)
+
+            wv.measure(
+                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            val finalHeight = wv.measuredHeight.coerceAtLeast(contentHeight)
+            BookplateLogger.log("RENDER", "最终内容高度: ${finalHeight}px")
+
+            if (finalHeight <= 0) {
+                BookplateLogger.log("RENDER", "内容高度为0")
+                return null
+            }
+
+            wv.layout(0, 0, w, finalHeight)
+            delay(100)
+
+            BookplateLogger.log("RENDER", "截图 ${w}x$finalHeight")
+            val bitmap = Bitmap.createBitmap(w, finalHeight, Bitmap.Config.ARGB_8888).also {
+                Canvas(it).drawColor(Color.WHITE); wv.draw(Canvas(it))
+            }
+
+            val totalTime = System.currentTimeMillis() - t0
+            BookplateLogger.log("RENDER", "========== 成功 ${bitmap.width}x${bitmap.height} 总=${totalTime}ms ==========")
+            bitmap
+        } catch (e: CancellationException) { lastError = "取消"; null }
+        catch (e: Exception) {
+            BookplateLogger.log("RENDER", "渲染异常:${e.message}")
+            lastError = e.message
+            null
+        } finally {
+            try {
+                wv.stopLoading()
+                wv.webViewClient = noopClient
+            } catch (_: Exception) {}
+        }
+    }
             }
 
             wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
