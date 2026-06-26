@@ -15,7 +15,6 @@ class BookplateTemplateAdapter(
 ) : RecyclerAdapter<BookplateTemplate, ItemBookplateTemplateBinding>(context) {
 
     private var selectedId = 0L
-    private var ignoreNextChange = false
 
     val diffItemCallback = object : DiffUtil.ItemCallback<BookplateTemplate>() {
         override fun areItemsTheSame(
@@ -29,7 +28,6 @@ class BookplateTemplateAdapter(
             oldItem: BookplateTemplate,
             newItem: BookplateTemplate
         ): Boolean {
-            // 强制返回 false，确保每次都刷新列表（开关状态需要更新）
             return false
         }
 
@@ -47,8 +45,6 @@ class BookplateTemplateAdapter(
 
     fun setSelectedId(id: Long) {
         selectedId = id
-        ignoreNextChange = true
-        // 使用 notifyDataSetChanged 确保整个列表刷新，因为 DiffUtil 是异步的
         notifyDataSetChanged()
     }
 
@@ -64,8 +60,25 @@ class BookplateTemplateAdapter(
     ) {
         binding.apply {
             tvTemplateName.text = item.name
-            ignoreNextChange = true
+            swApply.setOnCheckedChangeListener(null)
             swApply.isChecked = item.id == selectedId
+            swApply.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    getItemByLayoutPosition(holder.layoutPosition)?.let {
+                        callBack.onApply(it)
+                    }
+                } else {
+                    swApply.setOnCheckedChangeListener(null)
+                    swApply.isChecked = true
+                    swApply.setOnCheckedChangeListener { _, checked ->
+                        if (checked) {
+                            getItemByLayoutPosition(holder.layoutPosition)?.let {
+                                callBack.onApply(it)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -73,20 +86,6 @@ class BookplateTemplateAdapter(
         holder: ItemViewHolder,
         binding: ItemBookplateTemplateBinding
     ) {
-        binding.swApply.setOnCheckedChangeListener { _, isChecked ->
-            if (ignoreNextChange) {
-                ignoreNextChange = false
-                return@setOnCheckedChangeListener
-            }
-            if (isChecked) {
-                getItemByLayoutPosition(holder.layoutPosition)?.let { item ->
-                    callBack.onApply(item)
-                }
-            } else {
-                ignoreNextChange = true
-                binding.swApply.isChecked = true
-            }
-        }
         binding.ivPreview.setOnClickListener {
             getItemByLayoutPosition(holder.layoutPosition)?.let { item ->
                 callBack.onPreview(item)

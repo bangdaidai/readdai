@@ -1,101 +1,307 @@
 # 藏书票模板帮助
 
-## 变量说明
+## 模板语法
 
-模板使用 HTML 语法，可以通过变量插入书籍信息。
+模板使用 HTML + CSS 编写，通过 `{{变量名}}` 插入书籍数据。变量名使用驼峰命名（camelCase），用双大括号包裹。
 
-### 书籍信息变量
+## 可用变量一览
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `{{$book.name}}` | 书名 | 活着 |
-| `{{$book.author}}` | 作者 | 余华 |
-| `{{$book.kind}}` | 分类 | 小说 |
-| `{{$book.custom}}` | 自定义标签 | 文学 |
-| `{{$book.desc}}` | 简介 | 讲述人生的故事... |
-| `{{$book.wordCount}}` | 字数 | 10万字 |
-| `{{$book.latestChapter}}` | 最新章节 | 第100章 |
-| `{{$book.bookUrl}}` | 书籍URL | https://... |
-| `{{$book.coverUrl}}` | 封面URL | https://... |
+### 基本信息
 
-### 书架信息变量
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `{{bookName}}` | 书名 | 三体 |
+| `{{author}}` | 作者 | 刘慈欣 |
+| `{{coverUrl}}` | 封面图片 URL | https://... 或 data:image/... |
+| `{{intro}}` | 简介 | 文化大革命如火如荼... |
+| `{{kind}}` | 分类标签 | 科幻,完结 |
+| `{{wordCount}}` | 字数 | 90.00万字 |
+| `{{typeText}}` | 媒体类型 | 文本 / 音频 / 视频 |
+| `{{bookSourceName}}` | 书源名称 | 起点中文网 |
+| `{{bookSourceGroup}}` | 书源分组 | 网络文学 |
+| `{{totalChapterNum}}` | 总章节数 | 120 |
+| `{{latestChapterTitle}}` | 最新章节标题 | 第一百二十章 终章 |
+| `{{originName}}` | 原始来源名 | 起点中文网 |
+| `{{charset}}` | 字符编码 | UTF-8 |
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `{{$shelf.name}}` | 书架名称 | 我的书架 |
-| `{{$shelf.order}}` | 书架序号 | 1 |
+### 阅读状态
 
-### 时间变量
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `{{readingStatusText}}` | 阅读状态文本 | 在读 / 读完 / 弃文 / 待读 |
+| `{{readingProgress}}` | 阅读进度百分比 | 75% |
+| `{{readChapters}}` | 已读/总章节 | 90/120 |
+| `{{unreadChapters}}` | 剩余章节数 | 30 |
+| `{{readIteration}}` | 阅读遍数(原始值) | 2 |
+| `{{readIterationText}}` | 阅读遍数(文本) | 二刷 |
+| `{{durChapterTitle}}` | 当前阅读章节 | 第三章 红岸基地 |
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `{{$time.year}}` | 年份 | 2024 |
-| `{{$time.month}}` | 月份 | 6 |
-| `{{$time.day}}` | 日 | 15 |
-| `{{$time.hour}}` | 小时 | 14 |
-| `{{$time.minute}}` | 分钟 | 30 |
+### 阅读时间
 
-### 翻页信息变量
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `{{totalReadTime}}` | 总阅读时长(格式化) | 12 小时 30 分钟 |
+| `{{totalReadHours}}` | 总阅读小时数 | 12 |
+| `{{totalReadMinutes}}` | 总阅读分钟数 | 30 |
+| `{{readingDays}}` | 阅读天数 | 45 |
+| `{{maxDayReadTime}}` | 单日最长阅读时间 | 3 小时 15 分钟 |
+| `{{maxDayReadDate}}` | 单日最长阅读日期 | 2025年12月25日 |
+| `{{firstReadTime}}` | 首次阅读时间 | 2025/01/15 |
+| `{{lastReadTime}}` | 最近阅读时间 | 2025/03/20 |
+| `{{finishReadTime}}` | 读完时间 | 2025/03/20 |
+| `{{addBookshelfTime}}` | 加入书架时间 | 2025/01/10 |
+| `{{lastCheckTime}}` | 最后检查时间 | 2025/03/21 |
+| `{{lastReadTimeRelative}}` | 最近阅读相对时间 | 3天前 |
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `{{$page.chapterName}}` | 章节名 | 第一章 |
-| `{{$page.pageName}}` | 页名/位置 | P100 |
-| `{{$page.totalPage}}` | 总页数 | 500 |
-| `{{$page.readProgress}}` | 阅读进度 | 20% |
+### 阅读统计
 
-### 统计变量
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `{{totalReadWords}}` | 已读字数 | 67.50万字 |
+| `{{remainingWords}}` | 剩余字数 | 22.50万字 |
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `{{$stat.tocSize}}` | 目录章节数 | 100 |
-| `{{$stat.readTime}}` | 阅读时长(分钟) | 120 |
-| `{{$stat.readCount}}` | 阅读次数 | 3 |
-| `{{$stat.chapterCount}}` | 章节数 | 50 |
-| `{{$stat.bookmarkCount}}` | 书签数 | 5 |
+### 评分与书评
 
-### 用户信息变量
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `{{rating}}` | 评分(数值) | 4.0 |
+| `{{ratingStars}}` | 星级(文本) | ★★★★☆ |
+| `{{ratingMax}}` | 最高评分 | 5 |
+| `{{reviewContent}}` | 书评内容 | 震撼人心的科幻巨作... |
 
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `{{$user.name}}` | 用户名 | 读者 |
-| `{{$user.group}}` | 用户组 | VIP |
+### 书摘与想法
 
-## CSS 样式变量
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `{{annotationCount}}` | 书摘条数 | 25 |
+| `{{thoughtCount}}` | 想法条数 | 12 |
+| `{{latestAnnotation}}` | 最新书摘内容 | 给岁月以文明... |
+| `{{latestAnnotationNote}}` | 最新书摘笔记 | 这句话道出了本书的核心思想 |
+| `{{latestAnnotationChapter}}` | 最新书摘所在章节 | 第三章 红岸基地 |
 
-模板支持以下 CSS 变量：
+### 其他
+
+| 变量 | 说明 | 示例值 |
+|------|------|--------|
+| `{{protagonists}}` | 主角列表 | 叶文洁, 罗辑, 史强 |
+| `{{tags}}` | 标签 | #科幻 #长篇 #刘慈欣 |
+| `{{tagCount}}` | 标签数量 | 3 |
+| `{{readTimeRank}}` | 阅读时长排名 | 第 3 名 |
+
+## 常见 CSS class
+
+内置模板使用以下 class 来控制阅读状态标签的样式，你可以直接复用：
 
 ```css
---book-name-font-size: 16px;    /* 书名字体大小 */
---book-name-color: #333333;      /* 书名颜色 */
---author-font-size: 12px;       /* 作者字体大小 */
---author-color: #666666;        /* 作者颜色 */
---page-font-size: 12px;         /* 页码字体大小 */
---page-color: #999999;          /* 页码颜色 */
---background-color: #ffffff;   /* 背景颜色 */
---width: 320px;                 /* 宽度 */
---height: 180px;                /* 高度 */
+.status { /* 通用状态标签 */ }
+.status.在读 { /* 绿色背景 */ }
+.status.读完 { /* 蓝色背景 */ }
+.status.弃文 { /* 红色背景 */ }
+.status.待读 { /* 灰色背景 */ }
 ```
+
+在 HTML 中这样使用状态标签：
+```html
+<span class="status {{readingStatusText}}">{{readingStatusText}}</span>
+```
+
+`{{readingStatusText}}` 会被替换为"在读/读完/弃文/待读"，同时作为 CSS class 应用对应的颜色样式。
+
+## 模板编写规则
+
+### 1. 变量必须用双大括号
+```
+正确: {{bookName}}
+错误: {$bookName} 或 {{$book.name}}
+```
+
+### 2. 必须包含完整的 HTML 文档结构
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>/* 你的 CSS */</style>
+</head>
+<body>
+  <!-- 你的模板内容 -->
+</body>
+</html>
+```
+
+### 3. viewport 会自动注入
+你不需要手动添加 viewport meta 标签，系统会自动注入。如果你自己写了，系统也会正确处理。
+
+### 4. 使用 width: 100%; max-width: 100%
+为确保模板在不同屏幕宽度下正确渲染，建议 body 使用：
+```css
+body {
+  width: 100%;
+  max-width: 100%;
+  /* 你的其他样式 */
+}
+```
+
+### 5. 封面图片处理
+封面图片可能为空。建议添加 onerror 处理：
+```html
+<img src="{{coverUrl}}" onerror="this.style.display='none'" />
+```
+
+### 6. 文本内容可能包含 HTML 特殊字符
+`intro`、`reviewContent`、`latestAnnotation` 等变量中的 `<`、`>`、`&`、`"` 已被自动转义为 HTML 实体，可以安全地作为文本内容使用。
+
+### 7. 数值变量可用于条件判断
+`rating`、`totalChapterNum`、`annotationCount` 等数值变量可用于 CSS 或 JS 条件。
 
 ## 模板示例
 
+### 示例 1: 迷你藏书票
 ```html
-<div class="bookplate">
-  <div class="cover">
-    <img src="{{$book.coverUrl}}" />
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:100%; max-width:100%; padding:20px;
+    font-family:"Noto Serif SC",serif;
+    background:#fffaf0; color:#3c3028;
+  }
+  .card {
+    text-align:center; padding:20px;
+    border:1px solid #d5c9b0; border-radius:4px;
+  }
+  .card h1 { font-size:22px; margin-bottom:4px; }
+  .card .author { font-size:13px; color:#8c7355; margin-bottom:12px; }
+  .card .info { font-size:13px; color:#666; line-height:1.8; }
+  .stars { color:#c49530; font-size:16px; margin-top:8px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>{{bookName}}</h1>
+    <div class="author">{{author}} 著</div>
+    <div class="info">
+      <div>{{kind}} · {{wordCount}}</div>
+      <div>进度 {{readingProgress}} · {{readChapters}}章</div>
+      <div>{{totalReadTime}}</div>
+    </div>
+    <div class="stars">{{ratingStars}}</div>
+    <div style="font-size:12px;color:#888;margin-top:2px;">{{rating}} / {{ratingMax}}</div>
   </div>
-  <div class="info">
-    <div class="name">{{$book.name}}</div>
-    <div class="author">{{$book.author}}</div>
-    <div class="page">{{$page.pageName}}</div>
-    <div class="time">{{$time.year}}.{{$time.month}}.{{$time.day}}</div>
-  </div>
-</div>
+</body>
+</html>
 ```
+
+### 示例 2: 带封面的简洁风格
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:100%; max-width:100%; padding:24px 16px;
+    font-family:"Noto Sans SC","Microsoft YaHei",sans-serif;
+    background:#f0f2f5; color:#333;
+  }
+  .book-card {
+    background:#fff; border-radius:10px; padding:20px;
+    box-shadow:0 1px 6px rgba(0,0,0,0.06);
+  }
+  .header { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+  .cover { width:72px; height:96px; object-fit:cover; border-radius:6px; }
+  .meta h2 { font-size:18px; margin-bottom:2px; }
+  .meta .author { font-size:12px; color:#999; }
+  .row { display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px solid #f5f5f5; }
+  .row .label { color:#999; }
+  .row .value { color:#333; }
+</style>
+</head>
+<body>
+  <div class="book-card">
+    <div class="header">
+      <img src="{{coverUrl}}" class="cover" onerror="this.style.display='none'" />
+      <div class="meta">
+        <h2>{{bookName}}</h2>
+        <div class="author">{{author}}</div>
+      </div>
+    </div>
+    <div class="row"><span class="label">进度</span><span class="value">{{readingProgress}}</span></div>
+    <div class="row"><span class="label">已读</span><span class="value">{{readChapters}} 章</span></div>
+    <div class="row"><span class="label">时长</span><span class="value">{{totalReadTime}}</span></div>
+    <div class="row"><span class="label">字数</span><span class="value">{{totalReadWords}}</span></div>
+    <div class="row"><span class="label">评分</span><span class="value">{{ratingStars}}</span></div>
+  </div>
+</body>
+</html>
+```
+
+### 示例 3: 深色优雅风格
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:100%; max-width:100%; padding:28px 20px;
+    font-family:"Noto Serif SC",serif;
+    background:#1a1a24; color:#d0d0d8;
+    min-height:100vh;
+  }
+  .panel {
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px; padding:24px 20px;
+    margin-bottom:14px;
+  }
+  h1 { font-size:24px; color:#f0d98c; text-align:center; letter-spacing:0.2em; margin-bottom:4px; }
+  .subtitle { text-align:center; color:#888; font-size:12px; letter-spacing:0.3em; margin-bottom:18px; }
+  .info-row { display:flex; justify-content:space-between; font-size:13px; margin:6px 0; }
+  .info-row .k { color:#777; }
+  .info-row .v { color:#ccc; text-align:right; }
+  .stars { color:#f5a623; text-align:center; font-size:20px; margin:10px 0; }
+  .footer { text-align:center; color:#555; font-size:11px; margin-top:20px; }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <h1>{{bookName}}</h1>
+    <div class="subtitle">{{author}} · {{readingStatusText}}</div>
+  </div>
+  <div class="panel">
+    <div class="info-row"><span class="k">进度</span><span class="v">{{readingProgress}}</span></div>
+    <div class="info-row"><span class="k">已读</span><span class="v">{{readChapters}} 章</span></div>
+    <div class="info-row"><span class="k">时长</span><span class="v">{{totalReadTime}}</span></div>
+    <div class="info-row"><span class="k">字数</span><span class="v">{{totalReadWords}}</span></div>
+    <div class="stars">{{ratingStars}}</div>
+    <div style="text-align:center;color:#888;font-size:12px;">{{rating}} / {{ratingMax}}</div>
+  </div>
+  <div class="footer">始于 {{firstReadTime}} · 藏书票</div>
+</body>
+</html>
+```
+
+## 系统内置模板
+
+应用内置了 4 套不同风格的模板，你可以在模板管理页面直接使用或基于它们编辑修改：
+
+| 模板名 | 风格描述 |
+|--------|----------|
+| 暗黑科幻 | 深色渐变背景，金色文字，适合科幻/悬疑类书籍 |
+| 简约清新 | 白色卡片式布局，清爽简洁，适合日常阅读记录 |
+| 古典书香 | 米色纸张质感，衬线字体，中国风，适合文学/历史类 |
+| 现代卡片 | 深色背景 + 亮色数据卡片，适合都市/网文类书籍 |
 
 ## 注意事项
 
-1. 变量使用双大括号 `{{}}` 包裹
-2. 封面图片会自动裁剪为圆形或方形
-3. 建议设置 `max-width` 为 `640px` 以适配手机竖屏
-4. 支持完整的 CSS 样式
+1. **变量区分大小写**，`{{bookname}}` 和 `{{bookName}}` 是不同的
+2. 模板中未使用到的变量不会影响渲染，不会有错误提示
+3. 图片加载失败时会静默处理，不会影响整体布局
+4. 渲染宽度为屏幕宽度的 92%，建议内容适配这个宽度设计
+5. 支持 `clamp()` 等现代 CSS 函数来实现响应式字体
+6. `@font-face` 引入的外部字体可能无法在离屏渲染中加载

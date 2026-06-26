@@ -33,11 +33,17 @@ interface BookplateTemplateDao {
     @Query("SELECT * FROM bookplateTemplates WHERE isBuiltin = 1 LIMIT 1")
     suspend fun getBuiltin(): BookplateTemplate?
 
+    @Query("SELECT * FROM bookplateTemplates WHERE isBuiltin = 1 ORDER BY id ASC")
+    suspend fun getBuiltins(): List<BookplateTemplate>
+
     @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1")
     suspend fun deleteBuiltin()
 
     @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1 AND id != :keepId")
     suspend fun deleteBuiltinExcept(keepId: Long)
+
+    @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1 AND id NOT IN (:keepIds)")
+    suspend fun deleteBuiltinNotIn(keepIds: List<Long>)
 
     @Query("DELETE FROM bookplateTemplates WHERE id = :id")
     suspend fun deleteById(id: Long)

@@ -28,7 +28,7 @@ object BookplateHtmlRenderer {
     var lastError: String? = null
         private set
 
-    private const val RENDER_TIMEOUT_MS = 12000L
+    private const val RENDER_TIMEOUT_MS = 15000L
     private const val MAX_CACHE_SIZE = 16
 
     @Volatile
@@ -54,7 +54,6 @@ object BookplateHtmlRenderer {
         BookplateLogger.log("RENDER", "缓存已清空")
     }
 
-    /* ── 只加 viewport，绝不注入 body 样式 ── */
     private fun ensureViewportMeta(html: String, w: Int): String {
         val vp = "<meta name=\"viewport\" content=\"width=$w, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">"
         return if (HEAD_TAG_REGEX.containsMatchIn(html))
@@ -92,13 +91,15 @@ object BookplateHtmlRenderer {
         cachedWebViewDeferred?.let {
             val wv = it.await()
             withContext(Dispatchers.Main) {
-                wv.stopLoading(); wv.clearHistory(); wv.clearCache(true)
+                wv.stopLoading()
+                wv.webViewClient = null
+                wv.clearHistory()
+                wv.clearCache(true)
                 wv.removeJavascriptInterface("HeightBridge")
                 wv.setLayerType(View.LAYER_TYPE_NONE, null)
                 wv.loadUrl("about:blank")
             }
-            // 等待 about:blank 加载完成，确保 DOM 彻底清空
-            delay(100)
+            delay(150)
             return wv
         }
         val d = CompletableDeferred<WebView>()
@@ -143,7 +144,6 @@ object BookplateHtmlRenderer {
         }
     }
 
-    /* ═════════════════════ 核心渲染 ═════════════════════ */
     private suspend fun renderHtml(ctx: Context, html: String, w: Int): Bitmap? {
         val t0 = System.currentTimeMillis()
 
@@ -153,7 +153,8 @@ object BookplateHtmlRenderer {
         val wv = getWebView(ctx)
 
         return try {
-            // 第一步：用UNSPECIFIED让WebView自然布局，不限制高度
+            wv.webViewClient = null
+
             wv.measure(
                 View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -161,39 +162,51 @@ object BookplateHtmlRenderer {
             val naturalHeight = wv.measuredHeight.coerceAtLeast(100)
             BookplateLogger.log("RENDER", "初始自然高度: ${naturalHeight}px")
 
-            // 用自然高度布局
             wv.layout(0, 0, w, naturalHeight)
 
-            var finished = false
+            var pageFinished = false
             var contentHeight = 0
 
             wv.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(v: WebView?, u: String?) {
-                    finished = true
-                    // 页面加载完成后，再次用UNSPECIFIED测量真实内容高度
-                    v?.measure(
-                        View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-                    )
-                    contentHeight = v?.measuredHeight ?: 0
-                    BookplateLogger.log("RENDER", "页面加载后内容高度: ${contentHeight}px")
+                    if (u != null && u != "about:blank") {
+                        pageFinished = true
+                        v?.measure(
+                            View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                        )
+                        contentHeight = v?.measuredHeight ?: 0
+                        BookplateLogger.log("RENDER", "onPageFinished, 内容高度: ${contentHeight}px")
+                    }
                 }
             }
 
             wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
 
-            // 等待页面加载完成
+            BookplateLogger.log("RENDER", "等待页面加载完成...")
             withTimeoutOrNull(RENDER_TIMEOUT_MS) {
-                while (!finished) delay(50)
+                while (!pageFinished) delay(30)
             } ?: run {
                 BookplateLogger.log("RENDER", "页面加载超时")
-                return null
             }
 
-            // 给渲染一点稳定时间
+            if (!pageFinished) {
+                if (contentHeight == 0) {
+                    wv.measure(
+                        View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    )
+                    contentHeight = wv.measuredHeight.coerceAtLeast(100)
+                    BookplateLogger.log("RENDER", "超时后手动测量: ${contentHeight}px")
+                }
+                if (contentHeight <= 100) {
+                    BookplateLogger.log("RENDER", "内容高度不足，渲染失败")
+                    return null
+                }
+            }
+
             delay(300)
 
-            // 再次测量最终高度
             wv.measure(
                 View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -206,7 +219,6 @@ object BookplateHtmlRenderer {
                 return null
             }
 
-            // 用最终高度重新布局
             wv.layout(0, 0, w, finalHeight)
             delay(100)
 
@@ -223,7 +235,12 @@ object BookplateHtmlRenderer {
             BookplateLogger.log("RENDER", "渲染异常:${e.message}")
             lastError = e.message
             null
-        } finally { try { wv.stopLoading() } catch (_: Exception) {} }
+        } finally {
+            try {
+                wv.stopLoading()
+                wv.webViewClient = null
+            } catch (_: Exception) {}
+        }
     }
 
     private fun applyVisibility(d: BookplateData, s: DataVisibilitySettings) = d.copy(

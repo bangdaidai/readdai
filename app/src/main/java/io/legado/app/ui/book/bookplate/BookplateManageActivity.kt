@@ -125,16 +125,10 @@ class BookplateManageActivity :
     private fun loadAndShowList() {
         lifecycleScope.launch {
             templates = withContext(Dispatchers.IO) {
+                BookplateGenerator.getOrCreateBuiltinTemplates()
                 val all = appDb.bookplateTemplateDao.getAll()
                 val builtins = all.filter { it.isBuiltin }
-                if (builtins.size > 1) {
-                    builtins.drop(1).forEach { appDb.bookplateTemplateDao.deleteById(it.id) }
-                }
-                builtins.take(1) + all.filter { !it.isBuiltin }
-            }
-            if (templates.isEmpty()) {
-                val builtin = withContext(Dispatchers.IO) { BookplateGenerator.getOrCreateBuiltinTemplate() }
-                templates = listOf(builtin)
+                builtins + all.filter { !it.isBuiltin }
             }
             selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
             adapter.setItems(templates, adapter.diffItemCallback)
