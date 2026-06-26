@@ -30,7 +30,6 @@ object BookplateHtmlRenderer {
 
     private const val RENDER_TIMEOUT_MS = 12000L
     private const val MAX_CACHE_SIZE = 16
-    private const val SAFETY_MARGIN = 30   // 优化3：增大安全边距至30px
 
     @Volatile
     private var cachedWebViewDeferred: CompletableDeferred<WebView>? = null
@@ -141,91 +140,81 @@ object BookplateHtmlRenderer {
         }
     }
 
-    /* ═════════════════════ 核心 ═════════════════════ */
+    /* ═════════════════════ 核心渲染 ═════════════════════ */
     private suspend fun renderHtml(ctx: Context, html: String, w: Int): Bitmap? {
         val t0 = System.currentTimeMillis()
-        val screenH = ctx.resources.displayMetrics.heightPixels
-        // 优化2：缩小初始画布上限 800~4000
-        val initH = (screenH * 1.5f).toInt().coerceIn(800, 4000)
 
         BookplateLogger.log("RENDER", "========== 渲染开始 ==========")
-        BookplateLogger.log("RENDER", "width=$w  initH=$initH")
+        BookplateLogger.log("RENDER", "width=$w")
 
         val wv = getWebView(ctx)
-        wv.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(initH, View.MeasureSpec.EXACTLY))
-        wv.layout(0, 0, w, initH)
 
         return try {
+            // 第一步：用UNSPECIFIED让WebView自然布局，不限制高度
+            wv.measure(
+                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            val naturalHeight = wv.measuredHeight.coerceAtLeast(100)
+            BookplateLogger.log("RENDER", "初始自然高度: ${naturalHeight}px")
+
+            // 用自然高度布局
+            wv.layout(0, 0, w, naturalHeight)
+
             var finished = false
-            var jsHeight = 0
+            var contentHeight = 0
 
             wv.webViewClient = object : WebViewClient() {
                 override fun onPageFinished(v: WebView?, u: String?) {
                     finished = true
-                    // ② 等渲染后精确测高
-                    v?.evaluateJavascript("""
-(function(){
-  document.body.style.minHeight='0px';
-  document.body.style.height='auto';
-  setTimeout(function(){
-    var maxB=0;
-    var minT=Infinity;
-    var els=Array.from(document.body.querySelectorAll('*'));
-    for(var i=0;i<els.length;i++){
-      var n=els[i];
-      var s=window.getComputedStyle(n);
-      if(s.display!=='none'&&s.visibility!=='hidden'){
-        var r=n.getBoundingClientRect();
-        if(r.width>0&&r.height>0){
-          minT=Math.min(minT,r.top);
-          maxB=Math.max(maxB,r.bottom);
-        }
-      }
-    }
-    var bs=parseFloat(window.getComputedStyle(document.body).paddingBottom)||0;
-    var pt=parseFloat(window.getComputedStyle(document.body).paddingTop)||0;
-    window.HeightBridge.onHeightReady(Math.round((maxB-minT)+pt+bs+$SAFETY_MARGIN));
-  },200);
-})()
-                    """.trimIndent(), null)
+                    // 页面加载完成后，再次用UNSPECIFIED测量真实内容高度
+                    v?.measure(
+                        View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    )
+                    contentHeight = v?.measuredHeight ?: 0
+                    BookplateLogger.log("RENDER", "页面加载后内容高度: ${contentHeight}px")
                 }
             }
 
-            wv.addJavascriptInterface(object {
-                @android.webkit.JavascriptInterface
-                fun onHeightReady(h: Int) { jsHeight = h.coerceAtLeast(60) }
-            }, "HeightBridge")
-
             wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
 
+            // 等待页面加载完成
             withTimeoutOrNull(RENDER_TIMEOUT_MS) {
-                while (!finished || jsHeight == 0) delay(50)
+                while (!finished) delay(50)
             } ?: run {
-                BookplateLogger.log("RENDER", "高度测量JS超时")
-                jsHeight = initH
+                BookplateLogger.log("RENDER", "页面加载超时")
+                return null
             }
 
-            BookplateLogger.log("RENDER", "JS测得内容高度=${jsHeight}px")
+            // 给渲染一点稳定时间
+            delay(300)
 
-            // ④ 用真实高度重布局
-            val fh = jsHeight.coerceAtMost(initH * 3)
-            wv.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(fh, View.MeasureSpec.EXACTLY))
-            wv.layout(0, 0, w, fh)
-            delay(120)
+            // 再次测量最终高度
+            wv.measure(
+                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            val finalHeight = wv.measuredHeight.coerceAtLeast(100)
+            BookplateLogger.log("RENDER", "最终内容高度: ${finalHeight}px")
 
-            BookplateLogger.log("RENDER", "截图原始 ${w}x$fh")
-            val rawBitmap = Bitmap.createBitmap(w, fh, Bitmap.Config.ARGB_8888).also {
+            if (finalHeight <= 0) {
+                BookplateLogger.log("RENDER", "内容高度为0")
+                return null
+            }
+
+            // 用最终高度重新布局
+            wv.layout(0, 0, w, finalHeight)
+            delay(100)
+
+            BookplateLogger.log("RENDER", "截图 ${w}x$finalHeight")
+            val bitmap = Bitmap.createBitmap(w, finalHeight, Bitmap.Config.ARGB_8888).also {
                 Canvas(it).drawColor(Color.WHITE); wv.draw(Canvas(it))
             }
-            // 优化1：多列采样裁剪
-            val finalBmp = cropBlankBitmap(rawBitmap, SAFETY_MARGIN, SAFETY_MARGIN)
-            rawBitmap.recycle()
 
             val totalTime = System.currentTimeMillis() - t0
-            BookplateLogger.log("RENDER", "========== 成功 ${finalBmp.width}x${finalBmp.height} 总=${totalTime}ms ==========")
-            finalBmp
+            BookplateLogger.log("RENDER", "========== 成功 ${bitmap.width}x${bitmap.height} 总=${totalTime}ms ==========")
+            bitmap
         } catch (e: CancellationException) { lastError = "取消"; null }
         catch (e: Exception) {
             BookplateLogger.log("RENDER", "渲染异常:${e.message}")
@@ -234,50 +223,6 @@ object BookplateHtmlRenderer {
         } finally { try { wv.stopLoading() } catch (_: Exception) {} }
     }
 
-    // 优化1：三列采样、宽松纯白阈值，防止误裁
-    private fun cropBlankBitmap(bitmap: Bitmap, safeTop: Int, safeBottom: Int): Bitmap {
-        val width = bitmap.width
-        val height = bitmap.height
-        var cropTop = 0
-        var cropBottom = height
-
-        // 左、中、右三列采样
-        val sampleXs = intArrayOf(width / 4, width / 2, width * 3 / 4)
-
-        fun isRowBlank(y: Int): Boolean {
-            for (x in sampleXs) {
-                val pixel = bitmap.getPixel(x, y)
-                val r = (pixel shr 16) and 0xFF
-                val g = (pixel shr 8) and 0xFF
-                val b = pixel and 0xFF
-                // 放宽纯白判定，浅灰不算空白
-                if (!(r > 248 && g > 248 && b > 248)) return false
-            }
-            return true
-        }
-
-        // 从上扫描找首个非空白行
-        for (y in 0 until height) {
-            if (!isRowBlank(y)) {
-                cropTop = maxOf(0, y - safeTop)
-                break
-            }
-        }
-
-        // 从下扫描找最后非空白行
-        for (y in height - 1 downTo 0) {
-            if (!isRowBlank(y)) {
-                cropBottom = minOf(height, y + safeBottom + 1)
-                break
-            }
-        }
-
-        val targetHeight = cropBottom - cropTop
-        if (targetHeight <= 0 || targetHeight >= height) return bitmap
-        return Bitmap.createBitmap(bitmap, 0, cropTop, width, targetHeight)
-    }
-
-    /* ── 辅助 ── */
     private fun applyVisibility(d: BookplateData, s: DataVisibilitySettings) = d.copy(
         bookName=if(s.isBasicInfoVisible())d.bookName else "",
         author=if(s.isBasicInfoVisible())d.author else "",
