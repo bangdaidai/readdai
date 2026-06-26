@@ -28,7 +28,7 @@ object BookplateHtmlRenderer {
     var lastError: String? = null
         private set
 
-    private const val RENDER_TIMEOUT_MS = 5000L
+    private const val RENDER_TIMEOUT_MS = 1000L
     private const val MAX_CACHE_SIZE = 16
 
     @Volatile
