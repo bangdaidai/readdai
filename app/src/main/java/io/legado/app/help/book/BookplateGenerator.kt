@@ -456,7 +456,7 @@ object BookplateGenerator {
         }
     }
 
-    private fun resolveTemplate(selectedId: Long): BookplateTemplate? {
+    private suspend fun resolveTemplate(selectedId: Long): BookplateTemplate? {
         if (selectedId > 0L) {
             return appDb.bookplateTemplateDao.getById(selectedId)
         }

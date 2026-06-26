@@ -42,6 +42,8 @@ object BookplateHtmlRenderer {
         }
     }
 
+    private val noopClient = object : WebViewClient() {}
+    @Suppress("unused")
     private val VARIABLE_REGEX = Regex("\\{\\{(\\w+)\\}\\}")
     private val HEAD_TAG_REGEX = Regex("<head>", RegexOption.IGNORE_CASE)
     private val VIEWPORT_META_REGEX = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE)
@@ -92,7 +94,7 @@ object BookplateHtmlRenderer {
             val wv = it.await()
             withContext(Dispatchers.Main) {
                 wv.stopLoading()
-                wv.webViewClient = null
+                wv.webViewClient = noopClient
                 wv.clearHistory()
                 wv.clearCache(true)
                 wv.removeJavascriptInterface("HeightBridge")
@@ -235,7 +237,7 @@ object BookplateHtmlRenderer {
         } finally {
             try {
                 wv.stopLoading()
-                wv.webViewClient = null
+                wv.webViewClient = noopClient
             } catch (_: Exception) {}
         }
     }
