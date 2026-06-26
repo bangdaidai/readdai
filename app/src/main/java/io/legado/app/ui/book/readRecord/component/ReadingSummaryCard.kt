@@ -41,7 +41,8 @@ data class SummaryCardData(
 
 data class BookCoverData(
     val bookName: String,
-    val coverUrl: String
+    val coverUrl: String,
+    val sourceOrigin: String = ""
 )
 
 @Composable
@@ -181,7 +182,8 @@ fun BookStackView(
                     author = null,
                     path = bookCover.coverUrl.ifEmpty { null },
                     modifier = Modifier.width(48.dp),
-                    radius = 4.dp
+                    radius = 4.dp,
+                    sourceOrigin = bookCover.sourceOrigin
                 )
             }
         }

@@ -583,7 +583,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     bookName = rank.bookName,
                     bookAuthor = book?.author ?: "",
                     readTime = rank.readTime,
-                    coverUrl = coverUrl
+                    coverUrl = coverUrl,
+                    sourceOrigin = book?.origin ?: ""
                 )
             }.take(10)
         }

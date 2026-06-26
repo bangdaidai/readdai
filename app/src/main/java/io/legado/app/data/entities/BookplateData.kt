@@ -4,6 +4,7 @@ data class BookplateData(
     val bookName: String = "",
     val author: String = "",
     val coverUrl: String = "",
+    val sourceOrigin: String = "",
     val intro: String = "",
     val kind: String = "",
     val wordCount: String = "",
