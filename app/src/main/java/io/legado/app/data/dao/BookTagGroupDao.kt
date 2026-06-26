@@ -3,6 +3,7 @@ package io.legado.app.data.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import io.legado.app.data.entities.BookTagGroup
@@ -46,7 +47,7 @@ interface BookTagGroupDao {
     /**
      * 插入分组
      */
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(group: BookTagGroup): Long
 
     /**

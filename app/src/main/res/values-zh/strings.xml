@@ -1253,6 +1253,10 @@
     <string name="only_update_read">仅更新已读完</string>
     <string name="ps_only_update_read">仅更新已读完的书籍</string>
     <string name="text_underline">文字下划线</string>
+    <string name="underline_color">下划线颜色</string>
+    <string name="underline_width">下划线宽度</string>
+    <string name="underline_offset">下划线偏移</string>
+    <string name="underline_extend">延伸到全宽</string>
     <string name="select_new_source">选中新增源</string>
     <string name="select_update_source">选中更新源</string>
     <string name="set_local_password">设置本地密码</string>

@@ -95,7 +95,10 @@ object BookplateHtmlRenderer {
                 wv.stopLoading(); wv.clearHistory(); wv.clearCache(true)
                 wv.removeJavascriptInterface("HeightBridge")
                 wv.setLayerType(View.LAYER_TYPE_NONE, null)
+                wv.loadUrl("about:blank")
             }
+            // 等待 about:blank 加载完成，确保 DOM 彻底清空
+            delay(100)
             return wv
         }
         val d = CompletableDeferred<WebView>()
