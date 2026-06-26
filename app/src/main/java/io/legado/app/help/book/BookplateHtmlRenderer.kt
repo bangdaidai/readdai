@@ -28,7 +28,7 @@ object BookplateHtmlRenderer {
     var lastError: String? = null
         private set
 
-    private const val RENDER_TIMEOUT_MS = 15000L
+    private const val RENDER_TIMEOUT_MS = 5000L
     private const val MAX_CACHE_SIZE = 16
 
     @Volatile
@@ -145,8 +145,11 @@ object BookplateHtmlRenderer {
         val wv = getWebView(ctx)
 
         return try {
-            // 用固定最小高度提供初始布局框架,不依赖 measuredHeight(可能是脏值)
-            wv.layout(0, 0, w, 100)
+            wv.measure(
+                View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            wv.layout(0, 0, w, wv.measuredHeight.coerceAtLeast(100))
 
             var pageFinished = false
             var contentHeight = 0
@@ -163,7 +166,7 @@ object BookplateHtmlRenderer {
                 }
             }
 
-            wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+            wv.loadDataWithBaseURL("about:blank", html, "text/html", "UTF-8", null)
 
             BookplateLogger.log("RENDER", "等待页面加载完成...")
             withTimeoutOrNull(RENDER_TIMEOUT_MS) {
