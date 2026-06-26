@@ -8,7 +8,6 @@ import android.graphics.Color
 import android.os.Build
 import android.util.Base64
 import android.view.View
-import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import java.io.ByteArrayOutputStream
@@ -26,13 +25,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 object BookplateHtmlRenderer {
 
+    /** 最近一次渲染失败的原因 */
     var lastError: String? = null
         private set
 
     private const val RENDER_TIMEOUT_MS = 10000L
     private const val MAX_CACHE_SIZE = 16
     private const val MAX_GENEROUS_HEIGHT = 6000
-    private const val HEIGHT_MARGIN = 15
 
     @Volatile
     private var cachedWebViewDeferred: CompletableDeferred<WebView>? = null
@@ -50,11 +49,6 @@ object BookplateHtmlRenderer {
     private val VARIABLE_REGEX = Regex("\\{\\{(\\w+)\\}\\}")
     private val VIEWPORT_META_REGEX = Regex("""<meta\s+name=["']viewport["'][^>]*>""", RegexOption.IGNORE_CASE)
     private val HEAD_TAG_REGEX = Regex("<head>", RegexOption.IGNORE_CASE)
-
-    interface HeightBridge {
-        @JavascriptInterface
-        fun onContentHeight(height: Int)
-    }
 
     private fun getRenderWidth(context: Context): Int {
         val screenWidth = context.resources.displayMetrics.widthPixels
@@ -82,7 +76,7 @@ object BookplateHtmlRenderer {
         } else {
             HEAD_TAG_REGEX.replaceFirst(
                 html,
-                "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n<style>html,body{margin:0;padding:0;height:auto !important;min-height:0 !important;overflow:hidden;}</style>"
+                "<head>\n<meta name=\"viewport\" content=\"width=${width}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n<style>html,body{margin:0;padding:0;height:auto !important;min-height:0 !important;}</style>"
             )
         }
     }
@@ -146,18 +140,16 @@ object BookplateHtmlRenderer {
                 wv.stopLoading()
                 wv.clearHistory()
                 wv.clearCache(true)
-                wv.removeJavascriptInterface("HeightBridge")
+                // 彻底移除JS桥接残留
+                try {
+                    wv.removeJavascriptInterface("HeightBridge")
+                } catch (_: Exception) {}
                 wv.evaluateJavascript("""
                     (function(){
                         try {
-                            if(window.__bookplateTimer__){
-                                clearInterval(window.__bookplateTimer__);
-                                delete window.__bookplateTimer__;
-                            }
                             var id = window.setTimeout(function(){}, 0);
                             while(id--) { window.clearTimeout(id); window.clearInterval(id); }
                         } catch(e){}
-                        delete window.__bookplateTimer__;
                     })()
                 """, null)
                 wv.setLayerType(View.LAYER_TYPE_NONE, null)
@@ -201,8 +193,7 @@ object BookplateHtmlRenderer {
                 val wv = deferred.getCompleted()
                 try {
                     wv.destroy()
-                } catch (_: Exception) {
-                }
+                } catch (_: Exception) {}
             }
         }
         cachedWebViewDeferred = null
@@ -256,106 +247,93 @@ object BookplateHtmlRenderer {
     }
 
     private suspend fun renderHtml(context: Context, html: String, width: Int): Bitmap? {
+        val t0 = System.currentTimeMillis()
+        val screenW = context.resources.displayMetrics.widthPixels
+        val screenH = context.resources.displayMetrics.heightPixels
+        val generousH = minOf(maxOf(screenH * 2, 3000), MAX_GENEROUS_HEIGHT)
+
         val webView = getWebView(context)
-        val heightDeferred = CompletableDeferred<Int>()
 
-        withContext(Dispatchers.Main) {
-            webView.addJavascriptInterface(object : HeightBridge {
-                override fun onContentHeight(height: Int) {
-                    if (!heightDeferred.isCompleted) {
-                        val safeHeight = height.coerceAtMost(MAX_GENEROUS_HEIGHT) + HEIGHT_MARGIN
-                        heightDeferred.complete(safeHeight)
-                    }
-                }
-            }, "HeightBridge")
+        return try {
+            webView.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(generousH, View.MeasureSpec.EXACTLY)
+            )
+            webView.layout(0, 0, width, generousH)
 
+            var onPageFinishedCalled = false
             webView.webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    onPageFinishedCalled = true
+                    // 仅收缩body高度，无任何JSBridge、无图片等待代码
+                    view?.evaluateJavascript("""
+                        document.body.style.minHeight = '0px';
+                        document.body.style.height = 'auto';
+                        document.documentElement.style.height = 'auto';
+                    """, null)
+                }
+
                 @Suppress("DEPRECATION")
                 override fun onReceivedError(
                     view: WebView?, errorCode: Int, description: String?, failingUrl: String?
                 ) {
                     lastError = "WebView错误[code=$errorCode]: $description"
                 }
-
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    view?.evaluateJavascript("""
-                        (function(){
-                            document.body.style.minHeight = '0px';
-                            document.body.style.height = 'auto';
-                            document.documentElement.style.height = 'auto';
-                            var imgs = document.querySelectorAll('img');
-                            var loaded = 0;
-                            if(imgs.length === 0){
-                                HeightBridge.onContentHeight(document.documentElement.scrollHeight);
-                                return;
-                            }
-                            imgs.forEach(function(img){
-                                if(img.complete){
-                                    loaded++;
-                                    if(loaded >= imgs.length){
-                                        HeightBridge.onContentHeight(document.documentElement.scrollHeight);
-                                    }
-                                }else{
-                                    img.onload = function(){
-                                        loaded++;
-                                        if(loaded >= imgs.length){
-                                            HeightBridge.onContentHeight(document.documentElement.scrollHeight);
-                                        }
-                                    }
-                                    img.onerror = function(){
-                                        loaded++;
-                                        if(loaded >= imgs.length){
-                                            HeightBridge.onContentHeight(document.documentElement.scrollHeight);
-                                        }
-                                    }
-                                }
-                            })
-                        })()
-                    """.trimIndent(), null)
-                }
             }
 
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
-            webView.layout(0, 0, width, 300)
             webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-        }
 
-        val contentHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
-            heightDeferred.await()
-        } ?: run {
-            lastError = "页面高度获取超时"
+            // 等待页面加载完成
+            val contentHeight = withTimeoutOrNull(RENDER_TIMEOUT_MS) {
+                while (!onPageFinishedCalled) {
+                    delay(50)
+                }
+                delay(300)
+
+                // 重新无约束测量真实内容高度
+                withContext(Dispatchers.Main) {
+                    webView.measure(
+                        View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+                    )
+                    webView.measuredHeight + 20
+                }
+            } ?: run {
+                lastError = "页面加载超时"
+                return null
+            }
+
+            if (contentHeight <= 0) {
+                lastError = "内容高度为0"
+                return null
+            }
+
+            // 重新布局到精准高度
+            withContext(Dispatchers.Main) {
+                webView.measure(
+                    View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
+                )
+                webView.layout(0, 0, width, contentHeight)
+            }
+            delay(150)
+
+            val fullBitmap = captureBitmap(webView, width, contentHeight, t0)
+            fullBitmap
+        } catch (e: CancellationException) {
+            lastError = "渲染被取消"
+            null
+        } catch (e: Exception) {
+            lastError = e.message
+            null
+        } finally {
             try {
                 webView.stopLoading()
             } catch (_: Exception) {}
-            return null
         }
-
-        if (contentHeight <= 0) {
-            lastError = "文档高度为0"
-            return null
-        }
-
-        withContext(Dispatchers.Main) {
-            webView.measure(
-                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(contentHeight, View.MeasureSpec.EXACTLY)
-            )
-            webView.layout(0, 0, width, contentHeight)
-        }
-
-        delay(150)
-
-        val bitmap = captureBitmap(webView, width, contentHeight)
-        if (bitmap == null) {
-            lastError = "截图生成失败"
-        }
-        return bitmap
     }
 
-    private fun captureBitmap(webView: WebView, width: Int, height: Int): Bitmap? {
+    private fun captureBitmap(webView: WebView, width: Int, height: Int, startTime: Long): Bitmap? {
         var bitmap = tryCapture(webView, width, height)
 
         if (bitmap == null || isBitmapBlank(bitmap)) {
@@ -367,7 +345,6 @@ object BookplateHtmlRenderer {
                 webView.setLayerType(View.LAYER_TYPE_NONE, null)
             }
         }
-
         return bitmap
     }
 
