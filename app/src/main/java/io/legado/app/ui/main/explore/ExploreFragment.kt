@@ -112,6 +112,7 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import io.legado.app.domain.model.BookShelfState
 import io.legado.app.ui.main.homepage.SearchBookPreviewSheet
+import io.legado.app.ui.main.homepage.ReaddaiTheme
 
 /**
  * 发现界面
@@ -163,6 +164,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
     }
     private val btnDiscoverModeToggle: android.widget.ImageButton? by lazy {
         modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_mode_toggle)
+    }
+    private val btnDiscoverRefresh: android.widget.ImageButton? by lazy {
+        modernTitleBar?.findViewById<android.widget.ImageButton?>(R.id.btn_discover_refresh)
     }
     private val diffItemCallBack = ExploreDiffItemCallBack()
     private val groups = linkedSetOf<String>()
@@ -437,6 +441,9 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         btnDiscoverModeToggle?.setOnClickListener {
             toggleDiscoveryMode()
         }
+        btnDiscoverRefresh?.setOnClickListener {
+            refreshDiscoverSource()
+        }
         updateDiscoverSearchButtonState()
         updateDiscoverModeToggleButtonState()
     }
@@ -445,6 +452,7 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
         val rowWidth = modernTitleBar?.width ?: return
         if (rowWidth <= 0) return
         val actionsWidth = listOf(
+            btnDiscoverRefresh,
             btnDiscoverSourceSearch,
             btnDiscoverEditSource,
             btnDiscoverSourceLogin,
@@ -618,6 +626,16 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             },
             showTitle = false
         )
+    }
+
+    private fun refreshDiscoverSource() {
+        val source = selectedDiscoverSourcePart ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            withContext(IO) {
+                source.clearExploreKindsCache()
+            }
+            selectDiscoverSource(source)
+        }
     }
 
     private fun selectDiscoverSource(source: BookSourcePart) {
@@ -1411,19 +1429,21 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             setViewTreeLifecycleOwner(viewLifecycleOwner)
             this.setViewTreeSavedStateRegistryOwner(this@ExploreFragment)
             setContent {
-                SearchBookPreviewSheet(
-                    data = book,
-                    shelfState = shelfState,
-                    onDismissRequest = { dialog?.dismiss() },
-                    onOpenDetail = { b ->
-                        showBookInfo(b)
-                        dialog?.dismiss()
-                    },
-                    onAddToShelf = { b ->
-                        viewModel.addToBookshelf(b)
-                        dialog?.dismiss()
-                    }
-                )
+                ReaddaiTheme {
+                    SearchBookPreviewSheet(
+                        data = book,
+                        shelfState = shelfState,
+                        onDismissRequest = { dialog?.dismiss() },
+                        onOpenDetail = { b ->
+                            showBookInfo(b)
+                            dialog?.dismiss()
+                        },
+                        onAddToShelf = { b ->
+                            viewModel.addToBookshelf(b)
+                            dialog?.dismiss()
+                        }
+                    )
+                }
             }
         }
         dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen).apply {
