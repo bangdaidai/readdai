@@ -275,9 +275,6 @@ object ChapterProvider {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && AppConfig.optimizeRender) {
             cPaint.isLinearText = true
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && textBold in 100..900) {
-            cPaint.setFontVariationSettings("'wght' $textBold")
-        }
         return Pair(tPaint, cPaint)
     }
 
