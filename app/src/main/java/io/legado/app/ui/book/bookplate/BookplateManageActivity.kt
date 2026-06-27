@@ -168,7 +168,6 @@ class BookplateManageActivity :
     }
 
     override fun onDelete(item: BookplateTemplate) {
-        if (item.isBuiltin) return
         deleteTemplate(item)
     }
 

@@ -18,6 +18,7 @@ import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.readingmemory.ReadingMemoryActivity
 import io.legado.app.utils.*
 import io.legado.app.help.book.ReadingProgressHelper
+import io.legado.app.utils.DashedDividerDrawable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -511,6 +512,16 @@ class ReadingMemoryAdapter(
             }
 
             // 设置书评显示（统一从 BookReview 表读取）
+            val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(activity)
+            val strokeWidth = 0.5f * activity.resources.displayMetrics.density
+            view_divider.background = DashedDividerDrawable(
+                dividerColor, strokeWidth,
+                8f * activity.resources.displayMetrics.density,
+                4f * activity.resources.displayMetrics.density
+            )
+            view_divider.layoutParams = view_divider.layoutParams.apply {
+                height = strokeWidth.toInt().coerceAtLeast(1)
+            }
             val showReview = AppConfig.showBookReview
             CoroutineScope(Dispatchers.Main).launch {
                 val reviews = withContext(Dispatchers.IO) {

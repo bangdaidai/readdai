@@ -192,31 +192,13 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
     private fun calculateStatusCountsWithFilters() {
         viewModelScope.launch {
             val filteredMemories = withContext(Dispatchers.IO) {
-                // 1. 状态筛选
-                var filtered = if (currentStatusFilter == null) {
-                    allReadingMemories
-                } else {
-                    val targetStatus = when (currentStatusFilter) {
-                        "未读", "待读", "待看" -> ReadingStatus.PENDING
-                        "阅读中", "在读", "在看" -> ReadingStatus.READING
-                        "已读完", "读完", "看完" -> ReadingStatus.FINISHED
-                        "弃文", "弃读", "弃" -> ReadingStatus.ABANDONED
-                        else -> null
-                    }
+                // 计算状态计数时不应用状态筛选，只应用类型和评分筛选
+                var filtered = allReadingMemories
 
-                    if (targetStatus != null) {
-                        allReadingMemories.filter { it.readingStatus == targetStatus }
-                    } else {
-                        allReadingMemories
-                    }
-                }
-
-                // 2. 类型筛选
+                // 1. 类型筛选
                 if (currentReadTypeFilter != null) {
                     filtered = filtered.filter { memory ->
-                        // 对于type为0的旧数据，尝试从Book中获取类型
                         val memoryType = if (memory.type == 0) {
-                            // 尝试从Book中获取类型
                             val book = appDb.bookDao.getBook(memory.bookUrl)
                             book?.type ?: io.legado.app.constant.BookType.text
                         } else {
@@ -226,7 +208,7 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                     }
                 }
 
-                // 3. 评分筛选
+                // 2. 评分筛选
                 if (currentRatingFilter != "all") {
                     filtered = when (currentRatingFilter) {
                         "5" -> filtered.filter { it.rating >= 5 }
