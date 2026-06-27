@@ -16,16 +16,12 @@ import java.net.URI
 import io.legado.app.data.entities.BookplateData
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.help.config.DataVisibilitySettings
-import io.legado.app.help.http.okHttpClient
-import io.legado.app.help.source.SourceHelp
-import io.legado.app.model.analyzeRule.AnalyzeUrl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import okhttp3.Request
 
 object BookplateHtmlRenderer {
 
@@ -128,11 +124,11 @@ object BookplateHtmlRenderer {
         val w = getRenderWidth(ctx)
         val key = "${data.bookName}_${data.author}_${tpl.id}_${tpl.htmlContent.hashCode()}_$w"
         synchronized(bitmapCache) { bitmapCache[key]?.takeIf { !it.isRecycled }?.let { return it }; bitmapCache.remove(key) }
-        val fd = applyVisibility(data, cfg)
-        val coverDataUri = downloadCover(fd.coverUrl, fd.sourceOrigin)
-        val d = if (coverDataUri != null) fd.copy(coverUrl = coverDataUri) else fd
         return withContext(Dispatchers.Main) {
             lastError = null
+            val fd = applyVisibility(data, cfg)
+            val cov = coverUrlToDataUri(fd.coverUrl)
+            val d = if (cov != null) fd.copy(coverUrl = cov) else fd
             val html = replaceVariables(tpl.htmlContent, d)
             if (html.isBlank()) { lastError = "HTML为空"; return@withContext null }
             renderHtml(ctx, ensureViewportMeta(html, w), w)
@@ -290,15 +286,8 @@ object BookplateHtmlRenderer {
         return sb.toString()
     }
 
-    private suspend fun downloadCover(u: String, sourceOrigin: String): String? {
-        if (u.isBlank() || u.startsWith("data:")) return u.ifBlank { null }
-        if (u.startsWith("http://") || u.startsWith("https://")) {
-            return downloadHttpToDataUri(u, sourceOrigin)
-        }
-        return fileToDataUri(u)
-    }
-
-    private fun fileToDataUri(u: String): String? {
+    private fun coverUrlToDataUri(u: String): String? {
+        if (u.isBlank() || u.startsWith("http") || u.startsWith("data:")) return u.ifBlank { null }
         return try {
             val f = when {
                 u.startsWith("file://") -> File(URI(u))
@@ -312,33 +301,6 @@ object BookplateHtmlRenderer {
                     "data:image/jpeg;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
                 }
             } else null
-        } catch (_: Exception) { null }
-    }
-
-    private suspend fun downloadHttpToDataUri(url: String, sourceOrigin: String): String? = withContext(Dispatchers.IO) {
-        try {
-            val source = sourceOrigin.takeIf { it.isNotBlank() }?.let { SourceHelp.getSource(it) }
-            val analyzedUrl = AnalyzeUrl(url, source = source)
-            val requestBuilder = Request.Builder().url(analyzedUrl.url)
-            analyzedUrl.headerMap.forEach { (k, v) -> requestBuilder.addHeader(k, v) }
-            val response = okHttpClient.newCall(requestBuilder.build()).execute()
-            response.use { resp ->
-                if (!resp.isSuccessful) return@withContext null
-                resp.body?.bytes()?.let { bytes ->
-                    val contentType = resp.header("Content-Type") ?: "image/jpeg"
-                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                    bitmap?.let {
-                        val format = if (contentType.contains("png", ignoreCase = true)) "png" else "jpeg"
-                        val baos = ByteArrayOutputStream()
-                        it.compress(
-                            if (format == "png") Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG,
-                            80, baos
-                        )
-                        it.recycle()
-                        "data:image/$format;base64," + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
-                    }
-                }
-            }
         } catch (_: Exception) { null }
     }
 }

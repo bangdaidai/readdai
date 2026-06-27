@@ -36,8 +36,7 @@ data class BookRankingData(
     val bookName: String,
     val bookAuthor: String,
     val readTime: Long,
-    val coverUrl: String = "",
-    val sourceOrigin: String = ""
+    val coverUrl: String = ""
 )
 
 @Composable
@@ -113,8 +112,7 @@ fun TopReadingListCard(
                         author = book.bookAuthor.ifEmpty { null },
                         path = book.coverUrl.ifEmpty { null },
                         modifier = Modifier.width(40.dp),
-                        radius = 4.dp,
-                        sourceOrigin = book.sourceOrigin
+                        radius = 4.dp
                     )
 
                     Column(

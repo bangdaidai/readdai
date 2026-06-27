@@ -35,9 +35,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import io.legado.app.R
 import io.legado.app.help.config.AppConfig
-import io.legado.app.help.source.SourceHelp
 import io.legado.app.lib.theme.ThemeStore
-import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.BookCover
 import io.legado.app.utils.getPrefString
 import splitties.init.appCtx
@@ -50,25 +48,11 @@ fun CoilBookCover(
     modifier: Modifier = Modifier,
     radius: Dp = 4.dp,
     showLoadingPlaceholder: Boolean = true,
-    sourceOrigin: String = "",
 ) {
     val context = LocalContext.current
     val isNight = AppConfig.isNightTheme
     val useDefault = AppConfig.useDefaultCover
     val finalPath = if (useDefault) null else path
-    val headers = remember(sourceOrigin) {
-        val map = mutableMapOf<String, String>()
-        if (sourceOrigin.isNotBlank()) {
-            val source = SourceHelp.getSource(sourceOrigin)
-            if (source != null) {
-                try {
-                    val analyzedUrl = AnalyzeUrl("", source = source)
-                    map.putAll(analyzedUrl.headerMap)
-                } catch (_: Exception) {}
-            }
-        }
-        map
-    }
 
     val defaultCoverPath = remember(name, author, path, isNight) {
         getDefaultCoverPath(name ?: author ?: path ?: "")
@@ -108,9 +92,6 @@ fun CoilBookCover(
                 model = ImageRequest.Builder(context)
                     .data(finalPath)
                     .crossfade(true)
-                    .apply {
-                        headers.forEach { (k, v) -> setHeader(k, v) }
-                    }
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
