@@ -325,7 +325,7 @@ object BookplateHtmlRenderer {
             response.use { resp ->
                 if (!resp.isSuccessful) return@withContext null
                 resp.body?.bytes()?.let { bytes ->
-                    val contentType = resp.header("Content-Type", "image/jpeg")
+                    val contentType = resp.header("Content-Type") ?: "image/jpeg"
                     val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     bitmap?.let {
                         val format = if (contentType.contains("png", ignoreCase = true)) "png" else "jpeg"
