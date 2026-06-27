@@ -2,6 +2,7 @@ package io.legado.app.ui.highlight.edit
 
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.TypedValue
@@ -13,6 +14,7 @@ import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import androidx.annotation.ColorInt
 import androidx.core.widget.doAfterTextChanged
+import com.bumptech.glide.Glide
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import io.legado.app.R
@@ -25,6 +27,7 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.getSecondaryTextColor
+import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.observeEvent
@@ -32,6 +35,7 @@ import io.legado.app.utils.setLayout
 import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.ui.book.read.config.HighlightRulePreview
+import java.io.File
 
 class HighlightRuleEditDialog(
     private val sourceRule: HighlightRule? = null,
@@ -48,6 +52,16 @@ class HighlightRuleEditDialog(
     private var primaryTextColor = 0
     private var secondaryTextColor = 0
     private var accentColor = 0
+
+    private val selectBgImage = registerForActivityResult(HandleFileContract()) { result ->
+        result.uri?.let { uri ->
+            val path = if (uri.scheme == "file") uri.path ?: uri.toString() else uri.toString()
+            binding.etBgImage.setText(path)
+            updateBgImagePreview(path)
+            editingRule.bgImage = path
+            updatePreview()
+        }
+    }
     private var isRegexMode = false
 
     companion object {
@@ -218,6 +232,8 @@ class HighlightRuleEditDialog(
         binding.spBgImageFit.setSelection(editingRule.bgImageFit.coerceIn(0, 2))
         binding.sbBgImageScale.progress = (editingRule.bgImageScale.coerceIn(0.1f, 5f) * 10).toInt()
         binding.tvBgImageScale.text = "${editingRule.bgImageScale.coerceIn(0.1f, 5f).formatScale()}x"
+        binding.etBgImage.setText(editingRule.bgImage.orEmpty())
+        updateBgImagePreview(editingRule.bgImage.orEmpty())
         binding.spUnderlineMode.setSelection(editingRule.underlineMode.coerceIn(0, 5))
         val groupIndex = groupItems.indexOf(editingRule.group).takeIf { it >= 0 } ?: 0
         binding.spGroup.setSelection(groupIndex)
@@ -333,6 +349,15 @@ class HighlightRuleEditDialog(
                 override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
             }
         )
+        binding.etBgImage.doAfterTextChanged {
+            val path = it?.toString().orEmpty()
+            editingRule.bgImage = path
+            updateBgImagePreview(path)
+            updatePreview()
+        }
+        binding.viewBgImagePreview.setOnClickListener {
+            selectBgImage.launch { mode = HandleFileContract.IMAGE }
+        }
         binding.spUnderlineMode.onItemSelectedListener =
             object : android.widget.AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
@@ -409,6 +434,22 @@ class HighlightRuleEditDialog(
 
     private fun updateSvgPathVisibility(mode: Int) {
         binding.llSvgPath.visibility = if (mode == 5) View.VISIBLE else View.GONE
+    }
+
+    private fun updateBgImagePreview(path: String) {
+        if (path.isBlank()) {
+            binding.viewBgImagePreview.setBackgroundResource(R.drawable.shape_edit_text)
+            return
+        }
+        val file = if (path.startsWith("assets://")) null else File(path)
+        if (file?.exists() == true) {
+            Glide.with(this).load(file).into(object : com.bumptech.glide.request.target.CustomTarget<Drawable>() {
+                override fun onResourceReady(resource: Drawable, transition: com.bumptech.glide.request.transition.Transition<in Drawable>?) {
+                    binding.viewBgImagePreview.background = resource
+                }
+                override fun onLoadCleared(placeholder: Drawable?) {}
+            })
+        }
     }
 
     private fun saveRule() {

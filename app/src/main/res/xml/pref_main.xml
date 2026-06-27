@@ -92,13 +92,6 @@
             android:title="@string/dict_rule"
             app:iconSpaceReserved="false" />
 
-        <io.legado.app.lib.prefs.Preference
-            android:icon="@drawable/ic_bookplate"
-            android:key="bookplateManage"
-            android:summary="管理藏书票HTML模板和样式"
-            android:title="藏书票模板"
-            app:iconSpaceReserved="false" />
-
         <io.legado.app.lib.prefs.SwitchPreference
             android:defaultValue="false"
             android:icon="@drawable/ic_cfg_web"
@@ -143,6 +136,13 @@
             android:summary="@string/theme_setting_s"
             android:title="@string/theme_setting"
             app:allowDividerBelow="false"
+            app:iconSpaceReserved="false" />
+
+        <io.legado.app.lib.prefs.Preference
+            android:icon="@drawable/ic_bookplate"
+            android:key="bookplateManage"
+            android:summary="管理藏书票HTML模板和样式"
+            android:title="藏书票模板"
             app:iconSpaceReserved="false" />
 
     </io.legado.app.lib.prefs.PreferenceCategory>

@@ -301,4 +301,5 @@ object PreferKey {
     const val highlightRuleBracketNote = "highlightRuleBracketNote"
 
     const val homepageLayoutMode = "homepageLayoutMode"
+    const val skipImagePickerDialog = "skipImagePickerDialog"
 }

@@ -182,6 +182,13 @@
             android:summary="@string/show_add_to_shelf_alert_summary"
             android:title="@string/show_add_to_shelf_alert_title" />
 
+        <io.legado.app.lib.prefs.SwitchPreference
+            android:defaultValue="false"
+            android:key="skipImagePickerDialog"
+            android:summary="打开后选择图片时直接使用系统图片选择器，跳过选择方式对话框"
+            android:title="直接使用系统图片选择器"
+            app:iconSpaceReserved="false" />
+
         <io.legado.app.lib.prefs.NameListPreference
             android:defaultValue="default_version"
             android:key="updateToVariant"

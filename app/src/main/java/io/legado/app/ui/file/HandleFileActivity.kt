@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.VMBaseActivity
 import io.legado.app.constant.AppLog
+import io.legado.app.constant.PreferKey
 import io.legado.app.databinding.ActivityTranslucenceBinding
 import io.legado.app.databinding.DialogEditTextBinding
 import io.legado.app.help.IntentData
@@ -23,6 +24,7 @@ import io.legado.app.utils.SelectImageContract
 import io.legado.app.utils.checkWrite
 import io.legado.app.utils.externalFiles
 import io.legado.app.utils.getJsonArray
+import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.isContentScheme
 import io.legado.app.utils.launch
 import io.legado.app.utils.toastOnUi
@@ -76,6 +78,13 @@ class HandleFileActivity :
             finish()
         }
         val allowExtensions = intent.getStringArrayExtra("allowExtensions")
+        val skipImageDialog = appCtx.getPrefBoolean(PreferKey.skipImagePickerDialog, false)
+        if (skipImageDialog && mode == HandleFileContract.IMAGE) {
+            checkPermissions {
+                selectImage.launch()
+            }
+            return
+        }
         val selectList: ArrayList<SelectItem<Int>> = when (mode) {
             HandleFileContract.DIR_SYS -> getDirActions(true)
             HandleFileContract.DIR -> getDirActions()
