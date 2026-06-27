@@ -1520,6 +1520,11 @@ class ExploreFragment() : VMBaseFragment<ExploreViewModel>(R.layout.fragment_exp
             android.util.Log.d("ExploreFragment", "btnDiscoverModeToggle found, applying color")
             it.setColorFilter(textColor)
         } ?: android.util.Log.w("ExploreFragment", "btnDiscoverModeToggle is null!")
+
+        btnDiscoverRefresh?.let {
+            android.util.Log.d("ExploreFragment", "btnDiscoverRefresh found, applying color")
+            it.setColorFilter(textColor)
+        } ?: android.util.Log.w("ExploreFragment", "btnDiscoverRefresh is null!")
     }
 
     /**
