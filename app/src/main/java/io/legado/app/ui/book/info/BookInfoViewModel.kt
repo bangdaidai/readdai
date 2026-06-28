@@ -498,6 +498,67 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+    fun changeToLocal(localBook: Book, toc: List<BookChapter>) {
+        changeSourceCoroutine?.cancel()
+        changeSourceCoroutine = execute {
+            val oldBook = bookData.value
+            val newBook = oldBook?.migrateTo(localBook, toc, false)
+
+            if (inBookshelf && newBook != null) {
+                newBook.removeType(BookType.updateError)
+
+                val oldMemory = oldBook?.let { appDb.readingMemoryDao.getByBookUrl(it.bookUrl) }
+                val oldTagRelations = oldBook?.let { appDb.bookTagRelationDao.getRelationsByBook(it.bookUrl) } ?: emptyList()
+                val oldProtagonists = oldBook?.let { appDb.bookProtagonistDao.getByBook(it.bookUrl) } ?: emptyList()
+
+                oldBook?.delete()
+                appDb.bookDao.insert(newBook)
+                appDb.bookChapterDao.insert(*toc.toTypedArray())
+
+                if (oldTagRelations.isNotEmpty()) {
+                    val newTagRelations = oldTagRelations.map { relation ->
+                        relation.copy(bookUrl = newBook.bookUrl)
+                    }
+                    appDb.bookTagRelationDao.insertAll(newTagRelations)
+                }
+
+                if (oldProtagonists.isNotEmpty()) {
+                    val newProtagonists = oldProtagonists.map { protagonist ->
+                        BookProtagonist(
+                            bookUrl = newBook.bookUrl,
+                            name = protagonist.name,
+                            isCustom = protagonist.isCustom,
+                            createTime = protagonist.createTime,
+                            updateTime = System.currentTimeMillis()
+                        )
+                    }
+                    appDb.bookProtagonistDao.insertAll(newProtagonists)
+                }
+
+                if (oldMemory != null) {
+                    val newMemory = oldMemory.copy(bookUrl = newBook.bookUrl)
+                    appDb.readingMemoryDao.insert(newMemory)
+                } else {
+                    var memory = appDb.readingMemoryDao.getByBookUrl(newBook.bookUrl)
+                    if (memory == null) {
+                        val newMemory = ReadingMemory(bookUrl = newBook.bookUrl, type = newBook.type)
+                        newMemory.wordCount = newBook.wordCount
+                        newMemory.kind = newBook.kind
+                        appDb.readingMemoryDao.insert(newMemory)
+                    }
+                }
+            }
+            bookData.postValue(newBook ?: localBook)
+            chapterListData.postValue(toc)
+
+            if (newBook != null) {
+                TagManager.updateTagsOnSourceChange(newBook)
+            }
+        }.onFinally {
+            postEvent(EventBus.SOURCE_CHANGED, localBook.bookUrl)
+        }
+    }
+
     fun topBook() {
         execute {
             bookData.value?.let { book ->

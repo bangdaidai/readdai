@@ -324,6 +324,24 @@ class AudioPlayActivity :
         }
     }
 
+    override fun changeToLocal(book: Book, toc: List<BookChapter>) {
+        if (book.isAudio) {
+            viewModel.changeToLocal(book, toc)
+        } else {
+            AudioPlay.stop()
+            lifecycleScope.launch {
+                withContext(IO) {
+                    AudioPlay.book?.migrateTo(book, toc, false)
+                    book.removeType(BookType.updateError)
+                    AudioPlay.book?.delete()
+                    appDb.bookDao.insert(book)
+                }
+                startActivityForBook(book)
+                finish()
+            }
+        }
+    }
+
     override fun finish() {
         val book = AudioPlay.book ?: return super.finish()
         if (AudioPlay.inBookshelf) {

@@ -116,6 +116,20 @@ class AudioPlayViewModel(application: Application) : BaseViewModel(application) 
         }
     }
 
+    fun changeToLocal(book: Book, toc: List<BookChapter>) {
+        execute {
+            AudioPlay.book?.migrateTo(book, toc, false)
+            book.removeType(BookType.updateError)
+            AudioPlay.book?.delete()
+            appDb.bookDao.insert(book)
+            AudioPlay.book = book
+            appDb.bookChapterDao.insert(*toc.toTypedArray())
+            AudioPlay.upDurChapter()
+        }.onFinally {
+            postEvent(EventBus.SOURCE_CHANGED, book.bookUrl)
+        }
+    }
+
     fun removeFromBookshelf(success: (() -> Unit)?) {
         execute {
             AudioPlay.book?.let {

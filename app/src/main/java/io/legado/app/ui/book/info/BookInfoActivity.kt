@@ -842,6 +842,10 @@ class BookInfoActivity :
         viewModel.changeTo(source, book, toc)
     }
 
+    override fun changeToLocal(book: Book, toc: List<BookChapter>) {
+        viewModel.changeToLocal(book, toc)
+    }
+
     override fun coverChangeTo(coverUrl: String) {
         viewModel.bookData.value?.let { book ->
             book.customCoverUrl = coverUrl

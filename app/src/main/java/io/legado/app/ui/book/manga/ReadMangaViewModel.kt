@@ -253,6 +253,23 @@ class ReadMangaViewModel(application: Application) : BaseViewModel(application) 
         }
     }
 
+    fun changeToLocal(book: Book, toc: List<BookChapter>) {
+        changeSourceCoroutine?.cancel()
+        changeSourceCoroutine = execute {
+            ReadManga.book?.migrateTo(book, toc, false)
+            book.removeType(BookType.updateError)
+            ReadManga.book?.delete()
+            appDb.bookDao.insert(book)
+            appDb.bookChapterDao.insert(*toc.toTypedArray())
+            ReadManga.resetData(book)
+            ReadManga.loadContent()
+        }.onError {
+            AppLog.put("换源失败\n$it", it, true)
+        }.onFinally {
+            postEvent(EventBus.SOURCE_CHANGED, book.bookUrl)
+        }
+    }
+
     private fun checkLocalBookFileExist(book: Book): Boolean {
         try {
             LocalBook.getBookInputStream(book)

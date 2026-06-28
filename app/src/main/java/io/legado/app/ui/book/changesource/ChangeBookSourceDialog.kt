@@ -1,11 +1,13 @@
 package io.legado.app.ui.book.changesource
 
+import android.net.Uri
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.os.bundleOf
@@ -32,6 +34,7 @@ import io.legado.app.lib.theme.elevation
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.model.localBook.LocalBook
 import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.source.edit.BookSourceEditActivity
 import io.legado.app.ui.book.source.manage.BookSourceActivity
@@ -45,6 +48,7 @@ import io.legado.app.utils.getCompatDrawable
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.startActivity
+import io.legado.app.utils.toastOnUi
 import io.legado.app.utils.transaction
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.Dispatchers.IO
@@ -53,6 +57,7 @@ import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 换源界面
@@ -79,6 +84,11 @@ class ChangeBookSourceDialog() : BaseDialogFragment(R.layout.dialog_book_change_
         registerForActivityResult(StartActivityContract(BookSourceEditActivity::class.java)) {
             val origin = it.data?.getStringExtra("origin") ?: return@registerForActivityResult
             viewModel.startSearch(origin)
+        }
+    private val pickLocalFileResult =
+        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri ?: return@registerForActivityResult
+            importLocalFile(uri)
         }
     private val searchFinishCallback: (isEmpty: Boolean) -> Unit = {
         if (it) {
@@ -310,6 +320,7 @@ class ChangeBookSourceDialog() : BaseDialogFragment(R.layout.dialog_book_change_
 
             R.id.menu_start_stop -> viewModel.startOrStopSearch()
             R.id.menu_source_manage -> startActivity<BookSourceActivity>()
+            R.id.menu_add_local -> pickLocalFile()
             R.id.menu_close -> dismissAllowingStateLoss()
             R.id.menu_refresh_list -> viewModel.startRefreshList()
             else -> if (item?.groupId == R.id.source_group && !item.isChecked) {
@@ -480,9 +491,36 @@ class ChangeBookSourceDialog() : BaseDialogFragment(R.layout.dialog_book_change_
         }
     }
 
+    private fun pickLocalFile() {
+        pickLocalFileResult.launch(arrayOf("*/*"))
+    }
+
+    private fun importLocalFile(uri: Uri) {
+        waitDialog.setText(R.string.loading)
+        waitDialog.show()
+        lifecycleScope.launch {
+            try {
+                val localBook = withContext(IO) {
+                    LocalBook.importFile(uri)
+                }
+                val toc = withContext(IO) {
+                    LocalBook.getChapterList(localBook)
+                }
+                waitDialog.dismiss()
+                callBack?.changeToLocal(localBook, toc)
+                dismissAllowingStateLoss()
+            } catch (e: Exception) {
+                waitDialog.dismiss()
+                AppLog.put("导入本地文件出错\n${e.localizedMessage}", e)
+                context?.toastOnUi("导入本地文件出错\n${e.localizedMessage}")
+            }
+        }
+    }
+
     interface CallBack {
         val oldBook: Book?
         fun changeTo(source: BookSource, book: Book, toc: List<BookChapter>)
+        fun changeToLocal(book: Book, toc: List<BookChapter>)
     }
 
 }

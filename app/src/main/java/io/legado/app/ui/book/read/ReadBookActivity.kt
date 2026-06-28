@@ -1639,6 +1639,10 @@ $content
         }
     }
 
+    override fun changeToLocal(book: Book, toc: List<BookChapter>) {
+        viewModel.changeToLocal(book, toc)
+    }
+
     override fun replaceContent(content: String) {
         ReadBook.book?.let {
             viewModel.saveContent(it, content)

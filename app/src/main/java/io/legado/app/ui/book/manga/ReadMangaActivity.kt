@@ -451,6 +451,15 @@ class ReadMangaActivity : VMBaseActivity<ActivityMangaBinding, ReadMangaViewMode
         }
     }
 
+    override fun changeToLocal(book: Book, toc: List<BookChapter>) {
+        if (book.isImage) {
+            binding.flLoading.isVisible = true
+            viewModel.changeToLocal(book, toc)
+        } else {
+            toastOnUi("所选择的源不是漫画源")
+        }
+    }
+
     override fun updateColorFilter(config: MangaColorFilterConfig) {
         mAdapter.setMangaImageColorFilter(config)
         updateWindowBrightness(config.l)

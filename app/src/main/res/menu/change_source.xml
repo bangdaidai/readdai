@@ -66,6 +66,11 @@
     </item>
 
     <item
+        android:id="@+id/menu_add_local"
+        android:title="@string/add_local_file"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/menu_close"
         android:title="@string/close"
         app:showAsAction="never" />
