@@ -477,6 +477,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         ) {
             scope.launch {
                 val bitmap = io.legado.app.help.book.BookplateGenerator.generate(context, book)
+                    ?: return@launch
                 withContext(Dispatchers.Main) {
                     io.legado.app.ui.widget.dialog.BookplateDialog.show(context, bitmap, "藏书票_${book.name}")
                 }
@@ -490,6 +491,7 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
         ) {
             scope.launch {
                 val bitmap = io.legado.app.help.book.BookplateGenerator.generate(context, memory)
+                    ?: return@launch
                 withContext(Dispatchers.Main) {
                     io.legado.app.ui.widget.dialog.BookplateDialog.show(context, bitmap, "藏书票_${memory.bookName}")
                 }

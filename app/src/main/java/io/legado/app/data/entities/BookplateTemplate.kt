@@ -11,5 +11,11 @@ data class BookplateTemplate(
     val htmlContent: String = "",
     @ColumnInfo(defaultValue = "0") val isBuiltin: Boolean = false,
     @ColumnInfo(defaultValue = "0") val createTime: Long = 0L,
-    @ColumnInfo(defaultValue = "0") val updateTime: Long = 0L
-)
+    @ColumnInfo(defaultValue = "0") val updateTime: Long = 0L,
+    @ColumnInfo(defaultValue = "书籍模板") val groupName: String = DEFAULT_GROUP_BOOK
+) {
+    companion object {
+        const val DEFAULT_GROUP_BOOK = "书籍模板"
+        const val DEFAULT_GROUP_STATS = "统计模板"
+    }
+}

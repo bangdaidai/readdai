@@ -10,6 +10,7 @@ import io.legado.app.data.entities.ReadingMemory
 import io.legado.app.help.config.DataVisibilitySettings
 import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.getPrefString
+import io.legado.app.utils.putPrefLong
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -428,12 +429,116 @@ object BookplateGenerator {
 </html>
     """.trimIndent()
 
-    private val BUILTIN_TEMPLATES = listOf(
+    private val BOOK_BUILTIN_TEMPLATES = listOf(
         "暗黑科幻" to DEFAULT_TEMPLATE_HTML,
         "简约清新" to TEMPLATE_HTML_MINIMAL,
         "古典书香" to TEMPLATE_HTML_CLASSICAL,
         "现代卡片" to TEMPLATE_HTML_MODERN
     )
+
+    private const val BOOK_BUILTIN_GROUP = BookplateTemplate.DEFAULT_GROUP_BOOK
+
+    // ============================================================
+    // 内置统计模板: 暖色古典阅读统计卡片
+    // ============================================================
+    val STATISTICS_DEFAULT_TEMPLATE_HTML = """
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width: 100%; max-width: 100%; padding: 28px 22px;
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(150deg, #f8f6f0 0%, #f0ece4 50%, #e8e0d4 100%);
+    color: #3a342c; min-height: 100vh;
+  }
+  .header { text-align: center; margin-bottom: 24px; position: relative; }
+  .header::after {
+    content: ''; display: block; width: 100%; height: 2px;
+    background: repeating-linear-gradient(90deg, rgba(180,160,130,0.3) 0px, rgba(180,160,130,0.5) 6px, transparent 6px, transparent 11px);
+    margin-top: 14px;
+  }
+  .header h1 {
+    font-size: clamp(18px, 5vw, 26px); letter-spacing: 0.25em; font-weight: 600;
+    color: #4a3f35;
+  }
+  .header h2 {
+    font-size: clamp(10px, 2.5vw, 14px); font-weight: 300; opacity: 0.55;
+    margin-top: 6px; letter-spacing: 0.4em; color: #6b5e4f;
+  }
+  .section { margin: 14px 0 18px 0; }
+  .section-title {
+    font-size: clamp(9px, 2vw, 12px); text-transform: uppercase; letter-spacing: 0.3em;
+    opacity: 0.45; margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid rgba(160,140,120,0.2); font-weight: 350;
+  }
+  .stats-grid { display: flex; flex-wrap: wrap; gap: 10px 0; }
+  .stat-item {
+    flex: 0 0 50%; padding: 8px 0; text-align: center;
+  }
+  .stat-value {
+    font-size: clamp(22px, 6vw, 32px); font-weight: 650; color: #5a4a3a;
+    line-height: 1.2;
+  }
+  .stat-label { font-size: clamp(10px, 2.5vw, 12px); opacity: 0.5; margin-top: 2px; }
+  .time-display { text-align: center; padding: 12px 0 16px 0; }
+  .time-value {
+    font-size: clamp(26px, 7vw, 40px); font-weight: 700; color: #5a4a3a;
+    letter-spacing: 0.1em;
+  }
+  .time-sep { font-size: clamp(18px, 5vw, 28px); opacity: 0.3; margin: 0 4px; }
+  .divider { border: none; border-top: 1px dashed rgba(160,140,120,0.22); margin: 18px 0 14px 0; }
+  .footer { text-align: center; font-size: clamp(9px, 2vw, 11px); opacity: 0.35; margin-top: 24px; padding-top: 14px; border-top: 1px dashed rgba(150,130,110,0.15); }
+  .footer p { margin: 3px 0; letter-spacing: 0.1em; font-weight: 290; }
+  .period-badge {
+    display: inline-block; padding: 3px 14px; border-radius: 12px;
+    font-size: clamp(10px, 2.5vw, 12px); letter-spacing: 0.2em;
+    background: rgba(140,120,100,0.12); color: #6b5e4f; margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>{{pageTitle}}</h1>
+    <h2>{{pageSubtitle}}</h2>
+    <div class="period-badge">{{periodLabel}}</div>
+  </div>
+  <div class="section">
+    <div class="section-title">Reading Overview / 阅读总览</div>
+    <div class="stats-grid">
+      <div class="stat-item"><div class="stat-value">{{bookCount}}</div><div class="stat-label">阅读书籍</div></div>
+      <div class="stat-item"><div class="stat-value">{{finishedBookCount}}</div><div class="stat-label">已读完</div></div>
+      <div class="stat-item"><div class="stat-value">{{abandonedBookCount}}</div><div class="stat-label">已弃读</div></div>
+      <div class="stat-item"><div class="stat-value">{{reviewCount}}</div><div class="stat-label">书评数</div></div>
+      <div class="stat-item"><div class="stat-value">{{readDays}}</div><div class="stat-label">阅读天数</div></div>
+      <div class="stat-item"><div class="stat-value">{{totalWords}}</div><div class="stat-label">万字阅读</div></div>
+    </div>
+  </div>
+  <hr class="divider">
+  <div class="section">
+    <div class="section-title">Reading Time / 阅读时长</div>
+    <div class="time-display">
+      <span class="time-value">{{timeDays}}</span><span class="time-sep">天</span>
+      <span class="time-value">{{timeHours}}</span><span class="time-sep">时</span>
+      <span class="time-value">{{timeMinutes}}</span><span class="time-sep">分</span>
+    </div>
+  </div>
+  <div class="footer">
+    <p>{{footerLine1}}</p>
+    <p>{{footerLine2}}</p>
+  </div>
+</body>
+</html>
+    """.trimIndent()
+
+    private val STATISTICS_BUILTIN_TEMPLATES = listOf(
+        "阅读统计" to STATISTICS_DEFAULT_TEMPLATE_HTML
+    )
+
+    private const val STATS_BUILTIN_GROUP = BookplateTemplate.DEFAULT_GROUP_STATS
 
     fun prewarmWebView(context: Context) {
         GlobalScope.launch(Dispatchers.Main) {
@@ -456,7 +561,9 @@ object BookplateGenerator {
         }
     }
 
-    private suspend fun resolveTemplate(selectedId: Long): BookplateTemplate? {
+    private suspend fun resolveTemplate(groupName: String): BookplateTemplate? {
+        val key = PreferKey.templateIdKey(groupName)
+        val selectedId = appCtx.getPrefLong(key, 0L)
         if (selectedId > 0L) {
             return appDb.bookplateTemplateDao.getById(selectedId)
         }
@@ -465,92 +572,77 @@ object BookplateGenerator {
 
     suspend fun generate(context: Context, book: Book): Bitmap = withContext(Dispatchers.IO) {
         BookplateLogger.log("GEN", "开始生成藏书票 (Book): ${book.name} - ${book.author}")
-        val selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
-        BookplateLogger.log("GEN", "选中模板ID: $selectedId (0=经典Canvas)")
-        if (selectedId == 0L) {
-            BookplateLogger.log("GEN", "使用经典Canvas样式")
-            return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, book)
-        }
-
-        val template = resolveTemplate(selectedId)
-            ?: appDb.bookplateTemplateDao.getBuiltins().firstOrNull()
-            ?: getOrCreateBuiltinTemplates().firstOrNull()
+        val template = resolveTemplate(BOOK_BUILTIN_GROUP)
+            ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(BOOK_BUILTIN_GROUP).firstOrNull()
+            ?: getOrCreateBuiltinTemplates(BOOK_BUILTIN_GROUP).firstOrNull()
         if (template == null || template.htmlContent.isBlank()) {
-            BookplateLogger.log("GEN", "HTML模板为空，回退经典Canvas")
-            return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, book)
+            BookplateLogger.log("GEN", "书籍模板为空")
+            return@withContext null
         }
-        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, builtin=${template.isBuiltin})")
-        BookplateLogger.log("GEN", "模板HTML长度: ${template.htmlContent.length} 字符")
+        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, group=$BOOK_BUILTIN_GROUP)")
 
-        BookplateLogger.log("GEN", "开始构建数据...")
         val data = BookplateDataBuilder.build(book)
-        BookplateLogger.log("GEN", "数据构建完成: bookName=${data.bookName}, author=${data.author}, progress=${data.readingProgress}")
-
-        BookplateLogger.log("GEN", "开始HTML离屏渲染...")
         BookplateHtmlRenderer.clearCache()
-        val bitmap = withContext(Dispatchers.Main) {
+        withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.render(context, template, data)
         }
-
-        if (bitmap != null) {
-            BookplateLogger.log("GEN", "渲染成功: ${bitmap.width}x${bitmap.height}")
-        } else {
-            BookplateLogger.log("GEN", "渲染失败(返回null), 错误: ${BookplateHtmlRenderer.lastError ?: "未知"}, 回退经典Canvas")
-        }
-        bitmap ?: io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, book)
     }
 
     suspend fun generate(context: Context, memory: ReadingMemory): Bitmap = withContext(Dispatchers.IO) {
         BookplateLogger.log("GEN", "开始生成藏书票 (ReadingMemory): ${memory.bookName}")
-        val selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
-        BookplateLogger.log("GEN", "选中模板ID: $selectedId (0=经典Canvas)")
-        if (selectedId == 0L) {
-            BookplateLogger.log("GEN", "使用经典Canvas样式")
-            return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
-        }
-
-        val template = resolveTemplate(selectedId)
-            ?: appDb.bookplateTemplateDao.getBuiltins().firstOrNull()
-            ?: getOrCreateBuiltinTemplates().firstOrNull()
+        val template = resolveTemplate(BOOK_BUILTIN_GROUP)
+            ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(BOOK_BUILTIN_GROUP).firstOrNull()
+            ?: getOrCreateBuiltinTemplates(BOOK_BUILTIN_GROUP).firstOrNull()
         if (template == null || template.htmlContent.isBlank()) {
-            BookplateLogger.log("GEN", "HTML模板为空，回退经典Canvas")
-            return@withContext io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
+            BookplateLogger.log("GEN", "书籍模板为空")
+            return@withContext null
         }
-        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, builtin=${template.isBuiltin})")
-        BookplateLogger.log("GEN", "模板HTML长度: ${template.htmlContent.length} 字符")
+        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, group=$BOOK_BUILTIN_GROUP)")
 
-        BookplateLogger.log("GEN", "开始构建数据...")
         val data = BookplateDataBuilder.build(memory)
-        BookplateLogger.log("GEN", "数据构建完成: bookName=${data.bookName}, author=${data.author}, progress=${data.readingProgress}")
-
-        BookplateLogger.log("GEN", "开始HTML离屏渲染...")
         BookplateHtmlRenderer.clearCache()
-        val bitmap = withContext(Dispatchers.Main) {
+        withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.render(context, template, data)
         }
-
-        if (bitmap != null) {
-            BookplateLogger.log("GEN", "渲染成功: ${bitmap.width}x${bitmap.height}")
-        } else {
-            BookplateLogger.log("GEN", "渲染失败(返回null), 错误: ${BookplateHtmlRenderer.lastError ?: "未知"}, 回退经典Canvas")
-        }
-        bitmap ?: io.legado.app.ui.book.readingmemory.ReadingMemoryDetailActivity.createBookplateBitmap(context, memory)
     }
 
-    suspend fun getOrCreateBuiltinTemplates(): List<BookplateTemplate> {
-        val existing = appDb.bookplateTemplateDao.getBuiltins()
-        if (existing.size >= BUILTIN_TEMPLATES.size) return existing
+    suspend fun generateStatistics(context: Context, variables: Map<String, String>): Bitmap? {
+        val template = resolveTemplate(STATS_BUILTIN_GROUP)
+            ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(STATS_BUILTIN_GROUP).firstOrNull()
+            ?: getOrCreateBuiltinTemplates(STATS_BUILTIN_GROUP).firstOrNull()
+
+        if (template == null || template.htmlContent.isBlank()) {
+            BookplateLogger.log("GEN", "统计模板为空")
+            return null
+        }
+
+        BookplateLogger.log("GEN", "使用统计模板: ${template.name} (id=${template.id}, group=$STATS_BUILTIN_GROUP)")
+        BookplateHtmlRenderer.clearCache()
+        return withContext(Dispatchers.Main) {
+            BookplateHtmlRenderer.renderCustom(context, template.htmlContent, variables)
+        }
+    }
+
+    suspend fun getOrCreateBuiltinTemplates(groupName: String): List<BookplateTemplate> {
+        val builtinList = when (groupName) {
+            STATS_BUILTIN_GROUP -> STATISTICS_BUILTIN_TEMPLATES
+            else -> BOOK_BUILTIN_TEMPLATES
+        }
+
+        val existing = appDb.bookplateTemplateDao.getBuiltinsByGroupName(groupName)
+        if (existing.size >= builtinList.size) return existing
 
         val now = System.currentTimeMillis()
         val existingNames = existing.map { it.name }.toSet()
         val newIds = mutableListOf<Long>()
 
-        BUILTIN_TEMPLATES.forEach { (name, html) ->
+        builtinList.forEach { (name, html) ->
             if (name !in existingNames) {
                 val template = BookplateTemplate(
                     name = name,
                     htmlContent = html,
                     isBuiltin = true,
+                    groupName = groupName,
                     createTime = now,
                     updateTime = now
                 )
@@ -561,14 +653,19 @@ object BookplateGenerator {
 
         val allIds = existing.map { it.id } + newIds
         if (allIds.isNotEmpty()) {
-            appDb.bookplateTemplateDao.deleteBuiltinNotIn(allIds)
+            appDb.bookplateTemplateDao.deleteBuiltinNotInByGroup(allIds, groupName)
         }
 
-        return appDb.bookplateTemplateDao.getBuiltins()
+        return appDb.bookplateTemplateDao.getBuiltinsByGroupName(groupName)
     }
 
+    suspend fun getOrCreateBuiltinTemplate(groupName: String): BookplateTemplate {
+        return getOrCreateBuiltinTemplates(groupName).first()
+    }
+
+    @Deprecated("Use getOrCreateBuiltinTemplate(groupName) instead")
     suspend fun getOrCreateBuiltinTemplate(): BookplateTemplate {
-        return getOrCreateBuiltinTemplates().first()
+        return getOrCreateBuiltinTemplate(BOOK_BUILTIN_GROUP)
     }
 
     fun getPreviewData(): io.legado.app.data.entities.BookplateData {

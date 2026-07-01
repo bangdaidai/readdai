@@ -30,20 +30,17 @@ interface BookplateTemplateDao {
     @Query("SELECT * FROM bookplateTemplates WHERE id = :id")
     suspend fun getById(id: Long): BookplateTemplate?
 
-    @Query("SELECT * FROM bookplateTemplates WHERE isBuiltin = 1 LIMIT 1")
-    suspend fun getBuiltin(): BookplateTemplate?
+    @Query("SELECT DISTINCT groupName FROM bookplateTemplates ORDER BY groupName ASC")
+    suspend fun getDistinctGroupNames(): List<String>
 
-    @Query("SELECT * FROM bookplateTemplates WHERE isBuiltin = 1 ORDER BY id ASC")
-    suspend fun getBuiltins(): List<BookplateTemplate>
+    @Query("SELECT * FROM bookplateTemplates WHERE groupName = :groupName ORDER BY updateTime DESC")
+    suspend fun getByGroupName(groupName: String): List<BookplateTemplate>
 
-    @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1")
-    suspend fun deleteBuiltin()
+    @Query("SELECT * FROM bookplateTemplates WHERE isBuiltin = 1 AND groupName = :groupName ORDER BY id ASC")
+    suspend fun getBuiltinsByGroupName(groupName: String): List<BookplateTemplate>
 
-    @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1 AND id != :keepId")
-    suspend fun deleteBuiltinExcept(keepId: Long)
-
-    @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1 AND id NOT IN (:keepIds)")
-    suspend fun deleteBuiltinNotIn(keepIds: List<Long>)
+    @Query("DELETE FROM bookplateTemplates WHERE isBuiltin = 1 AND groupName = :groupName AND id NOT IN (:keepIds)")
+    suspend fun deleteBuiltinNotInByGroup(keepIds: List<Long>, groupName: String)
 
     @Query("DELETE FROM bookplateTemplates WHERE id = :id")
     suspend fun deleteById(id: Long)

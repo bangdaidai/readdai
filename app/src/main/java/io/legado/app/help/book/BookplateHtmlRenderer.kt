@@ -303,4 +303,22 @@ object BookplateHtmlRenderer {
             } else null
         } catch (_: Exception) { null }
     }
+
+    suspend fun renderCustom(
+        ctx: Context,
+        htmlContent: String,
+        variables: Map<String, String>
+    ): Bitmap? {
+        val w = getRenderWidth(ctx)
+        val html = replaceVariablesFromMap(htmlContent, variables)
+        if (html.isBlank()) { lastError = "HTML为空"; return null }
+        return withContext(Dispatchers.Main) {
+            renderHtml(ctx, ensureViewportMeta(html, w), w)
+        }
+    }
+
+    private fun replaceVariablesFromMap(h: String, vars: Map<String, String>): String {
+        return VARIABLE_REGEX.replace(h) { vars[it.groupValues[1]] ?: it.value }
+    }
+
 }

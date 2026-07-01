@@ -9,14 +9,15 @@ import android.widget.TextView
 import androidx.core.view.setPadding
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.tabs.TabLayout
 import io.legado.app.R
 import io.legado.app.base.BaseActivity
 import io.legado.app.constant.PreferKey
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.databinding.ActivityBookTagManageBinding
-import io.legado.app.databinding.ItemBookplateClassicBinding
 import io.legado.app.help.book.BookplateGenerator
+import io.legado.app.help.book.BookplateHtmlRenderer
 import io.legado.app.help.book.BookplateLogger
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.utils.dpToPx
@@ -40,11 +41,11 @@ class BookplateManageActivity :
 
     private var templates = listOf<BookplateTemplate>()
     private var selectedId = 0L
-    private var ignoreClassicSwitch = false
+    private var groupNames = listOf("<默认>")
+    private var currentGroupName = BookplateTemplate.DEFAULT_GROUP_BOOK
     private val adapter by lazy {
         BookplateTemplateAdapter(this, this)
     }
-    private var classicBinding: ItemBookplateClassicBinding? = null
 
     override val binding by lazy {
         ActivityBookTagManageBinding.inflate(layoutInflater)
@@ -53,7 +54,7 @@ class BookplateManageActivity :
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         binding.titleBar.title = "藏书票模板"
         initRecyclerView()
-        loadAndShowList()
+        initTabLayout()
     }
 
     override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
@@ -82,39 +83,54 @@ class BookplateManageActivity :
     private fun initRecyclerView() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
-        adapter.addHeaderView { parent ->
-            ItemBookplateClassicBinding.inflate(layoutInflater, parent, false).also {
-                classicBinding = it
-                it.swClassicApply.setOnCheckedChangeListener { _, isChecked ->
-                    if (ignoreClassicSwitch) {
-                        ignoreClassicSwitch = false
-                        return@setOnCheckedChangeListener
-                    }
-                    if (isChecked) {
-                        onClassicApply()
-                    } else {
-                        applyLastNonClassicTemplate()
-                    }
-                }
+    }
+
+    private fun loadGroupNames() {
+        lifecycleScope.launch {
+            groupNames = withContext(Dispatchers.IO) {
+                val names = appDb.bookplateTemplateDao.getDistinctGroupNames()
+                if (names.isEmpty()) listOf(BookplateTemplate.DEFAULT_GROUP_BOOK) else names
+            }
+            val oldGroup = currentGroupName
+            if (currentGroupName !in groupNames && groupNames.isNotEmpty()) {
+                currentGroupName = groupNames.first()
+            }
+            if (oldGroup != currentGroupName || binding.tabLayout.tabCount != groupNames.size) {
+                rebuildTabs()
+            } else {
+                loadAndShowList()
             }
         }
     }
 
-    private fun applyLastNonClassicTemplate() {
-        val lastNonZeroId = appCtx.getPrefLong("lastBookplateTemplateId", 0L)
-        if (lastNonZeroId > 0L && templates.any { it.id == lastNonZeroId }) {
-            val template = templates.first { it.id == lastNonZeroId }
-            onApply(template)
-        } else {
-            val firstTemplate = templates.firstOrNull()
-            if (firstTemplate != null) {
-                onApply(firstTemplate)
-            } else {
-                ignoreClassicSwitch = true
-                classicBinding?.swClassicApply?.isChecked = true
-                toastOnUi("暂无可用的模板")
+    private fun initTabLayout() {
+        binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                val newGroup = tab.tag as? String ?: return
+                if (currentGroupName != newGroup) {
+                    currentGroupName = newGroup
+                    loadAndShowList()
+                }
             }
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {}
+        })
+        loadGroupNames()
+    }
+
+    private fun rebuildTabs() {
+        binding.tabLayout.removeAllTabs()
+        var selectIdx = -1
+        groupNames.forEachIndexed { idx, name ->
+            val tab = binding.tabLayout.newTab().setText(name)
+            tab.tag = name
+            binding.tabLayout.addTab(tab)
+            if (name == currentGroupName) selectIdx = idx
         }
+        if (selectIdx >= 0) {
+            binding.tabLayout.getTabAt(selectIdx)?.select()
+        }
+        loadAndShowList()
     }
 
     override fun onResume() {
@@ -125,37 +141,23 @@ class BookplateManageActivity :
     private fun loadAndShowList() {
         lifecycleScope.launch {
             templates = withContext(Dispatchers.IO) {
-                BookplateGenerator.getOrCreateBuiltinTemplates()
-                val all = appDb.bookplateTemplateDao.getAll()
+                BookplateGenerator.getOrCreateBuiltinTemplates(currentGroupName)
+                val all = appDb.bookplateTemplateDao.getByGroupName(currentGroupName)
                 val builtins = all.filter { it.isBuiltin }
                 builtins + all.filter { !it.isBuiltin }
             }
-            selectedId = appCtx.getPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
+            val key = PreferKey.templateIdKey(currentGroupName)
+            selectedId = appCtx.getPrefLong(key, 0L)
             adapter.setItems(templates, adapter.diffItemCallback)
             adapter.setSelectedId(selectedId)
-            updateClassicSwitch()
         }
     }
 
-    private fun updateClassicSwitch() {
-        ignoreClassicSwitch = true
-        classicBinding?.swClassicApply?.isChecked = selectedId == 0L
-    }
-
-    private fun onClassicApply() {
-        appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
-        selectedId = 0L
-        adapter.setSelectedId(0L)
-        updateClassicSwitch()
-        toastOnUi("已选择经典风格")
-    }
-
     override fun onApply(item: BookplateTemplate) {
-        appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, item.id)
-        appCtx.putPrefLong("lastBookplateTemplateId", item.id)
+        val key = PreferKey.templateIdKey(currentGroupName)
+        appCtx.putPrefLong(key, item.id)
         selectedId = item.id
         adapter.setSelectedId(item.id)
-        updateClassicSwitch()
         toastOnUi("已应用 ${item.name}")
     }
 
@@ -172,24 +174,54 @@ class BookplateManageActivity :
     }
 
     private fun showEditDialog(template: BookplateTemplate?) {
-        val dialog = BookplateTemplateEditDialog(template?.id)
+        val dialog = BookplateTemplateEditDialog(template?.id, currentGroupName)
         dialog.setOnDismissListener { loadAndShowList() }
         showDialogFragment(dialog)
     }
 
     private fun previewTemplate(template: BookplateTemplate) {
         lifecycleScope.launch {
-            val previewData = BookplateGenerator.getPreviewData()
-            val bitmap = io.legado.app.help.book.BookplateHtmlRenderer.render(
-                this@BookplateManageActivity, template, previewData
-            )
-            if (bitmap != null) {
-                showBookplateDialog(bitmap, "藏书票预览_${template.name}")
+            if (template.groupName == BookplateTemplate.DEFAULT_GROUP_STATS) {
+                val statsVariables = getStatisticsPreviewVariables()
+                val bitmap = BookplateHtmlRenderer.renderCustom(
+                    this@BookplateManageActivity, template.htmlContent, statsVariables
+                )
+                if (bitmap != null) {
+                    showBookplateDialog(bitmap, "统计预览_${template.name}")
+                } else {
+                    toastOnUi("渲染失败: ${BookplateHtmlRenderer.lastError ?: "未知错误"}")
+                }
             } else {
-                val error = io.legado.app.help.book.BookplateHtmlRenderer.lastError ?: "未知错误"
-                toastOnUi("渲染失败: $error")
+                val previewData = BookplateGenerator.getPreviewData()
+                val bitmap = BookplateHtmlRenderer.render(
+                    this@BookplateManageActivity, template, previewData
+                )
+                if (bitmap != null) {
+                    showBookplateDialog(bitmap, "藏书票预览_${template.name}")
+                } else {
+                    toastOnUi("渲染失败: ${BookplateHtmlRenderer.lastError ?: "未知错误"}")
+                }
             }
         }
+    }
+
+    private fun getStatisticsPreviewVariables(): Map<String, String> {
+        return mapOf(
+            "pageTitle" to "阅读统计",
+            "pageSubtitle" to "LEGADO READING REPORT",
+            "periodLabel" to "全部时间",
+            "bookCount" to "42",
+            "finishedBookCount" to "18",
+            "abandonedBookCount" to "5",
+            "reviewCount" to "12",
+            "readDays" to "365",
+            "totalWords" to "856.3",
+            "timeDays" to "12",
+            "timeHours" to "8",
+            "timeMinutes" to "30",
+            "footerLine1" to "LEGADO · 阅读统计",
+            "footerLine2" to "Generated by Legado Reading App"
+        )
     }
 
     private fun showBookplateDialog(bitmap: android.graphics.Bitmap, fileName: String) {
@@ -203,9 +235,10 @@ class BookplateManageActivity :
             .setPositiveButton("删除") { _, _ ->
                 lifecycleScope.launch {
                     withContext(Dispatchers.IO) { appDb.bookplateTemplateDao.deleteById(template.id) }
-                    io.legado.app.help.book.BookplateHtmlRenderer.clearCache()
+                    BookplateHtmlRenderer.clearCache()
+                    val key = PreferKey.templateIdKey(currentGroupName)
                     if (selectedId == template.id) {
-                        appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, 0L)
+                        appCtx.putPrefLong(key, 0L)
                         selectedId = 0L
                     }
                     toastOnUi("已删除")

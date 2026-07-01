@@ -35,6 +35,7 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
 
     private val binding by viewBinding(DialogBookplateTemplateEditBinding::bind)
     private var templateId: Long? = null
+    private var groupName: String = BookplateTemplate.DEFAULT_GROUP_BOOK
     private var existingTemplate: BookplateTemplate? = null
     private var focusedEditText: EditText? = null
 
@@ -46,6 +47,15 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
         }
     }
 
+    constructor(templateId: Long?, group: String) : this() {
+        arguments = Bundle().apply {
+            if (templateId != null) {
+                putLong("templateId", templateId)
+            }
+            putString("groupName", group)
+        }
+    }
+
     override fun onStart() {
         super.onStart()
         setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -53,6 +63,7 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         templateId = arguments?.getLong("templateId")?.takeIf { it != 0L }
+        groupName = arguments?.getString("groupName") ?: BookplateTemplate.DEFAULT_GROUP_BOOK
 
         binding.toolBar.setBackgroundColor(primaryColor)
         binding.toolBar.inflateMenu(R.menu.bookplate_edit_menu)
@@ -75,8 +86,12 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
             }
             binding.toolBar.title = if (existingTemplate == null) "新建模板" else "编辑模板"
             binding.tvTemplateName.setText(existingTemplate?.name)
-            val htmlContent = existingTemplate?.htmlContent ?: BookplateGenerator.DEFAULT_TEMPLATE_HTML
-            binding.tvHtmlContent.setText(htmlContent)
+            val defaultHtml = if (groupName == BookplateTemplate.DEFAULT_GROUP_STATS) {
+                BookplateGenerator.STATISTICS_DEFAULT_TEMPLATE_HTML
+            } else {
+                BookplateGenerator.DEFAULT_TEMPLATE_HTML
+            }
+            binding.tvHtmlContent.setText(existingTemplate?.htmlContent ?: defaultHtml)
         }
     }
 
@@ -142,6 +157,7 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
                 BookplateTemplate(
                     name = name,
                     htmlContent = html,
+                    groupName = groupName,
                     createTime = now,
                     updateTime = now
                 )
@@ -151,8 +167,8 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
                 appDb.bookplateTemplateDao.insert(templateToSave)
             }
 
-            appCtx.putPrefLong(PreferKey.selectedBookplateTemplateId, savedId)
-            appCtx.putPrefLong("lastBookplateTemplateId", savedId)
+            val key = PreferKey.templateIdKey(groupName)
+            appCtx.putPrefLong(key, savedId)
 
             io.legado.app.help.book.BookplateHtmlRenderer.clearCache()
 

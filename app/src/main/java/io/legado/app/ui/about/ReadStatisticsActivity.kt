@@ -11,6 +11,7 @@ import android.widget.Button
 import android.widget.GridView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -39,6 +40,9 @@ import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.HeatmapCacheManager
 import io.legado.app.utils.StatisticsCacheManager
 import io.legado.app.utils.dpToPx
+import io.legado.app.help.book.BookplateHtmlRenderer
+import io.legado.app.help.book.BookplateGenerator
+import io.legado.app.ui.widget.dialog.BookplateDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -851,6 +855,10 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
     override fun onCompatCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.read_statistics, menu)
+        // 添加生成按钮
+        val generateMenuItem = menu.add(0, 106, 0, "生成")
+        generateMenuItem.setIcon(R.drawable.ic_bookplate)
+        generateMenuItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS or MenuItem.SHOW_AS_ACTION_WITH_TEXT)
         // 添加阅读类型过滤按钮
         val filterMenuItem = menu.add(0, 105, 0, "阅读类型")
         filterMenuItem.setIcon(R.drawable.ic_sort)
@@ -861,12 +869,14 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
     override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_export -> {
-                // 导出统计数据
                 exportStatistics()
                 return true
             }
+            106 -> {
+                generateStatisticsCard()
+                return true
+            }
             105 -> {
-                // 阅读类型过滤
                 showReadTypeFilterDialog()
                 return true
             }
@@ -1029,5 +1039,118 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 }
             })
         }
+    }
+
+    private fun generateStatisticsCard() {
+        lifecycleScope.launch {
+            val statsList = statisticsAdapter.getItems()
+            if (statsList.isEmpty()) {
+                Toast.makeText(this@ReadStatisticsActivity, "暂无统计数据", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            val aggregated = aggregateStatistics(statsList)
+            val variables = buildStatisticsVariables(aggregated)
+
+            val bitmap = withContext(Dispatchers.IO) {
+                BookplateGenerator.generateStatistics(this@ReadStatisticsActivity, variables)
+            }
+
+            if (bitmap != null) {
+                val periodName = when (currentType) {
+                    0 -> "总计"
+                    1 -> "每日_${dateFormat.format(dailyDate.time)}"
+                    2 -> "每月_${monthFormat.format(monthlyDate.time)}"
+                    3 -> "每年_${yearFormat.format(yearlyDate.time)}"
+                    else -> "总计"
+                }
+                withContext(Dispatchers.Main) {
+                    BookplateDialog.show(this@ReadStatisticsActivity, bitmap, "阅读统计_$periodName")
+                }
+            } else {
+                Toast.makeText(this@ReadStatisticsActivity, "生成失败: ${BookplateHtmlRenderer.lastError ?: "未知错误"}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun aggregateStatistics(stats: List<ReadStatistics>): ReadStatistics {
+        if (stats.size == 1) return stats.first()
+        var totalBookCount = 0
+        var totalFinished = 0
+        var totalAbandoned = 0
+        var totalReviews = 0
+        var totalWords = 0L
+        var totalTime = 0L
+        var totalReadDays = 0
+        for (s in stats) {
+            totalBookCount += s.bookCount
+            totalFinished += s.finishedBookCount
+            totalAbandoned += s.abandonedBookCount
+            totalReviews += s.reviewCount
+            totalWords += s.totalWords
+            totalTime += s.totalTime
+            totalReadDays += s.readDays
+        }
+        return ReadStatistics(
+            bookCount = totalBookCount,
+            finishedBookCount = totalFinished,
+            abandonedBookCount = totalAbandoned,
+            totalWords = totalWords,
+            reviewCount = totalReviews,
+            totalTime = totalTime,
+            date = "",
+            readDays = totalReadDays
+        )
+    }
+
+    private fun buildStatisticsVariables(stats: ReadStatistics): Map<String, String> {
+        val periodLabel = when (currentType) {
+            0 -> "全部时间"
+            1 -> dateFormat.format(dailyDate.time)
+            2 -> monthFormat.format(monthlyDate.time)
+            3 -> yearFormat.format(yearlyDate.time)
+            else -> "全部时间"
+        }
+        val periodTitle = when (currentType) {
+            0 -> "阅读统计"
+            1 -> "每日统计"
+            2 -> "每月统计"
+            3 -> "每年统计"
+            else -> "阅读统计"
+        }
+
+        val days = stats.totalTime / (1000 * 60 * 60 * 24)
+        val hours = stats.totalTime % (1000 * 60 * 60 * 24) / (1000 * 60 * 60)
+        val minutes = stats.totalTime % (1000 * 60 * 60) / (1000 * 60)
+
+        val pageTitle = when (currentType) {
+            0 -> "阅读统计"
+            else -> "$periodTitle · $periodLabel"
+        }
+
+        val subtitle = "LEGADO READING REPORT"
+
+        val wordsInWan = if (stats.totalWords >= 10000) {
+            String.format("%.1f", stats.totalWords / 10000.0)
+        } else {
+            (stats.totalWords / 10000).toString()
+        }
+
+        return mapOf(
+            "pageTitle" to pageTitle,
+            "pageSubtitle" to subtitle,
+            "periodLabel" to periodLabel,
+            "bookCount" to stats.bookCount.toString(),
+            "finishedBookCount" to stats.finishedBookCount.toString(),
+            "abandonedBookCount" to stats.abandonedBookCount.toString(),
+            "reviewCount" to stats.reviewCount.toString(),
+            "readDays" to stats.readDays.toString(),
+            "totalWords" to wordsInWan,
+            "timeDays" to days.toString(),
+            "timeHours" to hours.toString(),
+            "timeMinutes" to minutes.toString(),
+            "footerLine1" to "LEGADO · 阅读统计",
+            "footerLine2" to "Generated by Legado Reading App"
+        )
     }
 }

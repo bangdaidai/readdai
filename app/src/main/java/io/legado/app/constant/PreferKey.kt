@@ -282,6 +282,9 @@ object PreferKey {
     const val showReadingTicket = "showReadingTicket"
     const val readingTicketPosition = "readingTicketPosition"
     const val selectedBookplateTemplateId = "selectedBookplateTemplateId"
+    const val selectedStatisticsTemplateId = "selectedStatisticsTemplateId"
+
+    fun templateIdKey(groupName: String) = "bp_selected_$groupName"
     const val bpShowBasicInfo = "bp_show_basic_info"
     const val bpShowProgress = "bp_show_progress"
     const val bpShowStatistics = "bp_show_statistics"
