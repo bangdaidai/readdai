@@ -54,13 +54,13 @@ interface BookTagRelationDao {
     @Query("DELETE FROM bookTagRelations WHERE tagId IN (SELECT id FROM bookTags WHERE name = :tagName)")
     suspend fun deleteRelationsByTagName(tagName: String)
 
-    @Query("SELECT COUNT(DISTINCT bookUrl) FROM bookTagRelations WHERE tagId = :tagId")
+    @Query("SELECT COUNT(DISTINCT btr.bookUrl) FROM bookTagRelations btr INNER JOIN readingMemories rm ON btr.bookUrl = rm.bookUrl WHERE btr.tagId = :tagId")
     suspend fun countBooksByTagId(tagId: Long): Int
 
-    @Query("SELECT tagId, COUNT(DISTINCT bookUrl) as bookCount FROM bookTagRelations GROUP BY tagId")
+    @Query("SELECT btr.tagId, COUNT(DISTINCT btr.bookUrl) as bookCount FROM bookTagRelations btr INNER JOIN readingMemories rm ON btr.bookUrl = rm.bookUrl GROUP BY btr.tagId")
     fun observeTagBookCounts(): Flow<List<TagBookCount>>
 
-    @Query("SELECT tagId, COUNT(DISTINCT bookUrl) as bookCount FROM bookTagRelations GROUP BY tagId")
+    @Query("SELECT btr.tagId, COUNT(DISTINCT btr.bookUrl) as bookCount FROM bookTagRelations btr INNER JOIN readingMemories rm ON btr.bookUrl = rm.bookUrl GROUP BY btr.tagId")
     suspend fun getTagBookCounts(): List<TagBookCount>
     
     /**

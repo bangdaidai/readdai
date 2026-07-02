@@ -415,15 +415,11 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
                     }
                 }
 
-                // 加载数据
-                viewModel.loadReadingMemories()
-                // 延迟执行搜索，确保数据已加载完成
+                // 加载数据并根据标签名称搜索
+                viewModel.loadReadingMemories(tagName)
+                // 设置搜索框文本为标签名称
                 lifecycleScope.launch {
-                    // 等待一小段时间，确保数据加载完成
                     delay(100)
-                    // 根据标签名称搜索
-                    viewModel.searchReadingMemories(tagName)
-                    // 设置搜索框文本为标签名称，让用户看到搜索正在执行
                     searchView.setQuery(tagName, false)
                 }
             } else {

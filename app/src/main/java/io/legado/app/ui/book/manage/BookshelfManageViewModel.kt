@@ -10,6 +10,7 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookProtagonist
 import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.BookTagRelation
 import io.legado.app.help.book.BookHelp
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.book.removeType
@@ -218,6 +219,15 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
                                 )
                             }
                             appDb.bookProtagonistDao.insertAll(newProtagonists)
+                        }
+                        // 迁移标签关联到新书
+                        val oldTagRelations = appDb.bookTagRelationDao.getRelationsByBook(book.bookUrl)
+                        if (oldTagRelations.isNotEmpty()) {
+                            val newTagRelations = oldTagRelations.map { relation ->
+                                relation.copy(bookUrl = migratedBook.bookUrl)
+                            }
+                            appDb.bookTagRelationDao.deleteRelationsByBook(book.bookUrl)
+                            appDb.bookTagRelationDao.insertAll(newTagRelations)
                         }
                     }
                 delay(changeSourceDelay)

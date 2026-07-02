@@ -56,7 +56,6 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                 allReadingMemories = it
                 // 重新应用当前的筛选状态和搜索关键词
                 applyFilters()
-                calculateStatusCounts(it)
             }
         }
 
@@ -77,11 +76,7 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    /**
-     * 加载所有我的阅读记录
-     * 显示所有曾经加入过书架的书籍的阅读记录，包括已删除的书籍
-     */
-    fun loadReadingMemories() {
+    fun loadReadingMemories(searchKeyword: String? = null) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -113,11 +108,11 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                     allMemories
                 }
                 allReadingMemories = memories
+                if (searchKeyword != null) {
+                    currentSearchKeyword = searchKeyword
+                }
                 // 重新应用筛选，包括搜索关键词
                 applyFilters()
-
-                // 计算各状态的书籍数量
-                calculateStatusCounts(memories)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -161,8 +156,45 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /**
-     * 计算各状态的书籍数量
+     * 根据标签关键词获取关联的 bookUrl 集合
      */
+    private suspend fun getBookUrlsByTagKeyword(keyword: String): Set<String> {
+        val bookUrlsWithTag = mutableSetOf<String>()
+        try {
+            var tag = appDb.bookTagDao.getTagByName(keyword)
+            if (tag == null) {
+                val allTags = appDb.bookTagDao.getAll()
+                tag = allTags.find { it.name.equals(keyword, ignoreCase = true) }
+            }
+            if (tag != null) {
+                val relations = appDb.bookTagRelationDao.getRelationsByTag(tag.id)
+                bookUrlsWithTag.addAll(relations.map { it.bookUrl })
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return bookUrlsWithTag
+    }
+
+    /**
+     * 根据当前搜索关键词筛选记忆列表
+     */
+    private suspend fun filterBySearchKeyword(memories: List<ReadingMemory>): List<ReadingMemory> {
+        if (currentSearchKeyword.isNullOrEmpty()) return memories
+        val keyword = currentSearchKeyword!!.trim()
+        val keywordLower = keyword.lowercase()
+        val bookUrlsWithTag = getBookUrlsByTagKeyword(keyword)
+        return if (bookUrlsWithTag.isNotEmpty()) {
+            memories.filter { bookUrlsWithTag.contains(it.bookUrl) }
+        } else {
+            memories.filter {
+                it.bookName.lowercase().contains(keywordLower) ||
+                it.bookAuthor.lowercase().contains(keywordLower) ||
+                (it.kind?.lowercase()?.contains(keywordLower) ?: false)
+            }
+        }
+    }
+
     private fun calculateStatusCounts(memories: List<ReadingMemory>) {
         val counts = mutableMapOf<String, Int>()
 
@@ -221,6 +253,9 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                     }
                 }
 
+                // 3. 标签搜索筛选
+                filtered = filterBySearchKeyword(filtered)
+
                 filtered
             }
 
@@ -259,46 +294,15 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                     }
 
                     // 然后根据搜索关键词筛选
-                    if (!currentSearchKeyword.isNullOrEmpty()) {
-                        val keyword = currentSearchKeyword!!.trim()
-                        val keywordLower = keyword.lowercase()
-                        // 先获取所有包含该标签的书籍URL
-                        val bookUrlsWithTag = mutableSetOf<String>()
-                        try {
-                            // 查找精确匹配的标签（不区分大小写）
-                            // 先尝试精确匹配
-                            var tag = appDb.bookTagDao.getTagByName(keyword)
-                            // 如果没找到，尝试不区分大小写查找
-                            if (tag == null) {
-                                val allTags = appDb.bookTagDao.getAll()
-                                tag = allTags.find { it.name.equals(keyword, ignoreCase = true) }
-                            }
-                            if (tag != null) {
-                                val relations = appDb.bookTagRelationDao.getRelationsByTag(tag.id)
-                                bookUrlsWithTag.addAll(relations.map { it.bookUrl })
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                        
-                        result = result.filter { memory ->
-                            if (bookUrlsWithTag.isNotEmpty()) {
-                                // 如果找到了对应的标签，只检查书籍是否包含该标签
-                                bookUrlsWithTag.contains(memory.bookUrl)
-                            } else {
-                                // 如果没找到对应的标签，按关键词搜索书名、作者、分类
-                                memory.bookName.lowercase().contains(keywordLower) ||
-                                memory.bookAuthor.lowercase().contains(keywordLower) ||
-                                (memory.kind?.lowercase()?.contains(keywordLower) ?: false)
-                            }
-                        }
-                    }
+                    result = filterBySearchKeyword(result)
 
                     result
                 }
 
                 // 按年份分组并排序
                 _readingMemories.value = groupMemoriesByYear(filteredMemories, currentFilterStatus)
+                // 更新筛选栏状态计数
+                calculateStatusCounts(filteredMemories)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -376,7 +380,10 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         }
                     }
 
-                    // 4. 分组
+                    // 4. 标签搜索筛选
+                    filtered = filterBySearchKeyword(filtered)
+
+                    // 5. 分组
                     val grouped = when (groupBy) {
                         "year" -> groupByYear(filtered)
                         "rating" -> groupByRating(filtered)
@@ -384,12 +391,12 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         else -> mapOf("" to filtered)
                     }
 
-                    // 5. 组内排序
+                    // 6. 组内排序
                     val sortedGroups = grouped.mapValues { (_, memories) ->
                         sortMemories(memories, sortBy, ratingSort)
                     }
 
-                    // 6. 组间排序
+                    // 7. 组间排序
                     sortGroups(sortedGroups, groupBy)
                 }
 
