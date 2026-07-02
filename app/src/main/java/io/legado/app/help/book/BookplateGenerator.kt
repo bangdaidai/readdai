@@ -570,7 +570,7 @@ object BookplateGenerator {
         return null
     }
 
-    suspend fun generate(context: Context, book: Book): Bitmap = withContext(Dispatchers.IO) {
+    suspend fun generate(context: Context, book: Book): Bitmap? = withContext(Dispatchers.IO) {
         BookplateLogger.log("GEN", "开始生成藏书票 (Book): ${book.name} - ${book.author}")
         val template = resolveTemplate(BOOK_BUILTIN_GROUP)
             ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(BOOK_BUILTIN_GROUP).firstOrNull()
@@ -588,7 +588,7 @@ object BookplateGenerator {
         }
     }
 
-    suspend fun generate(context: Context, memory: ReadingMemory): Bitmap = withContext(Dispatchers.IO) {
+    suspend fun generate(context: Context, memory: ReadingMemory): Bitmap? = withContext(Dispatchers.IO) {
         BookplateLogger.log("GEN", "开始生成藏书票 (ReadingMemory): ${memory.bookName}")
         val template = resolveTemplate(BOOK_BUILTIN_GROUP)
             ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(BOOK_BUILTIN_GROUP).firstOrNull()
