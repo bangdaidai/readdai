@@ -92,6 +92,10 @@ class BookplateManageActivity :
 
     private fun loadGroupNames() {
         lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_BOOK)
+                BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_STATS)
+            }
             groupNames = withContext(Dispatchers.IO) {
                 val names = appDb.bookplateTemplateDao.getDistinctGroupNames()
                 if (names.isEmpty()) listOf(BookplateTemplate.DEFAULT_GROUP_BOOK) else names
@@ -149,7 +153,6 @@ class BookplateManageActivity :
     private fun loadAndShowList() {
         lifecycleScope.launch {
             templates = withContext(Dispatchers.IO) {
-                BookplateGenerator.getOrCreateBuiltinTemplates(currentGroupName)
                 val all = appDb.bookplateTemplateDao.getByGroupName(currentGroupName)
                 val builtins = all.filter { it.isBuiltin }
                 builtins + all.filter { !it.isBuiltin }
