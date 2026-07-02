@@ -55,7 +55,7 @@ class BookplateGroupDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
 
     private fun initView() = binding.run {
         toolBar.setBackgroundColor(primaryColor)
-        toolBar.title = "分组管理"
+        toolBar.title = getString(R.string.group_manage)
         toolBar.inflateMenu(R.menu.group_manage)
         toolBar.menu.applyTint(requireContext())
         toolBar.menu.findItem(R.id.menu_add)?.icon?.setTint(ThemeStore.titleBarTextIconColor(requireContext()))

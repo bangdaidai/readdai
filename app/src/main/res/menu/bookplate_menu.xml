@@ -10,8 +10,8 @@
 
     <item
         android:id="@+id/menu_group_manage"
-        android:title="分组管理"
-        android:icon="@drawable/ic_folder"
+        android:title="@string/group_manage"
+        android:icon="@drawable/ic_groups"
         app:showAsAction="always" />
 
     <item
