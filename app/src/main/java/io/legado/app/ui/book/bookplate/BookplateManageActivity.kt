@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.TextView
 import androidx.core.view.setPadding
 import androidx.lifecycle.lifecycleScope
@@ -55,7 +56,7 @@ class BookplateManageActivity :
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        binding.titleBar.title = "藏书票模板"
+        binding.titleBar.title = "分享模板"
         binding.tabLayout.setSelectedTabIndicatorColor(accentColor)
         val titleBarTextColor = ThemeStore.titleBarTextIconColor(this)
         binding.tabLayout.setTabTextColors(titleBarTextColor, accentColor)
@@ -135,6 +136,7 @@ class BookplateManageActivity :
 
     private fun rebuildTabs() {
         rebuilding = true
+        binding.tabLayout.visibility = View.VISIBLE
         binding.tabLayout.removeAllTabs()
         var selectIdx = -1
         groupNames.forEachIndexed { idx, name ->

@@ -141,8 +141,8 @@
         <io.legado.app.lib.prefs.Preference
             android:icon="@drawable/ic_bookplate"
             android:key="bookplateManage"
-            android:summary="管理藏书票HTML模板和样式"
-            android:title="藏书票模板"
+            android:summary="管理分享模板HTML模板和样式"
+            android:title="分享模板"
             app:iconSpaceReserved="false" />
 
     </io.legado.app.lib.prefs.PreferenceCategory>

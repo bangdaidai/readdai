@@ -17,6 +17,7 @@
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
         app:tabBackground="@android:color/transparent"
+        android:visibility="gone"
         app:tabGravity="fill"
         app:tabIndicatorColor="?attr/colorAccent"
         app:tabMode="fixed"
