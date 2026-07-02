@@ -124,6 +124,7 @@ class ReadingMemoryDetailViewModel(application: Application) : BaseViewModel(app
                             bookName = book.name,
                             bookAuthor = book.author,
                             coverUrl = book.getDisplayCover(),
+                            intro = book.intro,
                             readingStatus = io.legado.app.constant.ReadingStatus.READING,
                             progress = 0f,
                             type = book.type,

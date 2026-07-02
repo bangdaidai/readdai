@@ -455,14 +455,12 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                 if (oldMemory != null) {
                     // 如果存在旧书的阅读记录，迁移到新书
                     val newMemory = oldMemory.copy(bookUrl = newBook.bookUrl)
-                    // 根据书源分组决定是否更新阅读记录的字数和分类
+                    // 根据书源分组决定是否更新阅读记录的字数、分类和简介
                     if (isOfficialSource) {
-                        // 正版书源：更新阅读记录的字数和分类信息
+                        // 正版书源：更新阅读记录的字数、分类和简介信息
                         newMemory.wordCount = newBook.wordCount
                         newMemory.kind = newBook.kind
-                    } else {
-                        // 非正版书源：保留原有阅读记录的字数和分类信息
-                        // 不做任何修改，直接使用旧的阅读记录
+                        newMemory.intro = newBook.intro
                     }
                     appDb.readingMemoryDao.insert(newMemory)
                 } else {
@@ -470,23 +468,25 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                     var memory = appDb.readingMemoryDao.getByBookUrl(newBook.bookUrl)
                     if (memory == null) {
                         val newMemory = ReadingMemory(bookUrl = newBook.bookUrl, type = newBook.type)
-                        // 初始化阅读记录的字数和分类信息
+                        // 初始化阅读记录的字数、分类和简介信息
                         newMemory.wordCount = newBook.wordCount
                         newMemory.kind = newBook.kind
+                        newMemory.intro = newBook.intro
                         appDb.readingMemoryDao.insert(newMemory)
                     } else {
-                        // 更新阅读记录的字数和分类信息（仅当是正版书源时）
+                        // 更新阅读记录的字数、分类和简介信息（仅当是正版书源时）
                         if (isOfficialSource) {
                             val updatedMemory = memory.copy(
                                 wordCount = newBook.wordCount,
-                                kind = newBook.kind
+                                kind = newBook.kind,
+                                intro = newBook.intro
                             )
                             appDb.readingMemoryDao.update(updatedMemory)
                         }
                     }
                 }
             }
-            bookData.postValue(book)
+            bookData.postValue(newBook ?: book)
             chapterListData.postValue(toc)
 
             // 书源改变时更新标签
@@ -544,6 +544,7 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                         val newMemory = ReadingMemory(bookUrl = newBook.bookUrl, type = newBook.type)
                         newMemory.wordCount = newBook.wordCount
                         newMemory.kind = newBook.kind
+                        newMemory.intro = newBook.intro
                         appDb.readingMemoryDao.insert(newMemory)
                     }
                 }
