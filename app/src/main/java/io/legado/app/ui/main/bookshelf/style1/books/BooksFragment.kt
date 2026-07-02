@@ -349,6 +349,10 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
             // 简介更新时刷新书架中对应书籍的简介显示
             booksAdapter.notification(bookUrl)
         }
+        observeEvent<String>(EventBus.BOOK_COVER_UPDATED) { bookUrl: String ->
+            // 封面更新时刷新书架中对应书籍的封面显示
+            booksAdapter.notification(bookUrl)
+        }
         observeEvent<String>(EventBus.SOURCE_CHANGED) {
             booksAdapter.notifyDataSetChanged()
         }

@@ -804,6 +804,15 @@ class ReadingMemoryDetailActivity : VMBaseActivity<ActivityBookReadingDetailBind
             }
         }
 
+        // 监听封面更新事件，当封面变更后刷新页面
+        observeEvent<String>(EventBus.BOOK_COVER_UPDATED) { bookUrl: String ->
+            memory?.let { currentMemory ->
+                if (currentMemory.bookUrl == bookUrl) {
+                    viewModel.refresh()
+                }
+            }
+        }
+
         val memoryId = intent.getStringExtra("memoryId") ?: ""
         val bookUrl = intent.getStringExtra("bookUrl") ?: ""
         viewModel.initData(memoryId, bookUrl, isSourceChanged)

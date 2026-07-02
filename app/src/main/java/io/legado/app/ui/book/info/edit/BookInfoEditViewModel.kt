@@ -60,6 +60,8 @@ class BookInfoEditViewModel(application: Application) : BaseViewModel(applicatio
                         bookAuthor = book.author,
                         coverUrl = book.getDisplayCover(),
                         intro = book.getDisplayIntro(),
+                        userModifiedCover = book.userModifiedCover,
+                        userModifiedIntro = book.userModifiedIntro,
                         updateTime = System.currentTimeMillis()
                     )
                     appDb.readingMemoryDao.update(updatedMemory)

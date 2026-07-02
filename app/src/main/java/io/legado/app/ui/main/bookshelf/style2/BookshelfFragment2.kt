@@ -369,5 +369,9 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
             // 简介更新时刷新书架中对应书籍的简介显示
             booksAdapter?.notification(bookUrl)
         }
+        observeEvent<String>(EventBus.BOOK_COVER_UPDATED) { bookUrl: String ->
+            // 封面更新时刷新书架中对应书籍的封面显示
+            booksAdapter?.notification(bookUrl)
+        }
     }
 }

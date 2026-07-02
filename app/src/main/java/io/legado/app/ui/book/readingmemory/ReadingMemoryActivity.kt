@@ -688,6 +688,14 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
                 adapter.notifyDataSetChanged()
             }
         }
+        observeEvent<String>(EventBus.BOOK_COVER_UPDATED) { bookUrl: String ->
+            // 封面更新时，刷新阅读记忆列表
+            viewModel.loadReadingMemories()
+            lifecycleScope.launch {
+                delay(100)
+                adapter.notifyDataSetChanged()
+            }
+        }
         observeEvent<String>(EventBus.BOOK_REVIEW_UPDATED) { bookUrl: String ->
             // 书评更新时，刷新阅读记忆列表
             viewModel.loadReadingMemories()

@@ -144,6 +144,7 @@ class BookInfoEditActivity :
 
         val customCoverUrl = tieCoverUrl.text?.toString()
         book.customCoverUrl = if (customCoverUrl == book.coverUrl) null else customCoverUrl
+        book.userModifiedCover = book.customCoverUrl != null
 
         val customIntro = tieBookIntro.text?.toString()
         val finalIntro = if (customIntro == book.intro) null else customIntro

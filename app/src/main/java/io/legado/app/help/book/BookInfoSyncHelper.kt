@@ -411,6 +411,7 @@ object BookInfoSyncHelper {
             // 发送阅读记录更新事件，通知阅读记录页面刷新
             // 这样当封面更新时，阅读记录页面会自动刷新显示新封面
             postEvent(EventBus.READ_SESSION_UPDATED, book?.name ?: "")
+            postEvent(EventBus.BOOK_COVER_UPDATED, bookUrl)
         }
     }
     

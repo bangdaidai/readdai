@@ -48,4 +48,5 @@ object EventBus {
     const val MEMORY_BOOK_INFO_UPDATED = "memoryBookInfoUpdated"
     const val BOOK_REVIEW_UPDATED = "bookReviewUpdated"
     const val BOOK_INTRO_UPDATED = "bookIntroUpdated"
+    const val BOOK_COVER_UPDATED = "bookCoverUpdated"
 }
