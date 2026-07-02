@@ -643,6 +643,7 @@ object DatabaseMigrations {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE `bookplateTemplates` ADD COLUMN `groupName` TEXT NOT NULL DEFAULT '书籍模板'")
             db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '统计模板' WHERE `templateType` = 1")
+            db.execSQL("ALTER TABLE `bookplateTemplates` DROP COLUMN `templateType`")
         }
     }
 }
