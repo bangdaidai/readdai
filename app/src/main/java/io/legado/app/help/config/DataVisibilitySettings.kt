@@ -10,8 +10,8 @@ object DataVisibilitySettings {
     fun isStatisticsVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowStatistics, true)
     fun isRatingReviewVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowRatingReview, true)
     fun isAnnotationVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowAnnotation, true)
-    fun isProtagonistVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowProtagonist, false)
-    fun isTagsVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowTags, false)
-    fun isSourceVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowSource, false)
-    fun isRankVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowRank, false)
+    fun isProtagonistVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowProtagonist, true)
+    fun isTagsVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowTags, true)
+    fun isSourceVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowSource, true)
+    fun isRankVisible(): Boolean = appCtx.getPrefBoolean(PreferKey.bpShowRank, true)
 }
