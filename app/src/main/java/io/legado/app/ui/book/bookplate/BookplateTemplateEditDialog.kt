@@ -86,6 +86,7 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
             }
             binding.toolBar.title = if (existingTemplate == null) "新建模板" else "编辑模板"
             binding.tvTemplateName.setText(existingTemplate?.name)
+            binding.tvGroupName.setText(existingTemplate?.groupName ?: groupName)
             val defaultHtml = if (groupName == BookplateTemplate.DEFAULT_GROUP_STATS) {
                 BookplateGenerator.STATISTICS_DEFAULT_TEMPLATE_HTML
             } else {
@@ -142,6 +143,10 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
             toastOnUi("模板名称不能为空")
             return
         }
+        val templateGroupName = binding.tvGroupName.text.toString().trim().ifBlank {
+            toastOnUi("分组名称不能为空")
+            return
+        }
         val html = binding.tvHtmlContent.text.toString().trim()
 
         if (html.isBlank()) {
@@ -152,12 +157,12 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
         lifecycleScope.launch {
             val now = System.currentTimeMillis()
             val templateToSave = if (existingTemplate != null) {
-                existingTemplate!!.copy(name = name, htmlContent = html, updateTime = now)
+                existingTemplate!!.copy(name = name, htmlContent = html, groupName = templateGroupName, updateTime = now)
             } else {
                 BookplateTemplate(
                     name = name,
                     htmlContent = html,
-                    groupName = groupName,
+                    groupName = templateGroupName,
                     createTime = now,
                     updateTime = now
                 )
@@ -167,7 +172,7 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
                 appDb.bookplateTemplateDao.insert(templateToSave)
             }
 
-            val key = PreferKey.templateIdKey(groupName)
+            val key = PreferKey.templateIdKey(templateGroupName)
             appCtx.putPrefLong(key, savedId)
 
             io.legado.app.help.book.BookplateHtmlRenderer.clearCache()

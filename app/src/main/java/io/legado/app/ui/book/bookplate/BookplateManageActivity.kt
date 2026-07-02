@@ -46,6 +46,7 @@ class BookplateManageActivity :
     private val adapter by lazy {
         BookplateTemplateAdapter(this, this)
     }
+    private var rebuilding = false
 
     override val binding by lazy {
         ActivityBookTagManageBinding.inflate(layoutInflater)
@@ -106,6 +107,7 @@ class BookplateManageActivity :
     private fun initTabLayout() {
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
+                if (rebuilding) return
                 val newGroup = tab.tag as? String ?: return
                 if (currentGroupName != newGroup) {
                     currentGroupName = newGroup
@@ -119,6 +121,7 @@ class BookplateManageActivity :
     }
 
     private fun rebuildTabs() {
+        rebuilding = true
         binding.tabLayout.removeAllTabs()
         var selectIdx = -1
         groupNames.forEachIndexed { idx, name ->
@@ -130,6 +133,7 @@ class BookplateManageActivity :
         if (selectIdx >= 0) {
             binding.tabLayout.getTabAt(selectIdx)?.select()
         }
+        rebuilding = false
         loadAndShowList()
     }
 
@@ -175,7 +179,7 @@ class BookplateManageActivity :
 
     private fun showEditDialog(template: BookplateTemplate?) {
         val dialog = BookplateTemplateEditDialog(template?.id, currentGroupName)
-        dialog.setOnDismissListener { loadAndShowList() }
+        dialog.setOnDismissListener { loadGroupNames() }
         showDialogFragment(dialog)
     }
 
