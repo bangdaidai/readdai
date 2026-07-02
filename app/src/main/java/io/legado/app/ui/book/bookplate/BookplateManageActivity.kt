@@ -19,7 +19,9 @@ import io.legado.app.databinding.ActivityBookTagManageBinding
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.help.book.BookplateHtmlRenderer
 import io.legado.app.help.book.BookplateLogger
+import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryTextColor
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.putPrefLong
@@ -54,6 +56,9 @@ class BookplateManageActivity :
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         binding.titleBar.title = "藏书票模板"
+        binding.tabLayout.setSelectedTabIndicatorColor(accentColor)
+        val titleBarTextColor = ThemeStore.titleBarTextIconColor(this)
+        binding.tabLayout.setTabTextColors(titleBarTextColor, accentColor)
         initRecyclerView()
         initTabLayout()
     }
