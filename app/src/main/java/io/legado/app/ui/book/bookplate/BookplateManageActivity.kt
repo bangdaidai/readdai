@@ -69,6 +69,10 @@ class BookplateManageActivity :
                 showEditDialog(null)
                 return true
             }
+            R.id.menu_group_manage -> {
+                showGroupDialog()
+                return true
+            }
             R.id.menu_log -> {
                 showLogDialog()
                 return true
@@ -139,7 +143,7 @@ class BookplateManageActivity :
 
     override fun onResume() {
         super.onResume()
-        loadAndShowList()
+        loadGroupNames()
     }
 
     private fun loadAndShowList() {
@@ -179,8 +183,12 @@ class BookplateManageActivity :
 
     private fun showEditDialog(template: BookplateTemplate?) {
         val dialog = BookplateTemplateEditDialog(template?.id, currentGroupName)
-        dialog.setOnDismissListener { loadGroupNames() }
+        dialog.setOnDismissListener { loadAndShowList() }
         showDialogFragment(dialog)
+    }
+
+    private fun showGroupDialog() {
+        showDialogFragment(BookplateGroupDialog())
     }
 
     private fun previewTemplate(template: BookplateTemplate) {

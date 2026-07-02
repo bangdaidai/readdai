@@ -9,6 +9,12 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/menu_group_manage"
+        android:title="分组管理"
+        android:icon="@drawable/ic_folder"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/menu_log"
         android:title="日志"
         android:icon="@drawable/ic_menu"

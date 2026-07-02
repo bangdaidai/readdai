@@ -44,4 +44,13 @@ interface BookplateTemplateDao {
 
     @Query("DELETE FROM bookplateTemplates WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM bookplateTemplates WHERE groupName = :groupName")
+    suspend fun deleteByGroupName(groupName: String)
+
+    @Query("UPDATE bookplateTemplates SET groupName = :newName WHERE groupName = :oldName")
+    suspend fun updateGroupName(oldName: String, newName: String)
+
+    @Query("SELECT DISTINCT groupName FROM bookplateTemplates ORDER BY groupName ASC")
+    fun flowDistinctGroupNames(): Flow<List<String>>
 }
