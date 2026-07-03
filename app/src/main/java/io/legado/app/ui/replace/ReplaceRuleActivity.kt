@@ -24,6 +24,7 @@ import io.legado.app.help.DirectLinkUpload
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.lib.dialogs.alert
+import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.ui.association.ImportReplaceRuleDialog
@@ -154,6 +155,8 @@ class ReplaceRuleActivity : VMBaseActivity<ActivityReplaceRuleBinding, ReplaceRu
     }
 
     private fun initTabLayout() {
+        binding.tabLayout.setSelectedTabIndicatorColor(accentColor)
+        binding.tabLayout.setTabTextColors(primaryTextColor, accentColor)
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 tab?.let {
