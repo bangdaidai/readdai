@@ -504,37 +504,42 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
             val oldBook = bookData.value
             val newBook = oldBook?.migrateTo(localBook, toc, false)
 
-            if (inBookshelf && newBook != null) {
+            if (newBook != null) {
                 newBook.removeType(BookType.updateError)
 
-                val oldMemory = oldBook?.let { appDb.readingMemoryDao.getByBookUrl(it.bookUrl) }
                 val oldTagRelations = oldBook?.let { appDb.bookTagRelationDao.getRelationsByBook(it.bookUrl) } ?: emptyList()
                 val oldProtagonists = oldBook?.let { appDb.bookProtagonistDao.getByBook(it.bookUrl) } ?: emptyList()
 
-                oldBook?.delete()
-                appDb.bookDao.insert(newBook)
-                appDb.bookChapterDao.insert(*toc.toTypedArray())
+                if (inBookshelf) {
+                    oldBook?.delete()
+                    appDb.bookChapterDao.insert(*toc.toTypedArray())
 
-                if (oldTagRelations.isNotEmpty()) {
-                    val newTagRelations = oldTagRelations.map { relation ->
-                        relation.copy(bookUrl = newBook.bookUrl)
+                    if (oldTagRelations.isNotEmpty()) {
+                        val newTagRelations = oldTagRelations.map { relation ->
+                            relation.copy(bookUrl = newBook.bookUrl)
+                        }
+                        appDb.bookTagRelationDao.insertAll(newTagRelations)
                     }
-                    appDb.bookTagRelationDao.insertAll(newTagRelations)
+
+                    if (oldProtagonists.isNotEmpty()) {
+                        val newProtagonists = oldProtagonists.map { protagonist ->
+                            BookProtagonist(
+                                bookUrl = newBook.bookUrl,
+                                name = protagonist.name,
+                                isCustom = protagonist.isCustom,
+                                createTime = protagonist.createTime,
+                                updateTime = System.currentTimeMillis()
+                            )
+                        }
+                        appDb.bookProtagonistDao.insertAll(newProtagonists)
+                    }
                 }
 
-                if (oldProtagonists.isNotEmpty()) {
-                    val newProtagonists = oldProtagonists.map { protagonist ->
-                        BookProtagonist(
-                            bookUrl = newBook.bookUrl,
-                            name = protagonist.name,
-                            isCustom = protagonist.isCustom,
-                            createTime = protagonist.createTime,
-                            updateTime = System.currentTimeMillis()
-                        )
-                    }
-                    appDb.bookProtagonistDao.insertAll(newProtagonists)
-                }
+                // importFile 已将 localBook 预插入 DB，用 save() 更新而非 insert()
+                newBook.save()
 
+                // 处理阅读记忆：inBookshelf 和 !inBookshelf 都需要
+                val oldMemory = oldBook?.let { appDb.readingMemoryDao.getByBookUrl(it.bookUrl) }
                 if (oldMemory != null) {
                     val newMemory = oldMemory.copy(bookUrl = newBook.bookUrl)
                     appDb.readingMemoryDao.insert(newMemory)
@@ -549,7 +554,7 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                     }
                 }
             }
-            bookData.postValue(newBook ?: localBook)
+            bookData.postValue(newBook ?: (oldBook ?: localBook))
             chapterListData.postValue(toc)
 
             if (newBook != null) {

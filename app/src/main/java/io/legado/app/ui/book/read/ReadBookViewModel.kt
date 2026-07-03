@@ -367,7 +367,8 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                 val oldProtagonists = oldBook?.let { appDb.bookProtagonistDao.getByBook(it.bookUrl) } ?: emptyList()
 
                 oldBook?.delete()
-                appDb.bookDao.insert(newBook)
+                // importFile 已将 localBook 预插入 DB，用 save() 更新而非 insert()
+                newBook.save()
                 appDb.bookChapterDao.insert(*toc.toTypedArray())
 
                 if (oldTagRelations.isNotEmpty()) {
