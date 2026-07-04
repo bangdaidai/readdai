@@ -358,7 +358,18 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
         changeSourceCoroutine = execute {
             ReadBook.upMsg(context.getString(R.string.loading))
             val oldBook = ReadBook.book
-            val newBook = oldBook?.migrateTo(book, toc, false)
+            val newBook = oldBook?.migrateTo(book, toc, false)?.apply {
+                // 换源到本地文件时强制保留旧书的书名、作者、分类、简介
+                // migrateTo 在非正版源时已做保留，此处作为双重保险
+                oldBook?.let { old ->
+                    name = old.name
+                    author = old.author
+                    kind = old.kind
+                    coverUrl = old.coverUrl
+                    wordCount = old.wordCount
+                    intro = old.intro
+                }
+            }
             if (newBook != null) {
                 newBook.removeType(BookType.updateError)
 

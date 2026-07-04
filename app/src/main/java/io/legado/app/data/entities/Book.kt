@@ -513,45 +513,18 @@ data class Book(
      * 非正版书源时保留原有的这些信息，正版书源时使用新书源的信息
      */
     fun migrateTo(newBook: Book, toc: List<BookChapter>, isOfficialSource: Boolean? = null): Book {
-        // 1. 迁移阅读进度相关信息
+        // 1. 迁移阅读进度索引（基于旧书章节信息和新目录）
         newBook.durChapterIndex = BookHelp
             .getDurChapter(durChapterIndex, durChapterTitle, toc, totalChapterNum)
-        newBook.durChapterTitle = toc[newBook.durChapterIndex].getDisplayTitle(
-            ContentProcessor.get(newBook.name, newBook.origin).getTitleReplaceRules(),
-            getUseReplaceRule()
-        )
-        newBook.durChapterPos = durChapterPos
-        newBook.durChapterTime = durChapterTime
 
-        // 2. 迁移分组和排序信息
-        newBook.group = group
-        newBook.order = order
-
-        // 3. 迁移自定义信息
-        newBook.customCoverUrl = customCoverUrl
-        newBook.customIntro = customIntro
-        newBook.customTag = customTag
-        newBook.canUpdate = canUpdate
-        newBook.readConfig = readConfig
-
-        // 4. 迁移评分和用户修改标记
-        newBook.rating = rating
-        newBook.userModifiedRating = userModifiedRating
-        newBook.userModifiedIntro = userModifiedIntro
-        newBook.userModifiedCover = userModifiedCover
-
-        // 5. 迁移书籍基本信息（书名、作者、封面、分类、字数、简介）
+        // 2. 迁移书籍基本信息（书名、作者、封面、分类、字数、简介）
+        // 需要在章节标题计算之前完成，确保使用正确的书名初始化 ContentProcessor
         // 检查新书源是否属于正版分组
         val finalIsOfficialSource = isOfficialSource ?: runCatching {
             appDb.bookSourceDao.getBookSource(newBook.origin)?.bookSourceGroup?.contains("正版") == true
         }.getOrDefault(false)
 
-        if (finalIsOfficialSource) {
-            // 正版书源：使用新书源的书籍基本信息
-            // 保留用户修改标记
-            newBook.userModifiedWordCount = this.userModifiedWordCount
-            newBook.userModifiedIntro = this.userModifiedIntro
-        } else {
+        if (!finalIsOfficialSource) {
             // 非正版书源：保留原有的书籍基本信息，不使用新书源的数据
             // 保留书名、作者、封面、分类、字数、简介
             newBook.name = this.name
@@ -560,7 +533,41 @@ data class Book(
             newBook.kind = this.kind
             newBook.wordCount = this.wordCount
             newBook.intro = this.intro
+        }
+
+        // 3. 迁移章节标题（基于已确定的书名计算 ContentProcessor）
+        newBook.durChapterTitle = toc[newBook.durChapterIndex].getDisplayTitle(
+            ContentProcessor.get(newBook.name, newBook.origin).getTitleReplaceRules(),
+            getUseReplaceRule()
+        )
+        newBook.durChapterPos = durChapterPos
+        newBook.durChapterTime = durChapterTime
+
+        // 4. 迁移分组和排序信息
+        newBook.group = group
+        newBook.order = order
+
+        // 5. 迁移自定义信息
+        newBook.customCoverUrl = customCoverUrl
+        newBook.customIntro = customIntro
+        newBook.customTag = customTag
+        newBook.canUpdate = canUpdate
+        newBook.readConfig = readConfig
+
+        // 6. 迁移评分和用户修改标记
+        newBook.rating = rating
+        newBook.userModifiedRating = userModifiedRating
+        newBook.userModifiedIntro = userModifiedIntro
+        newBook.userModifiedCover = userModifiedCover
+
+        // 7. 补充分类/字数/简介的用户修改标记
+        if (finalIsOfficialSource) {
+            // 正版书源：使用新书源的书籍基本信息
             // 保留用户修改标记
+            newBook.userModifiedWordCount = this.userModifiedWordCount
+            newBook.userModifiedIntro = this.userModifiedIntro
+        } else {
+            // 非正版书源：保留用户修改标记
             newBook.userModifiedWordCount = this.userModifiedWordCount
             newBook.userModifiedIntro = this.userModifiedIntro
         }

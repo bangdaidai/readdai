@@ -200,7 +200,11 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
         scope: CoroutineScope = viewModelScope
     ) {
         if (book.isLocal) {
-            LocalBook.upBookInfo(book)
+            // 本地书已有完整元数据时不重复从文件解析，避免覆盖通过换源等方式保留的书籍信息
+            val hasExistingMetadata = book.name.isNotBlank() && book.author.isNotBlank()
+            if (!hasExistingMetadata) {
+                LocalBook.upBookInfo(book)
+            }
             bookData.postValue(book)
             loadChapter(book)
         } else {
@@ -502,7 +506,21 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
         changeSourceCoroutine?.cancel()
         changeSourceCoroutine = execute {
             val oldBook = bookData.value
-            val newBook = oldBook?.migrateTo(localBook, toc, false)
+            val newBook = oldBook?.migrateTo(localBook, toc, false)?.apply {
+                // 换源到本地文件时强制保留旧书的书名、作者、分类、简介
+                // migrateTo 在非正版源时已做保留，此处作为双重保险
+                oldBook?.let { old ->
+                    name = old.name
+                    author = old.author
+                    kind = old.kind
+                    coverUrl = old.coverUrl
+                    wordCount = old.wordCount
+                    intro = old.intro
+                }
+            }
+            // 本地文件没有书源，清空 bookSource
+            bookSource = null
+            hasCustomBtn = false
 
             if (newBook != null) {
                 newBook.removeType(BookType.updateError)
