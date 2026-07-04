@@ -412,43 +412,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 }
             }
         }
-
-        // 设置当前选中卡片的样式，使用accentColor作为选中背景，与background_card形成对比
-        val selectedColor = accentColor
-        when (currentType) {
-            0 -> {
-                binding.cardTotal?.apply {
-                    setTextColor(android.graphics.Color.WHITE) // 选中状态文字设为白色，确保在彩色背景上可见
-                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
-                    bgDrawable.setTint(selectedColor)
-                    background = bgDrawable
-                }
-            }
-            1 -> {
-                binding.cardDaily?.apply {
-                    setTextColor(android.graphics.Color.WHITE) // 选中状态文字设为白色，确保在彩色背景上可见
-                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
-                    bgDrawable.setTint(selectedColor)
-                    background = bgDrawable
-                }
-            }
-            2 -> {
-                binding.cardMonthly?.apply {
-                    setTextColor(android.graphics.Color.WHITE) // 选中状态文字设为白色，确保在彩色背景上可见
-                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
-                    bgDrawable.setTint(selectedColor)
-                    background = bgDrawable
-                }
-            }
-            3 -> {
-                binding.cardYearly?.apply {
-                    setTextColor(android.graphics.Color.WHITE) // 选中状态文字设为白色，确保在彩色背景上可见
-                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
-                    bgDrawable.setTint(selectedColor)
-                    background = bgDrawable
-                }
-            }
-        }
     }
 
     // 判断当前是否为夜间模式
