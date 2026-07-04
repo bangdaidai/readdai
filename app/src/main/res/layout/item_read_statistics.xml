@@ -466,7 +466,7 @@
                 android:id="@+id/tvTimePeriod"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="?attr/textColorPrimary"
+                android:textColor="@color/textPrimary"
                 android:textSize="14sp"
                 android:lineSpacingExtra="4dp"
                 android:visibility="gone" />
@@ -475,7 +475,7 @@
                 android:id="@+id/tvContinuousDays"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="?attr/textColorPrimary"
+                android:textColor="@color/textPrimary"
                 android:textSize="14sp"
                 android:lineSpacingExtra="4dp"
                 android:visibility="gone" />
@@ -484,7 +484,7 @@
                 android:id="@+id/tvTopAuthors"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="?attr/textColorPrimary"
+                android:textColor="@color/textPrimary"
                 android:textSize="14sp"
                 android:lineSpacingExtra="4dp"
                 android:visibility="gone" />
@@ -493,7 +493,7 @@
                 android:id="@+id/tvTopTags"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="?attr/textColorPrimary"
+                android:textColor="@color/textPrimary"
                 android:textSize="14sp"
                 android:lineSpacingExtra="4dp"
                 android:visibility="gone" />
