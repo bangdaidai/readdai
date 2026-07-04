@@ -27,7 +27,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
     // 当前阅读类型，null 表示全部
     var currentReadType: Int? = null
     
-    // 当前统计类型，0:总计，1:每日，2:每月，3:每年
+    // 当前统计类型，0:总计，1:每日，2:每月，3:每年，4:每周
     var currentType: Int = 0
 
     override fun getViewBinding(parent: ViewGroup): ItemReadStatisticsBinding {

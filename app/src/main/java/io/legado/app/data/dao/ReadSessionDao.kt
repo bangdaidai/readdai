@@ -537,6 +537,69 @@ interface ReadSessionDao {
     """)
         suspend fun getYearlyStatisticsByYearAndType(year: String, type: Int): List<ReadStatistics>
 
+    // 每周统计 - 自然周（周一~周日），按 strftime('%Y-%W') 分组
+    @Query("""
+        SELECT COUNT(DISTINCT bookName) as bookCount, 
+               (SELECT COUNT(DISTINCT bookName) FROM readingMemories 
+                WHERE progress >= 100.0 AND 
+                CASE WHEN finishReadTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', finishReadTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) as finishedBookCount, 
+               (SELECT COUNT(DISTINCT bookName) FROM readingMemories 
+                WHERE readingStatus = 'ABANDONED' AND 
+                CASE WHEN updateTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', updateTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) as abandonedBookCount, 
+               (SELECT SUM(wordCount) FROM readingMemories 
+                WHERE wordCount IS NOT NULL AND wordCount != '' AND 
+                CASE WHEN updateTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', updateTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) as totalWords, 
+               ((SELECT COUNT(*) FROM bookReviews 
+                WHERE CASE WHEN createTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', createTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) + 
+                (SELECT COUNT(*) FROM bookAnnotations 
+                WHERE note != '' AND note IS NOT NULL AND 
+                CASE WHEN time = 0 THEN '0000-00' ELSE strftime('%Y-%W', time / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END)) as reviewCount, 
+               SUM(duration) as totalTime, 
+               COUNT(DISTINCT CASE WHEN endTime = 0 THEN '未知日期' ELSE DATE(endTime / 1000, 'unixepoch', 'localtime') END) as readDays, 
+               CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END as date
+        FROM readSession 
+        WHERE CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END = :weekStr
+        GROUP BY CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END
+    """)
+        suspend fun getWeeklyStatisticsByWeekNew(weekStr: String): List<ReadStatistics>
+
+    // 每周统计 - 按类型筛选
+    @Query("""
+        SELECT COUNT(DISTINCT bookName) as bookCount, 
+               (SELECT COUNT(DISTINCT bookName) FROM readingMemories 
+                WHERE progress >= 100.0 AND 
+                CASE WHEN finishReadTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', finishReadTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) as finishedBookCount, 
+               (SELECT COUNT(DISTINCT bookName) FROM readingMemories 
+                WHERE readingStatus = 'ABANDONED' AND 
+                CASE WHEN updateTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', updateTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) as abandonedBookCount, 
+               (SELECT SUM(wordCount) FROM readingMemories 
+                WHERE wordCount IS NOT NULL AND wordCount != '' AND 
+                CASE WHEN updateTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', updateTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) as totalWords, 
+               ((SELECT COUNT(*) FROM bookReviews 
+                WHERE CASE WHEN createTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', createTime / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END) + 
+                (SELECT COUNT(*) FROM bookAnnotations 
+                WHERE note != '' AND note IS NOT NULL AND 
+                CASE WHEN time = 0 THEN '0000-00' ELSE strftime('%Y-%W', time / 1000, 'unixepoch', 'localtime') END = 
+                CASE WHEN readSession.endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', readSession.endTime / 1000, 'unixepoch', 'localtime') END)) as reviewCount, 
+               SUM(duration) as totalTime, 
+               COUNT(DISTINCT CASE WHEN endTime = 0 THEN '未知日期' ELSE DATE(endTime / 1000, 'unixepoch', 'localtime') END) as readDays, 
+               CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END as date
+        FROM readSession 
+        WHERE CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END = :weekStr
+          AND type = :type
+        GROUP BY CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END
+    """)
+        suspend fun getWeeklyStatisticsByWeekAndType(weekStr: String, type: Int): List<ReadStatistics>
+
 
     
     // 获取特定日期的统计数�?- �?readSession 表获取数据，基于阅读会话的结束时�?
@@ -751,7 +814,32 @@ interface ReadSessionDao {
         LIMIT 10
     """)
     suspend fun getYearlyReadTimeTop10ByType(year: String, type: Int): List<BookReadTimeRank>
-    
+
+    // 获取特定自然周阅读时间排行TOP10
+    @Query("""
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
+        FROM readSession 
+        WHERE CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END = :weekStr
+        GROUP BY bookName 
+        ORDER BY readTime DESC
+        LIMIT 10
+    """)
+    suspend fun getWeeklyReadTimeTop10(weekStr: String): List<BookReadTimeRank>
+
+    // 获取特定自然周阅读时间排行TOP10 - 按类型筛选
+    @Query("""
+        SELECT bookName, SUM(duration) as readTime,
+            (SELECT coverUrl FROM readSession s2 WHERE s2.bookName = readSession.bookName AND coverUrl IS NOT NULL AND coverUrl != '' ORDER BY endTime DESC LIMIT 1) as coverUrl
+        FROM readSession 
+        WHERE CASE WHEN endTime = 0 THEN '0000-00' ELSE strftime('%Y-%W', endTime / 1000, 'unixepoch', 'localtime') END = :weekStr
+          AND type = :type
+        GROUP BY bookName 
+        ORDER BY readTime DESC
+        LIMIT 10
+    """)
+    suspend fun getWeeklyReadTimeTop10ByType(weekStr: String, type: Int): List<BookReadTimeRank>
+
 
     
     // 获取特定书籍的最近阅读记�?

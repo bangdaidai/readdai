@@ -290,6 +290,28 @@ object StatisticsService {
     }
 
     /**
+     * 获取每周统计数据（自然周，周一到周日）
+     */
+    suspend fun getWeeklyStatisticsByWeek(weekStr: String): List<ReadStatistics> {
+        val cacheKey = "weekly_$weekStr"
+        StatisticsCacheManager.getWeeklyStatisticsCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getWeeklyStatisticsByWeekNew(weekStr)
+        StatisticsCacheManager.cacheWeeklyStatistics(cacheKey, data)
+        return data
+    }
+
+    /**
+     * 按类型获取每周统计数据
+     */
+    suspend fun getWeeklyStatisticsByWeekAndType(weekStr: String, type: Int): List<ReadStatistics> {
+        val cacheKey = "weekly_${weekStr}_${type}"
+        StatisticsCacheManager.getWeeklyStatisticsCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getWeeklyStatisticsByWeekAndType(weekStr, type)
+        StatisticsCacheManager.cacheWeeklyStatistics(cacheKey, data)
+        return data
+    }
+
+    /**
      * 获取总阅读时间排行TOP10
      */
     suspend fun getTotalReadTimeTop10(): List<BookReadTimeRank> {
@@ -384,6 +406,22 @@ object StatisticsService {
         val cacheKey = "top10_yearly_${year}_$type"
         StatisticsCacheManager.getTop10Cache(cacheKey)?.let { return it }
         val data = appDb.readSessionDao.getYearlyReadTimeTop10ByType(year, type)
+        StatisticsCacheManager.cacheTop10Data(cacheKey, data)
+        return data
+    }
+
+    suspend fun getWeeklyReadTimeTop10(weekStr: String): List<BookReadTimeRank> {
+        val cacheKey = "top10_weekly_$weekStr"
+        StatisticsCacheManager.getTop10Cache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getWeeklyReadTimeTop10(weekStr)
+        StatisticsCacheManager.cacheTop10Data(cacheKey, data)
+        return data
+    }
+
+    suspend fun getWeeklyReadTimeTop10ByType(weekStr: String, type: Int): List<BookReadTimeRank> {
+        val cacheKey = "top10_weekly_${weekStr}_$type"
+        StatisticsCacheManager.getTop10Cache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getWeeklyReadTimeTop10ByType(weekStr, type)
         StatisticsCacheManager.cacheTop10Data(cacheKey, data)
         return data
     }

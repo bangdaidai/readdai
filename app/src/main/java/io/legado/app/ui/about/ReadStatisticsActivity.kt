@@ -56,15 +56,21 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
     override val viewModel = ReadStatisticsViewModel()
 
     private val statisticsAdapter by lazy { ReadStatisticsAdapter(this) }
-    private var currentType = 0 // 0:总计, 1:每日, 2:每月, 3:每年
+    private var currentType = 0 // 0:总计, 1:每日, 2:每月, 3:每年, 4:每周
     // 为每种统计类型维护独立的日期变量，避免日期联动
     private var currentDate: Calendar = Calendar.getInstance()
     private var dailyDate: Calendar = Calendar.getInstance()
     private var monthlyDate: Calendar = Calendar.getInstance()
     private var yearlyDate: Calendar = Calendar.getInstance()
+    private var weeklyDate: Calendar = Calendar.getInstance().apply {
+        firstDayOfWeek = Calendar.MONDAY
+        minimalDaysInFirstWeek = 1
+        set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+    }
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val monthFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
     private val yearFormat = SimpleDateFormat("yyyy", Locale.getDefault())
+    private val weekRangeFormat = SimpleDateFormat("MM/dd", Locale.getDefault())
 
     // 阅读类型筛选
     private var currentReadType: Int? = null
@@ -110,6 +116,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                         1 -> loadDailyStatisticsByDate()
                         2 -> loadMonthlyStatisticsByMonth()
                         3 -> loadYearlyStatisticsByYear()
+                        4 -> loadWeeklyStatisticsByWeek()
                     }
                 }
             }
@@ -312,6 +319,17 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             }
         }
 
+        // 设置每周按钮点击事件
+        binding.cardWeekly?.setOnClickListener {
+            currentType = 4
+            statisticsAdapter.currentType = currentType
+            updateNavigationVisibility()
+            updateHeatmapVisibility()
+            updateCardSelection()
+            updateCurrentPeriodText()
+            loadDataForSpecificPeriod()
+        }
+
         // 初始化选中状态
         updateCardSelection()
     }
@@ -343,6 +361,56 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             setBackgroundColor(transparentColor)
             setTextColor(secondaryTextColor)
             setBackgroundResource(R.drawable.bg_reading_tab_unselected)
+        }
+        binding.cardWeekly?.apply {
+            setBackgroundColor(transparentColor)
+            setTextColor(secondaryTextColor)
+            setBackgroundResource(R.drawable.bg_reading_tab_unselected)
+        }
+
+        // 设置当前选中卡片的样式
+        val selectedColor = accentColor
+        when (currentType) {
+            0 -> {
+                binding.cardTotal?.apply {
+                    setTextColor(android.graphics.Color.WHITE)
+                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
+                    bgDrawable.setTint(selectedColor)
+                    background = bgDrawable
+                }
+            }
+            1 -> {
+                binding.cardDaily?.apply {
+                    setTextColor(android.graphics.Color.WHITE)
+                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
+                    bgDrawable.setTint(selectedColor)
+                    background = bgDrawable
+                }
+            }
+            2 -> {
+                binding.cardMonthly?.apply {
+                    setTextColor(android.graphics.Color.WHITE)
+                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
+                    bgDrawable.setTint(selectedColor)
+                    background = bgDrawable
+                }
+            }
+            3 -> {
+                binding.cardYearly?.apply {
+                    setTextColor(android.graphics.Color.WHITE)
+                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
+                    bgDrawable.setTint(selectedColor)
+                    background = bgDrawable
+                }
+            }
+            4 -> {
+                binding.cardWeekly?.apply {
+                    setTextColor(android.graphics.Color.WHITE)
+                    val bgDrawable = resources.getDrawable(R.drawable.bg_reading_tab_selected, null).mutate()
+                    bgDrawable.setTint(selectedColor)
+                    background = bgDrawable
+                }
+            }
         }
 
         // 设置当前选中卡片的样式，使用accentColor作为选中背景，与background_card形成对比
@@ -416,7 +484,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 binding.yearlyHeatmapView?.visibility = View.VISIBLE
                 binding.tvHeatmapTitle?.text = "年度热力图"
             }
-            0, 1 -> { // 总计统计, 每日统计
+            0, 1, 4 -> { // 总计统计, 每日统计, 每周统计
                 binding.heatmapCard?.visibility = View.GONE
                 binding.monthlyHeatmapView?.visibility = View.GONE
                 binding.yearlyHeatmapView?.visibility = View.GONE
@@ -440,6 +508,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             3 -> { // 每年
                 binding.tvCurrentPeriod?.text = yearFormat.format(yearlyDate.time)
             }
+            4 -> { // 每周
+                binding.tvCurrentPeriod?.text = getWeekRangeDisplay(weeklyDate)
+            }
         }
     }
 
@@ -453,6 +524,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             }
             3 -> { // 每年
                 yearlyDate.add(Calendar.YEAR, -1)
+            }
+            4 -> { // 每周
+                weeklyDate.add(Calendar.DAY_OF_MONTH, -7)
             }
         }
         updateCurrentPeriodText()
@@ -470,6 +544,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             3 -> { // 每年
                 yearlyDate.add(Calendar.YEAR, 1)
             }
+            4 -> { // 每周
+                weeklyDate.add(Calendar.DAY_OF_MONTH, 7)
+            }
         }
         updateCurrentPeriodText()
         loadDataForSpecificPeriod()
@@ -486,6 +563,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 1 -> loadDailyStatistics()
                 2 -> loadMonthlyStatistics()
                 3 -> loadYearlyStatistics()
+                4 -> loadWeeklyStatistics()
             }
         }
     }
@@ -496,6 +574,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 1 -> loadDailyStatisticsByDate()
                 2 -> loadMonthlyStatisticsByMonth()
                 3 -> loadYearlyStatisticsByYear()
+                4 -> loadWeeklyStatisticsByWeek()
             }
         }
     }
@@ -776,6 +855,87 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         refreshRecyclerViewHeight()
     }
 
+    /**
+     * 获取自然周的标识字符串，格式 yyyy-WW，与 SQLite strftime('%Y-%W') 一致
+     */
+    private fun getWeekStr(cal: Calendar): String {
+        val clone = cal.clone() as Calendar
+        clone.firstDayOfWeek = Calendar.MONDAY
+        clone.minimalDaysInFirstWeek = 1
+        clone.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        val year = clone.get(Calendar.YEAR)
+        val week = clone.get(Calendar.WEEK_OF_YEAR)
+        return "$year-${String.format("%02d", week)}"
+    }
+
+    /**
+     * 获取自然周的显示文本，显示该周的周一~周日范围
+     */
+    private fun getWeekRangeDisplay(cal: Calendar): String {
+        val clone = cal.clone() as Calendar
+        clone.firstDayOfWeek = Calendar.MONDAY
+        clone.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        val mondayStr = weekRangeFormat.format(clone.time)
+        clone.add(Calendar.DAY_OF_MONTH, 6)
+        val sundayStr = weekRangeFormat.format(clone.time)
+        return "$mondayStr ~ $sundayStr"
+    }
+
+    private suspend fun loadWeeklyStatistics() {
+        val weekStr = getWeekStr(weeklyDate)
+        val weeklyStatistics = if (currentReadType != null) {
+            StatisticsService.getWeeklyStatisticsByWeekAndType(weekStr, currentReadType!!)
+        } else {
+            StatisticsService.getWeeklyStatisticsByWeek(weekStr)
+        }
+        if (weeklyStatistics.isEmpty()) {
+            val emptyStatistics = ReadStatistics(
+                bookCount = 0,
+                finishedBookCount = 0,
+                reviewCount = 0,
+                totalTime = 0L,
+                date = ""
+            )
+            statisticsAdapter.setItems(listOf(emptyStatistics))
+        } else {
+            statisticsAdapter.setItems(weeklyStatistics)
+        }
+        loadTop10DataForWeek(weekStr)
+        refreshRecyclerViewHeight()
+    }
+
+    private suspend fun loadWeeklyStatisticsByWeek() {
+        val weekStr = getWeekStr(weeklyDate)
+        val weeklyStatistics = if (currentReadType != null) {
+            StatisticsService.getWeeklyStatisticsByWeekAndType(weekStr, currentReadType!!)
+        } else {
+            StatisticsService.getWeeklyStatisticsByWeek(weekStr)
+        }
+        if (weeklyStatistics.isEmpty()) {
+            val emptyStatistics = ReadStatistics(
+                bookCount = 0,
+                finishedBookCount = 0,
+                reviewCount = 0,
+                totalTime = 0L,
+                date = weekStr
+            )
+            statisticsAdapter.setItems(listOf(emptyStatistics))
+        } else {
+            statisticsAdapter.setItems(weeklyStatistics)
+        }
+        loadTop10DataForWeek(weekStr)
+        refreshRecyclerViewHeight()
+    }
+
+    private suspend fun loadTop10DataForWeek(weekStr: String) {
+        currentTop10Data = if (currentReadType != null) {
+            StatisticsService.getWeeklyReadTimeTop10ByType(weekStr, currentReadType!!)
+        } else {
+            StatisticsService.getWeeklyReadTimeTop10(weekStr)
+        }
+        updateComposeTop10()
+    }
+
 
     // 加载月度热力图数据
     private suspend fun loadMonthlyHeatmapData(month: String) {
@@ -947,6 +1107,24 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 )?.visibility = View.GONE
                 datePickerDialog.show()
             }
+            4 -> { // 每周统计
+                val datePickerDialog = DatePickerDialog(
+                    this,
+                    { _, year, month, dayOfMonth ->
+                        weeklyDate.set(year, month, dayOfMonth)
+                        weeklyDate.firstDayOfWeek = Calendar.MONDAY
+                        weeklyDate.minimalDaysInFirstWeek = 1
+                        updateCurrentPeriodText()
+                        lifecycleScope.launch {
+                            loadWeeklyStatisticsByWeek()
+                        }
+                    },
+                    weeklyDate.get(Calendar.YEAR),
+                    weeklyDate.get(Calendar.MONTH),
+                    weeklyDate.get(Calendar.DAY_OF_MONTH)
+                )
+                datePickerDialog.show()
+            }
         }
     }
 
@@ -977,6 +1155,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                         1 -> loadDailyStatisticsByDate()
                         2 -> loadMonthlyStatisticsByMonth()
                         3 -> loadYearlyStatisticsByYear()
+                        4 -> loadWeeklyStatisticsByWeek()
                     }
                 }
             }
@@ -1062,6 +1241,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     1 -> "每日_${dateFormat.format(dailyDate.time)}"
                     2 -> "每月_${monthFormat.format(monthlyDate.time)}"
                     3 -> "每年_${yearFormat.format(yearlyDate.time)}"
+                    4 -> "每周_${getWeekStr(weeklyDate)}"
                     else -> "总计"
                 }
                 withContext(Dispatchers.Main) {
@@ -1112,6 +1292,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             1 -> dateFormat.format(dailyDate.time)
             2 -> monthFormat.format(monthlyDate.time)
             3 -> yearFormat.format(yearlyDate.time)
+            4 -> getWeekRangeDisplay(weeklyDate)
             else -> "全部时间"
         }
         val periodTitle = when (currentType) {
@@ -1119,6 +1300,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             1 -> "每日统计"
             2 -> "每月统计"
             3 -> "每年统计"
+            4 -> "每周统计"
             else -> "阅读统计"
         }
 

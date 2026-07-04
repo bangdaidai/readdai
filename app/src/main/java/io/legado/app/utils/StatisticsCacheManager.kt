@@ -33,6 +33,9 @@ object StatisticsCacheManager {
     // 每年统计缓存
     private val yearlyStatisticsCache = ConcurrentHashMap<String, CacheItem<List<ReadStatistics>>>()
 
+    // 每周统计缓存
+    private val weeklyStatisticsCache = ConcurrentHashMap<String, CacheItem<List<ReadStatistics>>>()
+
     // TOP10 统计缓存
     private val top10Cache = ConcurrentHashMap<String, CacheItem<List<BookReadTimeRank>>>()
 
@@ -107,6 +110,22 @@ object StatisticsCacheManager {
     }
 
     /**
+     * 缓存每周统计数据
+     */
+    fun cacheWeeklyStatistics(key: String, data: List<ReadStatistics>) {
+        weeklyStatisticsCache[key] = CacheItem(data, System.currentTimeMillis())
+    }
+
+    /**
+     * 获取每周统计数据缓存
+     */
+    fun getWeeklyStatisticsCache(key: String): List<ReadStatistics>? {
+        return weeklyStatisticsCache[key]?.let { 
+            if (isCacheValid(it.timestamp)) it.data else null
+        }
+    }
+
+    /**
      * 缓存TOP10统计数据
      */
     fun cacheTop10Data(key: String, data: List<BookReadTimeRank>) {
@@ -169,6 +188,7 @@ object StatisticsCacheManager {
         dailyStatisticsCache.clear()
         monthlyStatisticsCache.clear()
         yearlyStatisticsCache.clear()
+        weeklyStatisticsCache.clear()
         top10Cache.clear()
         heatmapCache.clear()
         heatmapDayDataCache.clear()
@@ -183,6 +203,7 @@ object StatisticsCacheManager {
             CacheType.DAILY -> dailyStatisticsCache.clear()
             CacheType.MONTHLY -> monthlyStatisticsCache.clear()
             CacheType.YEARLY -> yearlyStatisticsCache.clear()
+            CacheType.WEEKLY -> weeklyStatisticsCache.clear()
             CacheType.TOP10 -> top10Cache.clear()
             CacheType.HEATMAP -> {
                 heatmapCache.clear()
@@ -199,6 +220,7 @@ object StatisticsCacheManager {
         DAILY,
         MONTHLY,
         YEARLY,
+        WEEKLY,
         TOP10,
         HEATMAP
     }
