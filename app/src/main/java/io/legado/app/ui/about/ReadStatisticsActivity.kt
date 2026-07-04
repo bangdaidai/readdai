@@ -839,7 +839,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         clone.minimalDaysInFirstWeek = 1
         clone.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
         val year = clone.get(Calendar.YEAR)
-        val week = clone.get(Calendar.WEEK_OF_YEAR)
+        val week = clone.get(Calendar.WEEK_OF_YEAR) - 1
         return "$year-${String.format("%02d", week)}"
     }
 

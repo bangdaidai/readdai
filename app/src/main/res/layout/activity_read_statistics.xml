@@ -73,6 +73,22 @@
                     android:clickable="true"
                     android:focusable="true" />
 
+                <!-- 每周按钮 -->
+                <io.legado.app.ui.widget.text.PrimaryTextView
+                    android:id="@+id/cardWeekly"
+                    android:layout_width="0dp"
+                    android:layout_height="28dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="每周"
+                    android:textSize="14sp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:background="@drawable/bg_reading_tab_unselected"
+                    android:layout_marginEnd="4dp"
+                    android:clickable="true"
+                    android:focusable="true" />
+
                 <!-- 每月按钮 -->
                 <io.legado.app.ui.widget.text.PrimaryTextView
                     android:id="@+id/cardMonthly"
@@ -97,21 +113,6 @@
                 android:layout_weight="1"
                 android:gravity="center"
                 android:text="每年"
-                android:textSize="14sp"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:background="@drawable/bg_reading_tab_unselected"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <!-- 每周按钮 -->
-            <io.legado.app.ui.widget.text.PrimaryTextView
-                android:id="@+id/cardWeekly"
-                android:layout_width="0dp"
-                android:layout_height="28dp"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="每周"
                 android:textSize="14sp"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"

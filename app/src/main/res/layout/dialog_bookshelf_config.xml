@@ -95,7 +95,7 @@
             android:padding="4dp"
             app:layout_constraintTop_toBottomOf="@+id/sw_show_book_intro"
             app:max="9"
-            app:title="简介最大行数" />
+            app:title="最大行数" />
 
         <io.legado.app.lib.theme.view.ThemeSwitch
             android:id="@+id/sw_show_book_review"
@@ -113,7 +113,7 @@
             android:padding="4dp"
             app:layout_constraintTop_toBottomOf="@+id/sw_show_book_review"
             app:max="9"
-            app:title="书评最大行数" />
+            app:title="最大行数" />
 
         <io.legado.app.ui.widget.DetailSeekBar
             android:id="@+id/sb_card_border_width"
