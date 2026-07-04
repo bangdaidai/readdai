@@ -603,6 +603,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载总阅读时间排行TOP10
         loadTop10Data()
 
+        // 加载分析数据
+        loadAnalysis(null, null)
+
         // 确保RecyclerView正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -730,6 +733,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载特定日期的阅读时间排行 TOP10
         loadTop10DataForDate(dateStr)
 
+        // 加载分析数据
+        loadAnalysis(getDayStart(dailyDate), getDayEnd(dailyDate))
+
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -792,6 +798,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载特定月份的阅读时间排行 TOP10
         loadTop10DataForMonth(monthStr)
 
+        // 加载分析数据
+        loadAnalysis(getMonthStart(monthlyDate), getMonthEnd(monthlyDate))
+
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -851,6 +860,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载特定年份的阅读时间排行 TOP10
         loadTop10DataForYear(yearStr)
 
+        // 加载分析数据
+        loadAnalysis(getYearStart(yearlyDate), getYearEnd(yearlyDate))
+
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -901,6 +913,10 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             statisticsAdapter.setItems(weeklyStatistics)
         }
         loadTop10DataForWeek(weekStr)
+
+        // 加载分析数据
+        loadAnalysis(getWeekStart(weeklyDate), getWeekEnd(weeklyDate))
+
         refreshRecyclerViewHeight()
     }
 
@@ -924,6 +940,11 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             statisticsAdapter.setItems(weeklyStatistics)
         }
         loadTop10DataForWeek(weekStr)
+
+        // 加载分析数据
+        loadAnalysis(getWeekStart(weeklyDate), getWeekEnd(weeklyDate))
+
+        // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
 
@@ -934,6 +955,113 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             StatisticsService.getWeeklyReadTimeTop10(weekStr)
         }
         updateComposeTop10()
+    }
+
+    private fun getDayStart(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0); c.set(Calendar.SECOND, 0); c.set(Calendar.MILLISECOND, 0)
+        return c.timeInMillis
+    }
+
+    private fun getDayEnd(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.set(Calendar.HOUR_OF_DAY, 23); c.set(Calendar.MINUTE, 59); c.set(Calendar.SECOND, 59); c.set(Calendar.MILLISECOND, 999)
+        return c.timeInMillis
+    }
+
+    private fun getWeekStart(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.firstDayOfWeek = Calendar.MONDAY
+        c.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        return getDayStart(c)
+    }
+
+    private fun getWeekEnd(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.firstDayOfWeek = Calendar.MONDAY
+        c.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+        return getDayEnd(c)
+    }
+
+    private fun getMonthStart(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.set(Calendar.DAY_OF_MONTH, 1)
+        return getDayStart(c)
+    }
+
+    private fun getMonthEnd(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.set(Calendar.DAY_OF_MONTH, c.getActualMaximum(Calendar.DAY_OF_MONTH))
+        return getDayEnd(c)
+    }
+
+    private fun getYearStart(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.set(Calendar.DAY_OF_YEAR, 1)
+        return getDayStart(c)
+    }
+
+    private fun getYearEnd(cal: Calendar): Long {
+        val c = cal.clone() as Calendar
+        c.set(Calendar.DAY_OF_YEAR, c.getActualMaximum(Calendar.DAY_OF_YEAR))
+        return getDayEnd(c)
+    }
+
+    private suspend fun loadAnalysis(startTime: Long?, endTime: Long?) {
+        try {
+            // 时段偏好
+            statisticsAdapter.hourlyData = if (startTime != null && endTime != null) {
+                if (currentReadType != null)
+                    StatisticsService.getHourlyDistributionInRangeByType(startTime, endTime, currentReadType!!)
+                else
+                    StatisticsService.getHourlyDistributionInRange(startTime, endTime)
+            } else {
+                if (currentReadType != null)
+                    StatisticsService.getHourlyDistributionByType(currentReadType!!)
+                else
+                    StatisticsService.getHourlyDistribution()
+            }
+
+            // 连续阅读天数（总计和年度展示）
+            statisticsAdapter.continuousDays = if (startTime != null && endTime != null) {
+                StatisticsService.getContinuousReadingDaysInRange(startTime, endTime)
+            } else {
+                StatisticsService.getContinuousReadingDays()
+            }
+
+            // 最爱作者（日不展示，其余展示）
+            val showAuthor = currentType != 1
+            statisticsAdapter.authorTop5 = if (showAuthor) {
+                if (startTime != null && endTime != null) {
+                    if (currentReadType != null)
+                        StatisticsService.getAuthorTop5InRangeByType(startTime, endTime, currentReadType!!)
+                    else
+                        StatisticsService.getAuthorTop5InRange(startTime, endTime)
+                } else {
+                    if (currentReadType != null)
+                        StatisticsService.getAuthorTop5ByType(currentReadType!!)
+                    else
+                        StatisticsService.getAuthorTop5()
+                }
+            } else {
+                emptyList()
+            }
+
+            // 最爱标签（日不展示，其余展示）
+            statisticsAdapter.tagTop5 = if (showAuthor) {
+                if (startTime != null && endTime != null) {
+                    StatisticsService.getTagTop5InRange(startTime, endTime)
+                } else {
+                    StatisticsService.getTagTop5()
+                }
+            } else {
+                emptyList()
+            }
+
+            statisticsAdapter.showAnalysis = true
+        } catch (_: Exception) {
+            statisticsAdapter.showAnalysis = false
+        }
     }
 
 

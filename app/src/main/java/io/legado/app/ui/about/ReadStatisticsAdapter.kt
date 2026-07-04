@@ -10,10 +10,14 @@ import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.constant.BookType
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.ReadStatistics
+import io.legado.app.data.entities.HourReadTime
+import io.legado.app.data.entities.AuthorReadTime
+import io.legado.app.data.entities.TagReadCount
 import io.legado.app.databinding.ItemReadStatisticsBinding
 import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
+import io.legado.app.service.StatisticsService
 import io.legado.app.utils.dpToPx
 import kotlinx.coroutines.runBlocking
 
@@ -29,6 +33,13 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
     
     // 当前统计类型，0:总计，1:每日，2:每月，3:每年，4:每周
     var currentType: Int = 0
+
+    // 分析数据
+    var hourlyData: List<HourReadTime> = emptyList()
+    var authorTop5: List<AuthorReadTime> = emptyList()
+    var tagTop5: List<TagReadCount> = emptyList()
+    var continuousDays: Int = 0
+    var showAnalysis: Boolean = false
 
     override fun getViewBinding(parent: ViewGroup): ItemReadStatisticsBinding {
         return ItemReadStatisticsBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -155,6 +166,52 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                 }.start()
             } else {
                 tvStartDate.visibility = View.GONE
+            }
+
+            // 分析区域
+            if (showAnalysis) {
+                llAnalysis.visibility = View.VISIBLE
+
+                // 时段偏好
+                val periodSummary = StatisticsService.summarizeHourlyDistribution(hourlyData)
+                if (periodSummary != null) {
+                    tvTimePeriod.visibility = View.VISIBLE
+                    tvTimePeriod.text = "时段偏好：${periodSummary.first}阅读最多（${periodSummary.second}%）"
+                    tvTimePeriod.setTextColor(otherColor)
+                } else {
+                    tvTimePeriod.visibility = View.GONE
+                }
+
+                // 连续阅读天数（仅在总计和年度展示）
+                if (continuousDays > 0) {
+                    tvContinuousDays.visibility = View.VISIBLE
+                    tvContinuousDays.text = "最长连续阅读 $continuousDays 天"
+                    tvContinuousDays.setTextColor(otherColor)
+                } else {
+                    tvContinuousDays.visibility = View.GONE
+                }
+
+                // 最爱作者 TOP5
+                if (authorTop5.isNotEmpty()) {
+                    tvTopAuthors.visibility = View.VISIBLE
+                    val authorsText = authorTop5.joinToString("、") { it.author }
+                    tvTopAuthors.text = "最爱作者：$authorsText"
+                    tvTopAuthors.setTextColor(otherColor)
+                } else {
+                    tvTopAuthors.visibility = View.GONE
+                }
+
+                // 最爱内容类型 TOP5
+                if (tagTop5.isNotEmpty()) {
+                    tvTopTags.visibility = View.VISIBLE
+                    val tagsText = tagTop5.joinToString("、") { "${it.tag}(${it.bookCount})" }
+                    tvTopTags.text = "最爱类型：$tagsText"
+                    tvTopTags.setTextColor(otherColor)
+                } else {
+                    tvTopTags.visibility = View.GONE
+                }
+            } else {
+                llAnalysis.visibility = View.GONE
             }
         }
     }

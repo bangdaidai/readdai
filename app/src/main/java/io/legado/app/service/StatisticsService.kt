@@ -4,6 +4,9 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookReadTimeRank
 import io.legado.app.data.entities.DailyReadTime
 import io.legado.app.data.entities.ReadStatistics
+import io.legado.app.data.entities.HourReadTime
+import io.legado.app.data.entities.AuthorReadTime
+import io.legado.app.data.entities.TagReadCount
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.utils.StatisticsCacheManager
 import kotlinx.coroutines.Dispatchers
@@ -636,6 +639,164 @@ object StatisticsService {
             val data = getYearlyReadHeatmapData(year)
             launch(Dispatchers.Main) { callback(data) }
         }
+    }
+
+    // ===== 分析数据 =====
+
+    suspend fun getHourlyDistribution(): List<HourReadTime> {
+        val cacheKey = "hourly_total"
+        StatisticsCacheManager.getHourlyDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getHourlyReadTimeDistribution()
+        StatisticsCacheManager.cacheHourlyData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getHourlyDistributionByType(type: Int): List<HourReadTime> {
+        val cacheKey = "hourly_total_$type"
+        StatisticsCacheManager.getHourlyDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getHourlyReadTimeDistributionByType(type)
+        StatisticsCacheManager.cacheHourlyData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getHourlyDistributionInRange(startTime: Long, endTime: Long): List<HourReadTime> {
+        val cacheKey = "hourly_${startTime}_$endTime"
+        StatisticsCacheManager.getHourlyDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getHourlyReadTimeInRange(startTime, endTime)
+        StatisticsCacheManager.cacheHourlyData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getHourlyDistributionInRangeByType(startTime: Long, endTime: Long, type: Int): List<HourReadTime> {
+        val cacheKey = "hourly_${startTime}_${endTime}_$type"
+        StatisticsCacheManager.getHourlyDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getHourlyReadTimeInRangeByType(startTime, endTime, type)
+        StatisticsCacheManager.cacheHourlyData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getAuthorTop5(): List<AuthorReadTime> {
+        val cacheKey = "author_total"
+        StatisticsCacheManager.getAuthorDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getAuthorReadTimeTop5()
+        StatisticsCacheManager.cacheAuthorData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getAuthorTop5ByType(type: Int): List<AuthorReadTime> {
+        val cacheKey = "author_total_$type"
+        StatisticsCacheManager.getAuthorDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getAuthorReadTimeTop5ByType(type)
+        StatisticsCacheManager.cacheAuthorData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getAuthorTop5InRange(startTime: Long, endTime: Long): List<AuthorReadTime> {
+        val cacheKey = "author_${startTime}_$endTime"
+        StatisticsCacheManager.getAuthorDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getAuthorReadTimeTop5InRange(startTime, endTime)
+        StatisticsCacheManager.cacheAuthorData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getAuthorTop5InRangeByType(startTime: Long, endTime: Long, type: Int): List<AuthorReadTime> {
+        val cacheKey = "author_${startTime}_${endTime}_$type"
+        StatisticsCacheManager.getAuthorDataCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getAuthorReadTimeTop5InRangeByType(startTime, endTime, type)
+        StatisticsCacheManager.cacheAuthorData(cacheKey, data)
+        return data
+    }
+
+    suspend fun getTagTop5(): List<TagReadCount> {
+        val cacheKey = "tag_total"
+        StatisticsCacheManager.getTagDataCache(cacheKey)?.let { return it }
+        val bookNames = appDb.readSessionDao.getDistinctBookNames()
+        val result = computeTagTop5(bookNames)
+        StatisticsCacheManager.cacheTagData(cacheKey, result)
+        return result
+    }
+
+    suspend fun getTagTop5InRange(startTime: Long, endTime: Long): List<TagReadCount> {
+        val cacheKey = "tag_${startTime}_$endTime"
+        StatisticsCacheManager.getTagDataCache(cacheKey)?.let { return it }
+        val bookNames = appDb.readSessionDao.getDistinctBookNamesInRange(startTime, endTime)
+        val result = computeTagTop5(bookNames)
+        StatisticsCacheManager.cacheTagData(cacheKey, result)
+        return result
+    }
+
+    private suspend fun computeTagTop5(bookNames: List<String>): List<TagReadCount> {
+        if (bookNames.isEmpty()) return emptyList()
+        val kinds = bookNames.chunked(500).flatMap { chunk ->
+            appDb.readingMemoryDao.getKindsByBookNames(chunk)
+        }
+        val tagCounts = mutableMapOf<String, Int>()
+        kinds.forEach { kind ->
+            kind.split(",", "\n", ";", "，").map { it.trim() }.filter { it.isNotBlank() }.forEach { tag ->
+                tagCounts[tag] = (tagCounts[tag] ?: 0) + 1
+            }
+        }
+        return tagCounts.entries
+            .sortedByDescending { it.value }
+            .take(5)
+            .map { TagReadCount(it.key, it.value, 0L) }
+    }
+
+    suspend fun getContinuousReadingDays(): Int {
+        val cacheKey = "continuous_total"
+        StatisticsCacheManager.getContinuousDaysCache(cacheKey)?.let { return it }
+        val dates = appDb.readSessionDao.getAllReadingDates()
+        val days = computeContinuousDays(dates)
+        StatisticsCacheManager.cacheContinuousDays(cacheKey, days)
+        return days
+    }
+
+    suspend fun getContinuousReadingDaysInRange(startTime: Long, endTime: Long): Int {
+        val cacheKey = "continuous_${startTime}_$endTime"
+        StatisticsCacheManager.getContinuousDaysCache(cacheKey)?.let { return it }
+        val dates = appDb.readSessionDao.getReadingDatesInRange(startTime, endTime)
+        val days = computeContinuousDays(dates)
+        StatisticsCacheManager.cacheContinuousDays(cacheKey, days)
+        return days
+    }
+
+    private fun computeContinuousDays(dates: List<String>): Int {
+        if (dates.isEmpty()) return 0
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        val sorted = dates.mapNotNull { try { sdf.parse(it) } catch (_: Exception) { null } }
+            .map { java.util.Date(it.time).let { it } }
+            .distinctBy { sdf.format(it) }
+            .sortedBy { it.time }
+
+        if (sorted.isEmpty()) return 0
+        var maxStreak = 1
+        var currentStreak = 1
+        for (i in 1 until sorted.size) {
+            val diff = (sorted[i].time - sorted[i - 1].time) / (1000 * 60 * 60 * 24)
+            if (diff == 1L) {
+                currentStreak++
+                maxStreak = maxOf(maxStreak, currentStreak)
+            } else {
+                currentStreak = 1
+            }
+        }
+        return maxStreak
+    }
+
+    /**
+     * 汇总时段分布数据，计算各时段占比，返回占比最高的时段和百分比
+     */
+    fun summarizeHourlyDistribution(hourlyData: List<HourReadTime>): Pair<String, Int>? {
+        if (hourlyData.isEmpty()) return null
+        val periodTotals = mutableMapOf<String, Long>()
+        hourlyData.forEach { h ->
+            periodTotals[h.period] = (periodTotals[h.period] ?: 0) + h.totalTime
+        }
+        val total = periodTotals.values.sum()
+        if (total == 0L) return null
+        val top = periodTotals.maxByOrNull { it.value } ?: return null
+        val pct = (top.value * 100 / total).toInt()
+        return top.key to pct
     }
 
 }

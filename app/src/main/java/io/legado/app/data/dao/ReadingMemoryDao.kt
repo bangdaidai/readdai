@@ -59,4 +59,7 @@ interface ReadingMemoryDao {
     
     @Query("SELECT * FROM readingMemories WHERE bookName = :bookName ORDER BY updateTime DESC")
     fun getByBookName(bookName: String): List<ReadingMemory>
+
+    @Query("SELECT DISTINCT kind FROM readingMemories WHERE bookName IN (:bookNames) AND kind IS NOT NULL AND kind != ''")
+    suspend fun getKindsByBookNames(bookNames: List<String>): List<String>
 }

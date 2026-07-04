@@ -4,6 +4,9 @@ import io.legado.app.data.entities.BookReadTimeRank
 import io.legado.app.data.entities.DailyReadTime
 import io.legado.app.data.entities.HeatmapDayData
 import io.legado.app.data.entities.ReadStatistics
+import io.legado.app.data.entities.HourReadTime
+import io.legado.app.data.entities.AuthorReadTime
+import io.legado.app.data.entities.TagReadCount
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
@@ -44,6 +47,18 @@ object StatisticsCacheManager {
     
     // 热力图DayData缓存
     private val heatmapDayDataCache = ConcurrentHashMap<String, CacheItem<List<HeatmapDayData>>>()
+
+    // 时段分布缓存
+    private val hourlyCache = ConcurrentHashMap<String, CacheItem<List<HourReadTime>>>()
+
+    // 作者TOP缓存
+    private val authorCache = ConcurrentHashMap<String, CacheItem<List<AuthorReadTime>>>()
+
+    // 标签TOP缓存
+    private val tagCache = ConcurrentHashMap<String, CacheItem<List<TagReadCount>>>()
+
+    // 连续阅读天数缓存
+    private val continuousDaysCache = ConcurrentHashMap<String, CacheItem<Int>>()
 
     /**
      * 缓存总计统计数据
@@ -173,6 +188,38 @@ object StatisticsCacheManager {
         }
     }
 
+    fun cacheHourlyData(key: String, data: List<HourReadTime>) {
+        hourlyCache[key] = CacheItem(data, System.currentTimeMillis())
+    }
+
+    fun getHourlyDataCache(key: String): List<HourReadTime>? {
+        return hourlyCache[key]?.let { if (isCacheValid(it.timestamp)) it.data else null }
+    }
+
+    fun cacheAuthorData(key: String, data: List<AuthorReadTime>) {
+        authorCache[key] = CacheItem(data, System.currentTimeMillis())
+    }
+
+    fun getAuthorDataCache(key: String): List<AuthorReadTime>? {
+        return authorCache[key]?.let { if (isCacheValid(it.timestamp)) it.data else null }
+    }
+
+    fun cacheTagData(key: String, data: List<TagReadCount>) {
+        tagCache[key] = CacheItem(data, System.currentTimeMillis())
+    }
+
+    fun getTagDataCache(key: String): List<TagReadCount>? {
+        return tagCache[key]?.let { if (isCacheValid(it.timestamp)) it.data else null }
+    }
+
+    fun cacheContinuousDays(key: String, days: Int) {
+        continuousDaysCache[key] = CacheItem(days, System.currentTimeMillis())
+    }
+
+    fun getContinuousDaysCache(key: String): Int? {
+        return continuousDaysCache[key]?.let { if (isCacheValid(it.timestamp)) it.data else null }
+    }
+
     /**
      * 检查缓存是否有效
      */
@@ -192,6 +239,10 @@ object StatisticsCacheManager {
         top10Cache.clear()
         heatmapCache.clear()
         heatmapDayDataCache.clear()
+        hourlyCache.clear()
+        authorCache.clear()
+        tagCache.clear()
+        continuousDaysCache.clear()
     }
 
     /**

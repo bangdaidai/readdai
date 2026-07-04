@@ -1061,4 +1061,44 @@ interface ReadSessionDao {
     """)
     suspend fun getBookCountByType(type: Int): Int
 
+    // 时段分布统计 - 按小时分组阅读时长
+    @Query("SELECT CAST(strftime('%H', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, SUM(duration) as totalTime FROM readSession WHERE endTime > 0 GROUP BY hour ORDER BY hour")
+    suspend fun getHourlyReadTimeDistribution(): List<HourReadTime>
+
+    @Query("SELECT CAST(strftime('%H', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, SUM(duration) as totalTime FROM readSession WHERE endTime > 0 AND type = :type GROUP BY hour ORDER BY hour")
+    suspend fun getHourlyReadTimeDistributionByType(type: Int): List<HourReadTime>
+
+    @Query("SELECT CAST(strftime('%H', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime GROUP BY hour ORDER BY hour")
+    suspend fun getHourlyReadTimeInRange(startTime: Long, endTime: Long): List<HourReadTime>
+
+    @Query("SELECT CAST(strftime('%H', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime AND type = :type GROUP BY hour ORDER BY hour")
+    suspend fun getHourlyReadTimeInRangeByType(startTime: Long, endTime: Long, type: Int): List<HourReadTime>
+
+    // 获取所有有阅读记录的日期（用于计算连续阅读天数）
+    @Query("SELECT DISTINCT DATE(endTime / 1000, 'unixepoch', 'localtime') as d FROM readSession WHERE endTime > 0 ORDER BY d")
+    suspend fun getAllReadingDates(): List<String>
+
+    @Query("SELECT DISTINCT DATE(endTime / 1000, 'unixepoch', 'localtime') as d FROM readSession WHERE endTime > 0 AND endTime >= :startTime AND endTime <= :endTime ORDER BY d")
+    suspend fun getReadingDatesInRange(startTime: Long, endTime: Long): List<String>
+
+    // 获取去重的书籍名（用于标签分析）
+    @Query("SELECT DISTINCT bookName FROM readSession WHERE bookName != ''")
+    suspend fun getDistinctBookNames(): List<String>
+
+    @Query("SELECT DISTINCT bookName FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime AND bookName != ''")
+    suspend fun getDistinctBookNamesInRange(startTime: Long, endTime: Long): List<String>
+
+    // 最爱作者 TOP5
+    @Query("SELECT author, SUM(duration) as totalTime FROM readSession WHERE author != '' AND author IS NOT NULL GROUP BY author ORDER BY totalTime DESC LIMIT 5")
+    suspend fun getAuthorReadTimeTop5(): List<AuthorReadTime>
+
+    @Query("SELECT author, SUM(duration) as totalTime FROM readSession WHERE author != '' AND author IS NOT NULL AND type = :type GROUP BY author ORDER BY totalTime DESC LIMIT 5")
+    suspend fun getAuthorReadTimeTop5ByType(type: Int): List<AuthorReadTime>
+
+    @Query("SELECT author, SUM(duration) as totalTime FROM readSession WHERE author != '' AND author IS NOT NULL AND endTime >= :startTime AND endTime <= :endTime GROUP BY author ORDER BY totalTime DESC LIMIT 5")
+    suspend fun getAuthorReadTimeTop5InRange(startTime: Long, endTime: Long): List<AuthorReadTime>
+
+    @Query("SELECT author, SUM(duration) as totalTime FROM readSession WHERE author != '' AND author IS NOT NULL AND endTime >= :startTime AND endTime <= :endTime AND type = :type GROUP BY author ORDER BY totalTime DESC LIMIT 5")
+    suspend fun getAuthorReadTimeTop5InRangeByType(startTime: Long, endTime: Long, type: Int): List<AuthorReadTime>
+
 }
