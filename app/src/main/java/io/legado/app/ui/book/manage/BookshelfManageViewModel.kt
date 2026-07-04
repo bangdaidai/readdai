@@ -205,7 +205,8 @@ class BookshelfManageViewModel(application: Application) : BaseViewModel(applica
                             appDb.readingMemoryDao.insert(newMemory)
                         }
                         book.delete()
-                        appDb.bookDao.insert(migratedBook)
+                        // 使用 save() 代替 insert()，避免 REPLACE 策略触发外键级联删除章节
+                        migratedBook.save()
                         appDb.bookChapterDao.insert(*toc.toTypedArray())
                         // 迁移主角名到新书
                         if (oldProtagonists.isNotEmpty()) {

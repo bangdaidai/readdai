@@ -430,7 +430,8 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                 val oldProtagonists = oldBook?.let { appDb.bookProtagonistDao.getByBook(it.bookUrl) } ?: emptyList()
 
                 oldBook?.delete()
-                appDb.bookDao.insert(newBook)
+                // 使用 save() 代替 insert()，避免 REPLACE 策略触发外键级联删除章节
+                newBook.save()
                 appDb.bookChapterDao.insert(*toc.toTypedArray())
 
                 // 迁移书籍标签关联关系到新书
@@ -530,6 +531,8 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
 
                 if (inBookshelf) {
                     oldBook?.delete()
+                    // importFile 已将 localBook 预插入 DB，先用 save() 更新元数据，再插入章节
+                    newBook.save()
                     appDb.bookChapterDao.insert(*toc.toTypedArray())
 
                     if (oldTagRelations.isNotEmpty()) {
@@ -551,10 +554,9 @@ class BookInfoViewModel(application: Application) : BaseViewModel(application) {
                         }
                         appDb.bookProtagonistDao.insertAll(newProtagonists)
                     }
+                } else {
+                    newBook.save()
                 }
-
-                // importFile 已将 localBook 预插入 DB，用 save() 更新而非 insert()
-                newBook.save()
 
                 // 处理阅读记忆：inBookshelf 和 !inBookshelf 都需要
                 val oldMemory = oldBook?.let { appDb.readingMemoryDao.getByBookUrl(it.bookUrl) }

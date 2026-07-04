@@ -297,7 +297,8 @@ class ReadBookViewModel(application: Application) : BaseViewModel(application) {
                 val oldProtagonists = oldBook?.let { appDb.bookProtagonistDao.getByBook(it.bookUrl) } ?: emptyList()
 
                 oldBook?.delete()
-                appDb.bookDao.insert(newBook)
+                // 使用 save() 代替 insert()，避免 REPLACE 策略触发外键级联删除章节
+                newBook.save()
                 appDb.bookChapterDao.insert(*toc.toTypedArray())
 
                 // 迁移书籍标签关联关系到新书
