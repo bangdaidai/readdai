@@ -197,6 +197,10 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                         swShowBookCard.isChecked = AppConfig.showBookCard
                         swShowBookIntro.isChecked = AppConfig.showBookIntro
                         swShowBookReview.isChecked = AppConfig.showBookReview
+                        sbBookIntroLines.progress = AppConfig.bookIntroLines - 1
+                        sbBookIntroLines.valueFormat = { "${it + 1}行" }
+                        sbBookReviewLines.progress = AppConfig.bookReviewLines - 1
+                        sbBookReviewLines.valueFormat = { "${it + 1}行" }
                         sbCardBorderWidth.progress = AppConfig.bookshelfCardBorderWidth
                         rgLayout.checkByIndex(bookshelfLayout)
                         rgbLayout.checkByIndex(showBookname)
@@ -246,6 +250,14 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                     }
                     if (AppConfig.showBookReview != swShowBookReview.isChecked) {
                         AppConfig.showBookReview = swShowBookReview.isChecked
+                        postEvent(EventBus.BOOKSHELF_REFRESH, "")
+                    }
+                    if (AppConfig.bookIntroLines - 1 != sbBookIntroLines.progress) {
+                        AppConfig.bookIntroLines = sbBookIntroLines.progress + 1
+                        postEvent(EventBus.BOOKSHELF_REFRESH, "")
+                    }
+                    if (AppConfig.bookReviewLines - 1 != sbBookReviewLines.progress) {
+                        AppConfig.bookReviewLines = sbBookReviewLines.progress + 1
                         postEvent(EventBus.BOOKSHELF_REFRESH, "")
                     }
                     if (AppConfig.bookshelfCardBorderWidth != sbCardBorderWidth.progress) {

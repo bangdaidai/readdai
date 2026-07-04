@@ -366,6 +366,7 @@ class BooksAdapterList(
         if (showIntro && !introContent.isNullOrBlank()) {
             binding.layoutIntro.visibility = android.view.View.VISIBLE
             binding.tvIntro.text = introContent
+            binding.tvIntro.maxLines = AppConfig.bookIntroLines
         } else {
             binding.layoutIntro.visibility = android.view.View.GONE
         }

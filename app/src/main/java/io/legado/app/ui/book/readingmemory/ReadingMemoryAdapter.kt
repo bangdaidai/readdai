@@ -507,6 +507,7 @@ class ReadingMemoryAdapter(
             if (showIntro && !introContent.isNullOrBlank()) {
                 layoutIntro.visibility = android.view.View.VISIBLE
                 introView.text = introContent
+                introView.maxLines = AppConfig.bookIntroLines
             } else {
                 layoutIntro.visibility = android.view.View.GONE
             }
@@ -531,6 +532,7 @@ class ReadingMemoryAdapter(
                 if (showReview && !reviewContent.isNullOrBlank()) {
                     layoutReview.visibility = android.view.View.VISIBLE
                     reviewView.text = reviewContent
+                    reviewView.maxLines = AppConfig.bookReviewLines
                 } else {
                     layoutReview.visibility = android.view.View.GONE
                 }
