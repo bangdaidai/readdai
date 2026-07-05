@@ -736,7 +736,9 @@ object StatisticsService {
                 tagCounts[tag] = (tagCounts[tag] ?: 0) + 1
             }
         }
+        val excludedTagNames = appDb.excludedTagDao.getAllSync().map { it.name }.toSet()
         return tagCounts.entries
+            .filter { !excludedTagNames.contains(it.key) }
             .sortedByDescending { it.value }
             .take(5)
             .map { TagReadCount(it.key, it.value, 0L) }

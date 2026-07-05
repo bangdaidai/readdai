@@ -1,6 +1,12 @@
 package io.legado.app.ui.about
 
 import android.content.Context
+import android.graphics.Typeface
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -172,23 +178,45 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
             if (showAnalysis) {
                 llAnalysis.visibility = View.VISIBLE
 
+                // 设置圆点指示器颜色为主题强调色
+                val dotColorFilter = android.graphics.PorterDuffColorFilter(accentCol, android.graphics.PorterDuff.Mode.SRC_IN)
+                dotTimePeriod.background.colorFilter = dotColorFilter
+                dotContinuousDays.background.colorFilter = dotColorFilter
+                dotTopAuthors.background.colorFilter = dotColorFilter
+                dotTopTags.background.colorFilter = dotColorFilter
+
                 // 时段偏好
                 val periodSummary = StatisticsService.summarizeHourlyDistribution(hourlyData)
                 if (periodSummary != null) {
+                    val periodEmoji = when (periodSummary.first) {
+                        "深夜" -> "\uD83C\uDF19 "
+                        "上午" -> "\u2600\uFE0F "
+                        "下午" -> "\uD83C\uDF1E "
+                        "晚上" -> "\uD83C\uDF06 "
+                        else -> ""
+                    }
                     llTimePeriod.visibility = View.VISIBLE
                     tvTimePeriod.visibility = View.VISIBLE
-                    tvTimePeriod.text = "时段偏好：${periodSummary.first}阅读最多（${periodSummary.second}%）"
+                    tvTimePeriod.text = "${periodEmoji}时段偏好：${periodSummary.first}阅读最多（${periodSummary.second}%）"
                     tvTimePeriod.setTextColor(otherColor)
                 } else {
                     llTimePeriod.visibility = View.GONE
                     tvTimePeriod.visibility = View.GONE
                 }
 
-                // 连续阅读天数（仅在总计和年度展示）
+                // 连续阅读天数
                 if (continuousDays > 0) {
                     llContinuousDays.visibility = View.VISIBLE
                     tvContinuousDays.visibility = View.VISIBLE
-                    tvContinuousDays.text = "最长连续阅读 $continuousDays 天"
+                    val daysNumber = "$continuousDays"
+                    val spannable = SpannableStringBuilder()
+                        .append("最长连续阅读 ")
+                        .append(SpannableString(daysNumber).apply {
+                            setSpan(ForegroundColorSpan(accentCol), 0, daysNumber.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            setSpan(StyleSpan(Typeface.BOLD), 0, daysNumber.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        })
+                        .append(" 天")
+                    tvContinuousDays.text = spannable
                     tvContinuousDays.setTextColor(otherColor)
                 } else {
                     llContinuousDays.visibility = View.GONE
