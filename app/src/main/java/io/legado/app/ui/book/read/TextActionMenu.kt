@@ -7,8 +7,7 @@ import android.content.Intent
 import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.Build
-import android.os.Handler
-import android.os.Looper
+
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
@@ -51,8 +50,6 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
     private val expandTextMenu get() = context.getPrefBoolean(PreferKey.expandTextMenu)
     private val hiddenMenuItemIds: Set<Int>
         get() = TextMenuConfig.getHiddenMenuItemIds(context)
-    private val handler = Handler(Looper.getMainLooper())
-    private var dismissCallback: (() -> Unit)? = null
 
     init {
         @SuppressLint("InflateParams")
@@ -222,27 +219,10 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         override fun registerListener(holder: ItemViewHolder, binding: ItemTextBinding) {
             holder.itemView.setOnClickListener {
                 getItem(holder.layoutPosition)?.let {
-                    if (it.itemId == R.id.menu_text_menu_config) {
-                        dismiss()
-                        callBack.onMenuActionFinally()
-                        (context as? ReadBookActivity)?.showMoreSetting()
-                        return@setOnClickListener
-                    }
-                    val needDelayDismiss = it.itemId == R.id.menu_ai_explain || it.itemId == R.id.menu_ai_analyze
                     if (!callBack.onMenuItemSelected(it.itemId)) {
                         onMenuItemSelected(it)
                     }
-                    if (needDelayDismiss) {
-                        dismissCallback = {
-                            callBack.onMenuActionFinally()
-                        }
-                        handler.postDelayed({
-                            dismissCallback?.invoke()
-                            dismissCallback = null
-                        }, 500)
-                    } else {
-                        callBack.onMenuActionFinally()
-                    }
+                    callBack.onMenuActionFinally()
                 }
             }
             holder.itemView.setOnLongClickListener {
@@ -321,12 +301,20 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
     @RequiresApi(Build.VERSION_CODES.M)
     private fun onInitializeMenu(menu: Menu) {
         kotlin.runCatching {
+            val hiddenItems = TextMenuConfig.getHiddenProcessTextItems(context)
             var menuItemOrder = 100
             for (resolveInfo in getSupportedActivities()) {
-                menu.add(
-                    Menu.NONE, Menu.NONE,
-                    menuItemOrder++, resolveInfo.loadLabel(context.packageManager)
-                ).intent = createProcessTextIntentForResolveInfo(resolveInfo)
+                val packageName = resolveInfo.activityInfo.packageName
+                val className = resolveInfo.activityInfo.name
+                val itemKey = TextMenuConfig.getProcessTextItemKey(packageName, className)
+                if (itemKey !in hiddenItems) {
+                    val title = TextMenuConfig.getCustomProcessTextTitle(context, itemKey)
+                        ?: resolveInfo.loadLabel(context.packageManager)
+                    menu.add(
+                        Menu.NONE, Menu.NONE,
+                        menuItemOrder++, title
+                    ).intent = createProcessTextIntentForResolveInfo(resolveInfo)
+                }
             }
         }.onFailure {
             context.toastOnUi("获取文字操作菜单出错:${it.localizedMessage}")

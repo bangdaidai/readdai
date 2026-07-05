@@ -29,7 +29,6 @@ object TextMenuConfig {
         MenuItemInfo(R.id.menu_aloud, R.string.read_aloud),
         MenuItemInfo(R.id.menu_dict, R.string.dict),
         MenuItemInfo(R.id.menu_web_search, R.string.web_search),
-        MenuItemInfo(R.id.menu_text_menu_config, R.string.menu_config),
         MenuItemInfo(R.id.menu_search_content, R.string.search_content),
         MenuItemInfo(R.id.menu_browser, R.string.browser),
         MenuItemInfo(R.id.menu_share_str, R.string.share)
@@ -117,5 +116,53 @@ object TextMenuConfig {
         context.putPrefString(PreferKey.hiddenTextMenuItems, "")
         context.putPrefString(PreferKey.textMenuCustomTitles, "")
         setTextMenuVisibleCount(context, DEFAULT_VISIBLE_COUNT)
+    }
+
+    fun getProcessTextItemKey(packageName: String, className: String): String {
+        return "$packageName/$className"
+    }
+
+    fun getCustomProcessTextTitles(context: Context): Map<String, String> {
+        val json = context.getPrefString(PreferKey.processTextCustomTitles)
+        return GSON.fromJsonObject<Map<String, String>>(json).getOrNull() ?: emptyMap()
+    }
+
+    fun getCustomProcessTextTitle(context: Context, key: String): String? {
+        return getCustomProcessTextTitles(context)[key]?.takeIf { it.isNotBlank() }
+    }
+
+    fun setCustomProcessTextTitle(context: Context, key: String, title: String?) {
+        val titles = getCustomProcessTextTitles(context).toMutableMap()
+        val normalizedTitle = title?.trim().orEmpty()
+        if (normalizedTitle.isBlank()) {
+            titles.remove(key)
+        } else {
+            titles[key] = normalizedTitle
+        }
+        context.putPrefString(PreferKey.processTextCustomTitles, GSON.toJson(titles))
+    }
+
+    fun getHiddenProcessTextItems(context: Context): Set<String> {
+        val hiddenStr = context.getPrefString(PreferKey.hiddenProcessTextItems, "")
+        return if (hiddenStr.isNullOrEmpty()) {
+            emptySet()
+        } else {
+            hiddenStr.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        }
+    }
+
+    fun setHiddenProcessTextItems(context: Context, keys: Set<String>) {
+        val hiddenStr = keys.joinToString(",")
+        context.putPrefString(PreferKey.hiddenProcessTextItems, hiddenStr)
+    }
+
+    fun isProcessTextItemHidden(context: Context, packageName: String, className: String): Boolean {
+        val key = getProcessTextItemKey(packageName, className)
+        return key in getHiddenProcessTextItems(context)
+    }
+
+    fun resetProcessTextConfig(context: Context) {
+        context.putPrefString(PreferKey.hiddenProcessTextItems, "")
+        context.putPrefString(PreferKey.processTextCustomTitles, "")
     }
 }

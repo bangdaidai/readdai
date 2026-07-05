@@ -62,6 +62,8 @@ object PreferKey {
     const val episodeExportFileName = "episodeExportFileName"
     const val recordLog = "recordLog"
     const val processText = "process_text"
+    const val hiddenProcessTextItems = "hiddenProcessTextItems"
+    const val processTextCustomTitles = "processTextCustomTitles"
     const val cleanCache = "cleanCache"
     const val saveTabPosition = "saveTabPosition"
     const val fontFolder = "fontFolder"
