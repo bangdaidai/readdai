@@ -155,9 +155,9 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
         binding.recyclerView.addItemDecoration(object : RecyclerView.ItemDecoration() {
             override fun getItemOffsets(outRect: android.graphics.Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
                 super.getItemOffsets(outRect, view, parent, state)
-                // 设置顶部和底部间距各为4dp，这样两个卡片之间就有8dp的间距
-                outRect.top = 4 * resources.displayMetrics.density.toInt()
-                outRect.bottom = 4 * resources.displayMetrics.density.toInt()
+                val margin = io.legado.app.help.config.AppConfig.bookshelfMargin
+                outRect.top = margin / 2
+                outRect.bottom = margin / 2
             }
         })
         binding.recyclerView.adapter = adapter as RecyclerView.Adapter<RecyclerView.ViewHolder>

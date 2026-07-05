@@ -86,7 +86,7 @@
             android:padding="4dp"
             app:layout_constraintTop_toBottomOf="@+id/sw_show_book_card"
             app:max="9"
-            app:title="最大行数" />
+            app:title="简介" />
 
         <io.legado.app.ui.widget.DetailSeekBar
             android:id="@+id/sb_book_review_lines"
@@ -95,14 +95,23 @@
             android:padding="4dp"
             app:layout_constraintTop_toBottomOf="@+id/sb_book_intro_lines"
             app:max="9"
-            app:title="最大行数" />
+            app:title="书评" />
+
+        <io.legado.app.ui.widget.DetailSeekBar
+            android:id="@+id/margin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            app:layout_constraintTop_toBottomOf="@+id/sb_book_review_lines"
+            app:max="60"
+            app:title="@string/margin" />
 
         <io.legado.app.ui.widget.DetailSeekBar
             android:id="@+id/sb_card_border_width"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="4dp"
-            app:layout_constraintTop_toBottomOf="@+id/sb_book_review_lines"
+            app:layout_constraintTop_toBottomOf="@+id/margin"
             app:max="10"
             app:title="@string/card_border_width" />
 
@@ -300,16 +309,6 @@
 
             </RadioGroup>
         </LinearLayout>
-
-        <io.legado.app.ui.widget.DetailSeekBar
-            android:id="@+id/margin"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="4dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/book_name_choice"
-            app:max="60"
-            app:title="@string/margin" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>
