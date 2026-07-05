@@ -189,15 +189,15 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                 val periodSummary = StatisticsService.summarizeHourlyDistribution(hourlyData)
                 if (periodSummary != null) {
                     val periodEmoji = when (periodSummary.first) {
-                        "深夜" -> "\uD83C\uDF19 "
-                        "上午" -> "\u2600\uFE0F "
-                        "下午" -> "\uD83C\uDF1E "
-                        "晚上" -> "\uD83C\uDF06 "
+                        "深夜" -> " \uD83C\uDF19"
+                        "上午" -> " \u2600\uFE0F"
+                        "下午" -> " \uD83C\uDF1E"
+                        "晚上" -> " \uD83C\uDF06"
                         else -> ""
                     }
                     llTimePeriod.visibility = View.VISIBLE
                     tvTimePeriod.visibility = View.VISIBLE
-                    tvTimePeriod.text = "${periodEmoji}时段偏好：${periodSummary.first}阅读最多（${periodSummary.second}%）"
+                    tvTimePeriod.text = "时段偏好：${periodSummary.first}阅读最多（${periodSummary.second}%）${periodEmoji}"
                     tvTimePeriod.setTextColor(otherColor)
                 } else {
                     llTimePeriod.visibility = View.GONE
