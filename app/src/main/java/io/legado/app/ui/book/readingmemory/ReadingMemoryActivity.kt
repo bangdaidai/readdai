@@ -156,8 +156,8 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
             override fun getItemOffsets(outRect: android.graphics.Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
                 super.getItemOffsets(outRect, view, parent, state)
                 val margin = io.legado.app.help.config.AppConfig.bookshelfMargin
-                outRect.top = margin / 2
-                outRect.bottom = margin / 2
+                outRect.top = margin
+                outRect.bottom = margin
             }
         })
         binding.recyclerView.adapter = adapter as RecyclerView.Adapter<RecyclerView.ViewHolder>
