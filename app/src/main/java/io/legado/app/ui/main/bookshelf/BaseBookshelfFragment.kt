@@ -195,10 +195,10 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                         swShowWaitUpBooks.isChecked = AppConfig.showWaitUpCount
                         swShowBookshelfFastScroller.isChecked = AppConfig.showBookshelfFastScroller
                         swShowBookCard.isChecked = AppConfig.showBookCard
-                        sbBookIntroLines.progress = AppConfig.bookIntroLines - 1
                         sbBookIntroLines.valueFormat = { "${it + 1}行" }
-                        sbBookReviewLines.progress = AppConfig.bookReviewLines - 1
+                        sbBookIntroLines.progress = AppConfig.bookIntroLines - 1
                         sbBookReviewLines.valueFormat = { "${it + 1}行" }
+                        sbBookReviewLines.progress = AppConfig.bookReviewLines - 1
                         sbCardBorderWidth.progress = AppConfig.bookshelfCardBorderWidth
                         rgLayout.checkByIndex(bookshelfLayout)
                         rgbLayout.checkByIndex(showBookname)
