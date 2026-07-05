@@ -678,9 +678,9 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
         }
 
         private fun upIntro(binding: ItemBookshelfListNewBinding, item: Book) {
-            val showIntro = AppConfig.showBookIntro
+            val introLines = AppConfig.bookIntroLines
             val introContent = item.getDisplayIntro()
-            if (showIntro && !introContent.isNullOrBlank()) {
+            if (introLines > 0 && !introContent.isNullOrBlank()) {
                 binding.layoutIntro.visibility = android.view.View.VISIBLE
                 binding.tvIntro.text = introContent
                 binding.tvIntro.maxLines = AppConfig.bookIntroLines

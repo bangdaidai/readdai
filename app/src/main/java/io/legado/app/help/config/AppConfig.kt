@@ -615,12 +615,6 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefBoolean(PreferKey.showBookReview, value)
         }
 
-    var showBookIntro: Boolean
-        get() = appCtx.getPrefBoolean(PreferKey.showBookIntro, false)
-        set(value) {
-            appCtx.putPrefBoolean(PreferKey.showBookIntro, value)
-        }
-
     var bookReviewLines: Int
         get() = appCtx.getPrefInt(PreferKey.bookReviewLines, 3)
         set(value) {

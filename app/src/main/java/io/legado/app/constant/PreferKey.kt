@@ -199,7 +199,6 @@ object PreferKey {
     const val autoCheckNewBackup = "autoCheckNewBackup"
     const val showBookCard = "showBookCard"
     const val showBookReview = "showBookReview"
-    const val showBookIntro = "showBookIntro"
     const val bookReviewLines = "bookReviewLines"
     const val bookIntroLines = "bookIntroLines"
     const val showReadingMemoryIntro = "showReadingMemoryIntro"

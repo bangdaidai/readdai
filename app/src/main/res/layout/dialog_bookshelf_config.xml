@@ -79,39 +79,21 @@
             app:layout_constraintTop_toBottomOf="@+id/sw_show_bookshelf_fast_scroller"
             tools:ignore="TouchTargetSizeCheck" />
 
-        <io.legado.app.lib.theme.view.ThemeSwitch
-            android:id="@+id/sw_show_book_intro"
-            android:layout_width="match_parent"
-            android:layout_height="36dp"
-            android:padding="4dp"
-            android:text="@string/show_book_intro"
-            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_card"
-            tools:ignore="TouchTargetSizeCheck" />
-
         <io.legado.app.ui.widget.DetailSeekBar
             android:id="@+id/sb_book_intro_lines"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="4dp"
-            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_intro"
+            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_card"
             app:max="9"
             app:title="最大行数" />
-
-        <io.legado.app.lib.theme.view.ThemeSwitch
-            android:id="@+id/sw_show_book_review"
-            android:layout_width="match_parent"
-            android:layout_height="36dp"
-            android:padding="4dp"
-            android:text="@string/show_book_review"
-            app:layout_constraintTop_toBottomOf="@+id/sb_book_intro_lines"
-            tools:ignore="TouchTargetSizeCheck" />
 
         <io.legado.app.ui.widget.DetailSeekBar
             android:id="@+id/sb_book_review_lines"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="4dp"
-            app:layout_constraintTop_toBottomOf="@+id/sw_show_book_review"
+            app:layout_constraintTop_toBottomOf="@+id/sb_book_intro_lines"
             app:max="9"
             app:title="最大行数" />
 

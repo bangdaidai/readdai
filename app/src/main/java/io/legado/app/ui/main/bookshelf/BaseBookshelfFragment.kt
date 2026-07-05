@@ -195,8 +195,6 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                         swShowWaitUpBooks.isChecked = AppConfig.showWaitUpCount
                         swShowBookshelfFastScroller.isChecked = AppConfig.showBookshelfFastScroller
                         swShowBookCard.isChecked = AppConfig.showBookCard
-                        swShowBookIntro.isChecked = AppConfig.showBookIntro
-                        swShowBookReview.isChecked = AppConfig.showBookReview
                         sbBookIntroLines.progress = AppConfig.bookIntroLines - 1
                         sbBookIntroLines.valueFormat = { "${it + 1}行" }
                         sbBookReviewLines.progress = AppConfig.bookReviewLines - 1
@@ -242,14 +240,6 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                     }
                     if (AppConfig.showBookCard != swShowBookCard.isChecked) {
                         AppConfig.showBookCard = swShowBookCard.isChecked
-                        postEvent(EventBus.BOOKSHELF_REFRESH, "")
-                    }
-                    if (AppConfig.showBookIntro != swShowBookIntro.isChecked) {
-                        AppConfig.showBookIntro = swShowBookIntro.isChecked
-                        postEvent(EventBus.BOOKSHELF_REFRESH, "")
-                    }
-                    if (AppConfig.showBookReview != swShowBookReview.isChecked) {
-                        AppConfig.showBookReview = swShowBookReview.isChecked
                         postEvent(EventBus.BOOKSHELF_REFRESH, "")
                     }
                     if (AppConfig.bookIntroLines - 1 != sbBookIntroLines.progress) {
