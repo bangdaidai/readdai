@@ -1500,4 +1500,17 @@
     <string name="theme_source_local">本地</string>
     <string name="theme_source_remote">远程</string>
     <string name="theme_source_both">两者</string>
+    <string name="menu_config">菜单配置</string>
+    <string name="text_menu_config">文本选择菜单配置</string>
+    <string name="text_menu_config_desc">选择要在文本选择菜单中显示的操作项</string>
+    <string name="text_menu_visible_count">展开数量</string>
+    <string name="text_menu_visible_count_desc">当前可见菜单项数量: %d（范围 3-%d）</string>
+    <string name="text_menu_edit_title">编辑标题</string>
+    <string name="text_menu_edit_name">自定义名称</string>
+    <string name="text_menu_edit_name_desc">留空则使用默认名称. 清空文本将恢复默认名称.</string>
+    <string name="web_search">网络搜索</string>
+    <string name="reset_to_default">恢复默认</string>
+    <string name="process_text_menu_config">其他应用菜单配置</string>
+    <string name="process_text_menu_config_desc">管理通过\"文本处理\"功能显示的其他应用菜单项</string>
+    <string name="no_process_text_apps">没有支持文本处理的应用</string>
 </resources>

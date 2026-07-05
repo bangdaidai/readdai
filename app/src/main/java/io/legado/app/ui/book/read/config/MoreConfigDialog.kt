@@ -22,6 +22,7 @@ import io.legado.app.lib.prefs.fragment.PreferenceFragment
 import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.model.ReadBook
+import io.legado.app.ui.book.read.TextMenuConfigDialog
 import io.legado.app.ui.book.read.ReadBookActivity
 import io.legado.app.ui.book.read.page.provider.ChapterProvider
 import io.legado.app.ui.widget.number.NumberPickerDialog
@@ -192,6 +193,10 @@ class MoreConfigDialog : BaseDialogFragment(0) {
         override fun onPreferenceTreeClick(preference: Preference): Boolean {
             when (preference.key) {
                 "customPageKey" -> PageKeyDialog(requireContext()).show()
+                "textMenuConfig" -> TextMenuConfigDialog().show(
+                    parentFragmentManager,
+                    "textMenuConfigDialog"
+                )
                 "clickRegionalConfig" -> {
                     (activity as? ReadBookActivity)?.showClickRegionalConfig()
                 }

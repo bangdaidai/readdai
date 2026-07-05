@@ -1251,6 +1251,11 @@ $content
                 startActivity(intent)
                 return true
             }
+
+            R.id.menu_bookmark -> {
+                addBookmark()
+                return true
+            }
         }
         return false
     }

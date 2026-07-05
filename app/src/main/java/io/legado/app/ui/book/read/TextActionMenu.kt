@@ -45,10 +45,12 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
     private val adapter = Adapter(context).apply {
         setHasStableIds(true)
     }
-    private val menuItems: List<MenuItemImpl>
+    private var menuItems = emptyList<MenuItemImpl>()
     private val visibleMenuItems = arrayListOf<MenuItemImpl>()
     private val moreMenuItems = arrayListOf<MenuItemImpl>()
     private val expandTextMenu get() = context.getPrefBoolean(PreferKey.expandTextMenu)
+    private val hiddenMenuItemIds: Set<Int>
+        get() = TextMenuConfig.getHiddenMenuItemIds(context)
     private val handler = Handler(Looper.getMainLooper())
     private var dismissCallback: (() -> Unit)? = null
 
@@ -60,15 +62,6 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         isOutsideTouchable = false
         isFocusable = false
 
-        val myMenu = MenuBuilder(context)
-        val otherMenu = MenuBuilder(context)
-        SupportMenuInflater(context).inflate(R.menu.content_select_action, myMenu)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            onInitializeMenu(otherMenu)
-        }
-        menuItems = myMenu.visibleItems + otherMenu.visibleItems
-        visibleMenuItems.addAll(menuItems.subList(0, 5))
-        moreMenuItems.addAll(menuItems.subList(5, menuItems.size))
         binding.recyclerView.adapter = adapter
         binding.recyclerViewMore.adapter = adapter
         setOnDismissListener {
@@ -92,16 +85,49 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
                 binding.recyclerView.visible()
             }
         }
-        upMenu()
-    }
-
-    fun upMenu() {
+        reloadMenuItems()
         if (expandTextMenu) {
             adapter.setItems(menuItems)
             binding.ivMenuMore.gone()
         } else {
             adapter.setItems(visibleMenuItems)
-            binding.ivMenuMore.visible()
+            binding.ivMenuMore.isVisible = moreMenuItems.isNotEmpty()
+        }
+    }
+
+    private fun reloadMenuItems() {
+        val myMenu = MenuBuilder(context)
+        val otherMenu = MenuBuilder(context)
+        SupportMenuInflater(context).inflate(R.menu.content_select_action, myMenu)
+        myMenu.visibleItems.forEach { menuItem ->
+            TextMenuConfig.getCustomMenuTitle(context, menuItem.itemId)?.let { customTitle ->
+                menuItem.title = customTitle
+            }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            onInitializeMenu(otherMenu)
+        }
+        val allMenuItems = myMenu.visibleItems + otherMenu.visibleItems
+        menuItems = allMenuItems.filter { it.itemId !in hiddenMenuItemIds }
+        visibleMenuItems.clear()
+        moreMenuItems.clear()
+        val visibleCount = TextMenuConfig.getTextMenuVisibleCount(context)
+        if (menuItems.size > visibleCount) {
+            visibleMenuItems.addAll(menuItems.subList(0, visibleCount))
+            moreMenuItems.addAll(menuItems.subList(visibleCount, menuItems.size))
+        } else {
+            visibleMenuItems.addAll(menuItems)
+        }
+    }
+
+    fun upMenu() {
+        reloadMenuItems()
+        if (expandTextMenu) {
+            adapter.setItems(menuItems)
+            binding.ivMenuMore.gone()
+        } else {
+            adapter.setItems(visibleMenuItems)
+            binding.ivMenuMore.isVisible = moreMenuItems.isNotEmpty()
         }
     }
 
@@ -114,6 +140,7 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         endX: Int,
         endBottomY: Int
     ) {
+        upMenu()
         if (expandTextMenu) {
             when {
                 startTopY > 500 -> {
@@ -195,6 +222,12 @@ class TextActionMenu(private val context: Context, private val callBack: CallBac
         override fun registerListener(holder: ItemViewHolder, binding: ItemTextBinding) {
             holder.itemView.setOnClickListener {
                 getItem(holder.layoutPosition)?.let {
+                    if (it.itemId == R.id.menu_text_menu_config) {
+                        dismiss()
+                        callBack.onMenuActionFinally()
+                        (context as? ReadBookActivity)?.showMoreSetting()
+                        return@setOnClickListener
+                    }
                     val needDelayDismiss = it.itemId == R.id.menu_ai_explain || it.itemId == R.id.menu_ai_analyze
                     if (!callBack.onMenuItemSelected(it.itemId)) {
                         onMenuItemSelected(it)

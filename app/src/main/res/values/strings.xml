@@ -1736,4 +1736,17 @@
     <string name="navigation_bar_name_exists">A bottom bar theme with the same name already exists.</string>
     <string name="navigation_bar_config_missing">Bottom bar theme config is missing.</string>
     <string name="navigation_bar_import_suffix">Imported</string>
+    <string name="menu_config">Menu Config</string>
+    <string name="text_menu_config">Text Selection Menu Config</string>
+    <string name="text_menu_config_desc">Choose which actions to show in the text selection menu</string>
+    <string name="text_menu_visible_count">Visible Count</string>
+    <string name="text_menu_visible_count_desc">Currently visible items: %d (range 3-%d)</string>
+    <string name="text_menu_edit_title">Edit Title</string>
+    <string name="text_menu_edit_name">Custom Name</string>
+    <string name="text_menu_edit_name_desc">Leave blank to use default name. Clear text to restore default.</string>
+    <string name="web_search">Web Search</string>
+    <string name="reset_to_default">Reset to default</string>
+    <string name="process_text_menu_config">Other Apps Menu Config</string>
+    <string name="process_text_menu_config_desc">Manage other app menu items shown via Text Processing</string>
+    <string name="no_process_text_apps">No apps support text processing</string>
 </resources>
