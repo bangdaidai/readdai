@@ -6,7 +6,6 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupMenu
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -79,7 +78,7 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_text_menu_config
         val tvCount = view.findViewById<android.widget.TextView>(R.id.tv_count)
         val btnLess = view.findViewById<android.widget.Button>(R.id.btn_less)
         val btnMoreCount = view.findViewById<android.widget.Button>(R.id.btn_more_count)
-        val btnMore = view.findViewById<android.widget.ImageButton>(R.id.btn_more)
+        val btnSwitch = view.findViewById<android.widget.TextView>(R.id.btn_switch)
 
         fun updateTab(tab: TabType) {
             currentTab = tab
@@ -87,6 +86,7 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_text_menu_config
                 TabType.TEXT_MENU -> {
                     tvTitle.setText(R.string.text_menu_config)
                     tvDesc.setText(R.string.text_menu_config_desc)
+                    btnSwitch.setText(R.string.process_text_menu_config)
                     llVisibleCount.visibility = View.VISIBLE
                     tvCount.text = visibleCount.toString()
                     val items = TextMenuConfig.getAllMenuItems().map { item ->
@@ -101,6 +101,7 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_text_menu_config
                 TabType.PROCESS_TEXT -> {
                     tvTitle.setText(R.string.process_text_menu_config)
                     tvDesc.setText(R.string.process_text_menu_config_desc)
+                    btnSwitch.setText(R.string.text_menu_config)
                     llVisibleCount.visibility = View.GONE
                     val items = getProcessTextItems().map { info ->
                         val packageName = info.activityInfo.packageName
@@ -118,18 +119,9 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_text_menu_config
             }
         }
 
-        btnMore.setOnClickListener {
-            val popup = PopupMenu(context, btnMore)
-            popup.menu.add(0, 0, 0, R.string.text_menu_config)
-            popup.menu.add(0, 1, 1, R.string.process_text_menu_config)
-            popup.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    0 -> updateTab(TabType.TEXT_MENU)
-                    1 -> updateTab(TabType.PROCESS_TEXT)
-                }
-                true
-            }
-            popup.show()
+        btnSwitch.setOnClickListener {
+            val nextTab = if (currentTab == TabType.TEXT_MENU) TabType.PROCESS_TEXT else TabType.TEXT_MENU
+            updateTab(nextTab)
         }
 
         btnLess.setOnClickListener {

@@ -22,14 +22,14 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <ImageButton
-            android:id="@+id/btn_more"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:contentDescription="@string/more"
-            android:scaleType="centerInside"
-            android:src="@drawable/ic_more_vert" />
+        <TextView
+            android:id="@+id/btn_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="@string/process_text_menu_config"
+            android:textColor="?attr/colorPrimary"
+            android:textSize="14sp" />
     </LinearLayout>
 
     <TextView
@@ -120,6 +120,6 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/save" />
+            android:text="@string/action_save" />
     </LinearLayout>
 </LinearLayout>
