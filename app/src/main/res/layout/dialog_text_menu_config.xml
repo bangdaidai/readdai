@@ -103,23 +103,23 @@
 
         <Button
             android:id="@+id/btn_reset"
-            style="?attr/materialButtonOutlinedStyle"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/reset_to_default" />
 
         <Button
             android:id="@+id/btn_cancel"
-            style="?android:attr/borderlessButtonStyle"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@android:string/cancel" />
 
         <Button
             android:id="@+id/btn_save"
-            style="?android:attr/borderlessButtonStyle"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@android:string/ok" />
+            android:text="@string/save" />
     </LinearLayout>
 </LinearLayout>

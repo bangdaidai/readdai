@@ -1746,6 +1746,7 @@
     <string name="text_menu_edit_name_desc">Leave blank to use default name. Clear text to restore default.</string>
     <string name="web_search">Web Search</string>
     <string name="reset_to_default">Reset to default</string>
+    <string name="save">Save</string>
     <string name="process_text_menu_config">Other Apps Menu Config</string>
     <string name="process_text_menu_config_desc">Manage other app menu items shown via Text Processing</string>
     <string name="no_process_text_apps">No apps support text processing</string>
