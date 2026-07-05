@@ -195,10 +195,10 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                         swShowWaitUpBooks.isChecked = AppConfig.showWaitUpCount
                         swShowBookshelfFastScroller.isChecked = AppConfig.showBookshelfFastScroller
                         swShowBookCard.isChecked = AppConfig.showBookCard
-                        sbBookIntroLines.valueFormat = { "${it + 1}" }
-                        sbBookIntroLines.progress = AppConfig.bookIntroLines - 1
-                        sbBookReviewLines.valueFormat = { "${it + 1}" }
-                        sbBookReviewLines.progress = AppConfig.bookReviewLines - 1
+                        sbBookIntroLines.valueFormat = { "$it" }
+                        sbBookIntroLines.progress = AppConfig.bookIntroLines
+                        sbBookReviewLines.valueFormat = { "$it" }
+                        sbBookReviewLines.progress = AppConfig.bookReviewLines
                         sbCardBorderWidth.progress = AppConfig.bookshelfCardBorderWidth
                         rgLayout.checkByIndex(bookshelfLayout)
                         rgbLayout.checkByIndex(showBookname)
@@ -242,12 +242,12 @@ abstract class BaseBookshelfFragment(layoutId: Int) : VMBaseFragment<BookshelfVi
                         AppConfig.showBookCard = swShowBookCard.isChecked
                         postEvent(EventBus.BOOKSHELF_REFRESH, "")
                     }
-                    if (AppConfig.bookIntroLines - 1 != sbBookIntroLines.progress) {
-                        AppConfig.bookIntroLines = sbBookIntroLines.progress + 1
+                    if (AppConfig.bookIntroLines != sbBookIntroLines.progress) {
+                        AppConfig.bookIntroLines = sbBookIntroLines.progress
                         postEvent(EventBus.BOOKSHELF_REFRESH, "")
                     }
-                    if (AppConfig.bookReviewLines - 1 != sbBookReviewLines.progress) {
-                        AppConfig.bookReviewLines = sbBookReviewLines.progress + 1
+                    if (AppConfig.bookReviewLines != sbBookReviewLines.progress) {
+                        AppConfig.bookReviewLines = sbBookReviewLines.progress
                         postEvent(EventBus.BOOKSHELF_REFRESH, "")
                     }
                     if (AppConfig.bookshelfCardBorderWidth != sbCardBorderWidth.progress) {
