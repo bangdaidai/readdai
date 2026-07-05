@@ -152,6 +152,8 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_text_menu_config
             return ItemTextMenuConfigBinding.inflate(inflater, parent, false)
         }
 
+        override fun registerListener(holder: ItemViewHolder, binding: ItemTextMenuConfigBinding) {}
+
         override fun convert(
             holder: ItemViewHolder,
             binding: ItemTextMenuConfigBinding,
