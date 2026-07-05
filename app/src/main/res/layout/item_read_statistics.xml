@@ -6,7 +6,7 @@
     android:layout_marginBottom="10dp"
     android:orientation="vertical">
 
-    <!-- 卡片容器 - 使用新的现代化设计 -->
+    <!-- 卡片容器 -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/materialCardView"
         android:layout_width="match_parent"
@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:padding="16dp">
 
             <!-- 顶部：阅读时间统计 -->
             <LinearLayout
@@ -29,18 +29,16 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center_horizontal"
-                android:layout_marginBottom="16dp">
+                android:layout_marginBottom="12dp">
 
-                <!-- 标题 -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="累计阅读"
                     android:textColor="@color/secondaryText"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="8dp" />
+                    android:textSize="13sp"
+                    android:layout_marginBottom="6dp" />
 
-                <!-- 时间显示 -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -53,14 +51,14 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="bottom"
-                        android:layout_marginEnd="8dp">
+                        android:layout_marginEnd="6dp">
                         <TextView
                             android:id="@+id/tvReadDaysValueLarge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="0"
                             android:textColor="@color/textPrimary"
-                            android:textSize="40sp"
+                            android:textSize="28sp"
                             android:textStyle="bold"
                             android:fontFamily="sans-serif-light"
                             android:visibility="gone" />
@@ -70,10 +68,10 @@
                             android:layout_height="wrap_content"
                             android:text="天"
                             android:textColor="@color/secondaryText"
-                            android:textSize="16sp"
+                            android:textSize="13sp"
                             android:textStyle="bold"
-                            android:layout_marginStart="4dp"
-                            android:layout_marginBottom="6dp"
+                            android:layout_marginStart="3dp"
+                            android:layout_marginBottom="4dp"
                             android:visibility="gone" />
                     </LinearLayout>
 
@@ -83,14 +81,14 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="bottom"
-                        android:layout_marginEnd="8dp">
+                        android:layout_marginEnd="6dp">
                         <TextView
                             android:id="@+id/tvReadHoursValue"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="0"
                             android:textColor="@color/textPrimary"
-                            android:textSize="40sp"
+                            android:textSize="28sp"
                             android:textStyle="bold"
                             android:fontFamily="sans-serif-light"
                             android:visibility="gone" />
@@ -100,10 +98,10 @@
                             android:layout_height="wrap_content"
                             android:text="小时"
                             android:textColor="@color/secondaryText"
-                            android:textSize="16sp"
+                            android:textSize="13sp"
                             android:textStyle="bold"
-                            android:layout_marginStart="4dp"
-                            android:layout_marginBottom="6dp"
+                            android:layout_marginStart="3dp"
+                            android:layout_marginBottom="4dp"
                             android:visibility="gone" />
                     </LinearLayout>
 
@@ -119,7 +117,7 @@
                             android:layout_height="wrap_content"
                             android:text="0"
                             android:textColor="@color/textPrimary"
-                            android:textSize="40sp"
+                            android:textSize="28sp"
                             android:textStyle="bold"
                             android:fontFamily="sans-serif-light" />
                         <TextView
@@ -128,10 +126,10 @@
                             android:layout_height="wrap_content"
                             android:text="分钟"
                             android:textColor="@color/secondaryText"
-                            android:textSize="16sp"
+                            android:textSize="13sp"
                             android:textStyle="bold"
-                            android:layout_marginStart="4dp"
-                            android:layout_marginBottom="6dp" />
+                            android:layout_marginStart="3dp"
+                            android:layout_marginBottom="4dp" />
                     </LinearLayout>
 
                 </LinearLayout>
@@ -141,10 +139,10 @@
                     android:id="@+id/tvStartDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:text="始于 2023 年 1 月 1 日"
                     android:textColor="@color/secondaryText"
-                    android:textSize="13sp"
+                    android:textSize="12sp"
                     android:visibility="gone" />
 
             </LinearLayout>
@@ -154,15 +152,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="@color/divider"
-                android:layout_marginBottom="16dp" />
+                android:layout_marginBottom="12dp" />
 
-            <!-- 统计数据网格布局 -->
+            <!-- 统计数据网格布局 - 3列2行 -->
             <GridLayout
                 android:id="@+id/llDataStats"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:columnCount="2"
-                android:rowCount="3"
+                android:columnCount="3"
+                android:rowCount="2"
                 android:alignmentMode="alignMargins">
 
                 <!-- 读过本数 -->
@@ -170,11 +168,11 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginEnd="4dp"
                     android:layout_row="0"
                     android:layout_column="0"
                     android:orientation="vertical"
-                    android:padding="12dp"
+                    android:padding="8dp"
                     android:background="@drawable/bg_stat_item"
                     android:gravity="center">
                     <TextView
@@ -183,15 +181,15 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="28sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="读过"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
                 <!-- 读完本数 -->
@@ -199,11 +197,12 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginEnd="2dp"
                     android:layout_row="0"
                     android:layout_column="1"
                     android:orientation="vertical"
-                    android:padding="12dp"
+                    android:padding="8dp"
                     android:background="@drawable/bg_stat_item"
                     android:gravity="center">
                     <TextView
@@ -212,15 +211,15 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="28sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="读完"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
                 <!-- 阅读天数 -->
@@ -228,12 +227,11 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
-                    android:layout_marginEnd="8dp"
-                    android:layout_row="1"
-                    android:layout_column="0"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_row="0"
+                    android:layout_column="2"
                     android:orientation="vertical"
-                    android:padding="12dp"
+                    android:padding="8dp"
                     android:background="@drawable/bg_stat_item"
                     android:gravity="center">
                     <TextView
@@ -242,15 +240,15 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="28sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="阅读天数"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
                 <!-- 笔记条数 -->
@@ -258,12 +256,12 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_marginTop="4dp"
                     android:layout_row="1"
-                    android:layout_column="1"
-                    android:layout_marginTop="8dp"
+                    android:layout_column="0"
                     android:orientation="vertical"
-                    android:padding="12dp"
+                    android:padding="8dp"
                     android:background="@drawable/bg_stat_item"
                     android:gravity="center">
                     <TextView
@@ -272,15 +270,15 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="28sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="笔记"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
                 <!-- 弃文数量 -->
@@ -288,12 +286,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
-                    android:layout_marginEnd="8dp"
-                    android:layout_row="2"
-                    android:layout_column="0"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginStart="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_row="1"
+                    android:layout_column="1"
                     android:orientation="vertical"
-                    android:padding="12dp"
+                    android:padding="8dp"
                     android:background="@drawable/bg_stat_item"
                     android:gravity="center">
                     <TextView
@@ -302,15 +301,15 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="28sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="弃文"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
                 <!-- 阅读字数 -->
@@ -318,12 +317,12 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1"
-                    android:layout_marginStart="8dp"
-                    android:layout_row="2"
-                    android:layout_column="1"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_row="1"
+                    android:layout_column="2"
                     android:orientation="vertical"
-                    android:padding="12dp"
+                    android:padding="8dp"
                     android:background="@drawable/bg_stat_item"
                     android:gravity="center">
                     <TextView
@@ -332,15 +331,15 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="28sp"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="万字"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
             </GridLayout>
@@ -361,9 +360,9 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:padding="16dp"
+                    android:padding="10dp"
                     android:gravity="center"
-                    android:background="@drawable/card_border_small">
+                    android:background="@drawable/bg_stat_item">
 
                     <TextView
                         android:id="@+id/tvBookMediaBookCount"
@@ -371,15 +370,15 @@
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="32sp"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="书"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
                 <!-- 影 -->
@@ -387,27 +386,27 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
                     android:orientation="vertical"
-                    android:padding="16dp"
+                    android:padding="10dp"
                     android:gravity="center"
-                    android:background="@drawable/card_border_small">
+                    android:background="@drawable/bg_stat_item">
                     <TextView
                         android:id="@+id/tvBookMediaVideoCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="32sp"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="影"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
                 <!-- 音 -->
@@ -416,93 +415,156 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:orientation="vertical"
-                    android:padding="16dp"
+                    android:padding="10dp"
                     android:gravity="center"
-                    android:background="@drawable/card_border_small">
+                    android:background="@drawable/bg_stat_item">
                     <TextView
                         android:id="@+id/tvBookMediaAudioCount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0"
                         android:textColor="@color/textPrimary"
-                        android:textSize="32sp"
+                        android:textSize="22sp"
                         android:textStyle="bold" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="音"
                         android:textColor="@color/secondaryText"
-                        android:textSize="13sp"
-                        android:layout_marginTop="4dp" />
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp" />
                 </LinearLayout>
 
+            </LinearLayout>
+
+            <!-- 阅读分析区域 -->
+            <LinearLayout
+                android:id="@+id/llAnalysis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:layout_marginTop="12dp">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/divider"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="阅读分析"
+                    android:textColor="@color/secondaryText"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- 时段偏好 -->
+                <LinearLayout
+                    android:id="@+id/llTimePeriod"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:layout_marginBottom="6dp"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="6dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/ic_dot_indicator" />
+                    <TextView
+                        android:id="@+id/tvTimePeriod"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <!-- 连续阅读 -->
+                <LinearLayout
+                    android:id="@+id/llContinuousDays"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:layout_marginBottom="6dp"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="6dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/ic_dot_indicator" />
+                    <TextView
+                        android:id="@+id/tvContinuousDays"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <!-- 最爱作者 -->
+                <LinearLayout
+                    android:id="@+id/llTopAuthors"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:layout_marginBottom="6dp"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="6dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/ic_dot_indicator" />
+                    <TextView
+                        android:id="@+id/tvTopAuthors"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <!-- 最爱类型 -->
+                <LinearLayout
+                    android:id="@+id/llTopTags"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:background="@drawable/bg_stat_item"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+                    <View
+                        android:layout_width="6dp"
+                        android:layout_height="6dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/ic_dot_indicator" />
+                    <TextView
+                        android:id="@+id/tvTopTags"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/textPrimary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
         </LinearLayout>
 
-        <!-- 阅读分析区域 -->
-        <LinearLayout
-            android:id="@+id/llAnalysis"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone"
-            android:layout_marginTop="12dp">
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:layout_marginBottom="12dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="分析"
-                android:textColor="@color/secondaryText"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:id="@+id/tvTimePeriod"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/textPrimary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvContinuousDays"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/textPrimary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvTopAuthors"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/textPrimary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvTopTags"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/textPrimary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="4dp"
-                android:visibility="gone" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-</com.google.android.material.card.MaterialCardView>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- 空数据布局 -->
     <LinearLayout

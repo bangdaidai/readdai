@@ -175,39 +175,47 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                 // 时段偏好
                 val periodSummary = StatisticsService.summarizeHourlyDistribution(hourlyData)
                 if (periodSummary != null) {
+                    llTimePeriod.visibility = View.VISIBLE
                     tvTimePeriod.visibility = View.VISIBLE
                     tvTimePeriod.text = "时段偏好：${periodSummary.first}阅读最多（${periodSummary.second}%）"
                     tvTimePeriod.setTextColor(otherColor)
                 } else {
+                    llTimePeriod.visibility = View.GONE
                     tvTimePeriod.visibility = View.GONE
                 }
 
                 // 连续阅读天数（仅在总计和年度展示）
                 if (continuousDays > 0) {
+                    llContinuousDays.visibility = View.VISIBLE
                     tvContinuousDays.visibility = View.VISIBLE
                     tvContinuousDays.text = "最长连续阅读 $continuousDays 天"
                     tvContinuousDays.setTextColor(otherColor)
                 } else {
+                    llContinuousDays.visibility = View.GONE
                     tvContinuousDays.visibility = View.GONE
                 }
 
                 // 最爱作者 TOP5
                 if (authorTop5.isNotEmpty()) {
+                    llTopAuthors.visibility = View.VISIBLE
                     tvTopAuthors.visibility = View.VISIBLE
                     val authorsText = authorTop5.joinToString("、") { it.author }
                     tvTopAuthors.text = "最爱作者：$authorsText"
                     tvTopAuthors.setTextColor(otherColor)
                 } else {
+                    llTopAuthors.visibility = View.GONE
                     tvTopAuthors.visibility = View.GONE
                 }
 
                 // 最爱内容类型 TOP5
                 if (tagTop5.isNotEmpty()) {
+                    llTopTags.visibility = View.VISIBLE
                     tvTopTags.visibility = View.VISIBLE
                     val tagsText = tagTop5.joinToString("、") { "${it.tag}(${it.bookCount})" }
                     tvTopTags.text = "最爱类型：$tagsText"
                     tvTopTags.setTextColor(otherColor)
                 } else {
+                    llTopTags.visibility = View.GONE
                     tvTopTags.visibility = View.GONE
                 }
             } else {
