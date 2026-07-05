@@ -75,6 +75,10 @@ object TextMenuConfig {
         context.putPrefString(PreferKey.textMenuCustomTitles, GSON.toJson(titles))
     }
 
+    fun setCustomMenuTitles(context: Context, titles: Map<Int, String>) {
+        context.putPrefString(PreferKey.textMenuCustomTitles, GSON.toJson(titles))
+    }
+
     fun getTextMenuVisibleCount(context: Context): Int {
         return context.getPrefInt(
             PreferKey.textMenuVisibleCount,
@@ -145,6 +149,10 @@ object TextMenuConfig {
         } else {
             titles[key] = normalizedTitle
         }
+        context.putPrefString(PreferKey.processTextCustomTitles, GSON.toJson(titles))
+    }
+
+    fun setCustomProcessTextTitles(context: Context, titles: Map<String, String>) {
         context.putPrefString(PreferKey.processTextCustomTitles, GSON.toJson(titles))
     }
 
