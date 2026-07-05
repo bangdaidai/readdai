@@ -34,7 +34,7 @@ object TextMenuConfig {
         MenuItemInfo(R.id.menu_web_search, R.string.web_search),
         MenuItemInfo(R.id.menu_ai_explain, R.string.ai_explain),
         MenuItemInfo(R.id.menu_ai_analyze, R.string.ai_analyze),
-        MenuItemInfo(R.id.menu_ai_chat, R.string.ai_chat),
+        MenuItemInfo(R.id.menu_ai_chat, R.string.menu_ai_chat),
         MenuItemInfo(R.id.menu_search_content, R.string.search_content),
         MenuItemInfo(R.id.menu_browser, R.string.browser),
         MenuItemInfo(R.id.menu_share_str, R.string.share)
