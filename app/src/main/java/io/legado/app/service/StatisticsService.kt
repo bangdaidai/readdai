@@ -730,15 +730,25 @@ object StatisticsService {
         val kinds = bookNames.chunked(500).flatMap { chunk ->
             appDb.readingMemoryDao.getKindsByBookNames(chunk)
         }
+        val tagMappings = appDb.tagMappingDao.getAll()
+        val mappedTagIds = tagMappings.map { it.newTagId }.distinct()
+        val mappedTags = if (mappedTagIds.isNotEmpty()) {
+            appDb.bookTagDao.getTagsByIds(mappedTagIds).associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+        val oldToNew = tagMappings.associate { it.oldTagName to (mappedTags[it.newTagId]?.name ?: it.oldTagName) }
+        val excludedTagNames = appDb.excludedTagDao.getAllSync().map { it.name }.toSet()
         val tagCounts = mutableMapOf<String, Int>()
         kinds.forEach { kind ->
             kind.split(",", "\n", ";", "，").map { it.trim() }.filter { it.isNotBlank() }.forEach { tag ->
-                tagCounts[tag] = (tagCounts[tag] ?: 0) + 1
+                val resolvedTag = oldToNew[tag] ?: tag
+                if (!excludedTagNames.contains(resolvedTag)) {
+                    tagCounts[resolvedTag] = (tagCounts[resolvedTag] ?: 0) + 1
+                }
             }
         }
-        val excludedTagNames = appDb.excludedTagDao.getAllSync().map { it.name }.toSet()
         return tagCounts.entries
-            .filter { !excludedTagNames.contains(it.key) }
             .sortedByDescending { it.value }
             .take(5)
             .map { TagReadCount(it.key, it.value, 0L) }
