@@ -288,29 +288,12 @@ class TextMenuConfigDialog : BaseDialogFragment(R.layout.dialog_text_menu_config
                     is MenuItem.ProcessTextItem -> item.customTitle ?: item.title
                 }
                 tvTitle.text = title
+
+                cbVisible.setOnCheckedChangeListener(null)
                 cbVisible.isChecked = when (item) {
                     is MenuItem.TextMenuItem -> item.isVisible
                     is MenuItem.ProcessTextItem -> item.isVisible
                 }
-
-                btnEdit.setOnClickListener {
-                    onEditClick(item)
-                }
-
-                root.setOnClickListener {
-                    when (item) {
-                        is MenuItem.TextMenuItem -> {
-                            item.isVisible = !item.isVisible
-                            cbVisible.isChecked = item.isVisible
-                        }
-                        is MenuItem.ProcessTextItem -> {
-                            item.isVisible = !item.isVisible
-                            cbVisible.isChecked = item.isVisible
-                        }
-                    }
-                }
-
-                cbVisible.setOnCheckedChangeListener(null)
                 cbVisible.setOnCheckedChangeListener { _, checked ->
                     when (item) {
                         is MenuItem.TextMenuItem -> item.isVisible = checked
