@@ -237,8 +237,6 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
         binding.heatmapCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
         binding.heatmapCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
-        binding.distributionChartCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
-        binding.distributionChartCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
     }
 
     private fun updateNavigationButtonColors() {
@@ -677,7 +675,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     val dist = if (currentReadType != null)
                         StatisticsService.getHourlyDistributionInRangeByType(startTime, endTime, currentReadType!!)
                     else StatisticsService.getHourlyDistributionInRange(startTime, endTime)
-                    dist.map { "${it.hour}时" to it.totalTime }
+                    val hourMap = dist.associate { it.hour to it.totalTime }
+                    (0..23).map { hour -> "${hour}时" to (hourMap[hour] ?: 0L) }
                 }
                 2 -> {
                     val dist = if (currentReadType != null)
@@ -687,7 +686,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     else StatisticsService.getDayOfMonthDistributionInRange(
                         getMonthStart(monthlyDate), getMonthEnd(monthlyDate)
                     )
-                    dist.map { "${it.sortKey}日" to it.totalTime }
+                    val dayMap = dist.associate { it.sortKey to it.totalTime }
+                    val daysInMonth = monthlyDate.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    (1..daysInMonth).map { day -> "${day}日" to (dayMap[day] ?: 0L) }
                 }
                 3 -> {
                     val dist = if (currentReadType != null)
@@ -697,7 +698,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     else StatisticsService.getMonthDistributionInRange(
                         getYearStart(yearlyDate), getYearEnd(yearlyDate)
                     )
-                    dist.map { "${it.sortKey}月" to it.totalTime }
+                    val monthMap = dist.associate { it.sortKey to it.totalTime }
+                    (1..12).map { month -> "${month}月" to (monthMap[month] ?: 0L) }
                 }
                 4 -> {
                     val dist = if (currentReadType != null)
@@ -707,7 +709,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     else StatisticsService.getDayOfWeekDistributionInRange(
                         getWeekStart(weeklyDate), getWeekEnd(weeklyDate)
                     )
-                    dist.map { dayOfWeekLabel(it.sortKey) to it.totalTime }
+                    val dayMap = dist.associate { it.sortKey to it.totalTime }
+                    (0..6).map { day -> dayOfWeekLabel(day) to (dayMap[day] ?: 0L) }
                 }
                 else -> emptyList()
             }
@@ -723,7 +726,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
             updateDistributionChart(chartTitle, data)
         } catch (_: Exception) {
-            binding.distributionChartCard?.visibility = View.GONE
+            binding.composeDistributionChartContainer?.visibility = View.GONE
         }
     }
 
@@ -740,10 +743,10 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
     private fun updateDistributionChart(title: String, data: List<Pair<String, Long>>) {
         if (data.isEmpty() || data.all { it.second == 0L }) {
-            binding.distributionChartCard?.visibility = View.GONE
+            binding.composeDistributionChartContainer?.visibility = View.GONE
             return
         }
-        binding.distributionChartCard?.visibility = View.VISIBLE
+        binding.composeDistributionChartContainer?.visibility = View.VISIBLE
         binding.composeDistributionChartContainer?.setContent {
             io.legado.app.ui.book.readRecord.component.TimeDistributionChart(
                 title = title,

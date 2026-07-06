@@ -1,8 +1,14 @@
 package io.legado.app.ui.book.readRecord.component
 
-import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,8 +19,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.theme.ThemeStore
 
 @Composable
@@ -27,62 +35,168 @@ fun TimeDistributionChart(
 
     val context = LocalContext.current
     val accentColor = Color(ThemeStore.accentColor(context))
+    val cardBg = Color(ThemeStore.backgroundCard(context))
     val textPrimary = Color(ThemeStore.textColorPrimary(context))
     val textSecondary = Color(ThemeStore.textColorSecondary(context))
+    val dividerColor = Color(ThemeStore.dividerColor(context))
+    val gridColor = textSecondary.copy(alpha = 0.12f)
 
     val maxTime = data.maxOf { it.second }
+    val yAxisWidth = 48.dp
+    val chartHeight = 160.dp
+    val dataCount = data.size
+    val xLabelFontSize = when {
+        dataCount > 20 -> 7.sp
+        dataCount > 12 -> 8.sp
+        else -> 10.sp
+    }
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            color = textPrimary,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+    val borderStroke = if (AppConfig.cardBorderWidth > 0) {
+        BorderStroke((AppConfig.cardBorderWidth * 0.5).dp, dividerColor)
+    } else {
+        null
+    }
 
-        data.forEach { (label, time) ->
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 0.dp, bottom = 8.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = cardBg),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = borderStroke
+    ) {
+        Column(modifier = Modifier.padding(vertical = 16.dp)) {
+            // Title row with icon
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(28.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = label,
-                    color = textSecondary,
-                    fontSize = 11.sp,
-                    modifier = Modifier.width(36.dp)
+                Icon(
+                    imageVector = Icons.Default.BarChart,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(20.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textPrimary
+                )
+            }
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .padding(vertical = 3.dp)
-                ) {
-                    val fraction = if (maxTime > 0) time.toFloat() / maxTime else 0f
+            Spacer(modifier = Modifier.height(12.dp))
 
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        if (fraction > 0f) {
-                            val barWidth = size.width * fraction.coerceAtLeast(0.01f)
-                            drawRoundRect(
-                                color = accentColor,
-                                topLeft = Offset(0f, 0f),
-                                size = Size(barWidth, size.height),
-                                cornerRadius = CornerRadius(size.height / 2)
-                            )
+            // Chart area with Y-axis overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                // Main chart layout
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(modifier = Modifier.width(yAxisWidth))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(chartHeight)
+                        ) {
+                            val w = size.width
+                            val h = size.height
+                            val barCount = data.size
+                            val slotWidth = w / barCount
+                            val barWidth = slotWidth * 0.55f
+                            val barOffsetX = (slotWidth - barWidth) / 2f
+
+                            // Grid lines (aligned with Y-axis labels)
+                            val gridLines = 2
+                            for (i in 0..gridLines) {
+                                val y = h * i / gridLines.toFloat()
+                                drawLine(
+                                    color = gridColor,
+                                    start = Offset(0f, y),
+                                    end = Offset(w, y),
+                                    strokeWidth = 1f
+                                )
+                            }
+
+                            // Bars
+                            if (maxTime > 0L) {
+                                data.forEachIndexed { index, (_, time) ->
+                                    if (time > 0L) {
+                                        val barHeight = (time.toFloat() / maxTime) * h
+                                        val x = index * slotWidth + barOffsetX
+                                        val y = h - barHeight
+                                        drawRoundRect(
+                                            color = accentColor,
+                                            topLeft = Offset(x, y),
+                                            size = Size(barWidth, barHeight),
+                                            cornerRadius = CornerRadius(3f, 3f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // X-axis labels
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            val labelStep = when {
+                                dataCount > 20 -> 4
+                                dataCount > 12 -> 2
+                                else -> 1
+                            }
+                            data.forEachIndexed { index, (label, _) ->
+                                if (index % labelStep == 0) {
+                                    Text(
+                                        text = label,
+                                        color = textSecondary,
+                                        fontSize = xLabelFontSize,
+                                        modifier = Modifier.weight(1f),
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
                         }
                     }
                 }
 
-                Text(
-                    text = formatDurationShort(time),
-                    color = textSecondary,
-                    fontSize = 10.sp,
-                    modifier = Modifier.width(48.dp),
-                    maxLines = 1
-                )
+                // Y-axis labels overlaid on the left
+                Column(
+                    modifier = Modifier
+                        .width(yAxisWidth)
+                        .height(chartHeight),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = formatDurationShort(maxTime),
+                        color = textSecondary,
+                        fontSize = 9.sp,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = formatDurationShort(maxTime / 2),
+                        color = textSecondary,
+                        fontSize = 9.sp,
+                        maxLines = 1
+                    )
+                    Text(
+                        text = "0",
+                        color = textSecondary,
+                        fontSize = 9.sp,
+                        maxLines = 1
+                    )
+                }
             }
         }
     }

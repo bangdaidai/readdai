@@ -8,6 +8,7 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.data.entities.ReadingMemory
 import io.legado.app.help.config.DataVisibilitySettings
+import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.getPrefString
 import io.legado.app.utils.putPrefLong
@@ -778,6 +779,15 @@ object BookplateGenerator {
 
         val existing = appDb.bookplateTemplateDao.getBuiltinsByGroupName(groupName)
         if (existing.size >= builtinList.size) return existing
+
+        // 已初始化过则通过模板名跨分组查找
+        if (appCtx.getPrefBoolean(PreferKey.bpTemplatesInitialized, false)) {
+            val builtinNames = builtinList.map { it.first }.toSet()
+            val crossGroup = appDb.bookplateTemplateDao.getAll()
+                .filter { it.isBuiltin && it.name in builtinNames }
+            if (crossGroup.isNotEmpty()) return crossGroup
+            return existing
+        }
 
         val now = System.currentTimeMillis()
         val existingNames = existing.map { it.name }.toSet()

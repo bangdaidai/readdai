@@ -176,7 +176,15 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
 
             // 分析区域
             if (showAnalysis) {
-                llAnalysis.visibility = View.VISIBLE
+                analysisCard.visibility = View.VISIBLE
+
+                // 动态设置分析卡片样式
+                analysisCard.setCardBackgroundColor(cardColor)
+                analysisCard.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
+                analysisCard.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
+
+                // 设置分析图标颜色为主题强调色
+                ivAnalysisIcon.setColorFilter(accentCol, android.graphics.PorterDuff.Mode.SRC_IN)
 
                 // 设置圆点指示器颜色为主题强调色
                 val dotColorFilter = android.graphics.PorterDuffColorFilter(accentCol, android.graphics.PorterDuff.Mode.SRC_IN)
@@ -247,7 +255,7 @@ class ReadStatisticsAdapter(context: Context) : RecyclerAdapter<ReadStatistics, 
                     tvTopTags.visibility = View.GONE
                 }
             } else {
-                llAnalysis.visibility = View.GONE
+                analysisCard.visibility = View.GONE
             }
         }
     }

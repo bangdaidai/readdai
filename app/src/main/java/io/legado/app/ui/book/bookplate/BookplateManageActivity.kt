@@ -24,7 +24,9 @@ import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.utils.dpToPx
+import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.getPrefLong
+import io.legado.app.utils.putPrefBoolean
 import io.legado.app.utils.putPrefLong
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.showHelp
@@ -98,10 +100,14 @@ class BookplateManageActivity :
 
     private fun loadGroupNames() {
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_BOOK)
-                BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_STATS)
-                BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_ANNOTATION)
+            val initialized = appCtx.getPrefBoolean(PreferKey.bpTemplatesInitialized, false)
+            if (!initialized) {
+                withContext(Dispatchers.IO) {
+                    BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_BOOK)
+                    BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_STATS)
+                    BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_ANNOTATION)
+                }
+                appCtx.putPrefBoolean(PreferKey.bpTemplatesInitialized, true)
             }
             groupNames = withContext(Dispatchers.IO) {
                 val names = appDb.bookplateTemplateDao.getDistinctGroupNames()
@@ -199,6 +205,9 @@ class BookplateManageActivity :
     }
 
     private fun showGroupDialog() {
+        supportFragmentManager.setFragmentResultListener("group_changed", this) { _, _ ->
+            loadGroupNames()
+        }
         showDialogFragment(BookplateGroupDialog())
     }
 

@@ -60,7 +60,6 @@
                             android:textColor="@color/textPrimary"
                             android:textSize="28sp"
                             android:textStyle="bold"
-                            android:fontFamily="sans-serif-light"
                             android:visibility="gone" />
                         <TextView
                             android:id="@+id/tvReadDaysUnit"
@@ -90,7 +89,6 @@
                             android:textColor="@color/textPrimary"
                             android:textSize="28sp"
                             android:textStyle="bold"
-                            android:fontFamily="sans-serif-light"
                             android:visibility="gone" />
                         <TextView
                             android:id="@+id/tvReadHoursUnit"
@@ -118,8 +116,7 @@
                             android:text="0"
                             android:textColor="@color/textPrimary"
                             android:textSize="28sp"
-                            android:textStyle="bold"
-                            android:fontFamily="sans-serif-light" />
+                            android:textStyle="bold" />
                         <TextView
                             android:id="@+id/tvReadMinutesUnit"
                             android:layout_width="wrap_content"
@@ -146,13 +143,6 @@
                     android:visibility="gone" />
 
             </LinearLayout>
-
-            <!-- 分隔线 -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="@color/divider"
-                android:layout_marginBottom="12dp" />
 
             <!-- 统计数据网格布局 - 3列2行 -->
             <GridLayout
@@ -437,133 +427,154 @@
 
             </LinearLayout>
 
-            <!-- 阅读分析区域 -->
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 阅读分析卡片 -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/analysisCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="?attr/backgroundCard"
+        app:strokeWidth="2dp"
+        app:strokeColor="?attr/divider">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- 阅读分析标题 -->
             <LinearLayout
-                android:id="@+id/llAnalysis"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone"
-                android:layout_marginTop="12dp">
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="10dp">
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="@color/divider"
-                    android:layout_marginBottom="12dp" />
+                <ImageView
+                    android:id="@+id/ivAnalysisIcon"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_bubble_chart"
+                    android:layout_marginEnd="8dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="阅读分析"
-                    android:textColor="@color/secondaryText"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="@color/textPrimary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
-                <!-- 时段偏好 -->
-                <LinearLayout
-                    android:id="@+id/llTimePeriod"
-                    android:layout_width="match_parent"
+            </LinearLayout>
+
+            <!-- 时段偏好 -->
+            <LinearLayout
+                android:id="@+id/llTimePeriod"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:background="@drawable/bg_stat_item"
+                android:layout_marginBottom="6dp"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+                <View
+                    android:id="@+id/dotTimePeriod"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/ic_dot_indicator" />
+                <TextView
+                    android:id="@+id/tvTimePeriod"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="10dp"
-                    android:background="@drawable/bg_stat_item"
-                    android:layout_marginBottom="6dp"
-                    android:gravity="center_vertical"
-                    android:visibility="gone">
-                    <View
-                        android:id="@+id/dotTimePeriod"
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/ic_dot_indicator" />
-                    <TextView
-                        android:id="@+id/tvTimePeriod"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                    android:layout_weight="1"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
-                <!-- 连续阅读 -->
-                <LinearLayout
-                    android:id="@+id/llContinuousDays"
-                    android:layout_width="match_parent"
+            <!-- 连续阅读 -->
+            <LinearLayout
+                android:id="@+id/llContinuousDays"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:background="@drawable/bg_stat_item"
+                android:layout_marginBottom="6dp"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+                <View
+                    android:id="@+id/dotContinuousDays"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/ic_dot_indicator" />
+                <TextView
+                    android:id="@+id/tvContinuousDays"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="10dp"
-                    android:background="@drawable/bg_stat_item"
-                    android:layout_marginBottom="6dp"
-                    android:gravity="center_vertical"
-                    android:visibility="gone">
-                    <View
-                        android:id="@+id/dotContinuousDays"
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/ic_dot_indicator" />
-                    <TextView
-                        android:id="@+id/tvContinuousDays"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                    android:layout_weight="1"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
-                <!-- 最爱作者 -->
-                <LinearLayout
-                    android:id="@+id/llTopAuthors"
-                    android:layout_width="match_parent"
+            <!-- 最爱作者 -->
+            <LinearLayout
+                android:id="@+id/llTopAuthors"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:background="@drawable/bg_stat_item"
+                android:layout_marginBottom="6dp"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+                <View
+                    android:id="@+id/dotTopAuthors"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/ic_dot_indicator" />
+                <TextView
+                    android:id="@+id/tvTopAuthors"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="10dp"
-                    android:background="@drawable/bg_stat_item"
-                    android:layout_marginBottom="6dp"
-                    android:gravity="center_vertical"
-                    android:visibility="gone">
-                    <View
-                        android:id="@+id/dotTopAuthors"
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/ic_dot_indicator" />
-                    <TextView
-                        android:id="@+id/tvTopAuthors"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="13sp" />
-                </LinearLayout>
+                    android:layout_weight="1"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="13sp" />
+            </LinearLayout>
 
-                <!-- 最爱类型 -->
-                <LinearLayout
-                    android:id="@+id/llTopTags"
-                    android:layout_width="match_parent"
+            <!-- 最爱类型 -->
+            <LinearLayout
+                android:id="@+id/llTopTags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:background="@drawable/bg_stat_item"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+                <View
+                    android:id="@+id/dotTopTags"
+                    android:layout_width="6dp"
+                    android:layout_height="6dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/ic_dot_indicator" />
+                <TextView
+                    android:id="@+id/tvTopTags"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="10dp"
-                    android:background="@drawable/bg_stat_item"
-                    android:gravity="center_vertical"
-                    android:visibility="gone">
-                    <View
-                        android:id="@+id/dotTopTags"
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:layout_marginEnd="8dp"
-                        android:background="@drawable/ic_dot_indicator" />
-                    <TextView
-                        android:id="@+id/tvTopTags"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:textColor="@color/textPrimary"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
+                    android:layout_weight="1"
+                    android:textColor="@color/textPrimary"
+                    android:textSize="13sp" />
             </LinearLayout>
 
         </LinearLayout>

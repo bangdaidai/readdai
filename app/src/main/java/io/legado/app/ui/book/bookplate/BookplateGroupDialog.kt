@@ -7,6 +7,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
+import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
@@ -95,7 +96,7 @@ class BookplateGroupDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
                             val template = BookplateTemplate(
                                 name = name,
                                 htmlContent = BookplateGenerator.DEFAULT_TEMPLATE_HTML,
-                                isBuiltin = true,
+                                isBuiltin = false,
                                 groupName = name,
                                 createTime = now,
                                 updateTime = now
@@ -104,6 +105,7 @@ class BookplateGroupDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
                                 appDb.bookplateTemplateDao.insert(template)
                             }
                             BookplateHtmlRenderer.clearCache()
+                            setFragmentResult("group_changed", Bundle())
                         }
                     }
                 }
@@ -128,6 +130,7 @@ class BookplateGroupDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
                                 appDb.bookplateTemplateDao.updateGroupName(group, newName)
                             }
                             BookplateHtmlRenderer.clearCache()
+                            setFragmentResult("group_changed", Bundle())
                         }
                     }
                 }
@@ -147,6 +150,7 @@ class BookplateGroupDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
                     }
                     BookplateHtmlRenderer.clearCache()
                     toastOnUi("已删除分组「${group}」")
+                    setFragmentResult("group_changed", Bundle())
                 }
             }
             cancelButton()

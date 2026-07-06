@@ -291,6 +291,7 @@ object PreferKey {
     const val selectedStatisticsTemplateId = "selectedStatisticsTemplateId"
 
     fun templateIdKey(groupName: String) = "bp_selected_$groupName"
+    const val bpTemplatesInitialized = "bp_templates_initialized"
     const val bpShowBasicInfo = "bp_show_basic_info"
     const val bpShowProgress = "bp_show_progress"
     const val bpShowStatistics = "bp_show_statistics"

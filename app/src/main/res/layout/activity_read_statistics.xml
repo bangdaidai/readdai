@@ -256,25 +256,10 @@
             </com.google.android.material.card.MaterialCardView>
 
             <!-- 阅读时长分布图卡片 -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/distributionChartCard"
+            <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/composeDistributionChartContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/card_margin"
-                android:visibility="gone"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="?attr/backgroundCard"
-                app:strokeWidth="2dp"
-                app:strokeColor="?attr/divider">
-
-                <androidx.compose.ui.platform.ComposeView
-                    android:id="@+id/composeDistributionChartContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="12dp" />
-
-            </com.google.android.material.card.MaterialCardView>
+                android:layout_height="wrap_content" />
 
             <!-- 阅读时长排行TOP10卡片 -->
             <androidx.compose.ui.platform.ComposeView
