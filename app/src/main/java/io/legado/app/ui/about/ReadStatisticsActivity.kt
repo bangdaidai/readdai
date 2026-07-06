@@ -23,6 +23,9 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookReadTimeRank
 import io.legado.app.data.entities.DailyReadTime
 import io.legado.app.data.entities.HeatmapDayData
+import io.legado.app.data.entities.HourReadTime
+import io.legado.app.data.entities.AuthorReadTime
+import io.legado.app.data.entities.TagReadCount
 import io.legado.app.data.entities.ReadStatistics
 import io.legado.app.service.StatisticsService
 import io.legado.app.databinding.ActivityReadStatisticsBinding
@@ -1320,7 +1323,13 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             }
 
             val aggregated = aggregateStatistics(statsList)
-            val variables = buildStatisticsVariables(aggregated, currentTop10Data)
+            val variables = buildStatisticsVariables(
+                aggregated, currentTop10Data,
+                statisticsAdapter.hourlyData,
+                statisticsAdapter.continuousDays,
+                statisticsAdapter.authorTop5,
+                statisticsAdapter.tagTop5
+            )
 
             val bitmap = withContext(Dispatchers.IO) {
                 BookplateGenerator.generateStatistics(this@ReadStatisticsActivity, variables)
@@ -1376,7 +1385,11 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
     private fun buildStatisticsVariables(
         stats: ReadStatistics,
-        top10: List<BookReadTimeRank>
+        top10: List<BookReadTimeRank>,
+        hourlyData: List<HourReadTime>,
+        continuousDays: Int,
+        authorTop5: List<AuthorReadTime>,
+        tagTop5: List<TagReadCount>
     ): Map<String, String> {
         val periodLabel = when (currentType) {
             0 -> "全部时间"
@@ -1432,6 +1445,32 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
             val h = rank.readTime / (1000 * 60 * 60)
             val m = rank.readTime % (1000 * 60 * 60) / (1000 * 60)
             vars["top${n}Time"] = if (h > 0) "${h}h${m}m" else "${m}m"
+        }
+
+        // 分析数据：时段偏好
+        val periodSummary = StatisticsService.summarizeHourlyDistribution(hourlyData)
+        if (periodSummary != null) {
+            vars["peakPeriod"] = periodSummary.first
+            vars["peakPeriodPct"] = periodSummary.second.toString()
+        }
+
+        // 分析数据：连续阅读天数
+        vars["continuousDays"] = continuousDays.toString()
+
+        // 分析数据：最爱作者 TOP5
+        authorTop5.take(5).forEachIndexed { i, author ->
+            val n = i + 1
+            vars["authorTop${n}Name"] = author.author
+            val h = author.totalTime / (1000 * 60 * 60)
+            val m = author.totalTime % (1000 * 60 * 60) / (1000 * 60)
+            vars["authorTop${n}Time"] = if (h > 0) "${h}h${m}m" else "${m}m"
+        }
+
+        // 分析数据：最爱类型 TOP5
+        tagTop5.take(5).forEachIndexed { i, tag ->
+            val n = i + 1
+            vars["tagTop${n}Name"] = tag.tag
+            vars["tagTop${n}Count"] = tag.bookCount.toString()
         }
 
         return vars

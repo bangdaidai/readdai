@@ -101,11 +101,6 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/menu_effective_highlights"
-        android:title="生效的高亮规则"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/menu_highlight_rule"
         android:title="高亮规则管理"
         app:showAsAction="never" />

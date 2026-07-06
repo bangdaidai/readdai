@@ -17,5 +17,6 @@ data class BookplateTemplate(
     companion object {
         const val DEFAULT_GROUP_BOOK = "书籍模板"
         const val DEFAULT_GROUP_STATS = "统计模板"
+        const val DEFAULT_GROUP_ANNOTATION = "书摘"
     }
 }

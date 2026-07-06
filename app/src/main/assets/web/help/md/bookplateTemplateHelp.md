@@ -125,6 +125,13 @@
 | `{{top1Name}}` ~ `{{top5Name}}` | 阅读时长排行 Top1~5 书名 | 三体 |
 | `{{top1Time}}` ~ `{{top5Time}}` | 阅读时长排行 Top1~5 时长 | 45h30m |
 | `{{top1Cover}}` ~ `{{top5Cover}}` | 阅读时长排行 Top1~5 封面 URL | (URL) |
+| `{{peakPeriod}}` | 时段偏好（读得最多的时段） | 晚上 |
+| `{{peakPeriodPct}}` | 时段偏好占比（%） | 42 |
+| `{{continuousDays}}` | 最长连续阅读天数 | 128 |
+| `{{authorTop1Name}}` ~ `{{authorTop5Name}}` | 最爱作者排行 Top1~5 姓名 | 金庸 |
+| `{{authorTop1Time}}` ~ `{{authorTop5Time}}` | 最爱作者排行 Top1~5 阅读时长 | 120h30m |
+| `{{tagTop1Name}}` ~ `{{tagTop5Name}}` | 最爱类型排行 Top1~5 标签名 | 武侠 |
+| `{{tagTop1Count}}` ~ `{{tagTop5Count}}` | 最爱类型排行 Top1~5 书籍数量 | 15 |
 
 > 页脚文字、副标题等装饰文本请直接在 HTML 中书写，无需使用变量。
 

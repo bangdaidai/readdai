@@ -101,6 +101,7 @@ class BookplateManageActivity :
             withContext(Dispatchers.IO) {
                 BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_BOOK)
                 BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_STATS)
+                BookplateGenerator.getOrCreateBuiltinTemplates(BookplateTemplate.DEFAULT_GROUP_ANNOTATION)
             }
             groupNames = withContext(Dispatchers.IO) {
                 val names = appDb.bookplateTemplateDao.getDistinctGroupNames()

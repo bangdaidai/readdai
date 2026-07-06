@@ -20,6 +20,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:theme="?attr/actionBarStyle"
+            app:menu="@menu/dialog_annotation"
             app:popupTheme="@style/AppTheme.PopupOverlay"
             app:title="@string/annotation"
             app:titleTextAppearance="@style/ToolbarTitle" />

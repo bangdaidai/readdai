@@ -3,22 +3,30 @@ package io.legado.app.ui.book.annotation
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookAnnotation
 import io.legado.app.databinding.DialogAnnotationBinding
+import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.ThemeStore
+import io.legado.app.ui.widget.dialog.BookplateDialog
 import io.legado.app.utils.setLayout
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.visible
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, true) {
+class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, true),
+    Toolbar.OnMenuItemClickListener {
 
     constructor(annotation: BookAnnotation, editPos: Int = -1) : this() {
         arguments = Bundle().apply {
@@ -36,12 +44,11 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
 
     override fun onFragmentCreated(view: View, savedInstanceState: Bundle?) {
         binding.toolBar.setBackgroundColor(primaryColor)
-        // 标题已在布局中设置为"书摘"，无需再次设置
+        binding.toolBar.setOnMenuItemClickListener(this)
         val arguments = arguments ?: let {
             dismiss()
             return
         }
-        // 为对话框内容区域设置背景色
         val backgroundColor = ThemeStore.backgroundColor(requireContext())
         binding.vwBg.setBackgroundColor(backgroundColor)
 
@@ -57,7 +64,6 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
             tvChapterName.text = annotation.chapterName
             editBookText.setText(annotation.bookText)
             editContent.setText(annotation.content)
-            // 设置输入框文字颜色为主题文字颜色
             editBookText.setTextColor(ThemeStore.textColorPrimary(requireContext()))
             editContent.setTextColor(ThemeStore.textColorPrimary(requireContext()))
             tvCancel.setOnClickListener {
@@ -68,15 +74,11 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
                 annotation.content = editContent.text?.toString() ?: ""
                 lifecycleScope.launch {
                     withContext(IO) {
-                        // 检查是否是编辑模式
                         if (editPos >= 0) {
-                            // 编辑模式，使用update方法
                             appDb.bookAnnotationDao.update(annotation)
                         } else {
-                            // 新增模式，使用insert方法
                             appDb.bookAnnotationDao.insert(annotation)
                         }
-                        // 更新阅读记忆中的书摘数量
                         val memories = appDb.readingMemoryDao.getByBook(annotation.bookName, annotation.bookAuthor)
                         memories.forEach { memory ->
                             val annotationCount = appDb.bookAnnotationDao.getByBook(annotation.bookName, annotation.bookAuthor).size
@@ -94,7 +96,6 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
                 lifecycleScope.launch {
                     withContext(IO) {
                         appDb.bookAnnotationDao.delete(annotation)
-                        // 更新阅读记忆中的书摘数量
                         val memories = appDb.readingMemoryDao.getByBook(annotation.bookName, annotation.bookAuthor)
                         memories.forEach { memory ->
                             val annotationCount = appDb.bookAnnotationDao.getByBook(annotation.bookName, annotation.bookAuthor).size
@@ -106,6 +107,54 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
                         }
                     }
                     dismiss()
+                }
+            }
+        }
+    }
+
+    override fun onMenuItemClick(item: android.view.MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.menu_bookplate -> {
+                generateBookplate()
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun generateBookplate() {
+        @Suppress("DEPRECATION")
+        val annotation = arguments?.getParcelable<BookAnnotation>("annotation") ?: return
+        val currentText = binding.editBookText.text?.toString() ?: annotation.bookText
+
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+        val timeStr = dateFormat.format(Date(annotation.time))
+
+        val variables = mapOf(
+            "bookName" to annotation.bookName,
+            "author" to annotation.bookAuthor,
+            "chapterName" to annotation.chapterName,
+            "bookText" to currentText,
+            "noteContent" to annotation.content,
+            "time" to timeStr
+        )
+
+        lifecycleScope.launch {
+            val bitmap = withContext(IO) {
+                BookplateGenerator.generateAnnotation(requireContext(), variables)
+            }
+            if (bitmap != null) {
+                withContext(Main) {
+                    val safeFileName = annotation.bookName.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+                    BookplateDialog.show(requireContext(), bitmap, "书摘_$safeFileName")
+                }
+            } else {
+                withContext(Main) {
+                    android.widget.Toast.makeText(
+                        requireContext(),
+                        "生成失败: ${io.legado.app.help.book.BookplateHtmlRenderer.lastError ?: "未知错误"}",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }

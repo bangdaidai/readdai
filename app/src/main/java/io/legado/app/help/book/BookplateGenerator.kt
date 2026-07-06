@@ -587,6 +587,88 @@ object BookplateGenerator {
 
     private const val STATS_BUILTIN_GROUP = BookplateTemplate.DEFAULT_GROUP_STATS
 
+    // ===== 书摘内置模板 =====
+    private val ANNOTATION_DEFAULT_TEMPLATE_HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 1080px; min-height: 540px;
+    background: linear-gradient(135deg, #fdf6f0 0%, #f8f0e8 50%, #faf5ee 100%);
+    font-family: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 60px;
+  }
+  .card {
+    width: 100%; max-width: 920px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 8px;
+    padding: 44px 52px;
+    box-shadow: 0 2px 20px rgba(120,100,80,0.08);
+    position: relative;
+  }
+  .card::before {
+    content: "\201C";
+    position: absolute; top: -10px; left: 20px;
+    font-size: 72px; color: rgba(180,160,140,0.25);
+    font-family: Georgia, serif; line-height: 1;
+  }
+  .book-info { margin-bottom: 24px; }
+  .book-name { font-size: 26px; font-weight: 600; color: #4a3724; margin-bottom: 4px; }
+  .author { font-size: 18px; color: #8c7a6b; }
+  .chapter-name { font-size: 16px; color: #a89880; margin-top: 6px; }
+  .divider {
+    width: 60px; height: 2px;
+    background: linear-gradient(90deg, #c8b89a, transparent);
+    margin: 20px 0 24px;
+  }
+  .quote-text {
+    font-size: 28px; line-height: 1.8; color: #3a3028;
+    letter-spacing: 0.05em; margin-bottom: 20px;
+    text-align: justify;
+  }
+  .note-content {
+    font-size: 20px; line-height: 1.6; color: #6b5d4f;
+    padding-left: 16px; border-left: 3px solid #d4c8b0;
+    margin-bottom: 20px;
+  }
+  .footer {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 16px; border-top: 1px solid rgba(180,160,140,0.2);
+  }
+  .time { font-size: 16px; color: #b8a890; }
+  .app-name { font-size: 14px; color: #c8b8a0; letter-spacing: 0.15em; font-weight: 300; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="book-info">
+    <div class="book-name">{{bookName}}</div>
+    <div class="author">{{author}}</div>
+    <div class="chapter-name">{{chapterName}}</div>
+  </div>
+  <div class="divider"></div>
+  <div class="quote-text">{{bookText}}</div>
+  <div class="note-content">{{noteContent}}</div>
+  <div class="footer">
+    <span class="time">{{time}}</span>
+    <span class="app-name">LEGADO</span>
+  </div>
+</div>
+</body>
+</html>
+    """.trimIndent()
+
+    private val ANNOTATION_BUILTIN_TEMPLATES = listOf(
+        "古典书摘" to ANNOTATION_DEFAULT_TEMPLATE_HTML
+    )
+
+    private const val ANNOTATION_BUILTIN_GROUP = BookplateTemplate.DEFAULT_GROUP_ANNOTATION
+
     fun prewarmWebView(context: Context) {
         GlobalScope.launch(Dispatchers.Main) {
             try {
@@ -670,9 +752,27 @@ object BookplateGenerator {
         }
     }
 
+    suspend fun generateAnnotation(context: Context, variables: Map<String, String>): Bitmap? {
+        val template = resolveTemplate(ANNOTATION_BUILTIN_GROUP)
+            ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(ANNOTATION_BUILTIN_GROUP).firstOrNull()
+            ?: getOrCreateBuiltinTemplates(ANNOTATION_BUILTIN_GROUP).firstOrNull()
+
+        if (template == null || template.htmlContent.isBlank()) {
+            BookplateLogger.log("GEN", "书摘模板为空")
+            return null
+        }
+
+        BookplateLogger.log("GEN", "使用书摘模板: ${template.name} (id=${template.id}, group=$ANNOTATION_BUILTIN_GROUP)")
+        BookplateHtmlRenderer.clearCache()
+        return withContext(Dispatchers.Main) {
+            BookplateHtmlRenderer.renderCustom(context, template.htmlContent, variables)
+        }
+    }
+
     suspend fun getOrCreateBuiltinTemplates(groupName: String): List<BookplateTemplate> {
         val builtinList = when (groupName) {
             STATS_BUILTIN_GROUP -> STATISTICS_BUILTIN_TEMPLATES
+            ANNOTATION_BUILTIN_GROUP -> ANNOTATION_BUILTIN_TEMPLATES
             else -> BOOK_BUILTIN_TEMPLATES
         }
 
