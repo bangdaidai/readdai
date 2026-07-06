@@ -26,6 +26,7 @@ import io.legado.app.data.entities.HeatmapDayData
 import io.legado.app.data.entities.HourReadTime
 import io.legado.app.data.entities.AuthorReadTime
 import io.legado.app.data.entities.TagReadCount
+import io.legado.app.data.entities.TimeDistribution
 import io.legado.app.data.entities.ReadStatistics
 import io.legado.app.service.StatisticsService
 import io.legado.app.databinding.ActivityReadStatisticsBinding
@@ -89,6 +90,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         binding.titleBar.title = getString(R.string.read_statistics)
         initView()
         initComposeTop10()
+        initComposeDistributionChart()
         // 确保 RecyclerView 的布局管理器已正确设置
         binding.recyclerView!!.layoutManager = LinearLayoutManager(this)
         // 确保初始状态下导航可见性正确（总计模式应隐藏导航）
@@ -150,7 +152,14 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 }
             )
         }
+        }
     }
+
+    private fun initComposeDistributionChart() {
+        binding.composeDistributionChartContainer?.apply {
+            setViewTreeLifecycleOwner(this@ReadStatisticsActivity)
+            setViewTreeSavedStateRegistryOwner(this@ReadStatisticsActivity)
+        }
     }
 
     private fun initView() {
@@ -228,6 +237,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
         binding.heatmapCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
         binding.heatmapCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
+        binding.distributionChartCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
+        binding.distributionChartCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
     }
 
     private fun updateNavigationButtonColors() {
@@ -572,6 +583,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载分析数据
         loadAnalysis(null, null)
 
+        // 加载分布图
+        loadDistributionChart()
+
         // 确保RecyclerView正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -648,6 +662,96 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         }
     }
 
+    private suspend fun loadDistributionChart() {
+        try {
+            val data: List<Pair<String, Long>> = when (currentType) {
+                0 -> {
+                    val dist = if (currentReadType != null)
+                        StatisticsService.getYearDistributionByType(currentReadType!!)
+                    else StatisticsService.getYearDistribution()
+                    dist.map { "${it.key}" to it.totalTime }
+                }
+                1 -> {
+                    val startTime = getDayStart(dailyDate)
+                    val endTime = getDayEnd(dailyDate)
+                    val dist = if (currentReadType != null)
+                        StatisticsService.getHourlyDistributionInRangeByType(startTime, endTime, currentReadType!!)
+                    else StatisticsService.getHourlyDistributionInRange(startTime, endTime)
+                    dist.map { "${it.hour}时" to it.totalTime }
+                }
+                2 -> {
+                    val dist = if (currentReadType != null)
+                        StatisticsService.getDayOfMonthDistributionInRangeByType(
+                            getMonthStart(monthlyDate), getMonthEnd(monthlyDate), currentReadType!!
+                        )
+                    else StatisticsService.getDayOfMonthDistributionInRange(
+                        getMonthStart(monthlyDate), getMonthEnd(monthlyDate)
+                    )
+                    dist.map { "${it.key}日" to it.totalTime }
+                }
+                3 -> {
+                    val dist = if (currentReadType != null)
+                        StatisticsService.getMonthDistributionInRangeByType(
+                            getYearStart(yearlyDate), getYearEnd(yearlyDate), currentReadType!!
+                        )
+                    else StatisticsService.getMonthDistributionInRange(
+                        getYearStart(yearlyDate), getYearEnd(yearlyDate)
+                    )
+                    dist.map { "${it.key}月" to it.totalTime }
+                }
+                4 -> {
+                    val dist = if (currentReadType != null)
+                        StatisticsService.getDayOfWeekDistributionInRangeByType(
+                            getWeekStart(weeklyDate), getWeekEnd(weeklyDate), currentReadType!!
+                        )
+                    else StatisticsService.getDayOfWeekDistributionInRange(
+                        getWeekStart(weeklyDate), getWeekEnd(weeklyDate)
+                    )
+                    dist.map { dayOfWeekLabel(it.key) to it.totalTime }
+                }
+                else -> emptyList()
+            }
+
+            val chartTitle = when (currentType) {
+                0 -> "每年阅读时长分布"
+                1 -> "24小时阅读时长分布"
+                2 -> "每日阅读时长分布"
+                3 -> "每月阅读时长分布"
+                4 -> "每周阅读时长分布"
+                else -> "阅读时长分布"
+            }
+
+            updateDistributionChart(chartTitle, data)
+        } catch (_: Exception) {
+            binding.distributionChartCard?.visibility = View.GONE
+        }
+    }
+
+    private fun dayOfWeekLabel(day: Int): String = when (day) {
+        0 -> "周日"
+        1 -> "周一"
+        2 -> "周二"
+        3 -> "周三"
+        4 -> "周四"
+        5 -> "周五"
+        6 -> "周六"
+        else -> ""
+    }
+
+    private fun updateDistributionChart(title: String, data: List<Pair<String, Long>>) {
+        if (data.isEmpty() || data.all { it.second == 0L }) {
+            binding.distributionChartCard?.visibility = View.GONE
+            return
+        }
+        binding.distributionChartCard?.visibility = View.VISIBLE
+        binding.composeDistributionChartContainer?.setContent {
+            io.legado.app.ui.book.readRecord.component.TimeDistributionChart(
+                title = title,
+                data = data
+            )
+        }
+    }
+
     private suspend fun loadDailyStatistics() {
         val dailyStatistics = if (currentReadType != null) {
             StatisticsService.getDailyStatisticsByType(currentReadType!!)
@@ -670,6 +774,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
         // 加载总阅读时间排行TOP10
         loadTop10Data()
+
+        // 加载分布图
+        loadDistributionChart()
 
         // 确保RecyclerView正确显示所有内容
         refreshRecyclerViewHeight()
@@ -702,6 +809,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载分析数据
         loadAnalysis(getDayStart(dailyDate), getDayEnd(dailyDate))
 
+        // 加载分布图
+        loadDistributionChart()
+
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -733,6 +843,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载当前月份的阅读时间排行 TOP10
         loadTop10DataForMonth(currentMonth)
         
+        // 加载分布图
+        loadDistributionChart()
+
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -767,6 +880,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载分析数据
         loadAnalysis(getMonthStart(monthlyDate), getMonthEnd(monthlyDate))
 
+        // 加载分布图
+        loadDistributionChart()
+
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -795,6 +911,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         val currentYear = yearFormat.format(yearlyDate.time)
         loadTop10DataForYear(currentYear)
         
+        // 加载分布图
+        loadDistributionChart()
+
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
     }
@@ -828,6 +947,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
         // 加载分析数据
         loadAnalysis(getYearStart(yearlyDate), getYearEnd(yearlyDate))
+
+        // 加载分布图
+        loadDistributionChart()
 
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()
@@ -883,6 +1005,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         // 加载分析数据
         loadAnalysis(getWeekStart(weeklyDate), getWeekEnd(weeklyDate))
 
+        // 加载分布图
+        loadDistributionChart()
+
         refreshRecyclerViewHeight()
     }
 
@@ -909,6 +1034,9 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
 
         // 加载分析数据
         loadAnalysis(getWeekStart(weeklyDate), getWeekEnd(weeklyDate))
+
+        // 加载分布图
+        loadDistributionChart()
 
         // 确保 RecyclerView 正确显示所有内容
         refreshRecyclerViewHeight()

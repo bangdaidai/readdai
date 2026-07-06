@@ -1074,6 +1074,40 @@ interface ReadSessionDao {
     @Query("SELECT CAST(strftime('%H', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as hour, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime AND type = :type GROUP BY hour ORDER BY hour")
     suspend fun getHourlyReadTimeInRangeByType(startTime: Long, endTime: Long, type: Int): List<HourReadTime>
 
+    // 星期分布 (0=周日, 1=周一, ..., 6=周六)
+    @Query("SELECT CAST(strftime('%w', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime > 0 GROUP BY key ORDER BY key")
+    suspend fun getDayOfWeekDistribution(): List<TimeDistribution>
+
+    @Query("SELECT CAST(strftime('%w', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime > 0 AND type = :type GROUP BY key ORDER BY key")
+    suspend fun getDayOfWeekDistributionByType(type: Int): List<TimeDistribution>
+
+    @Query("SELECT CAST(strftime('%w', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime GROUP BY key ORDER BY key")
+    suspend fun getDayOfWeekDistributionInRange(startTime: Long, endTime: Long): List<TimeDistribution>
+
+    @Query("SELECT CAST(strftime('%w', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime AND type = :type GROUP BY key ORDER BY key")
+    suspend fun getDayOfWeekDistributionInRangeByType(startTime: Long, endTime: Long, type: Int): List<TimeDistribution>
+
+    // 月内日分布 (1-31)
+    @Query("SELECT CAST(strftime('%d', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime GROUP BY key ORDER BY key")
+    suspend fun getDayOfMonthDistributionInRange(startTime: Long, endTime: Long): List<TimeDistribution>
+
+    @Query("SELECT CAST(strftime('%d', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime AND type = :type GROUP BY key ORDER BY key")
+    suspend fun getDayOfMonthDistributionInRangeByType(startTime: Long, endTime: Long, type: Int): List<TimeDistribution>
+
+    // 年内月分布 (1-12)
+    @Query("SELECT CAST(strftime('%m', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime GROUP BY key ORDER BY key")
+    suspend fun getMonthDistributionInRange(startTime: Long, endTime: Long): List<TimeDistribution>
+
+    @Query("SELECT CAST(strftime('%m', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime >= :startTime AND endTime <= :endTime AND type = :type GROUP BY key ORDER BY key")
+    suspend fun getMonthDistributionInRangeByType(startTime: Long, endTime: Long, type: Int): List<TimeDistribution>
+
+    // 年分布
+    @Query("SELECT CAST(strftime('%Y', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime > 0 GROUP BY key ORDER BY key")
+    suspend fun getYearDistribution(): List<TimeDistribution>
+
+    @Query("SELECT CAST(strftime('%Y', endTime / 1000, 'unixepoch', 'localtime') AS INTEGER) as key, SUM(duration) as totalTime FROM readSession WHERE endTime > 0 AND type = :type GROUP BY key ORDER BY key")
+    suspend fun getYearDistributionByType(type: Int): List<TimeDistribution>
+
     // 获取所有有阅读记录的日期（用于计算连续阅读天数）
     @Query("SELECT DISTINCT DATE(endTime / 1000, 'unixepoch', 'localtime') as d FROM readSession WHERE endTime > 0 ORDER BY d")
     suspend fun getAllReadingDates(): List<String>

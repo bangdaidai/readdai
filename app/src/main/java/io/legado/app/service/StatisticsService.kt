@@ -7,6 +7,7 @@ import io.legado.app.data.entities.ReadStatistics
 import io.legado.app.data.entities.HourReadTime
 import io.legado.app.data.entities.AuthorReadTime
 import io.legado.app.data.entities.TagReadCount
+import io.legado.app.data.entities.TimeDistribution
 import io.legado.app.help.coroutine.Coroutine
 import io.legado.app.utils.StatisticsCacheManager
 import kotlinx.coroutines.Dispatchers
@@ -672,6 +673,90 @@ object StatisticsService {
         StatisticsCacheManager.getHourlyDataCache(cacheKey)?.let { return it }
         val data = appDb.readSessionDao.getHourlyReadTimeInRangeByType(startTime, endTime, type)
         StatisticsCacheManager.cacheHourlyData(cacheKey, data)
+        return data
+    }
+
+    // 星期分布
+    suspend fun getDayOfWeekDistribution(): List<TimeDistribution> {
+        val cacheKey = "dow_total"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getDayOfWeekDistribution()
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    suspend fun getDayOfWeekDistributionByType(type: Int): List<TimeDistribution> {
+        val cacheKey = "dow_total_$type"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getDayOfWeekDistributionByType(type)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    suspend fun getDayOfWeekDistributionInRange(startTime: Long, endTime: Long): List<TimeDistribution> {
+        val cacheKey = "dow_${startTime}_${endTime}"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getDayOfWeekDistributionInRange(startTime, endTime)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    suspend fun getDayOfWeekDistributionInRangeByType(startTime: Long, endTime: Long, type: Int): List<TimeDistribution> {
+        val cacheKey = "dow_${startTime}_${endTime}_$type"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getDayOfWeekDistributionInRangeByType(startTime, endTime, type)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    // 月内日分布
+    suspend fun getDayOfMonthDistributionInRange(startTime: Long, endTime: Long): List<TimeDistribution> {
+        val cacheKey = "dom_${startTime}_${endTime}"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getDayOfMonthDistributionInRange(startTime, endTime)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    suspend fun getDayOfMonthDistributionInRangeByType(startTime: Long, endTime: Long, type: Int): List<TimeDistribution> {
+        val cacheKey = "dom_${startTime}_${endTime}_$type"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getDayOfMonthDistributionInRangeByType(startTime, endTime, type)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    // 年内月分布
+    suspend fun getMonthDistributionInRange(startTime: Long, endTime: Long): List<TimeDistribution> {
+        val cacheKey = "mon_${startTime}_${endTime}"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getMonthDistributionInRange(startTime, endTime)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    suspend fun getMonthDistributionInRangeByType(startTime: Long, endTime: Long, type: Int): List<TimeDistribution> {
+        val cacheKey = "mon_${startTime}_${endTime}_$type"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getMonthDistributionInRangeByType(startTime, endTime, type)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    // 年分布
+    suspend fun getYearDistribution(): List<TimeDistribution> {
+        val cacheKey = "year_total"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getYearDistribution()
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
+        return data
+    }
+
+    suspend fun getYearDistributionByType(type: Int): List<TimeDistribution> {
+        val cacheKey = "year_total_$type"
+        StatisticsCacheManager.getDistributionCache(cacheKey)?.let { return it }
+        val data = appDb.readSessionDao.getYearDistributionByType(type)
+        StatisticsCacheManager.cacheDistribution(cacheKey, data)
         return data
     }
 

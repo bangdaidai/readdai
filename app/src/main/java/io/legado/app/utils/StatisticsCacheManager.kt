@@ -7,6 +7,7 @@ import io.legado.app.data.entities.ReadStatistics
 import io.legado.app.data.entities.HourReadTime
 import io.legado.app.data.entities.AuthorReadTime
 import io.legado.app.data.entities.TagReadCount
+import io.legado.app.data.entities.TimeDistribution
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.max
 
@@ -59,6 +60,9 @@ object StatisticsCacheManager {
 
     // 连续阅读天数缓存
     private val continuousDaysCache = ConcurrentHashMap<String, CacheItem<Int>>()
+
+    // 时间分布缓存
+    private val distributionCache = ConcurrentHashMap<String, CacheItem<List<TimeDistribution>>>()
 
     /**
      * 缓存总计统计数据
@@ -220,6 +224,14 @@ object StatisticsCacheManager {
         return continuousDaysCache[key]?.let { if (isCacheValid(it.timestamp)) it.data else null }
     }
 
+    fun cacheDistribution(key: String, data: List<TimeDistribution>) {
+        distributionCache[key] = CacheItem(data, System.currentTimeMillis())
+    }
+
+    fun getDistributionCache(key: String): List<TimeDistribution>? {
+        return distributionCache[key]?.let { if (isCacheValid(it.timestamp)) it.data else null }
+    }
+
     /**
      * 检查缓存是否有效
      */
@@ -243,6 +255,7 @@ object StatisticsCacheManager {
         authorCache.clear()
         tagCache.clear()
         continuousDaysCache.clear()
+        distributionCache.clear()
     }
 
     /**
