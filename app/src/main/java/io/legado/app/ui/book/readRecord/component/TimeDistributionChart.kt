@@ -13,10 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -105,17 +104,30 @@ fun TimeDistributionChart(
                     val barOffsetX = (slotWidth - barWidth) / 2f
 
                     if (maxTime > 0L) {
+                        val radius = 3f
                         data.forEachIndexed { index, (_, time) ->
                             if (time > 0L) {
                                 val barHeight = (time.toFloat() / maxTime) * h
-                                val x = index * slotWidth + barOffsetX
-                                val y = h - barHeight
-                                drawRoundRect(
-                                    color = accentColor,
-                                    topLeft = Offset(x, y),
-                                    size = Size(barWidth, barHeight),
-                                    cornerRadius = CornerRadius(3f, 3f)
-                                )
+                                val left = index * slotWidth + barOffsetX
+                                val top = h - barHeight
+                                val right = left + barWidth
+                                val bottom = h
+                                val path = Path().apply {
+                                    moveTo(left, bottom)
+                                    lineTo(left, top + radius)
+                                    arcTo(
+                                        Rect(left, top, left + radius * 2, top + radius * 2),
+                                        180f, 90f, false
+                                    )
+                                    lineTo(right - radius, top)
+                                    arcTo(
+                                        Rect(right - radius * 2, top, right, top + radius * 2),
+                                        270f, 90f, false
+                                    )
+                                    lineTo(right, bottom)
+                                    close()
+                                }
+                                drawPath(path, accentColor)
                             }
                         }
                     }
