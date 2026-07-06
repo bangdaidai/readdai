@@ -237,6 +237,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         binding.navigationCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
         binding.heatmapCard?.strokeWidth = (AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt()
         binding.heatmapCard?.setStrokeColor(android.content.res.ColorStateList.valueOf(dividerColor))
+        binding.ivHeatmapIcon?.setColorFilter(accentColor, android.graphics.PorterDuff.Mode.SRC_IN)
     }
 
     private fun updateNavigationButtonColors() {
@@ -663,12 +664,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
     private suspend fun loadDistributionChart() {
         try {
             val data: List<Pair<String, Long>> = when (currentType) {
-                0 -> {
-                    val dist = if (currentReadType != null)
-                        StatisticsService.getYearDistributionByType(currentReadType!!)
-                    else StatisticsService.getYearDistribution()
-                    dist.map { "${it.sortKey}" to it.totalTime }
-                }
+                0 -> emptyList()
                 1 -> {
                     val startTime = getDayStart(dailyDate)
                     val endTime = getDayEnd(dailyDate)
@@ -676,7 +672,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                         StatisticsService.getHourlyDistributionInRangeByType(startTime, endTime, currentReadType!!)
                     else StatisticsService.getHourlyDistributionInRange(startTime, endTime)
                     val hourMap = dist.associate { it.hour to it.totalTime }
-                    (0..23).map { hour -> "${hour}时" to (hourMap[hour] ?: 0L) }
+                    (0..23).map { hour -> "$hour" to (hourMap[hour] ?: 0L) }
                 }
                 2 -> {
                     val dist = if (currentReadType != null)
@@ -688,7 +684,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     )
                     val dayMap = dist.associate { it.sortKey to it.totalTime }
                     val daysInMonth = monthlyDate.getActualMaximum(Calendar.DAY_OF_MONTH)
-                    (1..daysInMonth).map { day -> "${day}日" to (dayMap[day] ?: 0L) }
+                    (1..daysInMonth).map { day -> "$day" to (dayMap[day] ?: 0L) }
                 }
                 3 -> {
                     val dist = if (currentReadType != null)
@@ -699,7 +695,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                         getYearStart(yearlyDate), getYearEnd(yearlyDate)
                     )
                     val monthMap = dist.associate { it.sortKey to it.totalTime }
-                    (1..12).map { month -> "${month}月" to (monthMap[month] ?: 0L) }
+                    (1..12).map { month -> "$month" to (monthMap[month] ?: 0L) }
                 }
                 4 -> {
                     val dist = if (currentReadType != null)
@@ -715,16 +711,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                 else -> emptyList()
             }
 
-            val chartTitle = when (currentType) {
-                0 -> "每年阅读时长分布"
-                1 -> "24小时阅读时长分布"
-                2 -> "每日阅读时长分布"
-                3 -> "每月阅读时长分布"
-                4 -> "每周阅读时长分布"
-                else -> "阅读时长分布"
-            }
-
-            updateDistributionChart(chartTitle, data)
+            updateDistributionChart("阅读时长分布", data)
         } catch (_: Exception) {
             binding.composeDistributionChartContainer?.visibility = View.GONE
         }

@@ -5,7 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -39,11 +39,9 @@ fun TimeDistributionChart(
     val textPrimary = Color(ThemeStore.textColorPrimary(context))
     val textSecondary = Color(ThemeStore.textColorSecondary(context))
     val dividerColor = Color(ThemeStore.dividerColor(context))
-    val gridColor = textSecondary.copy(alpha = 0.12f)
 
     val maxTime = data.maxOf { it.second }
-    val yAxisWidth = 48.dp
-    val chartHeight = 160.dp
+    val chartHeight = 140.dp
     val dataCount = data.size
     val xLabelFontSize = when {
         dataCount > 20 -> 7.sp
@@ -67,13 +65,12 @@ fun TimeDistributionChart(
         border = borderStroke
     ) {
         Column(modifier = Modifier.padding(vertical = 16.dp)) {
-            // Title row with icon
             Row(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.BarChart,
+                    imageVector = Icons.Default.Leaderboard,
                     contentDescription = null,
                     tint = accentColor,
                     modifier = Modifier.size(20.dp)
@@ -89,127 +86,67 @@ fun TimeDistributionChart(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Chart area with Y-axis overlay
-            Box(
+            // Chart area - no Y-axis, bars from left edge
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
-                // Main chart layout
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Spacer(modifier = Modifier.width(yAxisWidth))
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(chartHeight)
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val barCount = data.size
+                    val slotWidth = w / barCount
+                    val barWidth = slotWidth * 0.55f
+                    val barOffsetX = (slotWidth - barWidth) / 2f
 
-                    Column(modifier = Modifier.weight(1f)) {
-                        Canvas(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(chartHeight)
-                        ) {
-                            val w = size.width
-                            val h = size.height
-                            val barCount = data.size
-                            val slotWidth = w / barCount
-                            val barWidth = slotWidth * 0.55f
-                            val barOffsetX = (slotWidth - barWidth) / 2f
-
-                            // Grid lines (aligned with Y-axis labels)
-                            val gridLines = 2
-                            for (i in 0..gridLines) {
-                                val y = h * i / gridLines.toFloat()
-                                drawLine(
-                                    color = gridColor,
-                                    start = Offset(0f, y),
-                                    end = Offset(w, y),
-                                    strokeWidth = 1f
+                    if (maxTime > 0L) {
+                        data.forEachIndexed { index, (_, time) ->
+                            if (time > 0L) {
+                                val barHeight = (time.toFloat() / maxTime) * h
+                                val x = index * slotWidth + barOffsetX
+                                val y = h - barHeight
+                                drawRoundRect(
+                                    color = accentColor,
+                                    topLeft = Offset(x, y),
+                                    size = Size(barWidth, barHeight),
+                                    cornerRadius = CornerRadius(3f, 3f)
                                 )
-                            }
-
-                            // Bars
-                            if (maxTime > 0L) {
-                                data.forEachIndexed { index, (_, time) ->
-                                    if (time > 0L) {
-                                        val barHeight = (time.toFloat() / maxTime) * h
-                                        val x = index * slotWidth + barOffsetX
-                                        val y = h - barHeight
-                                        drawRoundRect(
-                                            color = accentColor,
-                                            topLeft = Offset(x, y),
-                                            size = Size(barWidth, barHeight),
-                                            cornerRadius = CornerRadius(3f, 3f)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // X-axis labels
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            val labelStep = when {
-                                dataCount > 20 -> 4
-                                dataCount > 12 -> 2
-                                else -> 1
-                            }
-                            data.forEachIndexed { index, (label, _) ->
-                                if (index % labelStep == 0) {
-                                    Text(
-                                        text = label,
-                                        color = textSecondary,
-                                        fontSize = xLabelFontSize,
-                                        modifier = Modifier.weight(1f),
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                } else {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                }
                             }
                         }
                     }
                 }
 
-                // Y-axis labels overlaid on the left
-                Column(
-                    modifier = Modifier
-                        .width(yAxisWidth)
-                        .height(chartHeight),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.End
-                ) {
-                    Text(
-                        text = formatDurationShort(maxTime),
-                        color = textSecondary,
-                        fontSize = 9.sp,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = formatDurationShort(maxTime / 2),
-                        color = textSecondary,
-                        fontSize = 9.sp,
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "0",
-                        color = textSecondary,
-                        fontSize = 9.sp,
-                        maxLines = 1
-                    )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // X-axis labels
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    val labelStep = when {
+                        dataCount > 20 -> 4
+                        dataCount > 12 -> 2
+                        else -> 1
+                    }
+                    data.forEachIndexed { index, (label, _) ->
+                        if (index % labelStep == 0) {
+                            Text(
+                                text = label,
+                                color = textSecondary,
+                                fontSize = xLabelFontSize,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }
-    }
-}
-
-private fun formatDurationShort(millis: Long): String {
-    if (millis <= 0) return "0m"
-    val totalMinutes = millis / (1000 * 60)
-    return if (totalMinutes < 60) {
-        "${totalMinutes}m"
-    } else {
-        val hours = totalMinutes / 60
-        val mins = totalMinutes % 60
-        if (mins == 0L) "${hours}h" else "${hours}h${mins}m"
     }
 }
