@@ -669,7 +669,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     val dist = if (currentReadType != null)
                         StatisticsService.getYearDistributionByType(currentReadType!!)
                     else StatisticsService.getYearDistribution()
-                    dist.map { "${it.key}" to it.totalTime }
+                    dist.map { "${it.sortKey}" to it.totalTime }
                 }
                 1 -> {
                     val startTime = getDayStart(dailyDate)
@@ -687,7 +687,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     else StatisticsService.getDayOfMonthDistributionInRange(
                         getMonthStart(monthlyDate), getMonthEnd(monthlyDate)
                     )
-                    dist.map { "${it.key}日" to it.totalTime }
+                    dist.map { "${it.sortKey}日" to it.totalTime }
                 }
                 3 -> {
                     val dist = if (currentReadType != null)
@@ -697,7 +697,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     else StatisticsService.getMonthDistributionInRange(
                         getYearStart(yearlyDate), getYearEnd(yearlyDate)
                     )
-                    dist.map { "${it.key}月" to it.totalTime }
+                    dist.map { "${it.sortKey}月" to it.totalTime }
                 }
                 4 -> {
                     val dist = if (currentReadType != null)
@@ -707,7 +707,7 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
                     else StatisticsService.getDayOfWeekDistributionInRange(
                         getWeekStart(weeklyDate), getWeekEnd(weeklyDate)
                     )
-                    dist.map { dayOfWeekLabel(it.key) to it.totalTime }
+                    dist.map { dayOfWeekLabel(it.sortKey) to it.totalTime }
                 }
                 else -> emptyList()
             }
