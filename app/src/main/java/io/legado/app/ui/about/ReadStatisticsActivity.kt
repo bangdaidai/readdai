@@ -252,10 +252,8 @@ class ReadStatisticsActivity : VMBaseActivity<ActivityReadStatisticsBinding, Rea
         binding.btnPrev?.background = shapeDrawable
         binding.btnNext?.background = shapeDrawable
 
-        // 设置按钮图标颜色为标题栏文字图标颜色，确保在彩色背景上可见
-        val titleBarTextIconColor = io.legado.app.lib.theme.ThemeStore.titleBarTextIconColor(this)
-        binding.btnPrev?.setColorFilter(titleBarTextIconColor)
-        binding.btnNext?.setColorFilter(titleBarTextIconColor)
+        binding.btnPrev?.setColorFilter(android.graphics.Color.WHITE)
+        binding.btnNext?.setColorFilter(android.graphics.Color.WHITE)
     }
 
     private fun setupStatisticsTypeCards() {
