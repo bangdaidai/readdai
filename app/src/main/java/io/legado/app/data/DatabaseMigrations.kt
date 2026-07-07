@@ -651,6 +651,7 @@ object DatabaseMigrations {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '书籍' WHERE `groupName` = '书籍模板'")
             db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '统计' WHERE `groupName` = '统计模板'")
+            db.execSQL("UPDATE `bookplateTemplates` SET `htmlContent` = REPLACE(`htmlContent`, '{{noteContent}}', '{{content}}') WHERE `htmlContent` LIKE '%{{noteContent}}%'")
         }
     }
 }

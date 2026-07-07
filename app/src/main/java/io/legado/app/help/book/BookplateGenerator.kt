@@ -654,7 +654,7 @@ object BookplateGenerator {
   </div>
   <div class="divider"></div>
   <div class="quote-text">{{bookText}}</div>
-  <div class="note-content">{{noteContent}}</div>
+  <div class="note-content">{{content}}</div>
   <div class="footer">
     <span class="time">{{time}}</span>
     <span class="app-name">LEGADO</span>

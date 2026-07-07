@@ -135,7 +135,7 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
             "author" to annotation.bookAuthor,
             "chapterName" to annotation.chapterName,
             "bookText" to currentText,
-            "noteContent" to annotation.content,
+            "content" to annotation.content,
             "time" to timeStr
         )
 
