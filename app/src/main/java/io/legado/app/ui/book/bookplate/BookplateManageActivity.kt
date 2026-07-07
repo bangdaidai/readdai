@@ -180,9 +180,7 @@ class BookplateManageActivity :
 
     override fun onApply(item: BookplateTemplate) {
         val key = PreferKey.templateIdKey(currentGroupName)
-        android.preference.PreferenceManager.getDefaultSharedPreferences(appCtx)
-            .edit().putLong(key, item.id).commit()
-        BookplateGenerator.setSelectedTemplateId(currentGroupName, item.id)
+        appCtx.putPrefLong(key, item.id)
         selectedId = item.id
         adapter.setSelectedId(item.id)
         toastOnUi("已应用 ${item.name}")

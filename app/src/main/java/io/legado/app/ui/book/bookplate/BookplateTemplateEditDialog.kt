@@ -173,9 +173,7 @@ class BookplateTemplateEditDialog() : BaseDialogFragment(R.layout.dialog_bookpla
             }
 
             val key = PreferKey.templateIdKey(templateGroupName)
-            android.preference.PreferenceManager.getDefaultSharedPreferences(appCtx)
-                .edit().putLong(key, savedId).commit()
-            io.legado.app.help.book.BookplateGenerator.setSelectedTemplateId(templateGroupName, savedId)
+            appCtx.putPrefLong(key, savedId)
 
             io.legado.app.help.book.BookplateHtmlRenderer.clearCache()
 

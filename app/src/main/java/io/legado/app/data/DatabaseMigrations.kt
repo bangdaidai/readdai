@@ -23,7 +23,7 @@ object DatabaseMigrations {
             migration_39_40, migration_40_41, migration_41_42, migration_42_43,
             migration_88_89, migration_89_90, migration_93_94, migration_97_98,
             migration_98_99, migration_99_100, migration_101_102, migration_102_103, migration_103_104,
-            migration_104_105, migration_105_106, migration_106_107
+            migration_104_105, migration_105_106, migration_106_107, migration_107_108
         )
     }
 
@@ -644,6 +644,13 @@ object DatabaseMigrations {
             db.execSQL("ALTER TABLE `bookplateTemplates` ADD COLUMN `groupName` TEXT NOT NULL DEFAULT '书籍模板'")
             db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '统计模板' WHERE `templateType` = 1")
             db.execSQL("ALTER TABLE `bookplateTemplates` DROP COLUMN `templateType`")
+        }
+    }
+
+    val migration_107_108 = object : Migration(107, 108) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '书籍' WHERE `groupName` = '书籍模板'")
+            db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '统计' WHERE `groupName` = '统计模板'")
         }
     }
 }

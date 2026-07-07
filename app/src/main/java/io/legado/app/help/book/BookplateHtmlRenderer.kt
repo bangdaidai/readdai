@@ -310,7 +310,9 @@ object BookplateHtmlRenderer {
         variables: Map<String, String>
     ): Bitmap? {
         val w = getRenderWidth(ctx)
-        val html = replaceVariablesFromMap(htmlContent, variables)
+        val defaultVars = buildVariableMap(BookplateData())
+        val merged = defaultVars + variables
+        val html = replaceVariablesFromMap(htmlContent, merged)
         if (html.isBlank()) { lastError = "HTML为空"; return null }
         return withContext(Dispatchers.Main) {
             renderHtml(ctx, ensureViewportMeta(html, w), w)
