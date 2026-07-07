@@ -20,6 +20,12 @@ import splitties.init.appCtx
 
 object BookplateGenerator {
 
+    private val selectedTemplateIds = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    fun setSelectedTemplateId(groupName: String, id: Long) {
+        selectedTemplateIds[groupName] = id
+    }
+
     // ============================================================
     // 内置模板 1: 暗黑科幻风格 (Dark Sci-Fi) - 默认
     // ============================================================
@@ -692,10 +698,14 @@ object BookplateGenerator {
     }
 
     private suspend fun resolveTemplate(groupName: String): BookplateTemplate? {
-        val key = PreferKey.templateIdKey(groupName)
-        val selectedId = appCtx.getPrefLong(key, 0L)
-        if (selectedId > 0L) {
-            return appDb.bookplateTemplateDao.getById(selectedId)
+        val cachedId = selectedTemplateIds[groupName]
+        val id = if (cachedId != null && cachedId > 0L) cachedId else {
+            val key = PreferKey.templateIdKey(groupName)
+            val prefs = android.preference.PreferenceManager.getDefaultSharedPreferences(appCtx)
+            prefs.getLong(key, 0L)
+        }
+        if (id > 0L) {
+            return appDb.bookplateTemplateDao.getById(id)
         }
         return null
     }
@@ -709,7 +719,7 @@ object BookplateGenerator {
             BookplateLogger.log("GEN", "书籍模板为空")
             return@withContext null
         }
-        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, group=$BOOK_BUILTIN_GROUP)")
+        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, group=${template.groupName})")
 
         val data = BookplateDataBuilder.build(book)
         BookplateHtmlRenderer.clearCache()
@@ -727,7 +737,7 @@ object BookplateGenerator {
             BookplateLogger.log("GEN", "书籍模板为空")
             return@withContext null
         }
-        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, group=$BOOK_BUILTIN_GROUP)")
+        BookplateLogger.log("GEN", "使用模板: ${template.name} (id=${template.id}, group=${template.groupName})")
 
         val data = BookplateDataBuilder.build(memory)
         BookplateHtmlRenderer.clearCache()
@@ -738,7 +748,7 @@ object BookplateGenerator {
 
     suspend fun generateStatistics(context: Context, variables: Map<String, String>): Bitmap? {
         val template = resolveTemplate(STATS_BUILTIN_GROUP)
-            ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(STATS_BUILTIN_GROUP).firstOrNull()
+            ?: appDb.bookplateTemplateDao.getByGroupName(STATS_BUILTIN_GROUP).firstOrNull()
             ?: getOrCreateBuiltinTemplates(STATS_BUILTIN_GROUP).firstOrNull()
 
         if (template == null || template.htmlContent.isBlank()) {
@@ -746,7 +756,7 @@ object BookplateGenerator {
             return null
         }
 
-        BookplateLogger.log("GEN", "使用统计模板: ${template.name} (id=${template.id}, group=$STATS_BUILTIN_GROUP)")
+        BookplateLogger.log("GEN", "使用统计模板: ${template.name} (id=${template.id}, group=${template.groupName})")
         BookplateHtmlRenderer.clearCache()
         return withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.renderCustom(context, template.htmlContent, variables)
@@ -755,7 +765,7 @@ object BookplateGenerator {
 
     suspend fun generateAnnotation(context: Context, variables: Map<String, String>): Bitmap? {
         val template = resolveTemplate(ANNOTATION_BUILTIN_GROUP)
-            ?: appDb.bookplateTemplateDao.getBuiltinsByGroupName(ANNOTATION_BUILTIN_GROUP).firstOrNull()
+            ?: appDb.bookplateTemplateDao.getByGroupName(ANNOTATION_BUILTIN_GROUP).firstOrNull()
             ?: getOrCreateBuiltinTemplates(ANNOTATION_BUILTIN_GROUP).firstOrNull()
 
         if (template == null || template.htmlContent.isBlank()) {
@@ -763,7 +773,7 @@ object BookplateGenerator {
             return null
         }
 
-        BookplateLogger.log("GEN", "使用书摘模板: ${template.name} (id=${template.id}, group=$ANNOTATION_BUILTIN_GROUP)")
+        BookplateLogger.log("GEN", "使用书摘模板: ${template.name} (id=${template.id}, group=${template.groupName})")
         BookplateHtmlRenderer.clearCache()
         return withContext(Dispatchers.Main) {
             BookplateHtmlRenderer.renderCustom(context, template.htmlContent, variables)
