@@ -27,6 +27,8 @@ import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.dialogs.alert
 
 import io.legado.app.utils.viewbindingdelegate.viewBinding
+import io.legado.app.utils.dpToPx
+import io.legado.app.help.config.AppConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
@@ -85,6 +87,8 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
             val bgDrawable = it.background
             if (bgDrawable is android.graphics.drawable.GradientDrawable) {
                 bgDrawable.setColor(cardColor)
+                val dividerColor = ThemeStore.dividerColor(this)
+                bgDrawable.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt(), dividerColor)
             }
         }
 

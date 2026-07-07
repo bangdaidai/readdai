@@ -303,6 +303,8 @@ class ReadingMemoryAdapter(
                 val background = cardBg.background
                 if (background is android.graphics.drawable.GradientDrawable) {
                     background.setColor(cardColor)
+                    val dividerColor = io.legado.app.lib.theme.ThemeStore.dividerColor(activity)
+                    background.setStroke((AppConfig.cardBorderWidth * 0.5f).dpToPx().toInt(), dividerColor)
                 }
                 
                 // 设置卡片左右边距为16dp，让卡片距离屏幕边缘16dp
