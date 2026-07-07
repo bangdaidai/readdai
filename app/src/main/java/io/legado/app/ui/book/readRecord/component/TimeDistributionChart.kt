@@ -104,7 +104,7 @@ fun TimeDistributionChart(
                     val barOffsetX = (slotWidth - barWidth) / 2f
 
                     if (maxTime > 0L) {
-                        val radius = 6.dp.toPx()
+                        val radius = (barWidth * 0.25f).coerceIn(2.dp.toPx(), 6.dp.toPx())
                         data.forEachIndexed { index, (_, time) ->
                             if (time > 0L) {
                                 val barHeight = (time.toFloat() / maxTime) * h
