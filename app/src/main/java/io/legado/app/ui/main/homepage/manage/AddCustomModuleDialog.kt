@@ -74,17 +74,19 @@ fun AddCustomModuleDialog(
     }
 
     var title by remember { mutableStateOf(prefillTitle) }
-    var url by remember(prefillUrl) { mutableStateOf(prefillUrl) }
+    var url by remember { mutableStateOf(prefillUrl) }
     var type by remember { mutableStateOf(prefillType) }
     var args by remember { mutableStateOf(prefillArgs) }
     var layoutConfig by remember { mutableStateOf(prefillLayoutConfig) }
-    var selectedKindTitles by remember { mutableStateOf(
-        if (type == HomepageModuleType.Ranking.key && parsedArgs?.isHomepageRankingGroup == true) {
-            parsedArgs.kindTitles.toMutableList()
-        } else {
-            mutableListOf()
-        }
-    ) }
+    var selectedKindTitles: MutableList<String> by remember {
+        mutableStateOf(
+            if (type == HomepageModuleType.Ranking.key && parsedArgs?.isHomepageRankingGroup == true) {
+                parsedArgs.kindTitles.toMutableList()
+            } else {
+                mutableListOf()
+            }
+        )
+    }
     var showKindSelect by remember { mutableStateOf(false) }
 
     val isRankingType = type == HomepageModuleType.Ranking.key

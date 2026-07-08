@@ -529,6 +529,7 @@ private fun ModuleList(
                             else -> {}
                         }
                     }
+                    is ModuleLoadState.Rankings -> {}
                 }
             }
         }

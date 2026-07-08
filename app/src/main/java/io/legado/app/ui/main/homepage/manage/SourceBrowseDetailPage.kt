@@ -487,7 +487,7 @@ fun SourceBrowseDetailPage(
                         prefillType = "card",
                         prefillArgs = editingKind!!.title,
                         canSelectInfinite = canSelectInfiniteGlobal,
-                        allKinds = exploreKinds,
+            allKinds = emptyList(),
                         onDismissRequest = { editingKind = null },
                         onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); editingKind = null },
                     )
