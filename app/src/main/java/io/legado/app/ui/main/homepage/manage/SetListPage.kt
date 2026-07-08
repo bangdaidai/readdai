@@ -118,6 +118,12 @@ fun SetListPage(
                             modifier = Modifier.scale(0.8f),
                             checked = set.isSelected,
                             onCheckedChange = { enabled -> onToggleSet(set.sourceUrl, enabled) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            ),
                         )
                     }
                 }
