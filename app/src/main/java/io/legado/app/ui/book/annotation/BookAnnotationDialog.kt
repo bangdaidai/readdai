@@ -9,6 +9,7 @@ import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookAnnotation
+import io.legado.app.data.entities.getDisplayCover
 import io.legado.app.databinding.DialogAnnotationBinding
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.lib.theme.primaryColor
@@ -130,14 +131,23 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         val timeStr = dateFormat.format(Date(annotation.time))
 
-        val variables = mapOf(
-            "bookName" to annotation.bookName,
-            "author" to annotation.bookAuthor,
-            "chapterName" to annotation.chapterName,
-            "bookText" to currentText,
-            "content" to annotation.content,
-            "time" to timeStr
-        )
+        lifecycleScope.launch {
+            val coverUrl = withContext(IO) {
+                appDb.bookDao.findByName(annotation.bookName).firstOrNull()?.getDisplayCover() ?: ""
+            }
+
+            val variables = mapOf(
+                "bookName" to annotation.bookName,
+                "author" to annotation.bookAuthor,
+                "chapterName" to annotation.chapterName,
+                "bookText" to currentText,
+                "content" to annotation.content,
+                "time" to timeStr,
+                "coverUrl" to coverUrl,
+                "latestAnnotation" to currentText,
+                "latestAnnotationNote" to annotation.content,
+                "latestAnnotationChapter" to annotation.chapterName,
+            )
 
         lifecycleScope.launch {
             val bitmap = withContext(IO) {
