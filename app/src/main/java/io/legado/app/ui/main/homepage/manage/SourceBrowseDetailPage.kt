@@ -502,7 +502,7 @@ fun SourceBrowseDetailPage(
             targetSetId = currentSetId,
             prefillType = "card",
             canSelectInfinite = canSelectInfiniteGlobal,
-            allKinds = exploreKinds,
+            allKinds = emptyList(),
             onDismissRequest = { showAddDialog = false },
             onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); showAddDialog = false },
         )
