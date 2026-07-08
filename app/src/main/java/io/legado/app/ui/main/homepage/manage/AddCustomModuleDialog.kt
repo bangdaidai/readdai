@@ -2,18 +2,28 @@ package io.legado.app.ui.main.homepage.manage
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -21,17 +31,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.legado.app.R
+import io.legado.app.data.entities.rule.ExploreKind
 import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.main.homepage.HomepageViewModel
+import io.legado.app.utils.GSON
 
-@OptIn(ExperimentalMaterial3Api::class)
+private data class RankingKindsArgs(
+    val isHomepageRankingGroup: Boolean = false,
+    val kindTitles: List<String> = emptyList()
+)
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AddCustomModuleDialog(
     sourceUrl: String = "",
@@ -42,14 +63,31 @@ fun AddCustomModuleDialog(
     prefillArgs: String = "",
     prefillLayoutConfig: String = "",
     canSelectInfinite: Boolean = true,
+    allKinds: List<ExploreKind> = emptyList(),
     onDismissRequest: () -> Unit,
     onConfirm: (ModuleDef) -> Unit,
 ) {
+    val parsedArgs = remember(prefillArgs) {
+        kotlin.runCatching {
+            GSON.fromJson(prefillArgs, RankingKindsArgs::class.java)
+        }.getOrNull()
+    }
+
     var title by remember { mutableStateOf(prefillTitle) }
-    var url by remember { mutableStateOf(prefillUrl) }
+    var url by remember(prefillUrl) { mutableStateOf(prefillUrl) }
     var type by remember { mutableStateOf(prefillType) }
     var args by remember { mutableStateOf(prefillArgs) }
     var layoutConfig by remember { mutableStateOf(prefillLayoutConfig) }
+    var selectedKindTitles by remember { mutableStateOf(
+        if (type == HomepageModuleType.Ranking.key && parsedArgs?.isHomepageRankingGroup == true) {
+            parsedArgs.kindTitles.toMutableList()
+        } else {
+            mutableListOf()
+        }
+    ) }
+    var showKindSelect by remember { mutableStateOf(false) }
+
+    val isRankingType = type == HomepageModuleType.Ranking.key
 
     val typeList = remember(canSelectInfinite) {
         HomepageModuleType.entries.filter {
@@ -76,12 +114,6 @@ fun AddCustomModuleDialog(
                     label = { Text(stringResource(R.string.hp_title)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    label = { Text(stringResource(R.string.hp_url)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
 
                 var typeExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(expanded = typeExpanded, onExpandedChange = { typeExpanded = it }) {
@@ -97,22 +129,90 @@ fun AddCustomModuleDialog(
                         typeList.forEach { moduleType ->
                             DropdownMenuItem(
                                 text = { Text(moduleType.title) },
-                                onClick = { type = moduleType.key; typeExpanded = false },
+                                onClick = {
+                                    type = moduleType.key
+                                    typeExpanded = false
+                                    if (moduleType.key != HomepageModuleType.Ranking.key) {
+                                        selectedKindTitles = mutableListOf()
+                                    }
+                                },
                             )
                         }
                     }
+                }
+
+                if (isRankingType && allKinds.isNotEmpty()) {
+                    if (selectedKindTitles.isNotEmpty()) {
+                        Text(stringResource(R.string.hp_selected_categories), style = MaterialTheme.typography.labelMedium)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            selectedKindTitles.forEach { kindTitle ->
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                ) {
+                                    androidx.compose.foundation.layout.Row(
+                                        modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(kindTitle, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        IconButton(
+                                            onClick = {
+                                                selectedKindTitles = selectedKindTitles.toMutableList().apply { remove(kindTitle) }
+                                            },
+                                            modifier = Modifier.size(20.dp),
+                                        ) {
+                                            Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = { showKindSelect = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            if (selectedKindTitles.isEmpty()) stringResource(R.string.hp_select_category)
+                            else stringResource(R.string.hp_modify_category)
+                        )
+                    }
+
+                    url = ""
+                } else if (!isRankingType) {
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        label = { Text(stringResource(R.string.hp_url)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        label = { Text(stringResource(R.string.hp_url)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
 
                 if (HomepageViewModel.isInfinite(type, null) && !canSelectInfinite) {
                     Text(stringResource(R.string.hp_infinite_conflict), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
 
-                OutlinedTextField(
-                    value = args,
-                    onValueChange = { args = it },
-                    label = { Text(stringResource(R.string.hp_args)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (!isRankingType) {
+                    OutlinedTextField(
+                        value = args,
+                        onValueChange = { args = it },
+                        label = { Text(stringResource(R.string.hp_args)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(stringResource(R.string.hp_layout_config), style = MaterialTheme.typography.labelMedium)
@@ -127,11 +227,37 @@ fun AddCustomModuleDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                onConfirm(ModuleDef(title = title, url = url, type = type, args = args, layoutConfig = layoutConfig))
+                val finalArgs = if (isRankingType && selectedKindTitles.size >= 2) {
+                    GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = selectedKindTitles))
+                } else {
+                    args
+                }
+                val finalUrl = if (isRankingType && selectedKindTitles.size >= 2) "" else url
+                onConfirm(ModuleDef(
+                    title = title,
+                    url = finalUrl,
+                    type = type,
+                    args = finalArgs,
+                    layoutConfig = layoutConfig,
+                ))
             }) { Text(stringResource(R.string.hp_determine)) }
         },
         dismissButton = {
             TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.hp_cancel)) }
         },
     )
+
+    if (showKindSelect) {
+        ExploreKindSelectSheet(
+            show = true,
+            onDismissRequest = { showKindSelect = false },
+            kinds = allKinds,
+            multiple = true,
+            initialSelectedTitles = selectedKindTitles.toSet(),
+            onSelected = { kinds ->
+                selectedKindTitles = kinds.map { it.title }.toMutableList()
+                showKindSelect = false
+            },
+        )
+    }
 }

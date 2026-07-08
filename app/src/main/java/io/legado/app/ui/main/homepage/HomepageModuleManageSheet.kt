@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -180,6 +181,9 @@ fun HomepageModuleManageSheet(
                             onAddButtonGroupFromKinds = { sourceUrl, setId, title, kinds ->
                                 viewModel.addButtonGroupFromKinds(sourceUrl, setId, title, kinds)
                             },
+                            onAddRankingFromKinds = { sourceUrl, setId, title, kinds ->
+                                viewModel.addRankingFromKinds(sourceUrl, setId, title, kinds)
+                            },
                         )
 
                         is ManagePage.AddModulesToSet -> CustomSetAddModulesPage(
@@ -260,6 +264,10 @@ fun HomepageModuleManageSheet(
 
     if (editingModule != null) {
         val module = editingModule!!
+        val kinds = remember(module.sourceUrl) { viewModel.getSourceExploreKinds(module.sourceUrl) }
+        LaunchedEffect(module.sourceUrl) {
+            if (module.type == "ranking") viewModel.loadExploreKinds(module.sourceUrl)
+        }
         AddCustomModuleDialog(
             sourceUrl = module.sourceUrl,
             targetSetId = module.customSetId ?: "",
@@ -269,6 +277,7 @@ fun HomepageModuleManageSheet(
             prefillArgs = module.args ?: "",
             prefillLayoutConfig = module.layoutConfig ?: "",
             canSelectInfinite = canSelectInfiniteGlobal,
+            allKinds = kinds,
             onDismissRequest = { editingModule = null },
             onConfirm = { def -> viewModel.updateModule(module.id, def); editingModule = null },
         )

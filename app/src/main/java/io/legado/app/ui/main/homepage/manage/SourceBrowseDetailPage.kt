@@ -58,6 +58,7 @@ import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
 import io.legado.app.ui.main.homepage.HomepageViewModel
+import io.legado.app.utils.GSON
 import androidx.compose.foundation.ExperimentalFoundationApi
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -79,6 +80,7 @@ fun SourceBrowseDetailPage(
     onEditModule: (HomepageModuleManageUi) -> Unit,
     onAddCustomModule: (String, String?, ModuleDef) -> Unit,
     onAddButtonGroupFromKinds: (String, String?, String, List<String>) -> Unit,
+    onAddRankingFromKinds: (String, String?, String, List<String>) -> Unit = { _, _, _, _ -> },
 ) {
     var browseTab by remember { mutableIntStateOf(0) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -284,6 +286,9 @@ fun SourceBrowseDetailPage(
                 val exploreKinds = onGetExploreKinds(browseUrl)
                 var editingKind by remember { mutableStateOf<ExploreKind?>(null) }
                 var query by remember { mutableStateOf("") }
+                var multiSelect by remember { mutableStateOf(false) }
+                var selectedKinds by remember { mutableStateOf<Set<String>>(emptySet()) }
+                var showRankingTitleDialog by remember { mutableStateOf(false) }
 
                 val filteredKinds = remember(query, exploreKinds) {
                     val baseList = exploreKinds.filter { !it.url.isNullOrBlank() }
@@ -306,20 +311,56 @@ fun SourceBrowseDetailPage(
                         modifier = Modifier.fillMaxWidth()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        OutlinedTextField(
-                            value = query,
-                            onValueChange = { query = it },
-                            label = { Text(stringResource(R.string.hp_search_category)) },
+                        Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            singleLine = true,
-                            trailingIcon = {
-                                if (query.isNotBlank()) {
-                                    IconButton(onClick = { query = "" }) {
-                                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            OutlinedTextField(
+                                value = query,
+                                onValueChange = { query = it },
+                                label = { Text(stringResource(R.string.hp_search_category)) },
+                                modifier = Modifier.weight(1f),
+                                singleLine = true,
+                                trailingIcon = {
+                                    if (query.isNotBlank()) {
+                                        IconButton(onClick = { query = "" }) {
+                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
+                                        }
                                     }
                                 }
+                            )
+                            Spacer(modifier = Modifier.padding(start = 8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (multiSelect) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                onClick = {
+                                    multiSelect = !multiSelect
+                                    if (!multiSelect) selectedKinds = emptySet()
+                                },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    if (multiSelect) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                        Spacer(modifier = Modifier.padding(start = 4.dp))
+                                    }
+                                    Text(
+                                        stringResource(R.string.hp_multi_select),
+                                        fontSize = 12.sp,
+                                        color = if (multiSelect) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
-                        )
+                        }
 
                         FlowRow(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -327,14 +368,32 @@ fun SourceBrowseDetailPage(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             filteredKinds.forEach { kind ->
+                                val isSelected = multiSelect && kind.title in selectedKinds
                                 Surface(
                                     shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.clickable { editingKind = kind },
+                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                    else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.clickable {
+                                        if (multiSelect) {
+                                            selectedKinds = if (isSelected) {
+                                                selectedKinds - kind.title
+                                            } else {
+                                                selectedKinds + kind.title
+                                            }
+                                        } else {
+                                            editingKind = kind
+                                        }
+                                    },
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                        modifier = Modifier.padding(
+                                            start = 14.dp,
+                                            end = if (isSelected) 8.dp else 14.dp,
+                                            top = 8.dp,
+                                            bottom = 8.dp,
+                                        ),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Text(
@@ -343,20 +402,80 @@ fun SourceBrowseDetailPage(
                                             overflow = TextOverflow.Ellipsis,
                                             fontSize = 13.sp,
                                         )
+                                        if (isSelected) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp).padding(start = 4.dp),
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        if (multiSelect && selectedKinds.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            TextButton(
+                                onClick = { showRankingTitleDialog = true },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            ) {
+                                Text(
+                                    stringResource(R.string.hp_create_ranking, selectedKinds.size),
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
 
-                        TextButton(
-                            onClick = { showAddDialog = true },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.hp_manual_add))
+                        if (!multiSelect) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(
+                                onClick = { showAddDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.hp_manual_add))
+                            }
                         }
                     }
+                }
+
+                if (showRankingTitleDialog) {
+                    var rankingTitle by remember { mutableStateOf("") }
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { showRankingTitleDialog = false },
+                        title = { Text(stringResource(R.string.hp_ranking_title)) },
+                        text = {
+                            OutlinedTextField(
+                                value = rankingTitle,
+                                onValueChange = { rankingTitle = it },
+                                label = { Text(stringResource(R.string.hp_title)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                val title = rankingTitle.ifBlank { selectedKinds.joinToString("·") }
+                                if (selectedKinds.size >= 2) {
+                                    onAddRankingFromKinds(browseUrl, currentSetId, title, selectedKinds.toList())
+                                } else {
+                                    val kind = exploreKinds.find { it.title == selectedKinds.firstOrNull() }
+                                    onAddCustomModule(browseUrl, currentSetId, ModuleDef(
+                                        title = title,
+                                        url = kind?.url ?: "",
+                                        type = HomepageModuleType.Ranking.key,
+                                    ))
+                                }
+                                showRankingTitleDialog = false
+                                multiSelect = false
+                                selectedKinds = emptySet()
+                            }) { Text(stringResource(R.string.hp_determine)) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showRankingTitleDialog = false }) { Text(stringResource(R.string.hp_cancel)) }
+                        },
+                    )
                 }
 
                 if (editingKind != null) {
@@ -368,6 +487,7 @@ fun SourceBrowseDetailPage(
                         prefillType = "card",
                         prefillArgs = editingKind!!.title,
                         canSelectInfinite = canSelectInfiniteGlobal,
+                        allKinds = exploreKinds,
                         onDismissRequest = { editingKind = null },
                         onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); editingKind = null },
                     )
@@ -382,6 +502,7 @@ fun SourceBrowseDetailPage(
             targetSetId = currentSetId,
             prefillType = "card",
             canSelectInfinite = canSelectInfiniteGlobal,
+            allKinds = exploreKinds,
             onDismissRequest = { showAddDialog = false },
             onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); showAddDialog = false },
         )

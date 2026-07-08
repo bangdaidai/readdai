@@ -958,6 +958,13 @@
     <string name="hp_no_explore_kinds">该书源无发现分类</string>
     <string name="hp_module_type">模块类型</string>
     <string name="hp_select_category">选择分类</string>
+    <string name="hp_search_category">搜索分类</string>
+    <string name="hp_selected_count">已选 %1$d 个分类</string>
+    <string name="hp_selected_categories">已选分类</string>
+    <string name="hp_modify_category">修改分类</string>
+    <string name="hp_multi_select">多选</string>
+    <string name="hp_create_ranking">创建排行榜（%1$d个）</string>
+    <string name="hp_ranking_title">排行榜标题</string>
     <string name="hp_manual_add">手动添加模块</string>
     <string name="hp_create_button_group">创建按钮组（%1$d个分类）</string>
     <string name="hp_create_button_group_title">创建按钮组</string>

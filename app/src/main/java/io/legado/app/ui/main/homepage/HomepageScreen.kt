@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -65,6 +66,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -345,6 +347,8 @@ private fun ModuleList(
             if (infinite != null) others + infinite else others
         }
 
+        var selectedRankingSources by rememberSaveable { mutableStateOf(hashMapOf<String, String>()) }
+
         val gridColumns = remember(processedModules) {
             val infiniteModule = processedModules.find { m ->
                 m.type == HomepageModuleType.Waterfall || m.type == HomepageModuleType.InfiniteGrid
@@ -360,16 +364,39 @@ private fun ModuleList(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
         ) {
             processedModules.forEach { moduleUi ->
+                val rankingSources = (moduleUi.state as? ModuleLoadState.Rankings)?.sources
+                val selectedTitle = selectedRankingSources[moduleUi.globalId]
+                val selectedSource = rankingSources?.firstOrNull { it.title == selectedTitle }
+                    ?: rankingSources?.firstOrNull()
+
                 item(key = "header_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
                     ModuleHeader(
                         title = moduleUi.title,
+                        sourceTabs = rankingSources,
+                        selectedSourceTitle = selectedSource?.title,
+                        onSourceSelected = if (rankingSources != null) {
+                            { title ->
+                                selectedRankingSources = HashMap(selectedRankingSources).apply {
+                                    put(moduleUi.globalId, title)
+                                }
+                            }
+                        } else null,
                         onNavigate = if (moduleUi.type == HomepageModuleType.ButtonGroup) null else {
-                            { viewModel.onModuleHeaderClick(moduleUi.sourceUrl, moduleUi.exploreUrl, moduleUi.title) }
+                            {
+                                val exploreUrl = if (rankingSources != null) {
+                                    selectedSource?.url ?: moduleUi.exploreUrl
+                                } else {
+                                    moduleUi.exploreUrl
+                                }
+                                viewModel.onModuleHeaderClick(moduleUi.sourceUrl, exploreUrl, moduleUi.title)
+                            }
                         },
                     )
                 }
 
-                when (val state = moduleUi.state) {
+                val displayState = selectedSource?.state ?: moduleUi.state
+
+                when (val state = displayState) {
                     is ModuleLoadState.Loading -> {
                         item(key = "loading_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
                             HomepageModuleSkeleton(
@@ -509,20 +536,57 @@ private fun ModuleList(
 }
 
 @Composable
-private fun ModuleHeader(title: String, onNavigate: (() -> Unit)? = null) {
+private fun ModuleHeader(
+    title: String,
+    sourceTabs: List<HomepageRankingSourceUi>? = null,
+    selectedSourceTitle: String? = null,
+    onSourceSelected: ((String) -> Unit)? = null,
+    onNavigate: (() -> Unit)? = null,
+) {
+    val hasSourceTabs = sourceTabs != null && sourceTabs.size > 1 && onSourceSelected != null
+
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 0.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
+        if (hasSourceTabs) {
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                items(sourceTabs!!, key = { it.title }) { source ->
+                    val isSelected = selectedSourceTitle == source.title
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                        else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        onClick = { onSourceSelected(source.title) },
+                    ) {
+                        Text(
+                            text = source.title,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+            }
+        } else {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+        }
         if (onNavigate != null) {
             Surface(
                 shape = CircleShape,

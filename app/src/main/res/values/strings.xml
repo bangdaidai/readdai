@@ -1076,6 +1076,11 @@
     <string name="hp_select_category">Select category</string>
     <string name="hp_search_category">Search category</string>
     <string name="hp_selected_count">Selected %1$d categories</string>
+    <string name="hp_selected_categories">Selected categories</string>
+    <string name="hp_modify_category">Modify categories</string>
+    <string name="hp_multi_select">Multi-select</string>
+    <string name="hp_create_ranking">Create ranking (%1$d)</string>
+    <string name="hp_ranking_title">Ranking title</string>
     <string name="hp_manual_add">Add module manually</string>
     <string name="hp_create_button_group">Create button group (%1$d categories)</string>
     <string name="hp_create_button_group_title">Create button group</string>

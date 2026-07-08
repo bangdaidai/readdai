@@ -110,5 +110,17 @@ sealed interface ModuleLoadState {
     data class Buttons(val kinds: List<ExploreKind>) : ModuleLoadState
 
     @Stable
+    data class Rankings(
+        val sources: List<HomepageRankingSourceUi>
+    ) : ModuleLoadState
+
+    @Stable
     data class Error(val message: String) : ModuleLoadState
 }
+
+@Stable
+data class HomepageRankingSourceUi(
+    val title: String,
+    val url: String?,
+    val state: ModuleLoadState,
+)

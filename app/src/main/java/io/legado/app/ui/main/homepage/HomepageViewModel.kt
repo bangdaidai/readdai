@@ -21,6 +21,9 @@ import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonArray
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -258,17 +261,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         _bookshelf
     ) { modules, bookshelf ->
         if (bookshelf.isEmpty()) {
-            modules.map { module ->
-                val state = module.state
-                if (state is ModuleLoadState.Loaded) {
-                    module.copy(state = state.copy(
-                        books = state.books.map { item ->
-                            if (item.shelfState == BookShelfState.NOT_IN_SHELF) item
-                            else item.copy(shelfState = BookShelfState.NOT_IN_SHELF)
-                        }
-                    ))
-                } else module
-            }
+            modules.map { module -> mapModuleWithEmptyShelf(module) }
         } else {
             val exactKeys = HashSet<Triple<String, String, String?>>(bookshelf.size)
             val nameAuthorKeys = HashSet<Pair<String, String>>(bookshelf.size)
@@ -276,24 +269,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 exactKeys.add(Triple(key.name, key.author, key.url))
                 nameAuthorKeys.add(key.name to key.author)
             }
-            modules.map { module ->
-                val state = module.state
-                if (state is ModuleLoadState.Loaded) {
-                    module.copy(state = state.copy(
-                        books = state.books.map { item ->
-                            val bookTriple = Triple(item.book.name, item.book.author, item.book.bookUrl)
-                            val newShelfState = when {
-                                bookTriple in exactKeys -> BookShelfState.IN_SHELF
-                                (item.book.name to item.book.author) in nameAuthorKeys ->
-                                    BookShelfState.SAME_NAME_AUTHOR
-                                else -> BookShelfState.NOT_IN_SHELF
-                            }
-                            if (item.shelfState == newShelfState) item
-                            else item.copy(shelfState = newShelfState)
-                        }
-                    ))
-                } else module
-            }
+            modules.map { module -> mapModuleWithShelf(module, exactKeys, nameAuthorKeys) }
         }
     }
 
@@ -440,6 +416,53 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
 
     private fun loadModule(module: ModuleItem) {
         loadJobs[module.id]?.cancel()
+
+        val multiKindTitles = module.rankingKindTitles()
+        if (multiKindTitles != null) {
+            loadJobs[module.id] = viewModelScope.launch {
+                kotlin.runCatching {
+                    val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
+                        ?: throw Exception("Source not found")
+                    val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
+                    val selectedKinds = multiKindTitles.mapNotNull { title ->
+                        allKinds.find { it.title == title }
+                    }
+                    if (selectedKinds.isEmpty()) throw Exception("Ranking kinds not found")
+
+                    coroutineScope {
+                        selectedKinds.map { kind ->
+                            async {
+                                val result = kotlin.runCatching {
+                                    val books = WebBook.exploreBookAwait(source, kind.url ?: "", 1)
+                                    ModuleLoadState.Loaded(
+                                        books = books.map { book ->
+                                            HomepageBookItemUi(
+                                                book = book,
+                                                shelfState = resolveBookShelfState(
+                                                    book.name, book.author, book.bookUrl, _bookshelf.value
+                                                )
+                                            )
+                                        }
+                                    )
+                                }.getOrElse { ModuleLoadState.Error(it.stackTraceToString()) }
+
+                                HomepageRankingSourceUi(title = kind.title, url = kind.url, state = result)
+                            }
+                        }.awaitAll()
+                    }
+                }.onSuccess { sources ->
+                    _moduleContentStates.update {
+                        it + (module.id to ModuleLoadState.Rankings(sources))
+                    }
+                }.onFailure { e ->
+                    _moduleContentStates.update {
+                        it + (module.id to ModuleLoadState.Error(e.stackTraceToString()))
+                    }
+                }
+            }.also { it.invokeOnCompletion { loadJobs.remove(module.id) } }
+            return
+        }
+
         if (module.type == HomepageModuleType.ButtonGroup.key) {
             loadJobs[module.id] = viewModelScope.launch {
                 kotlin.runCatching {
@@ -763,6 +786,40 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+    fun addRankingFromKinds(sourceUrl: String, targetSetId: String?, title: String, kindTitles: List<String>) {
+        if (kindTitles.isEmpty() || kindTitles.size < 2) return
+        viewModelScope.launch {
+            val source = appDb.bookSourceDao.getBookSource(sourceUrl) ?: return@launch
+            val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
+            val selectedKinds = kindTitles.mapNotNull { selectedTitle ->
+                allKinds.find { it.title == selectedTitle }
+            }
+            if (selectedKinds.size < 2) return@launch
+
+            val setId = targetSetId ?: ensureSetForSource(sourceUrl, source.bookSourceName)
+            val key = "ranking_${jsonHash(GSON.toJson(kindTitles)).take(12)}"
+            val id = ModuleDef.globalIdOf(sourceUrl, key, setId)
+            val module = ModuleItem(
+                id = id,
+                sourceUrl = sourceUrl,
+                moduleKey = key,
+                type = HomepageModuleType.Ranking.key,
+                title = title,
+                args = GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = kindTitles)),
+                url = null,
+                isEnabled = true,
+                isUserCreated = true,
+                customSetId = setId,
+                syncedAt = System.currentTimeMillis(),
+            )
+            gateway.upsertAll(listOf(module))
+            _pendingUserModules.update { pending ->
+                if (pending.any { it.id == id }) pending else pending + module
+            }
+            notifyConfigChanged()
+        }
+    }
+
     fun assignModuleToCustomSet(moduleId: String, customSetId: String?) {
         viewModelScope.launch {
             val existing = gateway.getById(moduleId) ?: return@launch
@@ -874,6 +931,30 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         if (nameAuthorMatch) return BookShelfState.SAME_NAME_AUTHOR
         return BookShelfState.NOT_IN_SHELF
     }
+
+    private fun mapModuleWithEmptyShelf(module: HomepageModuleUi): HomepageModuleUi {
+        return module.copy(state = module.state.mapStateBooks { item ->
+            if (item.shelfState == BookShelfState.NOT_IN_SHELF) item
+            else item.copy(shelfState = BookShelfState.NOT_IN_SHELF)
+        })
+    }
+
+    private fun mapModuleWithShelf(
+        module: HomepageModuleUi,
+        exactKeys: Set<Triple<String, String, String?>>,
+        nameAuthorKeys: Set<Pair<String, String>>,
+    ): HomepageModuleUi {
+        return module.copy(state = module.state.mapStateBooks { item ->
+            val bookTriple = Triple(item.book.name, item.book.author, item.book.bookUrl)
+            val newShelfState = when {
+                bookTriple in exactKeys -> BookShelfState.IN_SHELF
+                (item.book.name to item.book.author) in nameAuthorKeys -> BookShelfState.SAME_NAME_AUTHOR
+                else -> BookShelfState.NOT_IN_SHELF
+            }
+            if (item.shelfState == newShelfState) item
+            else item.copy(shelfState = newShelfState)
+        })
+    }
 }
 
 private data class BookShelfKey(val name: String, val author: String, val url: String)
@@ -883,3 +964,33 @@ private data class HomepageUiFlags(
     val isManageMode: Boolean,
     val isConfigMode: Boolean
 )
+
+private data class RankingKindsArgs(
+    val isHomepageRankingGroup: Boolean = false,
+    val kindTitles: List<String> = emptyList()
+)
+
+private fun ModuleItem.rankingKindTitles(): List<String>? {
+    if (type != HomepageModuleType.Ranking.key) return null
+    val rankingArgs = args ?: return null
+    return kotlin.runCatching {
+        GSON.fromJson(rankingArgs, RankingKindsArgs::class.java)
+    }.getOrNull()
+        ?.takeIf { it.isHomepageRankingGroup }
+        ?.kindTitles
+        ?.takeIf { it.size > 1 }
+}
+
+private fun ModuleLoadState.mapStateBooks(
+    transform: (HomepageBookItemUi) -> HomepageBookItemUi
+): ModuleLoadState = when (this) {
+    is ModuleLoadState.Loaded -> copy(
+        books = books.map(transform)
+    )
+    is ModuleLoadState.Rankings -> copy(
+        sources = sources.map { source ->
+            source.copy(state = source.state.mapStateBooks(transform))
+        }
+    )
+    else -> this
+}
