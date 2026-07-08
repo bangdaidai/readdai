@@ -204,6 +204,7 @@ object PreferKey {
     const val bookReviewLines = "bookReviewLines"
     const val bookIntroLines = "bookIntroLines"
     const val showReadingMemoryIntro = "showReadingMemoryIntro"
+    const val onlyShowReadingMemoryWithReview = "onlyShowReadingMemoryWithReview"
     const val showCardBorder = "showCardBorder"
     const val cardBorderWidth = "cardBorderWidth"
 

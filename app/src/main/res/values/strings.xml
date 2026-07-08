@@ -887,6 +887,7 @@
     <string name="show_book_review">显示书评</string>
     <string name="show_book_intro">显示简介</string>
     <string name="show_reading_memory_intro">显示简介</string>
+    <string name="only_show_with_review">仅显示有书评</string>
     <string name="clear_cache_summary">Clear the cache of the downloaded books and fonts</string>
     <string name="default_cover">Default cover</string>
     <string name="restore_ignore">Bypass list</string>

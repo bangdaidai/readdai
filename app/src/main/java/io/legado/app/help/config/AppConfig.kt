@@ -633,6 +633,12 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             appCtx.putPrefBoolean(PreferKey.showReadingMemoryIntro, value)
         }
 
+    var onlyShowReadingMemoryWithReview: Boolean
+        get() = appCtx.getPrefBoolean(PreferKey.onlyShowReadingMemoryWithReview, false)
+        set(value) {
+            appCtx.putPrefBoolean(PreferKey.onlyShowReadingMemoryWithReview, value)
+        }
+
     var contentSelectSpeakMod: Int
         get() = appCtx.getPrefInt(PreferKey.contentSelectSpeakMod)
         set(value) {

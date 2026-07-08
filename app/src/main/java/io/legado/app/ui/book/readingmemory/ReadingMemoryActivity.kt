@@ -92,6 +92,9 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
             }
         }
 
+        // 从持久化配置恢复仅显示有书评筛选状态
+        currentOnlyShowWithReview = io.legado.app.help.config.AppConfig.onlyShowReadingMemoryWithReview
+
         initView()
         initSearchView()
         initData()
@@ -486,11 +489,16 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
         menu.findItem(R.id.menu_show_intro)?.isChecked = io.legado.app.help.config.AppConfig.showReadingMemoryIntro
         // 设置书评显示开关的状态
         menu.findItem(R.id.menu_show_review)?.isChecked = io.legado.app.help.config.AppConfig.showBookReview
+        // 设置仅显示有书评开关的状态
+        menu.findItem(R.id.menu_only_show_with_review)?.isChecked = io.legado.app.help.config.AppConfig.onlyShowReadingMemoryWithReview
         return true
     }
 
     // 当前阅读类型筛选
     private var currentReadType: String? = null
+
+    // 仅显示有书评筛选
+    private var currentOnlyShowWithReview: Boolean = false
 
     override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
@@ -518,6 +526,14 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
                 io.legado.app.help.config.AppConfig.showBookReview = item.isChecked
                 // 刷新列表以应用书评显示变化
                 adapter.notifyDataSetChanged()
+            }
+
+            R.id.menu_only_show_with_review -> {
+                // 切换仅显示有书评筛选
+                item.isChecked = !item.isChecked
+                io.legado.app.help.config.AppConfig.onlyShowReadingMemoryWithReview = item.isChecked
+                currentOnlyShowWithReview = item.isChecked
+                updateDisplay()
             }
 
             R.id.menu_clear_all -> {
@@ -644,7 +660,8 @@ class ReadingMemoryActivity : VMBaseActivity<ActivityReadingMemoryBinding, Readi
             currentGroupBy,
             currentRatingFilter,
             currentRatingSort,
-            readTypeInt
+            readTypeInt,
+            currentOnlyShowWithReview
         )
     }
 

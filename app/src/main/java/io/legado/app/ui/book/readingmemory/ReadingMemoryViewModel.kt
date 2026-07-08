@@ -48,6 +48,7 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
     private var currentStatusFilter: String? = null
     private var currentReadTypeFilter: Int? = null
     private var currentRatingFilter: String? = "all"
+    private var currentOnlyShowWithReview: Boolean = false
 
     init {
         // 实时监听数据库变化
@@ -256,6 +257,15 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                 // 3. 标签搜索筛选
                 filtered = filterBySearchKeyword(filtered)
 
+                // 4. 仅显示有书评筛选
+                if (currentOnlyShowWithReview) {
+                    val reviewDao = appDb.bookReviewDao
+                    filtered = filtered.filter { memory ->
+                        val reviews = reviewDao.getReviewByBookUrl(memory.bookUrl)
+                        reviews.any { !it.reviewContent.isNullOrBlank() }
+                    }
+                }
+
                 filtered
             }
 
@@ -296,6 +306,15 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                     // 然后根据搜索关键词筛选
                     result = filterBySearchKeyword(result)
 
+                    // 仅显示有书评筛选
+                    if (currentOnlyShowWithReview) {
+                        val reviewDao = appDb.bookReviewDao
+                        result = result.filter { memory ->
+                            val reviews = reviewDao.getReviewByBookUrl(memory.bookUrl)
+                            reviews.any { !it.reviewContent.isNullOrBlank() }
+                        }
+                    }
+
                     result
                 }
 
@@ -320,7 +339,8 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
         groupBy: String,
         ratingFilter: String,
         ratingSort: String,
-        readType: Int?
+        readType: Int?,
+        onlyShowWithReview: Boolean = false
     ) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -330,6 +350,7 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                 currentFilterStatus = status
                 currentReadTypeFilter = readType
                 currentRatingFilter = ratingFilter
+                currentOnlyShowWithReview = onlyShowWithReview
                 
                 val result = withContext(Dispatchers.IO) {
                     // 1. 状态筛选
@@ -383,7 +404,16 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                     // 4. 标签搜索筛选
                     filtered = filterBySearchKeyword(filtered)
 
-                    // 5. 分组
+                    // 5. 仅显示有书评筛选
+                    if (onlyShowWithReview) {
+                        val reviewDao = appDb.bookReviewDao
+                        filtered = filtered.filter { memory ->
+                            val reviews = reviewDao.getReviewByBookUrl(memory.bookUrl)
+                            reviews.any { !it.reviewContent.isNullOrBlank() }
+                        }
+                    }
+
+                    // 6. 分组
                     val grouped = when (groupBy) {
                         "year" -> groupByYear(filtered)
                         "rating" -> groupByRating(filtered)
@@ -391,12 +421,12 @@ class ReadingMemoryViewModel(application: Application) : AndroidViewModel(applic
                         else -> mapOf("" to filtered)
                     }
 
-                    // 6. 组内排序
+                    // 7. 组内排序
                     val sortedGroups = grouped.mapValues { (_, memories) ->
                         sortMemories(memories, sortBy, ratingSort)
                     }
 
-                    // 7. 组间排序
+                    // 8. 组间排序
                     sortGroups(sortedGroups, groupBy)
                 }
 

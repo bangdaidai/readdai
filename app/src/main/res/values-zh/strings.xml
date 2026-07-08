@@ -1442,6 +1442,7 @@
     <string name="reviews">书评</string>
     <string name="no_intro">暂无简介</string>
     <string name="unknown">未知</string>
+    <string name="only_show_with_review">仅显示有书评</string>
     <string name="date_format">yyyy-MM-dd</string>
     <string name="is_system_tts_no_export">无法导出系统tts</string>
     <string name="clear_all">清除全部</string>
