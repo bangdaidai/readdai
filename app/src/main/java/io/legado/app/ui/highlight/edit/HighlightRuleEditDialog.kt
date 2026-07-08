@@ -146,13 +146,25 @@ class HighlightRuleEditDialog(
             ),
             intArrayOf(
                 0xFFFFFFFF.toInt(),
+                0xFFFFFFFF.toInt()
+            )
+        )
+        val switchThumbIconColorList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(-android.R.attr.state_checked),
+                intArrayOf(android.R.attr.state_checked)
+            ),
+            intArrayOf(
+                0x00000000,
                 accentColor
             )
         )
         binding.switchEnable.trackTintList = switchTrackColorList
         binding.switchEnable.thumbTintList = switchThumbColorList
+        binding.switchEnable.thumbIconTintList = switchThumbIconColorList
         binding.switchBold.trackTintList = switchTrackColorList
         binding.switchBold.thumbTintList = switchThumbColorList
+        binding.switchBold.thumbIconTintList = switchThumbIconColorList
 
         binding.etPattern.setTextColor(primaryTextColor)
         binding.etPattern.setHintTextColor(secondaryTextColor)

@@ -245,10 +245,10 @@
                             android:textColor="@color/primaryText"
                             android:textSize="13sp" />
 
-                        <androidx.appcompat.widget.SwitchCompat
+                        <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/switch_enable"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="36dp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -312,10 +312,10 @@
                             android:textColor="@color/primaryText"
                             android:textSize="13sp" />
 
-                        <androidx.appcompat.widget.SwitchCompat
+                        <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/switch_bold"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="36dp" />
                     </LinearLayout>
 
                     <TextView
