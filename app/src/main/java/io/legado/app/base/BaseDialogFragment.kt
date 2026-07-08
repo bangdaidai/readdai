@@ -105,6 +105,7 @@ abstract class BaseDialogFragment(
             // 设置导航图标和溢出菜单图标的颜色
             toolbar.navigationIcon?.setTint(textColor)
             toolbar.overflowIcon?.setTint(textColor)
+            toolbar.menu.applyTint(requireContext(), Theme.Auto)
         }
         onFragmentCreated(view, savedInstanceState)
         observeLiveBus()
