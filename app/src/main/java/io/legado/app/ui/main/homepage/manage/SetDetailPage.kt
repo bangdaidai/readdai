@@ -150,7 +150,7 @@ fun SetDetailPage(
                         if (setId.startsWith("src_")) onBrowseSourceModules()
                         else onAddModules()
                     },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.hp_source_modules))
                 }

@@ -182,7 +182,7 @@ fun SourceBrowseDetailPage(
                                     stringResource(R.string.hp_standard_modules),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                                 )
                             }
                             items(standardModules, key = { it.id }) { module ->
@@ -417,19 +417,6 @@ fun SourceBrowseDetailPage(
                                         }
                                     }
                                 }
-                            }
-                        }
-
-                        if (multiSelect && selectedKinds.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            TextButton(
-                                onClick = { showCreateModuleDialog = true },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            ) {
-                                Text(
-                                    "创建模块（${selectedKinds.size}个）",
-                                    fontWeight = FontWeight.Bold,
-                                )
                             }
                         }
 
