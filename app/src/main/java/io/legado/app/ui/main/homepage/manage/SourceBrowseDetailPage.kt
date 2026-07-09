@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -367,20 +367,28 @@ fun SourceBrowseDetailPage(
                             }
                         }
 
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
                         ) {
-                            filteredKinds.forEach { kind ->
-                                val isSelected = multiSelect && kind.title in selectedKinds
-                                Surface(
-                                    shape = RoundedCornerShape(50),
-                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.clickable {
+                            FlexboxKindsRow(
+                                kinds = filteredKinds,
+                                horizontalSpacing = 6,
+                                verticalSpacing = 6,
+                            ) { kind ->
+                            val isSelected = multiSelect && kind.title in selectedKinds
+                            val style = kind.style()
+                            val hasFixedWidth = style.layout_flexGrow > 0f || style.layout_flexBasisPercent > 0f
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier
+                                    .then(if (hasFixedWidth) Modifier.fillMaxWidth() else Modifier)
+                                    .clickable {
                                         if (multiSelect) {
                                             selectedKinds = if (isSelected) {
                                                 selectedKinds - kind.title
@@ -392,31 +400,36 @@ fun SourceBrowseDetailPage(
                                             editingKind = kind
                                         }
                                     },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(
+                                        horizontal = 12.dp,
+                                        vertical = 6.dp,
+                                    ),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = when (style.layout_justifySelf) {
+                                        "flex_start" -> Arrangement.Start
+                                        "flex_end" -> Arrangement.End
+                                        else -> Arrangement.Center
+                                    },
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(
-                                            horizontal = 12.dp,
-                                            vertical = 6.dp,
-                                        ),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(
-                                            kind.title,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            fontSize = 13.sp,
+                                    Text(
+                                        kind.title,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        fontSize = 13.sp,
+                                    )
+                                    if (isSelected) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp).padding(start = 2.dp),
+                                            tint = MaterialTheme.colorScheme.primary,
                                         )
-                                        if (isSelected) {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(14.dp).padding(start = 2.dp),
-                                                tint = MaterialTheme.colorScheme.primary,
-                                            )
-                                        }
                                     }
                                 }
                             }
+                        }
                         }
 
                         if (!multiSelect) {
@@ -507,6 +520,112 @@ fun SourceBrowseDetailPage(
             onDismissRequest = { showAddDialog = false },
             onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); showAddDialog = false },
         )
+    }
+}
+
+@Composable
+private fun FlexboxKindsRow(
+    kinds: List<ExploreKind>,
+    horizontalSpacing: Int = 6,
+    verticalSpacing: Int = 6,
+    tagContent: @Composable (ExploreKind) -> Unit,
+) {
+    val rows = remember(kinds) {
+        groupKindsIntoRows(kinds)
+    }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(verticalSpacing.dp),
+    ) {
+        rows.forEach { row ->
+            FlexboxRow(
+                kinds = row,
+                spacing = horizontalSpacing,
+                tagContent = tagContent,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FlexboxRow(
+    kinds: List<ExploreKind>,
+    spacing: Int = 6,
+    tagContent: @Composable (ExploreKind) -> Unit,
+) {
+    val totalGrow = kinds.sumOf { it.style().layout_flexGrow.toDouble() }.toFloat()
+    val hasGrow = totalGrow > 0f
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.dp),
+    ) {
+        kinds.forEachIndexed { index, kind ->
+            val style = kind.style()
+            val modifier = if (hasGrow && style.layout_flexGrow > 0f) {
+                Modifier.weight(style.layout_flexGrow / totalGrow)
+            } else if (style.layout_flexBasisPercent > 0f) {
+                Modifier.fillMaxWidth(style.layout_flexBasisPercent.coerceIn(0f, 1f))
+            } else {
+                Modifier
+            }
+            Box(modifier = modifier) {
+                tagContent(kind)
+            }
+        }
+    }
+}
+
+private fun groupKindsIntoRows(kinds: List<ExploreKind>): List<List<ExploreKind>> {
+    if (kinds.isEmpty()) return emptyList()
+    val rows = mutableListOf<MutableList<ExploreKind>>()
+    var currentRow = mutableListOf<ExploreKind>()
+    var currentRowWidth = 0f
+
+    fun startNewRow(kind: ExploreKind) {
+        if (currentRow.isNotEmpty()) {
+            rows.add(currentRow)
+        }
+        currentRow = mutableListOf(kind)
+        currentRowWidth = kindWidthPercent(kind)
+    }
+
+    kinds.forEachIndexed { index, kind ->
+        val style = kind.style()
+        val kindWidth = kindWidthPercent(kind)
+
+        if (index == 0) {
+            currentRow.add(kind)
+            currentRowWidth = kindWidth
+        } else if (style.layout_wrapBefore) {
+            startNewRow(kind)
+        } else {
+            val hasGrowInRow = currentRow.any { it.style().layout_flexGrow > 0f } || style.layout_flexGrow > 0f
+            if (hasGrowInRow) {
+                currentRow.add(kind)
+                currentRowWidth += kindWidth
+            } else {
+                val spacingPercent = 0.02f
+                val newWidth = currentRowWidth + kindWidth + spacingPercent
+                if (newWidth > 1f && currentRow.isNotEmpty()) {
+                    startNewRow(kind)
+                } else {
+                    currentRow.add(kind)
+                    currentRowWidth = newWidth
+                }
+            }
+        }
+    }
+    if (currentRow.isNotEmpty()) {
+        rows.add(currentRow)
+    }
+    return rows
+}
+
+private fun kindWidthPercent(kind: ExploreKind): Float {
+    val style = kind.style()
+    return when {
+        style.layout_flexBasisPercent > 0f -> style.layout_flexBasisPercent.coerceIn(0f, 1f)
+        style.layout_flexGrow > 0f -> 0f
+        else -> 0.33f
     }
 }
 
