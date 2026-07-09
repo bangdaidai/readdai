@@ -167,6 +167,7 @@ class BookAnnotationDialog() : BaseDialogFragment(R.layout.dialog_annotation, tr
                 }
             }
         }
+        }
     }
 
     companion object {
