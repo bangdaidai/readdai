@@ -532,7 +532,7 @@ fun SourceBrowseDetailPage(
     }
 }
 
-private fun calculateExploreKindRows(
+fun calculateExploreKindRows(
     kinds: List<ExploreKind>,
     maxSpan: Int = 6,
 ): List<List<Pair<ExploreKind, Int>>> {
