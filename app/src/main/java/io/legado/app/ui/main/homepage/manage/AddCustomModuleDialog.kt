@@ -190,36 +190,25 @@ fun AddCustomModuleDialog(
                             else stringResource(R.string.hp_modify_category)
                         )
                     }
-
-                    url = ""
-                } else if (!isRankingType) {
-                    OutlinedTextField(
-                        value = url,
-                        onValueChange = { url = it },
-                        label = { Text(stringResource(R.string.hp_url)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                } else {
-                    OutlinedTextField(
-                        value = url,
-                        onValueChange = { url = it },
-                        label = { Text(stringResource(R.string.hp_url)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
                 }
+
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    label = { Text(stringResource(R.string.hp_url)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
                 if (HomepageViewModel.isInfinite(type, null) && !canSelectInfinite) {
                     Text(stringResource(R.string.hp_infinite_conflict), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
 
-                if (!isRankingType) {
-                    OutlinedTextField(
-                        value = args,
-                        onValueChange = { args = it },
-                        label = { Text(stringResource(R.string.hp_args)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                OutlinedTextField(
+                    value = args,
+                    onValueChange = { args = it },
+                    label = { Text(stringResource(R.string.hp_args)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
 
                 OutlinedTextField(
                     value = layoutConfig,
