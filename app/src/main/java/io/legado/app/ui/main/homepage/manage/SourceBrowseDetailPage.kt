@@ -437,13 +437,15 @@ fun SourceBrowseDetailPage(
                                 onClick = { showCreateModuleDialog = true },
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .padding(16.dp),
+                                    .padding(end = 16.dp, bottom = 16.dp)
+                                    .size(40.dp),
                                 containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                                contentColor = androidx.compose.ui.graphics.Color.White,
                             ) {
                                 Icon(
                                     Icons.Default.Check,
-                                    contentDescription = stringResource(R.string.hp_create_ranking, selectedKinds.size),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
                                 )
                             }
                         }

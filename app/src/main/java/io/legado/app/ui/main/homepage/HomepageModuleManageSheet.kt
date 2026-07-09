@@ -8,7 +8,6 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,12 +28,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.lib.theme.ThemeStore
@@ -67,12 +64,6 @@ fun HomepageModuleManageSheet(
     var deleteModuleConfirmId by remember { mutableStateOf<String?>(null) }
     var renameSetId by remember { mutableStateOf<String?>(null) }
     var editingModule by remember { mutableStateOf<HomepageModuleManageUi?>(null) }
-
-    // 多选标签状态
-    var multiSelectEnabled by remember { mutableStateOf(false) }
-    var selectedKindTitles by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var showCreateModuleDialog by remember { mutableStateOf(false) }
-    var currentExploreKinds by remember { mutableStateOf<List<io.legado.app.data.entities.rule.ExploreKind>>(emptyList()) }
 
     val effectiveTargetSetId = remember(currentPage, state.allJoinedModules) {
         when (val page = currentPage) {
@@ -120,19 +111,6 @@ fun HomepageModuleManageSheet(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(start = if (currentPage is ManagePage.SetList) 0.dp else 0.dp, top = 12.dp, bottom = 8.dp),
                 )
-
-                // 多选确认按钮
-                if (currentPage is ManagePage.SourceDetail && multiSelectEnabled && selectedKindTitles.isNotEmpty()) {
-                    Spacer(modifier = Modifier.weight(1f))
-                    TextButton(
-                        onClick = { showCreateModuleDialog = true },
-                    ) {
-                        Text(
-                            stringResource(R.string.hp_create_ranking, selectedKindTitles.size),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
             }
 
             AnimatedContent(
@@ -208,14 +186,6 @@ fun HomepageModuleManageSheet(
                             },
                             onAddRankingFromKinds = { sourceUrl, setId, title, kinds ->
                                 viewModel.addRankingFromKinds(sourceUrl, setId, title, kinds)
-                            },
-                            // 多选状态回调
-                            onMultiSelectChanged = { enabled, kinds ->
-                                multiSelectEnabled = enabled
-                                currentExploreKinds = kinds
-                            },
-                            onSelectedKindsChanged = { kinds ->
-                                selectedKindTitles = kinds
                             },
                         )
 
@@ -313,36 +283,6 @@ fun HomepageModuleManageSheet(
             allKinds = kinds,
             onDismissRequest = { editingModule = null },
             onConfirm = { def -> viewModel.updateModule(module.id, def); editingModule = null },
-        )
-    }
-
-    // 多选创建模块对话框
-    if (showCreateModuleDialog && currentPage is ManagePage.SourceDetail) {
-        val sourceDetailPage = currentPage as ManagePage.SourceDetail
-        val currentSetId = HomepageViewModel.customSetIdFromUrl(HomepageViewModel.customSetUrl("src_${sourceDetailPage.sourceUrl}"))
-        AddCustomModuleDialog(
-            sourceUrl = sourceDetailPage.sourceUrl,
-            targetSetId = currentSetId,
-            prefillType = "ranking",
-            canSelectInfinite = canSelectInfiniteGlobal,
-            allKinds = currentExploreKinds,
-            prefillKindTitles = selectedKindTitles.toList(),
-            onDismissRequest = { showCreateModuleDialog = false },
-            onConfirm = { def ->
-                val kindTitles = selectedKindTitles.toList()
-                if (def.type == io.legado.app.domain.model.HomepageModuleType.Ranking.key && kindTitles.size >= 2) {
-                    val title = def.title.ifBlank { kindTitles.joinToString("·") }
-                    viewModel.addRankingFromKinds(sourceDetailPage.sourceUrl, currentSetId, title, kindTitles)
-                } else if (def.type == io.legado.app.domain.model.HomepageModuleType.ButtonGroup.key) {
-                    val title = def.title.ifBlank { kindTitles.joinToString("·") }
-                    viewModel.addButtonGroupFromKinds(sourceDetailPage.sourceUrl, currentSetId, title, kindTitles)
-                } else {
-                    viewModel.addCustomModule(sourceDetailPage.sourceUrl, currentSetId, def)
-                }
-                showCreateModuleDialog = false
-                multiSelectEnabled = false
-                selectedKindTitles = emptySet()
-            },
         )
     }
 }
