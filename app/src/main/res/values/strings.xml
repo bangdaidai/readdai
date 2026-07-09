@@ -1076,6 +1076,7 @@
     <string name="hp_module_type">Module type</string>
     <string name="hp_select_category">Select category</string>
     <string name="hp_search_category">Search category</string>
+    <string name="hp_search_source">Search source</string>
     <string name="hp_selected_count">Selected %1$d categories</string>
     <string name="hp_selected_categories">Selected categories</string>
     <string name="hp_modify_category">Modify categories</string>

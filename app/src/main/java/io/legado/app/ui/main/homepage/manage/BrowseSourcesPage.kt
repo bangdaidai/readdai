@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -19,6 +22,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -43,24 +47,38 @@ fun BrowseSourcesPage(
     getSourceModules: (String, String?) -> List<io.legado.app.ui.main.homepage.HomepageModuleManageUi>,
     onSelectSource: (String) -> Unit,
 ) {
-    val sources = remember(browseSources) {
-        browseSources.distinctBy { it.sourceUrl }
+    var query by remember { mutableStateOf("") }
+
+    val sources = remember(browseSources, query) {
+        val distinct = browseSources.distinctBy { it.sourceUrl }
+        if (query.isBlank()) distinct
+        else distinct.filter {
+            it.sourceName.contains(query, ignoreCase = true) ||
+                    it.sourceUrl.contains(query, ignoreCase = true)
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (browseGroupFilter.isNotBlank()) {
-                Text(
-                    browseGroupFilter,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 4.dp),
-                )
-            }
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = { Text(stringResource(R.string.hp_search_source), style = MaterialTheme.typography.bodyMedium) },
+                modifier = Modifier.weight(1f).height(48.dp),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium,
+                trailingIcon = {
+                    if (query.isNotBlank()) {
+                        IconButton(onClick = { query = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
+                        }
+                    }
+                }
+            )
+            Spacer(modifier = Modifier.padding(start = 8.dp))
             var showGroupMenu by remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = { showGroupMenu = true }) {

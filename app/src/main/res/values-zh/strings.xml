@@ -959,6 +959,7 @@
     <string name="hp_module_type">模块类型</string>
     <string name="hp_select_category">选择分类</string>
     <string name="hp_search_category">搜索分类</string>
+    <string name="hp_search_source">搜索书源</string>
     <string name="hp_selected_count">已选 %1$d 个分类</string>
     <string name="hp_selected_categories">已选分类</string>
     <string name="hp_modify_category">修改分类</string>
