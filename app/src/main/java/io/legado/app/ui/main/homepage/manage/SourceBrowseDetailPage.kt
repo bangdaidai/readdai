@@ -439,10 +439,11 @@ fun SourceBrowseDetailPage(
                 }
 
                 if (showCreateModuleDialog) {
+                    val initialType = if (selectedKinds.size >= 2) "ranking" else "card"
                     AddCustomModuleDialog(
                         sourceUrl = browseUrl,
                         targetSetId = currentSetId,
-                        prefillType = "card",
+                        prefillType = initialType,
                         canSelectInfinite = canSelectInfiniteGlobal,
                         allKinds = exploreKinds,
                         prefillKindTitles = selectedKinds.toList(),
