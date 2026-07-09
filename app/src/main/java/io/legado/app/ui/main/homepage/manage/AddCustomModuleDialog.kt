@@ -74,25 +74,35 @@ fun AddCustomModuleDialog(
         }.getOrNull()
     }
 
-    var title by remember { mutableStateOf(prefillTitle) }
-    var url by remember { mutableStateOf(prefillUrl) }
-    var type by remember { mutableStateOf(prefillType) }
-    var args by remember { mutableStateOf(prefillArgs) }
-    var layoutConfig by remember { mutableStateOf(prefillLayoutConfig) }
-    var selectedKindTitles: MutableList<String> by remember {
+    val initialKindTitles = remember {
+        when {
+            prefillKindTitles.isNotEmpty() -> prefillKindTitles.toMutableList()
+            parsedArgs?.isHomepageRankingGroup == true -> parsedArgs.kindTitles.toMutableList()
+            else -> mutableListOf()
+        }
+    }
+
+    var title by remember {
         mutableStateOf(
-            if (prefillKindTitles.isNotEmpty()) {
-                prefillKindTitles.toMutableList()
-            } else if (type == HomepageModuleType.Ranking.key && parsedArgs?.isHomepageRankingGroup == true) {
-                parsedArgs.kindTitles.toMutableList()
-            } else {
-                mutableListOf()
+            prefillTitle.ifBlank {
+                if (initialKindTitles.isNotEmpty()) initialKindTitles.joinToString("·") else ""
             }
         )
     }
+    var url by remember { mutableStateOf(prefillUrl) }
+    var type by remember { mutableStateOf(prefillType) }
+    var args by remember {
+        mutableStateOf(
+            if (initialKindTitles.isNotEmpty()) {
+                GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = initialKindTitles))
+            } else {
+                prefillArgs
+            }
+        )
+    }
+    var layoutConfig by remember { mutableStateOf(prefillLayoutConfig) }
+    var selectedKindTitles: MutableList<String> by remember { mutableStateOf(initialKindTitles) }
     var showKindSelect by remember { mutableStateOf(false) }
-
-    val isRankingType = type == HomepageModuleType.Ranking.key
 
     val typeList = remember(canSelectInfinite) {
         HomepageModuleType.entries.filter {
@@ -137,11 +147,6 @@ fun AddCustomModuleDialog(
                                 onClick = {
                                     type = moduleType.key
                                     typeExpanded = false
-                                    if (moduleType.key != HomepageModuleType.Ranking.key) {
-                                        if (prefillKindTitles.isEmpty()) {
-                                            selectedKindTitles = mutableListOf()
-                                        }
-                                    }
                                 },
                             )
                         }
@@ -220,17 +225,11 @@ fun AddCustomModuleDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val finalArgs = if (isRankingType && selectedKindTitles.size >= 2) {
-                    GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = selectedKindTitles))
-                } else {
-                    args
-                }
-                val finalUrl = if (isRankingType && selectedKindTitles.size >= 2) "" else url
                 onConfirm(ModuleDef(
                     title = title,
-                    url = finalUrl,
+                    url = url,
                     type = type,
-                    args = finalArgs,
+                    args = args,
                     layoutConfig = layoutConfig,
                 ))
             }) { Text(stringResource(R.string.hp_determine)) }
@@ -249,6 +248,10 @@ fun AddCustomModuleDialog(
             initialSelectedTitles = selectedKindTitles.toSet(),
             onSelected = { kinds ->
                 selectedKindTitles = kinds.map { it.title }.toMutableList()
+                if (selectedKindTitles.isNotEmpty()) {
+                    title = selectedKindTitles.joinToString("·")
+                    args = GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = selectedKindTitles))
+                }
                 showKindSelect = false
             },
         )
