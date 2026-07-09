@@ -290,9 +290,8 @@ fun SourceBrowseDetailPage(
                 var showCreateModuleDialog by remember { mutableStateOf(false) }
 
                 val filteredKinds = remember(query, exploreKinds) {
-                    val baseList = exploreKinds.filter { !it.url.isNullOrBlank() }
-                    if (query.isBlank()) baseList
-                    else baseList.filter { kind ->
+                    if (query.isBlank()) exploreKinds
+                    else exploreKinds.filter { kind ->
                         kind.title.contains(query, ignoreCase = true) ||
                                 (kind.url?.contains(query, ignoreCase = true) == true)
                     }
@@ -384,6 +383,7 @@ fun SourceBrowseDetailPage(
                                         rowItems.forEach { (kind, span) ->
                                             val isSelected = multiSelect && kind.title in selectedKinds
                                             val style = kind.style()
+                                            val hasUrl = !kind.url.isNullOrBlank()
                                             Surface(
                                                 shape = RoundedCornerShape(50),
                                                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
@@ -392,7 +392,7 @@ fun SourceBrowseDetailPage(
                                                 else MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier
                                                     .weight(span.toFloat())
-                                                    .clickable {
+                                                    .then(if (hasUrl) Modifier.clickable {
                                                         if (multiSelect) {
                                                             selectedKinds = if (isSelected) {
                                                                 selectedKinds - kind.title
@@ -403,7 +403,7 @@ fun SourceBrowseDetailPage(
                                                         } else {
                                                             editingKind = kind
                                                         }
-                                                    },
+                                                    } else Modifier),
                                             ) {
                                                 Row(
                                                     modifier = Modifier.padding(
