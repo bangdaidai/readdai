@@ -182,7 +182,7 @@ fun SourceBrowseDetailPage(
                                     stringResource(R.string.hp_standard_modules),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).padding(top = 12.dp)
                                 )
                             }
                             items(standardModules, key = { it.id }) { module ->
