@@ -93,11 +93,14 @@ fun HomepageModuleManageSheet(
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (currentPage !is ManagePage.SetList) {
-                    IconButton(onClick = { currentPage = ManagePage.SetList }) {
+                    IconButton(
+                        onClick = { currentPage = ManagePage.SetList },
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 }
@@ -110,7 +113,7 @@ fun HomepageModuleManageSheet(
                         is ManagePage.AddModulesToSet -> stringResource(R.string.hp_add_modules)
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = if (currentPage is ManagePage.SetList) 0.dp else 0.dp, top = 12.dp, bottom = 8.dp),
+                    modifier = Modifier.padding(start = if (currentPage is ManagePage.SetList) 16.dp else 8.dp, top = 12.dp, bottom = 8.dp),
                 )
             }
 
