@@ -3,8 +3,6 @@ package io.legado.app.ui.main.homepage.manage
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import io.legado.app.R
 import io.legado.app.data.entities.rule.ExploreKind
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExploreKindSelectSheet(
     show: Boolean,
@@ -63,6 +61,10 @@ fun ExploreKindSelectSheet(
         }
     }
 
+    val kindRows = remember(filteredKinds) {
+        calculateExploreKindRows(filteredKinds, 6)
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -83,6 +85,7 @@ fun ExploreKindSelectSheet(
                 label = { Text(stringResource(R.string.hp_search_category)) },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 singleLine = true,
+                shape = RoundedCornerShape(50),
             )
 
             LazyColumn(
@@ -90,29 +93,39 @@ fun ExploreKindSelectSheet(
                 modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
             ) {
                 item {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        filteredKinds.forEach { kind ->
-                            val isSelected = kind.title in selectedTitles
-                            KindChip(
-                                title = kind.title,
-                                isSelected = isSelected,
-                                onClick = {
-                                    if (multiple) {
-                                        selectedTitles = if (isSelected) {
-                                            selectedTitles.toMutableSet().apply { remove(kind.title) }
-                                        } else {
-                                            selectedTitles.toMutableSet().apply { add(kind.title) }
-                                        }
-                                    } else {
-                                        onSelected(listOf(kind))
-                                        onDismissRequest()
-                                    }
-                                },
-                            )
+                        kindRows.forEach { rowItems ->
+                            val totalSpan = rowItems.sumOf { it.second }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                rowItems.forEach { (kind, span) ->
+                                    val isSelected = kind.title in selectedTitles
+                                    KindChip(
+                                        title = kind.title,
+                                        isSelected = isSelected,
+                                        modifier = Modifier.weight(span.toFloat()),
+                                        onClick = {
+                                            if (multiple) {
+                                                selectedTitles = if (isSelected) {
+                                                    selectedTitles.toMutableSet().apply { remove(kind.title) }
+                                                } else {
+                                                    selectedTitles.toMutableSet().apply { add(kind.title) }
+                                                }
+                                            } else {
+                                                onSelected(listOf(kind))
+                                                onDismissRequest()
+                                            }
+                                        },
+                                    )
+                                }
+                                if (totalSpan < 6) {
+                                    Spacer(modifier = Modifier.weight((6 - totalSpan).toFloat()))
+                                }
+                            }
                         }
                     }
                 }
@@ -152,19 +165,20 @@ private fun KindChip(
     title: String,
     isSelected: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(50),
         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceContainerHigh,
         contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
         else MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.Center,
         ) {
             Text(
                 title,
@@ -176,7 +190,7 @@ private fun KindChip(
                 Icon(
                     Icons.Default.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(14.dp),
+                    modifier = Modifier.size(14.dp).padding(start = 2.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }

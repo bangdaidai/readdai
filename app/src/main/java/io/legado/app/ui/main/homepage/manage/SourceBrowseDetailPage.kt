@@ -367,69 +367,79 @@ fun SourceBrowseDetailPage(
                             }
                         }
 
-                        androidx.compose.foundation.layout.Box(
+                        val kindRows = remember(filteredKinds) {
+                            calculateExploreKindRows(filteredKinds, 6)
+                        }
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            FlexboxKindsRow(
-                                kinds = filteredKinds,
-                                horizontalSpacing = 6,
-                                verticalSpacing = 6,
-                            ) { kind ->
-                            val isSelected = multiSelect && kind.title in selectedKinds
-                            val style = kind.style()
-                            val hasFixedWidth = style.layout_flexGrow > 0f || style.layout_flexBasisPercent > 0f
-                            Surface(
-                                shape = RoundedCornerShape(50),
-                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                                else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier
-                                    .then(if (hasFixedWidth) Modifier.fillMaxWidth() else Modifier)
-                                    .clickable {
-                                        if (multiSelect) {
-                                            selectedKinds = if (isSelected) {
-                                                selectedKinds - kind.title
-                                            } else {
-                                                selectedKinds + kind.title
-                                            }
-                                            onSelectedKindsChanged(selectedKinds)
-                                        } else {
-                                            editingKind = kind
-                                        }
-                                    },
-                            ) {
+                            kindRows.forEach { rowItems ->
+                                val totalSpan = rowItems.sumOf { it.second }
                                 Row(
-                                    modifier = Modifier.padding(
-                                        horizontal = 12.dp,
-                                        vertical = 6.dp,
-                                    ),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = when (style.layout_justifySelf) {
-                                        "flex_start" -> Arrangement.Start
-                                        "flex_end" -> Arrangement.End
-                                        else -> Arrangement.Center
-                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
-                                    Text(
-                                        kind.title,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        fontSize = 13.sp,
-                                    )
-                                    if (isSelected) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(14.dp).padding(start = 2.dp),
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
+                                    rowItems.forEach { (kind, span) ->
+                                        val isSelected = multiSelect && kind.title in selectedKinds
+                                        val style = kind.style()
+                                        Surface(
+                                            shape = RoundedCornerShape(50),
+                                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                            else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                            else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier
+                                                .weight(span.toFloat())
+                                                .clickable {
+                                                    if (multiSelect) {
+                                                        selectedKinds = if (isSelected) {
+                                                            selectedKinds - kind.title
+                                                        } else {
+                                                            selectedKinds + kind.title
+                                                        }
+                                                        onSelectedKindsChanged(selectedKinds)
+                                                    } else {
+                                                        editingKind = kind
+                                                    }
+                                                },
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(
+                                                    horizontal = 12.dp,
+                                                    vertical = 6.dp,
+                                                ),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = when (style.layout_justifySelf) {
+                                                    "flex_start" -> Arrangement.Start
+                                                    "flex_end" -> Arrangement.End
+                                                    else -> Arrangement.Center
+                                                },
+                                            ) {
+                                                Text(
+                                                    kind.title,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis,
+                                                    fontSize = 13.sp,
+                                                )
+                                                if (isSelected) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(14.dp).padding(start = 2.dp),
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if (totalSpan < 6) {
+                                        Spacer(modifier = Modifier.weight((6 - totalSpan).toFloat()))
                                     }
                                 }
                             }
-                        }
                         }
 
                         if (!multiSelect) {
@@ -523,94 +533,51 @@ fun SourceBrowseDetailPage(
     }
 }
 
-@Composable
-private fun FlexboxKindsRow(
+private fun calculateExploreKindRows(
     kinds: List<ExploreKind>,
-    horizontalSpacing: Int = 6,
-    verticalSpacing: Int = 6,
-    tagContent: @Composable (ExploreKind) -> Unit,
-) {
-    val rows = remember(kinds) {
-        groupKindsIntoRows(kinds)
-    }
-    Column(
-        verticalArrangement = Arrangement.spacedBy(verticalSpacing.dp),
-    ) {
-        rows.forEach { row ->
-            FlexboxRow(
-                kinds = row,
-                spacing = horizontalSpacing,
-                tagContent = tagContent,
-            )
-        }
-    }
-}
-
-@Composable
-private fun FlexboxRow(
-    kinds: List<ExploreKind>,
-    spacing: Int = 6,
-    tagContent: @Composable (ExploreKind) -> Unit,
-) {
-    val totalGrow = kinds.sumOf { it.style().layout_flexGrow.toDouble() }.toFloat()
-    val hasGrow = totalGrow > 0f
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(spacing.dp),
-    ) {
-        kinds.forEachIndexed { index, kind ->
-            val style = kind.style()
-            val modifier = if (hasGrow && style.layout_flexGrow > 0f) {
-                Modifier.weight(style.layout_flexGrow / totalGrow)
-            } else if (style.layout_flexBasisPercent > 0f) {
-                Modifier.fillMaxWidth(style.layout_flexBasisPercent.coerceIn(0f, 1f))
-            } else {
-                Modifier
-            }
-            Box(modifier = modifier) {
-                tagContent(kind)
-            }
-        }
-    }
-}
-
-private fun groupKindsIntoRows(kinds: List<ExploreKind>): List<List<ExploreKind>> {
+    maxSpan: Int = 6,
+): List<List<Pair<ExploreKind, Int>>> {
     if (kinds.isEmpty()) return emptyList()
-    val rows = mutableListOf<MutableList<ExploreKind>>()
-    var currentRow = mutableListOf<ExploreKind>()
-    var currentRowWidth = 0f
+    val rows = mutableListOf<MutableList<Pair<ExploreKind, Int>>>()
+    var currentRow = mutableListOf<Pair<ExploreKind, Int>>()
+    var currentRowSpan = 0
 
-    fun startNewRow(kind: ExploreKind) {
+    fun kindSpan(kind: ExploreKind): Int {
+        val style = kind.style()
+        val basis = style.layout_flexBasisPercent
+        return when {
+            basis >= 0.95f -> maxSpan
+            basis >= 0.48f -> maxSpan / 2
+            basis >= 0.31f -> maxSpan / 3
+            basis >= 0.15f -> maxSpan / 6
+            else -> maxSpan / 3
+        }.coerceIn(1, maxSpan)
+    }
+
+    fun startNewRow(kind: ExploreKind, span: Int) {
         if (currentRow.isNotEmpty()) {
             rows.add(currentRow)
         }
-        currentRow = mutableListOf(kind)
-        currentRowWidth = kindWidthPercent(kind)
+        currentRow = mutableListOf(kind to span)
+        currentRowSpan = span
     }
 
-    kinds.forEachIndexed { index, kind ->
+    kinds.forEach { kind ->
+        val span = kindSpan(kind)
         val style = kind.style()
-        val kindWidth = kindWidthPercent(kind)
 
-        if (index == 0) {
-            currentRow.add(kind)
-            currentRowWidth = kindWidth
+        if (currentRow.isEmpty()) {
+            currentRow.add(kind to span)
+            currentRowSpan = span
         } else if (style.layout_wrapBefore) {
-            startNewRow(kind)
+            startNewRow(kind, span)
         } else {
-            val hasGrowInRow = currentRow.any { it.style().layout_flexGrow > 0f } || style.layout_flexGrow > 0f
-            if (hasGrowInRow) {
-                currentRow.add(kind)
-                currentRowWidth += kindWidth
+            val newSpan = currentRowSpan + span
+            if (newSpan > maxSpan) {
+                startNewRow(kind, span)
             } else {
-                val spacingPercent = 0.02f
-                val newWidth = currentRowWidth + kindWidth + spacingPercent
-                if (newWidth > 1f && currentRow.isNotEmpty()) {
-                    startNewRow(kind)
-                } else {
-                    currentRow.add(kind)
-                    currentRowWidth = newWidth
-                }
+                currentRow.add(kind to span)
+                currentRowSpan = newSpan
             }
         }
     }
@@ -618,15 +585,6 @@ private fun groupKindsIntoRows(kinds: List<ExploreKind>): List<List<ExploreKind>
         rows.add(currentRow)
     }
     return rows
-}
-
-private fun kindWidthPercent(kind: ExploreKind): Float {
-    val style = kind.style()
-    return when {
-        style.layout_flexBasisPercent > 0f -> style.layout_flexBasisPercent.coerceIn(0f, 1f)
-        style.layout_flexGrow > 0f -> 0f
-        else -> 0.33f
-    }
 }
 
 @Composable
