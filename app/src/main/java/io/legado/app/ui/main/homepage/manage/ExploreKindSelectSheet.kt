@@ -62,7 +62,7 @@ fun ExploreKindSelectSheet(
     }
 
     val kindRows = remember(filteredKinds) {
-        calculateExploreKindRows(filteredKinds, 6)
+        calculateExploreKindRows(filteredKinds, 12)
     }
 
     ModalBottomSheet(
@@ -122,8 +122,8 @@ fun ExploreKindSelectSheet(
                                         },
                                     )
                                 }
-                                if (totalSpan < 6) {
-                                    Spacer(modifier = Modifier.weight((6 - totalSpan).toFloat()))
+                                if (totalSpan < 12) {
+                                    Spacer(modifier = Modifier.weight((12 - totalSpan).toFloat()))
                                 }
                             }
                         }
