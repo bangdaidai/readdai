@@ -307,10 +307,11 @@ fun SourceBrowseDetailPage(
                         Text(stringResource(R.string.hp_no_explore_kinds), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                    ) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                        ) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -439,6 +440,24 @@ fun SourceBrowseDetailPage(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(stringResource(R.string.hp_manual_add))
+                            }
+                        }
+                        }
+
+                        // 多选时显示悬浮确认按钮
+                        if (multiSelect && selectedKinds.isNotEmpty()) {
+                            androidx.compose.material3.FloatingActionButton(
+                                onClick = { showCreateModuleDialog = true },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(16.dp),
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = stringResource(R.string.hp_create_ranking, selectedKinds.size),
+                                )
                             }
                         }
                     }
