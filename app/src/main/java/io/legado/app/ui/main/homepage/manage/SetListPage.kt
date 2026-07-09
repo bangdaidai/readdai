@@ -19,10 +19,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -135,13 +135,13 @@ fun SetListPage(
         }
 
         item(key = "create_set") {
-            TextButton(onClick = onCreateSet, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = onCreateSet, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Text(stringResource(R.string.hp_create_set))
             }
         }
 
         item(key = "browse_sources") {
-            TextButton(onClick = onBrowseSources, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = onBrowseSources, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Text(stringResource(R.string.hp_browse_source_modules))
             }
         }

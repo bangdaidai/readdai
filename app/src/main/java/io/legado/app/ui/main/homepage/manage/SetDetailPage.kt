@@ -19,6 +19,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -144,12 +145,12 @@ fun SetDetailPage(
             }
 
             item(key = "browse_from_set") {
-                TextButton(
+                OutlinedButton(
                     onClick = {
                         if (setId.startsWith("src_")) onBrowseSourceModules()
                         else onAddModules()
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
                 ) {
                     Text(stringResource(R.string.hp_source_modules))
                 }
