@@ -4,7 +4,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,7 +62,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SourceBrowseDetailPage(
     browseUrl: String,
@@ -312,145 +311,145 @@ fun SourceBrowseDetailPage(
                             modifier = Modifier.fillMaxWidth()
                                 .verticalScroll(rememberScrollState())
                         ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            OutlinedTextField(
-                                value = query,
-                                onValueChange = { query = it },
-                                placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.bodyMedium) },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodyMedium,
-                                shape = RoundedCornerShape(50),
-                                trailingIcon = {
-                                    if (query.isNotBlank()) {
-                                        IconButton(onClick = { query = "" }) {
-                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
-                                        }
-                                    }
-                                }
-                            )
-                            Spacer(modifier = Modifier.padding(start = 8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (multiSelect) MaterialTheme.colorScheme.primaryContainer
-                                else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                onClick = {
-                                    multiSelect = !multiSelect
-                                    if (!multiSelect) selectedKinds = emptySet()
-                                    onMultiSelectChanged(multiSelect, exploreKinds)
-                                    onSelectedKindsChanged(if (multiSelect) selectedKinds else emptySet())
-                                },
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    if (multiSelect) {
-                                        Icon(
-                                            Icons.Default.Check,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                        Spacer(modifier = Modifier.padding(start = 4.dp))
-                                    }
-                                    Text(
-                                        stringResource(R.string.hp_multi_select),
-                                        fontSize = 12.sp,
-                                        color = if (multiSelect) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            }
-                        }
-
-                        val kindRows = remember(filteredKinds) {
-                            calculateExploreKindRows(filteredKinds, 6)
-                        }
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            kindRows.forEach { rowItems ->
-                                val totalSpan = rowItems.sumOf { it.second }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                ) {
-                                    rowItems.forEach { (kind, span) ->
-                                        val isSelected = multiSelect && kind.title in selectedKinds
-                                        val style = kind.style()
-                                        Surface(
-                                            shape = RoundedCornerShape(50),
-                                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                                            else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                                            else MaterialTheme.colorScheme.onSurface,
-                                            modifier = Modifier
-                                                .weight(span.toFloat())
-                                                .clickable {
-                                                    if (multiSelect) {
-                                                        selectedKinds = if (isSelected) {
-                                                            selectedKinds - kind.title
-                                                        } else {
-                                                            selectedKinds + kind.title
-                                                        }
-                                                        onSelectedKindsChanged(selectedKinds)
-                                                    } else {
-                                                        editingKind = kind
-                                                    }
-                                                },
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(
-                                                    horizontal = 12.dp,
-                                                    vertical = 6.dp,
-                                                ),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = when (style.layout_justifySelf) {
-                                                    "flex_start" -> Arrangement.Start
-                                                    "flex_end" -> Arrangement.End
-                                                    else -> Arrangement.Center
-                                                },
-                                            ) {
-                                                Text(
-                                                    kind.title,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis,
-                                                    fontSize = 13.sp,
-                                                )
-                                                if (isSelected) {
-                                                    Icon(
-                                                        Icons.Default.Check,
-                                                        contentDescription = null,
-                                                        modifier = Modifier.size(14.dp).padding(start = 2.dp),
-                                                        tint = MaterialTheme.colorScheme.primary,
-                                                    )
-                                                }
+                                OutlinedTextField(
+                                    value = query,
+                                    onValueChange = { query = it },
+                                    placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.bodyMedium) },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium,
+                                    shape = RoundedCornerShape(50),
+                                    trailingIcon = {
+                                        if (query.isNotBlank()) {
+                                            IconButton(onClick = { query = "" }) {
+                                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
                                             }
                                         }
                                     }
-                                    if (totalSpan < 6) {
-                                        Spacer(modifier = Modifier.weight((6 - totalSpan).toFloat()))
+                                )
+                                Spacer(modifier = Modifier.padding(start = 8.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (multiSelect) MaterialTheme.colorScheme.primaryContainer
+                                    else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    onClick = {
+                                        multiSelect = !multiSelect
+                                        if (!multiSelect) selectedKinds = emptySet()
+                                        onMultiSelectChanged(multiSelect, exploreKinds)
+                                        onSelectedKindsChanged(if (multiSelect) selectedKinds else emptySet())
+                                    },
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        if (multiSelect) {
+                                            Icon(
+                                                Icons.Default.Check,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.primary,
+                                            )
+                                            Spacer(modifier = Modifier.padding(start = 4.dp))
+                                        }
+                                        Text(
+                                            stringResource(R.string.hp_multi_select),
+                                            fontSize = 12.sp,
+                                            color = if (multiSelect) MaterialTheme.colorScheme.onPrimaryContainer
+                                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
                                     }
                                 }
                             }
-                        }
 
-                        if (!multiSelect) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            TextButton(
-                                onClick = { showAddDialog = true },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.hp_manual_add))
+                            val kindRows = remember(filteredKinds) {
+                                calculateExploreKindRows(filteredKinds, 6)
                             }
-                        }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                kindRows.forEach { rowItems ->
+                                    val totalSpan = rowItems.sumOf { it.second }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        rowItems.forEach { (kind, span) ->
+                                            val isSelected = multiSelect && kind.title in selectedKinds
+                                            val style = kind.style()
+                                            Surface(
+                                                shape = RoundedCornerShape(50),
+                                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                                else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                                contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                                else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier
+                                                    .weight(span.toFloat())
+                                                    .clickable {
+                                                        if (multiSelect) {
+                                                            selectedKinds = if (isSelected) {
+                                                                selectedKinds - kind.title
+                                                            } else {
+                                                                selectedKinds + kind.title
+                                                            }
+                                                            onSelectedKindsChanged(selectedKinds)
+                                                        } else {
+                                                            editingKind = kind
+                                                        }
+                                                    },
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.padding(
+                                                        horizontal = 12.dp,
+                                                        vertical = 6.dp,
+                                                    ),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = when (style.layout_justifySelf) {
+                                                        "flex_start" -> Arrangement.Start
+                                                        "flex_end" -> Arrangement.End
+                                                        else -> Arrangement.Center
+                                                    },
+                                                ) {
+                                                    Text(
+                                                        kind.title,
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis,
+                                                        fontSize = 13.sp,
+                                                    )
+                                                    if (isSelected) {
+                                                        Icon(
+                                                            Icons.Default.Check,
+                                                            contentDescription = null,
+                                                            modifier = Modifier.size(14.dp).padding(start = 2.dp),
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        if (totalSpan < 6) {
+                                            Spacer(modifier = Modifier.weight((6 - totalSpan).toFloat()))
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!multiSelect) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextButton(
+                                    onClick = { showAddDialog = true },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.hp_manual_add))
+                                }
+                            }
                         }
 
                         // 多选时显示悬浮确认按钮
