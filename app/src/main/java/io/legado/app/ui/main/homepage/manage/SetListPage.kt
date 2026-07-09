@@ -135,13 +135,13 @@ fun SetListPage(
         }
 
         item(key = "create_set") {
-            OutlinedButton(onClick = onCreateSet, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            OutlinedButton(onClick = onCreateSet, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.hp_create_set))
             }
         }
 
         item(key = "browse_sources") {
-            OutlinedButton(onClick = onBrowseSources, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            OutlinedButton(onClick = onBrowseSources, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.hp_browse_source_modules))
             }
         }
