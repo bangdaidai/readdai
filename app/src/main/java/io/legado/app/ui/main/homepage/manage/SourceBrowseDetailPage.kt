@@ -27,6 +27,10 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -286,7 +290,7 @@ fun SourceBrowseDetailPage(
                 var query by remember { mutableStateOf("") }
                 var multiSelect by remember { mutableStateOf(false) }
                 var selectedKinds by remember { mutableStateOf<Set<String>>(emptySet()) }
-                var showRankingTitleDialog by remember { mutableStateOf(false) }
+                var showCreateModuleDialog by remember { mutableStateOf(false) }
 
                 val filteredKinds = remember(query, exploreKinds) {
                     val baseList = exploreKinds.filter { !it.url.isNullOrBlank() }
@@ -316,7 +320,7 @@ fun SourceBrowseDetailPage(
                             OutlinedTextField(
                                 value = query,
                                 onValueChange = { query = it },
-                                placeholder = { Text(stringResource(R.string.hp_search_category)) },
+                                placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.bodyMedium) },
                                 modifier = Modifier.weight(1f).height(48.dp),
                                 singleLine = true,
                                 textStyle = MaterialTheme.typography.bodyMedium,
@@ -417,11 +421,11 @@ fun SourceBrowseDetailPage(
                         if (multiSelect && selectedKinds.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(12.dp))
                             TextButton(
-                                onClick = { showRankingTitleDialog = true },
+                                onClick = { showCreateModuleDialog = true },
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                             ) {
                                 Text(
-                                    stringResource(R.string.hp_create_ranking, selectedKinds.size),
+                                    "创建模块（${selectedKinds.size}个）",
                                     fontWeight = FontWeight.Bold,
                                 )
                             }
@@ -439,40 +443,29 @@ fun SourceBrowseDetailPage(
                     }
                 }
 
-                if (showRankingTitleDialog) {
-                    var rankingTitle by remember { mutableStateOf("") }
-                    androidx.compose.material3.AlertDialog(
-                        onDismissRequest = { showRankingTitleDialog = false },
-                        title = { Text(stringResource(R.string.hp_ranking_title)) },
-                        text = {
-                            OutlinedTextField(
-                                value = rankingTitle,
-                                onValueChange = { rankingTitle = it },
-                                label = { Text(stringResource(R.string.hp_title)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                            )
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                val title = rankingTitle.ifBlank { selectedKinds.joinToString("·") }
-                                if (selectedKinds.size >= 2) {
-                                    onAddRankingFromKinds(browseUrl, currentSetId, title, selectedKinds.toList())
-                                } else {
-                                    val kind = exploreKinds.find { it.title == selectedKinds.firstOrNull() }
-                                    onAddCustomModule(browseUrl, currentSetId, ModuleDef(
-                                        title = title,
-                                        url = kind?.url ?: "",
-                                        type = HomepageModuleType.Ranking.key,
-                                    ))
-                                }
-                                showRankingTitleDialog = false
-                                multiSelect = false
-                                selectedKinds = emptySet()
-                            }) { Text(stringResource(R.string.hp_determine)) }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showRankingTitleDialog = false }) { Text(stringResource(R.string.hp_cancel)) }
+                if (showCreateModuleDialog) {
+                    AddCustomModuleDialog(
+                        sourceUrl = browseUrl,
+                        targetSetId = currentSetId,
+                        prefillType = "card",
+                        canSelectInfinite = canSelectInfiniteGlobal,
+                        allKinds = exploreKinds,
+                        prefillKindTitles = selectedKinds.toList(),
+                        onDismissRequest = { showCreateModuleDialog = false },
+                        onConfirm = { def ->
+                            val kindTitles = selectedKinds.toList()
+                            if (def.type == HomepageModuleType.Ranking.key && kindTitles.size >= 2) {
+                                val title = def.title.ifBlank { kindTitles.joinToString("·") }
+                                onAddRankingFromKinds(browseUrl, currentSetId, title, kindTitles)
+                            } else if (def.type == HomepageModuleType.ButtonGroup.key) {
+                                val title = def.title.ifBlank { kindTitles.joinToString("·") }
+                                onAddButtonGroupFromKinds(browseUrl, currentSetId, title, kindTitles)
+                            } else {
+                                onAddCustomModule(browseUrl, currentSetId, def)
+                            }
+                            showCreateModuleDialog = false
+                            multiSelect = false
+                            selectedKinds = emptySet()
                         },
                     )
                 }

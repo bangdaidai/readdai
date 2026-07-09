@@ -64,6 +64,7 @@ fun AddCustomModuleDialog(
     prefillLayoutConfig: String = "",
     canSelectInfinite: Boolean = true,
     allKinds: List<ExploreKind> = emptyList(),
+    prefillKindTitles: List<String> = emptyList(),
     onDismissRequest: () -> Unit,
     onConfirm: (ModuleDef) -> Unit,
 ) {
@@ -80,7 +81,9 @@ fun AddCustomModuleDialog(
     var layoutConfig by remember { mutableStateOf(prefillLayoutConfig) }
     var selectedKindTitles: MutableList<String> by remember {
         mutableStateOf(
-            if (type == HomepageModuleType.Ranking.key && parsedArgs?.isHomepageRankingGroup == true) {
+            if (prefillKindTitles.isNotEmpty()) {
+                prefillKindTitles.toMutableList()
+            } else if (type == HomepageModuleType.Ranking.key && parsedArgs?.isHomepageRankingGroup == true) {
                 parsedArgs.kindTitles.toMutableList()
             } else {
                 mutableListOf()
@@ -135,7 +138,9 @@ fun AddCustomModuleDialog(
                                     type = moduleType.key
                                     typeExpanded = false
                                     if (moduleType.key != HomepageModuleType.Ranking.key) {
-                                        selectedKindTitles = mutableListOf()
+                                        if (prefillKindTitles.isEmpty()) {
+                                            selectedKindTitles = mutableListOf()
+                                        }
                                     }
                                 },
                             )
@@ -215,9 +220,6 @@ fun AddCustomModuleDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(stringResource(R.string.hp_layout_config), style = MaterialTheme.typography.labelMedium)
 
                 OutlinedTextField(
                     value = layoutConfig,
