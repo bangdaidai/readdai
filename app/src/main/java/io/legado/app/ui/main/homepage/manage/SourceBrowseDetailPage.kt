@@ -317,8 +317,9 @@ fun SourceBrowseDetailPage(
                                 value = query,
                                 onValueChange = { query = it },
                                 placeholder = { Text(stringResource(R.string.hp_search_category)) },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).height(48.dp),
                                 singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium,
                                 trailingIcon = {
                                     if (query.isNotBlank()) {
                                         IconButton(onClick = { query = "" }) {

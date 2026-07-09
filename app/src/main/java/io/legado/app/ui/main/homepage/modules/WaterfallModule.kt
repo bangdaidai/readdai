@@ -42,7 +42,7 @@ fun WaterfallItem(
 ) {
     val book = item.book
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.padding(horizontal = 8.dp).fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {

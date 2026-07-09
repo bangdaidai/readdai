@@ -360,7 +360,6 @@ private fun ModuleList(
             columns = StaggeredGridCells.Fixed(gridColumns),
             modifier = modifier,
             verticalItemSpacing = 10.dp,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
         ) {
             processedModules.forEach { moduleUi ->
@@ -621,7 +620,7 @@ fun GridBookItem(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier.fillMaxWidth().combinedClickable(
+        modifier = modifier.padding(horizontal = 8.dp).fillMaxWidth().combinedClickable(
             onClick = onClick,
             onLongClick = { onLongClick(book, null) }
         ),
