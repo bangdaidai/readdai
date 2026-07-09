@@ -488,7 +488,12 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val isRanking =
                     module.type == HomepageModuleType.Ranking.key || module.type == HomepageModuleType.GridRanking.key
                 val exploreUrl = module.url ?: source.exploreUrl
-                if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
+                if (exploreUrl.isNullOrBlank()) {
+                    _moduleContentStates.update {
+                        it + (module.id to ModuleLoadState.Error("No explore URL for module ${module.title}"))
+                    }
+                    return@launch
+                }
 
                 val books = withContext(Dispatchers.IO) {
                     if (isRanking) {

@@ -456,7 +456,13 @@ fun SourceBrowseDetailPage(
                                 val title = def.title.ifBlank { kindTitles.joinToString("·") }
                                 onAddButtonGroupFromKinds(browseUrl, currentSetId, title, kindTitles)
                             } else {
-                                onAddCustomModule(browseUrl, currentSetId, def)
+                                val title = def.title.ifBlank { kindTitles.joinToString("·") }
+                                val url = if (def.url.isNullOrBlank()) {
+                                    exploreKinds.find { it.title in selectedKinds }?.url
+                                } else {
+                                    def.url
+                                }
+                                onAddCustomModule(browseUrl, currentSetId, def.copy(title = title, url = url))
                             }
                             showCreateModuleDialog = false
                             multiSelect = false
