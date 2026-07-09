@@ -126,7 +126,6 @@ fun HomepageModuleManageSheet(
             ) { page ->
                 Column(
                     modifier = Modifier.fillMaxWidth()
-                        .padding(horizontal = 16.dp)
                         .height(450.dp)
                 ) {
                     when (page) {

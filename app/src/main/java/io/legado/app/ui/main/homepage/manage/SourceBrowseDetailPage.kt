@@ -173,7 +173,7 @@ fun SourceBrowseDetailPage(
 
                     LazyColumn(
                         state = lazyListState,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (standardModules.isNotEmpty()) {
@@ -182,7 +182,7 @@ fun SourceBrowseDetailPage(
                                     stringResource(R.string.hp_standard_modules),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).padding(top = 12.dp)
+                                    modifier = Modifier.padding(vertical = 4.dp).padding(top = 12.dp)
                                 )
                             }
                             items(standardModules, key = { it.id }) { module ->
@@ -203,7 +203,7 @@ fun SourceBrowseDetailPage(
                         if (infiniteModules.isNotEmpty()) {
                             item(key = "header_infinite") {
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text(stringResource(R.string.hp_infinite_modules), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+                                Text(stringResource(R.string.hp_infinite_modules), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 4.dp))
                             }
                             items(infiniteModules, key = { it.id }) { module ->
                                 ReorderableItem(reorderableState, key = module.id) { isDragging ->

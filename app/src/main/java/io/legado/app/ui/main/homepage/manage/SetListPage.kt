@@ -64,7 +64,7 @@ fun SetListPage(
 
     LazyColumn(
         state = lazyListState,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(distinctSets.size, key = { index -> distinctSets[index].sourceUrl }) { index ->

@@ -94,7 +94,7 @@ fun SetDetailPage(
 
         LazyColumn(
             state = lazyListState,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (standardModules.isNotEmpty()) {
@@ -103,7 +103,7 @@ fun SetDetailPage(
                         stringResource(R.string.hp_standard_modules),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
                 items(standardModules, key = { it.id }) { module ->
@@ -127,7 +127,7 @@ fun SetDetailPage(
                         stringResource(R.string.hp_infinite_modules),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
                 items(infiniteModules, key = { it.id }) { module ->
