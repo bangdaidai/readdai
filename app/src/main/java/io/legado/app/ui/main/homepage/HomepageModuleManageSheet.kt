@@ -6,11 +6,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -33,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.lib.theme.ThemeStore
@@ -96,12 +99,14 @@ fun HomepageModuleManageSheet(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (currentPage !is ManagePage.SetList) {
-                    IconButton(
-                        onClick = { currentPage = ManagePage.SetList },
-                        modifier = Modifier.padding(start = 8.dp),
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                Box(modifier = Modifier.size(48.dp)) {
+                    if (currentPage !is ManagePage.SetList) {
+                        IconButton(
+                            onClick = { currentPage = ManagePage.SetList },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        }
                     }
                 }
                 Text(
@@ -113,8 +118,10 @@ fun HomepageModuleManageSheet(
                         is ManagePage.AddModulesToSet -> stringResource(R.string.hp_add_modules)
                     },
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = if (currentPage is ManagePage.SetList) 16.dp else 8.dp, top = 12.dp, bottom = 8.dp),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f).padding(top = 12.dp, bottom = 8.dp),
                 )
+                Box(modifier = Modifier.size(48.dp))
             }
 
             AnimatedContent(

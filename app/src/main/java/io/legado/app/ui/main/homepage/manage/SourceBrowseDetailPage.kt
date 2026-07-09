@@ -545,23 +545,17 @@ fun calculateExploreKindRows(
         if (currentRow.isEmpty()) return
         val remain = maxSpan - currentSpan
         if (remain <= 0) return
-        val allSameSpan = currentRow.map { it.second }.distinct().size == 1
-        if (allSameSpan && currentRow.size > 1) {
-            val addEach = remain / currentRow.size
-            var extra = remain % currentRow.size
-            currentRow.indices.forEach { index ->
-                val (kind, span) = currentRow[index]
-                val add = addEach + if (extra > 0) {
-                    extra -= 1
-                    1
-                } else {
-                    0
-                }
-                currentRow[index] = kind to (span + add)
+        val addEach = remain / currentRow.size
+        var extra = remain % currentRow.size
+        currentRow.indices.forEach { index ->
+            val (kind, span) = currentRow[index]
+            val add = addEach + if (extra > 0) {
+                extra -= 1
+                1
+            } else {
+                0
             }
-        } else {
-            val (lastKind, lastSpan) = currentRow.last()
-            currentRow[currentRow.lastIndex] = lastKind to (lastSpan + remain)
+            currentRow[index] = kind to (span + add)
         }
         currentSpan += remain
     }
