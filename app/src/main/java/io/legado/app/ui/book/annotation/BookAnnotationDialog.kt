@@ -9,7 +9,6 @@ import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookAnnotation
-import io.legado.app.data.entities.getDisplayCover
 import io.legado.app.databinding.DialogAnnotationBinding
 import io.legado.app.help.book.BookplateGenerator
 import io.legado.app.lib.theme.primaryColor
