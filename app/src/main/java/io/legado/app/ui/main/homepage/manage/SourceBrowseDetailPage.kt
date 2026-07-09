@@ -59,6 +59,7 @@ import io.legado.app.domain.model.ModuleDef
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
 import io.legado.app.ui.main.homepage.HomepageViewModel
 import androidx.compose.foundation.ExperimentalFoundationApi
+import kotlin.math.roundToInt
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -366,7 +367,7 @@ fun SourceBrowseDetailPage(
                             }
 
                             val kindRows = remember(filteredKinds) {
-                                calculateExploreKindRows(filteredKinds, 12)
+                                calculateExploreKindRows(filteredKinds)
                             }
                             Column(
                                 modifier = Modifier
@@ -434,8 +435,8 @@ fun SourceBrowseDetailPage(
                                                 }
                                             }
                                         }
-                                        if (totalSpan < 12) {
-                                            Spacer(modifier = Modifier.weight((12 - totalSpan).toFloat()))
+                                        if (totalSpan < 4) {
+                                            Spacer(modifier = Modifier.weight((4 - totalSpan).toFloat()))
                                         }
                                     }
                                 }
@@ -534,52 +535,62 @@ fun SourceBrowseDetailPage(
 
 fun calculateExploreKindRows(
     kinds: List<ExploreKind>,
-    maxSpan: Int = 12,
+    maxSpan: Int = 4,
 ): List<List<Pair<ExploreKind, Int>>> {
-    if (kinds.isEmpty()) return emptyList()
     val rows = mutableListOf<MutableList<Pair<ExploreKind, Int>>>()
     var currentRow = mutableListOf<Pair<ExploreKind, Int>>()
-    var currentRowSpan = 0
+    var currentSpan = 0
 
-    fun kindSpan(kind: ExploreKind): Int {
-        val style = kind.style()
-        val basis = style.layout_flexBasisPercent
-        return when {
-            basis >= 0.95f -> maxSpan
-            basis >= 0.48f -> maxSpan / 2
-            basis >= 0.31f -> maxSpan / 3
-            else -> maxSpan / 4
-        }.coerceIn(1, maxSpan)
-    }
-
-    fun startNewRow(kind: ExploreKind, span: Int) {
-        if (currentRow.isNotEmpty()) {
-            rows.add(currentRow)
+    fun fillCurrentRowTail() {
+        if (currentRow.isEmpty()) return
+        val remain = maxSpan - currentSpan
+        if (remain <= 0) return
+        val allSameSpan = currentRow.map { it.second }.distinct().size == 1
+        if (allSameSpan && currentRow.size > 1) {
+            val addEach = remain / currentRow.size
+            var extra = remain % currentRow.size
+            currentRow.indices.forEach { index ->
+                val (kind, span) = currentRow[index]
+                val add = addEach + if (extra > 0) {
+                    extra -= 1
+                    1
+                } else {
+                    0
+                }
+                currentRow[index] = kind to (span + add)
+            }
+        } else {
+            val (lastKind, lastSpan) = currentRow.last()
+            currentRow[currentRow.lastIndex] = lastKind to (lastSpan + remain)
         }
-        currentRow = mutableListOf(kind to span)
-        currentRowSpan = span
+        currentSpan += remain
     }
 
     kinds.forEach { kind ->
-        val span = kindSpan(kind)
         val style = kind.style()
-
-        if (currentRow.isEmpty()) {
-            currentRow.add(kind to span)
-            currentRowSpan = span
-        } else if (style.layout_wrapBefore) {
-            startNewRow(kind, span)
-        } else {
-            val newSpan = currentRowSpan + span
-            if (newSpan > maxSpan) {
-                startNewRow(kind, span)
-            } else {
-                currentRow.add(kind to span)
-                currentRowSpan = newSpan
-            }
+        val span = when {
+            style.layout_wrapBefore || style.layout_flexBasisPercent >= 1.0f -> maxSpan
+            style.layout_flexBasisPercent > 0 -> (maxSpan * style.layout_flexBasisPercent).roundToInt()
+                .coerceIn(1, maxSpan)
+            style.layout_flexGrow > 0f -> 2
+            else -> 1
+        }
+        if ((style.layout_wrapBefore && currentRow.isNotEmpty()) || (currentSpan + span > maxSpan)) {
+            fillCurrentRowTail()
+            rows.add(currentRow)
+            currentRow = mutableListOf()
+            currentSpan = 0
+        }
+        currentRow.add(kind to span)
+        currentSpan += span
+        if (currentSpan >= maxSpan) {
+            rows.add(currentRow)
+            currentRow = mutableListOf()
+            currentSpan = 0
         }
     }
     if (currentRow.isNotEmpty()) {
+        fillCurrentRowTail()
         rows.add(currentRow)
     }
     return rows
