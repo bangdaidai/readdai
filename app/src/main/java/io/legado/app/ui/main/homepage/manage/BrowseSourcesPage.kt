@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -70,6 +71,7 @@ fun BrowseSourcesPage(
                 modifier = Modifier.weight(1f).height(48.dp),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium,
+                shape = RoundedCornerShape(50),
                 trailingIcon = {
                     if (query.isNotBlank()) {
                         IconButton(onClick = { query = "" }) {

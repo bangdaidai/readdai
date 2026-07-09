@@ -323,6 +323,7 @@ fun SourceBrowseDetailPage(
                                 modifier = Modifier.weight(1f).height(48.dp),
                                 singleLine = true,
                                 textStyle = MaterialTheme.typography.bodyMedium,
+                                shape = RoundedCornerShape(50),
                                 trailingIcon = {
                                     if (query.isNotBlank()) {
                                         IconButton(onClick = { query = "" }) {
@@ -368,13 +369,13 @@ fun SourceBrowseDetailPage(
 
                         FlowRow(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             filteredKinds.forEach { kind ->
                                 val isSelected = multiSelect && kind.title in selectedKinds
                                 Surface(
-                                    shape = RoundedCornerShape(16.dp),
+                                    shape = RoundedCornerShape(50),
                                     color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                                     else MaterialTheme.colorScheme.surfaceContainerHigh,
                                     contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
@@ -394,10 +395,8 @@ fun SourceBrowseDetailPage(
                                 ) {
                                     Row(
                                         modifier = Modifier.padding(
-                                            start = 14.dp,
-                                            end = if (isSelected) 8.dp else 14.dp,
-                                            top = 8.dp,
-                                            bottom = 8.dp,
+                                            horizontal = 12.dp,
+                                            vertical = 6.dp,
                                         ),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
@@ -411,7 +410,7 @@ fun SourceBrowseDetailPage(
                                             Icon(
                                                 Icons.Default.Check,
                                                 contentDescription = null,
-                                                modifier = Modifier.size(16.dp).padding(start = 4.dp),
+                                                modifier = Modifier.size(14.dp).padding(start = 2.dp),
                                                 tint = MaterialTheme.colorScheme.primary,
                                             )
                                         }
