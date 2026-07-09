@@ -442,7 +442,7 @@ fun SourceBrowseDetailPage(
                     AddCustomModuleDialog(
                         sourceUrl = browseUrl,
                         targetSetId = currentSetId,
-                        prefillType = if (selectedKinds.isNotEmpty()) "ranking" else "card",
+                        prefillType = "ranking",
                         canSelectInfinite = canSelectInfiniteGlobal,
                         allKinds = exploreKinds,
                         prefillKindTitles = selectedKinds.toList(),

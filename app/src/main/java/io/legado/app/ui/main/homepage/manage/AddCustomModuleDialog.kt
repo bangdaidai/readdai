@@ -148,7 +148,7 @@ fun AddCustomModuleDialog(
                     }
                 }
 
-                if (isRankingType && allKinds.isNotEmpty()) {
+                if (allKinds.isNotEmpty()) {
                     if (selectedKindTitles.isNotEmpty()) {
                         Text(stringResource(R.string.hp_selected_categories), style = MaterialTheme.typography.labelMedium)
                         FlowRow(
