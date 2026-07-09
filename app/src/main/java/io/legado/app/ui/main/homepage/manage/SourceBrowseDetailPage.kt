@@ -81,6 +81,9 @@ fun SourceBrowseDetailPage(
     onAddCustomModule: (String, String?, ModuleDef) -> Unit,
     onAddButtonGroupFromKinds: (String, String?, String, List<String>) -> Unit,
     onAddRankingFromKinds: (String, String?, String, List<String>) -> Unit = { _, _, _, _ -> },
+    // 多选状态回调
+    onMultiSelectChanged: (Boolean, List<ExploreKind>) -> Unit = { _, _ -> },
+    onSelectedKindsChanged: (Set<String>) -> Unit = {},
 ) {
     var browseTab by remember { mutableIntStateOf(0) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -335,6 +338,8 @@ fun SourceBrowseDetailPage(
                                 onClick = {
                                     multiSelect = !multiSelect
                                     if (!multiSelect) selectedKinds = emptySet()
+                                    onMultiSelectChanged(multiSelect, exploreKinds)
+                                    onSelectedKindsChanged(if (multiSelect) selectedKinds else emptySet())
                                 },
                             ) {
                                 Row(
@@ -380,6 +385,7 @@ fun SourceBrowseDetailPage(
                                             } else {
                                                 selectedKinds + kind.title
                                             }
+                                            onSelectedKindsChanged(selectedKinds)
                                         } else {
                                             editingKind = kind
                                         }
