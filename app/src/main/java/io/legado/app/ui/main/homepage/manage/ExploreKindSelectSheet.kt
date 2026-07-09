@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -83,7 +84,7 @@ fun ExploreKindSelectSheet(
                 value = query,
                 onValueChange = { query = it },
                 label = { Text(stringResource(R.string.hp_search_category)) },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).height(40.dp),
                 singleLine = true,
                 shape = RoundedCornerShape(50),
             )

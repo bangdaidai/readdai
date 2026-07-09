@@ -68,7 +68,7 @@ fun BrowseSourcesPage(
                 value = query,
                 onValueChange = { query = it },
                 placeholder = { Text(stringResource(R.string.hp_search_source), style = MaterialTheme.typography.bodyMedium) },
-                modifier = Modifier.weight(1f).height(48.dp),
+                modifier = Modifier.weight(1f).height(40.dp),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium,
                 shape = RoundedCornerShape(50),
