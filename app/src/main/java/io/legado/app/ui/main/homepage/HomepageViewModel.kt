@@ -418,7 +418,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         loadJobs[module.id]?.cancel()
 
         val multiKindTitles = module.multiKindTitles()
-        val isRankingType = module.type == HomepageModuleType.Ranking.key || module.type == HomepageModuleType.GridRanking.key
+        val isMultiPageType = module.type == HomepageModuleType.Ranking.key || module.type == HomepageModuleType.GridRanking.key
 
         if (module.type == HomepageModuleType.ButtonGroup.key) {
             loadJobs[module.id] = viewModelScope.launch {
@@ -454,7 +454,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                         selectedKinds.map { kind ->
                             async {
                                 val result = kotlin.runCatching {
-                                    val books = if (isRankingType) {
+                                    val books = if (isMultiPageType) {
                                         val allBooks = mutableListOf<SearchBook>()
                                         var page = 1
                                         while (allBooks.size < 20 && page <= 3) {
@@ -505,7 +505,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
                 val books = withContext(Dispatchers.IO) {
-                    if (isRankingType) {
+                    if (isMultiPageType) {
                         val allBooks = mutableListOf<SearchBook>()
                         var page = 1
                         while (allBooks.size < 20 && page <= 3) {
@@ -675,14 +675,6 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         addModuleFromKinds(sourceUrl, targetSetId, def.title, emptyList(), def.type, def.url, def.args, def.layoutConfig)
     }
 
-    fun addButtonGroupFromKinds(sourceUrl: String, targetSetId: String?, title: String, kindTitles: List<String>) {
-        addModuleFromKinds(sourceUrl, targetSetId, title, kindTitles, "buttonGroup", "")
-    }
-
-    fun addRankingFromKinds(sourceUrl: String, targetSetId: String?, title: String, kindTitles: List<String>) {
-        addModuleFromKinds(sourceUrl, targetSetId, title, kindTitles, HomepageModuleType.Ranking.key, "")
-    }
-
     fun addModuleFromKinds(
         sourceUrl: String,
         targetSetId: String?,
@@ -717,7 +709,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
 
         val resolvedArgs = when {
             isButtonGroup -> GSON.toJson(kindTitles)
-            hasMultiKinds -> GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = kindTitles))
+            hasMultiKinds -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles))
             args.isNotBlank() -> args
             else -> ""
         }
@@ -974,17 +966,17 @@ private data class HomepageUiFlags(
     val isConfigMode: Boolean
 )
 
-private data class RankingKindsArgs(
-    val isHomepageRankingGroup: Boolean = false,
+private data class MultiKindsArgs(
+    val isMultiKinds: Boolean = false,
     val kindTitles: List<String> = emptyList()
 )
 
 private fun ModuleItem.multiKindTitles(): List<String>? {
-    val rankingArgs = args ?: return null
+    val multiKindsArgs = args ?: return null
     return kotlin.runCatching {
-        GSON.fromJson(rankingArgs, RankingKindsArgs::class.java)
+        GSON.fromJson(multiKindsArgs, MultiKindsArgs::class.java)
     }.getOrNull()
-        ?.takeIf { it.isHomepageRankingGroup }
+        ?.takeIf { it.isMultiKinds }
         ?.kindTitles
         ?.takeIf { it.size > 1 }
 }
