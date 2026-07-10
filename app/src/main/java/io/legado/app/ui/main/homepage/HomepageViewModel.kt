@@ -761,11 +761,17 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                     return@launch
                 }
             }
+            // 多选模式下 url 无意义，清空避免残留
+            val parsedArgs = kotlin.runCatching {
+                def.args?.let { GSON.fromJson(it, MultiKindsArgs::class.java) }
+            }.getOrNull()
+            val isMultiKinds = parsedArgs?.isMultiKinds == true && (parsedArgs.kindTitles.size >= 2)
+            val resolvedUrl = if (isMultiKinds) null else def.url
             gateway.upsertAll(
                 listOf(
                     existing.copy(
                         customTitle = def.title.takeIf { it != existing.title }, type = def.type,
-                        url = def.url, args = def.args, layoutConfig = def.layoutConfig,
+                        url = resolvedUrl, args = def.args, layoutConfig = def.layoutConfig,
                         isUserCreated = true, syncedAt = System.currentTimeMillis()
                     )
                 )
