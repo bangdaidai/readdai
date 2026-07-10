@@ -187,9 +187,12 @@ fun AddCustomModuleDialog(
                                         onClick = {
                                             selectedKindTitles = selectedKindTitles.toMutableList().apply { removeAt(index) }
                                             selectedKindUrls = selectedKindUrls.toMutableList().apply { removeAt(index) }
-                                            args = if (selectedKindTitles.size >= 2) {
-                                                GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles, kindUrls = selectedKindUrls))
-                                            } else ""
+                                            if (selectedKindTitles.size >= 2) {
+                                                args = GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles, kindUrls = selectedKindUrls))
+                                            } else {
+                                                args = ""
+                                                url = selectedKindUrls.firstOrNull() ?: url
+                                            }
                                         },
                                         modifier = Modifier.size(20.dp),
                                     ) {
@@ -241,9 +244,10 @@ fun AddCustomModuleDialog(
         },
         confirmButton = {
             TextButton(onClick = {
+                val finalUrl = if (selectedKindTitles.size == 1) selectedKindUrls.firstOrNull() ?: url else url
                 onConfirm(ModuleDef(
                     title = title,
-                    url = url,
+                    url = finalUrl,
                     type = type,
                     args = args,
                     layoutConfig = layoutConfig,
@@ -274,6 +278,7 @@ fun AddCustomModuleDialog(
                 } else if (selectedKindTitles.size == 1) {
                     title = selectedKindTitles.first()
                     args = ""
+                    url = selectedKindUrls.firstOrNull() ?: url
                 }
                 showKindSelect = false
             },
