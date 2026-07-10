@@ -487,7 +487,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                     ?: throw Exception("Source not found: ${module.sourceUrl}")
                 val isRanking =
                     module.type == HomepageModuleType.Ranking.key || module.type == HomepageModuleType.GridRanking.key
-                val exploreUrl = module.url ?: source.exploreUrl
+                val exploreUrl = module.url.takeIf { it.isNotBlank() } ?: source.exploreUrl
                 if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
                 val books = withContext(Dispatchers.IO) {
