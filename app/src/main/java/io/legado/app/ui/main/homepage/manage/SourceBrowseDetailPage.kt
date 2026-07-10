@@ -315,21 +315,12 @@ fun SourceBrowseDetailPage(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                OutlinedTextField(
+                                CompactSearchField(
                                     value = query,
                                     onValueChange = { query = it },
-                                    placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.labelSmall) },
+                                    placeholder = stringResource(R.string.hp_search_category),
                                     modifier = Modifier.weight(1f),
-                                    singleLine = true,
                                     textStyle = MaterialTheme.typography.bodySmall,
-                                    shape = RoundedCornerShape(50),
-                                    trailingIcon = {
-                                        if (query.isNotBlank()) {
-                                            IconButton(onClick = { query = "" }) {
-                                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
-                                            }
-                                        }
-                                    }
                                 )
                                 Spacer(modifier = Modifier.padding(start = 8.dp))
                                 Surface(

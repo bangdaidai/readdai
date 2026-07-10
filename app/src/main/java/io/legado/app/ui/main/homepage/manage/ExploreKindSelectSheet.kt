@@ -80,14 +80,12 @@ fun ExploreKindSelectSheet(
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            OutlinedTextField(
+            CompactSearchField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.labelSmall) },
+                placeholder = stringResource(R.string.hp_search_category),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                singleLine = true,
                 textStyle = MaterialTheme.typography.bodySmall,
-                shape = RoundedCornerShape(50),
             )
 
             LazyColumn(

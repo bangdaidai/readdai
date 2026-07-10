@@ -64,21 +64,12 @@ fun BrowseSourcesPage(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            OutlinedTextField(
+            CompactSearchField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text(stringResource(R.string.hp_search_source), style = MaterialTheme.typography.bodyMedium) },
+                placeholder = stringResource(R.string.hp_search_source),
                 modifier = Modifier.weight(1f),
-                singleLine = true,
                 textStyle = MaterialTheme.typography.bodySmall,
-                shape = RoundedCornerShape(50),
-                trailingIcon = {
-                    if (query.isNotBlank()) {
-                        IconButton(onClick = { query = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
-                        }
-                    }
-                }
             )
             Spacer(modifier = Modifier.padding(start = 8.dp))
             var showGroupMenu by remember { mutableStateOf(false) }
