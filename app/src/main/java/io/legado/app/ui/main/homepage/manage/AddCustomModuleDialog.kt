@@ -84,7 +84,13 @@ fun AddCustomModuleDialog(
     }
 
     val initialKindUrls = remember {
-        parsedArgs?.kindUrls?.toMutableList() ?: mutableListOf()
+        if (parsedArgs?.kindUrls != null) {
+            parsedArgs.kindUrls.toMutableList()
+        } else if (initialKindTitles.isNotEmpty() && prefillUrl.isNotBlank()) {
+            mutableListOf(prefillUrl)
+        } else {
+            mutableListOf()
+        }
     }
 
     var title by remember {
