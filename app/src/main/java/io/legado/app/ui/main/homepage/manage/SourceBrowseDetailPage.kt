@@ -367,7 +367,7 @@ fun SourceBrowseDetailPage(
                             }
 
                             val kindRows = remember(filteredKinds) {
-                                calculateExploreKindRows(filteredKinds)
+                                calculateExploreKindRows(filteredKinds, 12)
                             }
                             Column(
                                 modifier = Modifier
@@ -435,8 +435,8 @@ fun SourceBrowseDetailPage(
                                                 }
                                             }
                                         }
-                                        if (totalSpan < 4) {
-                                            Spacer(modifier = Modifier.weight((4 - totalSpan).toFloat()))
+                                        if (totalSpan < 12) {
+                                            Spacer(modifier = Modifier.weight((12 - totalSpan).toFloat()))
                                         }
                                     }
                                 }
@@ -535,7 +535,7 @@ fun SourceBrowseDetailPage(
 
 fun calculateExploreKindRows(
     kinds: List<ExploreKind>,
-    maxSpan: Int = 4,
+    maxSpan: Int = 12,
 ): List<List<Pair<ExploreKind, Int>>> {
     val rows = mutableListOf<List<Pair<ExploreKind, Int>>>()
     var currentRow = mutableListOf<Pair<ExploreKind, Int>>()
@@ -546,9 +546,8 @@ fun calculateExploreKindRows(
         val span = when {
             style.layout_wrapBefore || style.layout_flexBasisPercent >= 1.0f -> maxSpan
             style.layout_flexBasisPercent > 0 -> (maxSpan * style.layout_flexBasisPercent).roundToInt()
-                .coerceIn(1, maxSpan)
-            style.layout_flexGrow > 0f -> 2
-            else -> 1
+                .coerceIn(3, maxSpan)
+            else -> 3
         }
         if ((style.layout_wrapBefore && currentRow.isNotEmpty()) || (currentSpan + span > maxSpan)) {
             rows.add(currentRow)
