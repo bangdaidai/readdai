@@ -501,7 +501,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             kotlin.runCatching {
                 val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
                     ?: throw Exception("Source not found: ${module.sourceUrl}")
-                val exploreUrl = module.url.takeIf { it.isNotBlank() } ?: source.exploreUrl
+                val exploreUrl = module.url?.takeIf { it.isNotBlank() } ?: source.exploreUrl
                 if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
                 val books = withContext(Dispatchers.IO) {
@@ -672,7 +672,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     }
 
     fun addCustomModule(sourceUrl: String, targetSetId: String?, def: ModuleDef) {
-        addModuleFromKinds(sourceUrl, targetSetId, def.title, emptyList(), def.type, def.url, def.args, def.layoutConfig)
+        addModuleFromKinds(sourceUrl, targetSetId, def.title, emptyList(), def.type, def.url ?: "", def.args ?: "", def.layoutConfig ?: "")
     }
 
     fun addModuleFromKinds(
