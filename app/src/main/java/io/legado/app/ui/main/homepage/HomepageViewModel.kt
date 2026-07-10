@@ -454,7 +454,19 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                         selectedKinds.map { kind ->
                             async {
                                 val result = kotlin.runCatching {
-                                    val books = WebBook.exploreBookAwait(source, kind.url ?: "", 1)
+                                    val books = if (isRankingType) {
+                                        val allBooks = mutableListOf<SearchBook>()
+                                        var page = 1
+                                        while (allBooks.size < 20 && page <= 3) {
+                                            val pageBooks = WebBook.exploreBookAwait(source, kind.url ?: "", page)
+                                            if (pageBooks.isEmpty()) break
+                                            allBooks.addAll(pageBooks)
+                                            page++
+                                        }
+                                        allBooks.take(20)
+                                    } else {
+                                        WebBook.exploreBookAwait(source, kind.url ?: "", 1)
+                                    }
                                     ModuleLoadState.Loaded(
                                         books = books.map { book ->
                                             HomepageBookItemUi(
@@ -463,7 +475,8 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                                                     book.name, book.author, book.bookUrl, _bookshelf.value
                                                 )
                                             )
-                                        }
+                                        },
+                                        hasMore = isInfinite(module.type, module.layoutConfig) && books.isNotEmpty()
                                     )
                                 }.getOrElse { ModuleLoadState.Error(it.stackTraceToString()) }
 
@@ -472,20 +485,8 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                         }.awaitAll()
                     }
                 }.onSuccess { sources ->
-                    if (isRankingType) {
-                        _moduleContentStates.update {
-                            it + (module.id to ModuleLoadState.Rankings(sources))
-                        }
-                    } else {
-                        val allBooks = sources.flatMap { sourceUi ->
-                            (sourceUi.state as? ModuleLoadState.Loaded)?.books ?: emptyList()
-                        }.distinctBy { it.book.bookUrl }
-                        _moduleContentStates.update {
-                            it + (module.id to ModuleLoadState.Loaded(
-                                books = allBooks,
-                                hasMore = isInfinite(module.type, module.layoutConfig) && allBooks.isNotEmpty()
-                            ))
-                        }
+                    _moduleContentStates.update {
+                        it + (module.id to ModuleLoadState.Rankings(sources))
                     }
                 }.onFailure { e ->
                     _moduleContentStates.update {
