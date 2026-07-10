@@ -925,6 +925,13 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         }
     }
 
+    suspend fun loadExploreKindsAwait(sourceUrl: String): List<ExploreKind> {
+        val source = resolveBookSource(sourceUrl) ?: return emptyList()
+        val kinds = withContext(Dispatchers.IO) { source.exploreKinds() }
+        _exploreKindsCache.update { it + (sourceUrl to kinds) }
+        return kinds
+    }
+
     private fun resolveBookSource(sourceUrl: String): BookSource? =
         _bookSourcesCache.value[sourceUrl] ?: appDb.bookSourceDao.getBookSource(sourceUrl)
 

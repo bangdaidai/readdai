@@ -274,9 +274,9 @@ fun HomepageModuleManageSheet(
 
     if (editingModule != null) {
         val module = editingModule!!
-        val kinds = remember(module.sourceUrl) { viewModel.getSourceExploreKinds(module.sourceUrl) }
+        var kinds by remember { mutableStateOf(viewModel.getSourceExploreKinds(module.sourceUrl)) }
         LaunchedEffect(module.sourceUrl) {
-            viewModel.loadExploreKinds(module.sourceUrl)
+            kinds = viewModel.loadExploreKindsAwait(module.sourceUrl)
         }
         // 单选模块没存 kindTitles，用 url 反查分类名
         val prefillKindTitles = remember(module.url, kinds) {

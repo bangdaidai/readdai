@@ -48,8 +48,14 @@ fun ExploreKindSelectSheet(
 ) {
     if (!show) return
 
-    var selectedTitles by remember(initialSelectedTitles, show) {
-        mutableStateOf(initialSelectedTitles.toMutableSet())
+    val initialKeys = remember(initialSelectedTitles, kinds) {
+        kinds.filter { it.title in initialSelectedTitles }
+            .map { kindKey(it) }
+            .toSet()
+    }
+
+    var selectedKeys by remember(initialKeys, show) {
+        mutableStateOf(initialKeys.toMutableSet())
     }
     var query by remember { mutableStateOf("") }
 
@@ -102,16 +108,17 @@ fun ExploreKindSelectSheet(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 rowItems.forEach { (kind, span) ->
-                                    val isSelected = kind.title in selectedTitles
+                                    val kindKey = kindKey(kind)
+                                    val isSelected = kindKey in selectedKeys
                                     KindChip(
                                         title = kind.title,
                                         isSelected = isSelected,
                                         modifier = Modifier.weight(span.toFloat()),
                                         onClick = {
-                                            selectedTitles = if (isSelected) {
-                                                selectedTitles.toMutableSet().apply { remove(kind.title) }
+                                            selectedKeys = if (isSelected) {
+                                                selectedKeys.toMutableSet().apply { remove(kindKey) }
                                             } else {
-                                                selectedTitles.toMutableSet().apply { add(kind.title) }
+                                                selectedKeys.toMutableSet().apply { add(kindKey) }
                                             }
                                         },
                                     )
@@ -135,9 +142,9 @@ fun ExploreKindSelectSheet(
                     TextButton(onClick = onDismissRequest) {
                         Text(stringResource(R.string.hp_cancel))
                     }
-                    if (selectedTitles.isNotEmpty()) {
+                    if (selectedKeys.isNotEmpty()) {
                         TextButton(onClick = {
-                            val selectedKinds = kinds.filter { it.title in selectedTitles }
+                            val selectedKinds = kinds.filter { kindKey(it) in selectedKeys }
                             onSelected(selectedKinds)
                             onDismissRequest()
                         }) {
@@ -150,6 +157,10 @@ fun ExploreKindSelectSheet(
             }
         }
     }
+}
+
+private fun kindKey(kind: ExploreKind): String {
+    return "${kind.title}||${kind.url}"
 }
 
 @Composable
