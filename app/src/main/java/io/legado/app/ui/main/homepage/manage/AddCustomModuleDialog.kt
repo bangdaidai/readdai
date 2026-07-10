@@ -93,7 +93,7 @@ fun AddCustomModuleDialog(
     var type by remember { mutableStateOf(prefillType) }
     var args by remember {
         mutableStateOf(
-            if (initialKindTitles.isNotEmpty()) {
+            if (initialKindTitles.size >= 2) {
                 GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = initialKindTitles))
             } else {
                 prefillArgs
@@ -180,7 +180,7 @@ fun AddCustomModuleDialog(
                                     IconButton(
                                         onClick = {
                                             selectedKindTitles = selectedKindTitles.toMutableList().apply { remove(kindTitle) }
-                                            args = if (selectedKindTitles.isNotEmpty()) {
+                                            args = if (selectedKindTitles.size >= 2) {
                                                 GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles))
                                             } else ""
                                         },
@@ -256,9 +256,12 @@ fun AddCustomModuleDialog(
             initialSelectedTitles = selectedKindTitles.toSet(),
             onSelected = { kinds ->
                 selectedKindTitles = kinds.map { it.title }.toMutableList()
-                if (selectedKindTitles.isNotEmpty()) {
+                if (selectedKindTitles.size >= 2) {
                     title = selectedKindTitles.joinToString("·")
                     args = GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles))
+                } else if (selectedKindTitles.size == 1) {
+                    title = selectedKindTitles.first()
+                    args = ""
                 }
                 showKindSelect = false
             },

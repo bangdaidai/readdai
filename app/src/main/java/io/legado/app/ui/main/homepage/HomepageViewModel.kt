@@ -969,7 +969,7 @@ private fun ModuleItem.multiKindTitles(): List<String>? {
     return kotlin.runCatching {
         GSON.fromJson(multiKindsArgs, MultiKindsArgs::class.java)
     }.getOrNull()
-        ?.takeIf { it.isMultiKinds }
+        ?.takeIf { it.isMultiKinds && it.kindTitles.size >= 2 }
         ?.kindTitles
         ?.takeIf { it.size > 1 }
 }
