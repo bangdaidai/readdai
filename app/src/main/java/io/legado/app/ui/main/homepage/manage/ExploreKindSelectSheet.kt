@@ -45,11 +45,13 @@ fun ExploreKindSelectSheet(
     kinds: List<ExploreKind>,
     onSelected: (List<ExploreKind>) -> Unit,
     initialSelectedTitles: Set<String> = emptySet(),
+    initialSelectedKeys: Set<String>? = null,
 ) {
     if (!show) return
 
-    val initialKeys = remember(initialSelectedTitles, kinds) {
-        kinds.filter { it.title in initialSelectedTitles }
+    val initialKeys = remember(initialSelectedKeys, initialSelectedTitles, kinds) {
+        if (initialSelectedKeys != null) initialSelectedKeys
+        else kinds.filter { it.title in initialSelectedTitles }
             .map { kindKey(it) }
             .toSet()
     }

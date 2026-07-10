@@ -453,7 +453,16 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
 
                 val sources = if (multiKindTitles != null) {
-                    multiKindTitles.mapNotNull { title -> allKinds.find { it.title == title } }
+                    val args = module.args?.let {
+                        kotlin.runCatching { GSON.fromJson(it, MultiKindsArgs::class.java) }.getOrNull()
+                    }
+                    val urls = args?.kindUrls ?: emptyList()
+                    multiKindTitles.mapIndexedNotNull { index, title ->
+                        val url = urls.getOrNull(index)
+                        if (url != null) allKinds.find { it.url == url }
+                            ?: ExploreKind(title = title, url = url)
+                        else allKinds.find { it.title == title }
+                    }
                 } else {
                     val url = module.url?.takeIf { it.isNotBlank() } ?: source.exploreUrl ?: ""
                     listOf(ExploreKind(title = module.title, url = url))
@@ -652,7 +661,8 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         type: String,
         url: String = "",
         args: String = "",
-        layoutConfig: String = ""
+        layoutConfig: String = "",
+        kindUrls: List<String?> = emptyList()
     ) {
         val setId = targetSetId ?: "src_$sourceUrl"
         val isButtonGroup = type == HomepageModuleType.ButtonGroup.key
@@ -677,8 +687,8 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         val id = ModuleDef.globalIdOf(sourceUrl, key, setId)
 
         val resolvedArgs = when {
-        isButtonGroup -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles))
-        hasMultiKinds -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles))
+        isButtonGroup -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles, kindUrls = kindUrls))
+        hasMultiKinds -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles, kindUrls = kindUrls))
         args.isNotBlank() -> args
         else -> ""
     }
@@ -961,7 +971,8 @@ private data class HomepageUiFlags(
 
 private data class MultiKindsArgs(
     val isMultiKinds: Boolean = false,
-    val kindTitles: List<String> = emptyList()
+    val kindTitles: List<String> = emptyList(),
+    val kindUrls: List<String?> = emptyList()
 )
 
 private fun ModuleItem.multiKindTitles(): List<String>? {

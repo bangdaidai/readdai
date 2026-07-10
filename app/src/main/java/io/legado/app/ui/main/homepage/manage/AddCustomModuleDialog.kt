@@ -49,7 +49,8 @@ import io.legado.app.utils.GSON
 
 private data class MultiKindsArgs(
     val isMultiKinds: Boolean = false,
-    val kindTitles: List<String> = emptyList()
+    val kindTitles: List<String> = emptyList(),
+    val kindUrls: List<String?> = emptyList()
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -82,6 +83,10 @@ fun AddCustomModuleDialog(
         }
     }
 
+    val initialKindUrls = remember {
+        parsedArgs?.kindUrls?.toMutableList() ?: mutableListOf()
+    }
+
     var title by remember {
         mutableStateOf(
             prefillTitle.ifBlank {
@@ -94,7 +99,7 @@ fun AddCustomModuleDialog(
     var args by remember {
         mutableStateOf(
             if (initialKindTitles.size >= 2) {
-                GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = initialKindTitles))
+                GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = initialKindTitles, kindUrls = initialKindUrls))
             } else {
                 prefillArgs
             }
@@ -102,6 +107,7 @@ fun AddCustomModuleDialog(
     }
     var layoutConfig by remember { mutableStateOf(prefillLayoutConfig) }
     var selectedKindTitles: MutableList<String> by remember { mutableStateOf(initialKindTitles) }
+    var selectedKindUrls: MutableList<String?> by remember { mutableStateOf(initialKindUrls) }
     var showKindSelect by remember { mutableStateOf(false) }
 
     val typeList = remember(canSelectInfinite) {
@@ -166,7 +172,7 @@ fun AddCustomModuleDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     } else {
-                        selectedKindTitles.forEach { kindTitle ->
+                        selectedKindTitles.forEachIndexed { index, kindTitle ->
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
                                 color = MaterialTheme.colorScheme.primaryContainer,
@@ -179,9 +185,10 @@ fun AddCustomModuleDialog(
                                     Text(kindTitle, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     IconButton(
                                         onClick = {
-                                            selectedKindTitles = selectedKindTitles.toMutableList().apply { remove(kindTitle) }
+                                            selectedKindTitles = selectedKindTitles.toMutableList().apply { removeAt(index) }
+                                            selectedKindUrls = selectedKindUrls.toMutableList().apply { removeAt(index) }
                                             args = if (selectedKindTitles.size >= 2) {
-                                                GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles))
+                                                GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles, kindUrls = selectedKindUrls))
                                             } else ""
                                         },
                                         modifier = Modifier.size(20.dp),
@@ -249,16 +256,21 @@ fun AddCustomModuleDialog(
     )
 
     if (showKindSelect) {
+        val initialSelectedKeys = selectedKindTitles.mapIndexed { index, title ->
+            "${title}||${selectedKindUrls.getOrNull(index)}"
+        }.toSet()
         ExploreKindSelectSheet(
             show = true,
             onDismissRequest = { showKindSelect = false },
             kinds = allKinds,
             initialSelectedTitles = selectedKindTitles.toSet(),
+            initialSelectedKeys = initialSelectedKeys,
             onSelected = { kinds ->
                 selectedKindTitles = kinds.map { it.title }.toMutableList()
+                selectedKindUrls = kinds.map { it.url }.toMutableList()
                 if (selectedKindTitles.size >= 2) {
                     title = selectedKindTitles.joinToString("·")
-                    args = GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles))
+                    args = GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles, kindUrls = selectedKindUrls))
                 } else if (selectedKindTitles.size == 1) {
                     title = selectedKindTitles.first()
                     args = ""

@@ -40,7 +40,7 @@ data class HomepageManageActions(
     val onToggleModule: (String, Boolean) -> Unit = { _, _ -> },
     val onJoinModule: (String, String?, ModuleDef) -> Unit = { _, _, _ -> },
     val onAddCustomModule: (String, String?, ModuleDef) -> Unit = { _, _, _ -> },
-    val onAddModuleFromKinds: (String, String?, String, List<String>, String) -> Unit = { _, _, _, _, _ -> },
+    val onAddModuleFromKinds: (String, String?, String, List<String>, String, List<String?>) -> Unit = { _, _, _, _, _, _ -> },
     val onGetExploreKinds: (String) -> List<Pair<String, String>> = { emptyList() },
     val onUpdateModule: (String, ModuleDef) -> Unit = { _, _ -> },
     val onDeleteModule: (String) -> Unit = {},

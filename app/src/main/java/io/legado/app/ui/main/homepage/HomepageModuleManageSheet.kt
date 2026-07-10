@@ -191,8 +191,8 @@ fun HomepageModuleManageSheet(
                             onReorderModules = { ids -> viewModel.reorderJoinedModules(ids) },
                             onEditModule = { module -> editingModule = module },
                             onAddCustomModule = { sourceUrl, setId, def -> viewModel.addCustomModule(sourceUrl, setId, def) },
-                            onAddModuleFromKinds = { sourceUrl, setId, title, kinds, type ->
-                                viewModel.addModuleFromKinds(sourceUrl, setId, title, kinds, type)
+                            onAddModuleFromKinds = { sourceUrl, setId, title, kinds, type, kindUrls ->
+                                viewModel.addModuleFromKinds(sourceUrl, setId, title, kinds, type, kindUrls = kindUrls)
                             },
                         )
 

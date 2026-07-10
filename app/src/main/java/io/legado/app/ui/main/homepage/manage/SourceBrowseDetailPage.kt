@@ -79,7 +79,7 @@ fun SourceBrowseDetailPage(
     onReorderModules: (List<String>) -> Unit,
     onEditModule: (HomepageModuleManageUi) -> Unit,
     onAddCustomModule: (String, String?, ModuleDef) -> Unit,
-    onAddModuleFromKinds: (String, String?, String, List<String>, String) -> Unit,
+    onAddModuleFromKinds: (String, String?, String, List<String>, String, List<String?>) -> Unit,
     // 多选状态回调
     onMultiSelectChanged: (Boolean, List<ExploreKind>) -> Unit = { _, _ -> },
     onSelectedKindsChanged: (Set<String>) -> Unit = {},
@@ -437,8 +437,9 @@ fun SourceBrowseDetailPage(
                         onDismissRequest = { showCreateModuleDialog = false },
                         onConfirm = { def ->
                             val kindTitles = selectedKindObjects.map { it.title }
+                            val kindUrls = selectedKindObjects.map { it.url }
                             val title = def.title.ifBlank { if (kindTitles.isNotEmpty()) kindTitles.joinToString("·") else "" }
-                            onAddModuleFromKinds(browseUrl, currentSetId, title, kindTitles, def.type)
+                            onAddModuleFromKinds(browseUrl, currentSetId, title, kindTitles, def.type, kindUrls)
                             showCreateModuleDialog = false
                             selectedKinds = emptySet()
                         },
