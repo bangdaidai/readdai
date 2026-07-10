@@ -110,8 +110,8 @@ sealed interface ModuleLoadState {
     data class Buttons(val kinds: List<ExploreKind>) : ModuleLoadState
 
     @Stable
-    data class Rankings(
-        val sources: List<HomepageRankingSourceUi>
+    data class MultiSources(
+        val sources: List<HomepageMultiSourceUi>
     ) : ModuleLoadState
 
     @Stable
@@ -119,7 +119,7 @@ sealed interface ModuleLoadState {
 }
 
 @Stable
-data class HomepageRankingSourceUi(
+data class HomepageMultiSourceUi(
     val title: String,
     val url: String?,
     val state: ModuleLoadState,

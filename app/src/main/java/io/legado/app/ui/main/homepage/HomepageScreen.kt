@@ -347,7 +347,7 @@ private fun ModuleList(
             if (infinite != null) others + infinite else others
         }
 
-        var selectedRankingSources by rememberSaveable { mutableStateOf(hashMapOf<String, String>()) }
+        var selectedMultiSources by rememberSaveable { mutableStateOf(hashMapOf<String, String>()) }
 
         val gridColumns = remember(processedModules) {
             val infiniteModule = processedModules.find { m ->
@@ -364,26 +364,26 @@ private fun ModuleList(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
         ) {
             processedModules.forEach { moduleUi ->
-                val rankingSources = (moduleUi.state as? ModuleLoadState.Rankings)?.sources
-                val selectedTitle = selectedRankingSources[moduleUi.globalId]
-                val selectedSource = rankingSources?.firstOrNull { it.title == selectedTitle }
-                    ?: rankingSources?.firstOrNull()
+                val multiSources = (moduleUi.state as? ModuleLoadState.MultiSources)?.sources
+                val selectedTitle = selectedMultiSources[moduleUi.globalId]
+                val selectedSource = multiSources?.firstOrNull { it.title == selectedTitle }
+                    ?: multiSources?.firstOrNull()
 
                 item(key = "header_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
                     ModuleHeader(
                         title = moduleUi.title,
-                        sourceTabs = rankingSources,
+                        sourceTabs = multiSources,
                         selectedSourceTitle = selectedSource?.title,
-                        onSourceSelected = if (rankingSources != null) {
+                        onSourceSelected = if (multiSources != null) {
                             { title ->
-                                selectedRankingSources = HashMap(selectedRankingSources).apply {
+                                selectedMultiSources = HashMap(selectedMultiSources).apply {
                                     put(moduleUi.globalId, title)
                                 }
                             }
                         } else null,
                         onNavigate = if (moduleUi.type == HomepageModuleType.ButtonGroup) null else {
                             {
-                                val exploreUrl = if (rankingSources != null) {
+                                val exploreUrl = if (multiSources != null) {
                                     selectedSource?.url ?: moduleUi.exploreUrl
                                 } else {
                                     moduleUi.exploreUrl
@@ -529,7 +529,7 @@ private fun ModuleList(
                             else -> {}
                         }
                     }
-                    is ModuleLoadState.Rankings -> {}
+                    is ModuleLoadState.MultiSources -> {}
                 }
             }
         }
@@ -539,7 +539,7 @@ private fun ModuleList(
 @Composable
 private fun ModuleHeader(
     title: String,
-    sourceTabs: List<HomepageRankingSourceUi>? = null,
+    sourceTabs: List<HomepageMultiSourceUi>? = null,
     selectedSourceTitle: String? = null,
     onSourceSelected: ((String) -> Unit)? = null,
     onNavigate: (() -> Unit)? = null,

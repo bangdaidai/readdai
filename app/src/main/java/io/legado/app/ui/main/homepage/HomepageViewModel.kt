@@ -480,13 +480,13 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                                     )
                                 }.getOrElse { ModuleLoadState.Error(it.stackTraceToString()) }
 
-                                HomepageRankingSourceUi(title = kind.title, url = kind.url, state = result)
+                                HomepageMultiSourceUi(title = kind.title, url = kind.url, state = result)
                             }
                         }.awaitAll()
                     }
                 }.onSuccess { sources ->
                     _moduleContentStates.update {
-                        it + (module.id to ModuleLoadState.Rankings(sources))
+                        it + (module.id to ModuleLoadState.MultiSources(sources))
                     }
                 }.onFailure { e ->
                     _moduleContentStates.update {
@@ -995,7 +995,7 @@ private fun ModuleLoadState.mapStateBooks(
     is ModuleLoadState.Loaded -> copy(
         books = books.map(transform)
     )
-    is ModuleLoadState.Rankings -> copy(
+    is ModuleLoadState.MultiSources -> copy(
         sources = sources.map { source ->
             source.copy(state = source.state.mapStateBooks(transform))
         }
