@@ -180,6 +180,9 @@ fun AddCustomModuleDialog(
                                     IconButton(
                                         onClick = {
                                             selectedKindTitles = selectedKindTitles.toMutableList().apply { remove(kindTitle) }
+                                            args = if (selectedKindTitles.isNotEmpty()) {
+                                                GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles))
+                                            } else ""
                                         },
                                         modifier = Modifier.size(20.dp),
                                     ) {
