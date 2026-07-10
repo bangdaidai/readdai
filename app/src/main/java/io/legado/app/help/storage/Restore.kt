@@ -40,6 +40,8 @@ import io.legado.app.help.LauncherIconHelp
 import io.legado.app.help.ai.AiDatabase
 import io.legado.app.help.ai.AiProviderEntity
 import io.legado.app.help.book.ReadingMemoryHelper
+import io.legado.app.help.highlight.HighlightRuleStore
+import io.legado.app.data.entities.BookplateTemplate
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.book.upType
 import io.legado.app.help.config.LocalConfig
@@ -215,6 +217,26 @@ object Restore {
                 AppLog.put("恢复AI服务商配置出错\n${e.localizedMessage}", e)
                 LogUtils.e(TAG, "AI服务商配置恢复失败: ${e.message}")
             }
+        }
+        
+        // 恢复高亮规则
+        File(path, "highlightRules.json").takeIf { it.exists() }?.runCatching {
+            val json = readText()
+            val backupData = GSON.fromJson<HighlightRuleStore.BackupData>(json)
+            if (backupData != null) {
+                HighlightRuleStore.restoreBackupData(appCtx, backupData)
+            }
+            LogUtils.d(TAG, "高亮规则恢复完成")
+        }?.onFailure {
+            AppLog.put("恢复高亮规则出错\n${it.localizedMessage}", it)
+        }
+        
+        // 恢复藏书票模板
+        fileToListT<BookplateTemplate>(path, "bookplateTemplates.json")?.let {
+            it.forEach { template ->
+                appDb.bookplateTemplateDao.insert(template)
+            }
+            LogUtils.d(TAG, "藏书票模板恢复完成，数量: ${it.size}")
         }
         
         // 恢复书籍注解

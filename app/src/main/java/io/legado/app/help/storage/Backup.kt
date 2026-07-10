@@ -48,6 +48,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import androidx.core.content.edit
 import io.legado.app.help.ai.AiDatabase
+import io.legado.app.help.highlight.HighlightRuleStore
 import io.legado.app.model.VideoPlay.VIDEO_PREF_NAME
 import kotlinx.coroutines.currentCoroutineContext
 
@@ -100,7 +101,9 @@ object Backup {
             BookCover.configFileName,
             "config.xml",
             "videoConfig.xml",
-            "aiProviders.json"
+            "aiProviders.json",
+            "highlightRules.json",
+            "bookplateTemplates.json"
         )
     }
 
@@ -190,6 +193,28 @@ object Backup {
             }
         } catch (e: Exception) {
             LogUtils.e(TAG, "AI服务商配置备份失败: ${e.message}")
+        }
+        
+        // 备份高亮规则
+        try {
+            val highlightBackupData = HighlightRuleStore.createBackupData(context)
+            val highlightJson = GSON.toJson(highlightBackupData)
+            FileUtils.createFileIfNotExist(backupPath + File.separator + "highlightRules.json")
+                .writeText(highlightJson)
+            LogUtils.d(TAG, "高亮规则备份完成")
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "高亮规则备份失败: ${e.message}")
+        }
+        
+        // 备份藏书票模板
+        try {
+            val bookplateTemplates = appDb.bookplateTemplateDao.getAll()
+            if (bookplateTemplates.isNotEmpty()) {
+                writeListToJson(bookplateTemplates, "bookplateTemplates.json", backupPath)
+                LogUtils.d(TAG, "藏书票模板备份完成，数量: ${bookplateTemplates.size}")
+            }
+        } catch (e: Exception) {
+            LogUtils.e(TAG, "藏书票模板备份失败: ${e.message}")
         }
         
         GSON.toJson(appDb.serverDao.all).let { json ->
