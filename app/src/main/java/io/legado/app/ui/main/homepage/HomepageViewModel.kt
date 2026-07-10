@@ -445,106 +445,64 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             return
         }
 
-        if (multiKindTitles != null && multiKindTitles.size >= 2) {
-            loadJobs[module.id] = viewModelScope.launch {
-                kotlin.runCatching {
-                    val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
-                        ?: throw Exception("Source not found")
-                    val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
-                    val selectedKinds = multiKindTitles.mapNotNull { title ->
-                        allKinds.find { it.title == title }
-                    }
-                    if (selectedKinds.isEmpty()) throw Exception("Kinds not found")
-
-                    coroutineScope {
-                        selectedKinds.map { kind ->
-                            async {
-                                val result = kotlin.runCatching {
-                                    val books = if (isMultiPageType) {
-                                        val allBooks = mutableListOf<SearchBook>()
-                                        var page = 1
-                                        while (allBooks.size < 20 && page <= 3) {
-                                            val pageBooks = WebBook.exploreBookAwait(source, kind.url ?: "", page)
-                                            if (pageBooks.isEmpty()) break
-                                            allBooks.addAll(pageBooks)
-                                            page++
-                                        }
-                                        allBooks.take(20)
-                                    } else {
-                                        WebBook.exploreBookAwait(source, kind.url ?: "", 1)
-                                    }
-                                    ModuleLoadState.Loaded(
-                                        books = books.map { book ->
-                                            HomepageBookItemUi(
-                                                book = book,
-                                                shelfState = resolveBookShelfState(
-                                                    book.name, book.author, book.bookUrl, _bookshelf.value
-                                                )
-                                            )
-                                        },
-                                        hasMore = isInfinite(module.type, module.layoutConfig) && books.isNotEmpty()
-                                    )
-                                }.getOrElse { ModuleLoadState.Error(it.stackTraceToString()) }
-
-                                HomepageMultiSourceUi(title = kind.title, url = kind.url, state = result)
-                            }
-                        }.awaitAll()
-                    }
-                }.onSuccess { sources ->
-                    _moduleContentStates.update {
-                        it + (module.id to ModuleLoadState.MultiSources(sources))
-                    }
-                }.onFailure { e ->
-                    _moduleContentStates.update {
-                        it + (module.id to ModuleLoadState.Error(e.stackTraceToString()))
-                    }
-                }
-            }.also { it.invokeOnCompletion { loadJobs.remove(module.id) } }
-            return
-        }
-
         loadJobs[module.id] = viewModelScope.launch {
             kotlin.runCatching {
                 val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
                     ?: throw Exception("Source not found: ${module.sourceUrl}")
-                val exploreUrl = module.url?.takeIf { it.isNotBlank() }
-                    ?: multiKindTitles?.firstOrNull()?.let { title ->
-                        withContext(Dispatchers.IO) { source.exploreKinds() }
-                            .find { it.title == title }?.url
-                    }
-                    ?: source.exploreUrl
-                if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
-                val books = withContext(Dispatchers.IO) {
-                    if (isMultiPageType) {
-                        val allBooks = mutableListOf<SearchBook>()
-                        var page = 1
-                        while (allBooks.size < 20 && page <= 3) {
-                            val pageBooks = WebBook.exploreBookAwait(source, exploreUrl, page)
-                            if (pageBooks.isEmpty()) break
-                            allBooks.addAll(pageBooks)
-                            page++
-                        }
-                        allBooks.take(20)
-                    } else {
-                        WebBook.exploreBookAwait(source, exploreUrl, 1)
-                    }
+                val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
+
+                val sources = if (multiKindTitles != null) {
+                    multiKindTitles.mapNotNull { title -> allKinds.find { it.title == title } }
+                } else {
+                    val url = module.url?.takeIf { it.isNotBlank() } ?: source.exploreUrl ?: ""
+                    listOf(ExploreKind(title = module.title, url = url))
                 }
 
-                val hasMore = isInfinite(module.type, module.layoutConfig) && books.isNotEmpty()
-                books to hasMore
-            }.onSuccess { (books, hasMore) ->
-                val shelf = _bookshelf.value
+                if (sources.isEmpty()) throw Exception("No explore URL for module ${module.title}")
+
+                coroutineScope {
+                    sources.map { kind ->
+                        async {
+                            val result = kotlin.runCatching {
+                                val books = if (isMultiPageType) {
+                                    val allBooks = mutableListOf<SearchBook>()
+                                    var page = 1
+                                    while (allBooks.size < 20 && page <= 3) {
+                                        val pageBooks = WebBook.exploreBookAwait(source, kind.url ?: "", page)
+                                        if (pageBooks.isEmpty()) break
+                                        allBooks.addAll(pageBooks)
+                                        page++
+                                    }
+                                    allBooks.take(20)
+                                } else {
+                                    WebBook.exploreBookAwait(source, kind.url ?: "", 1)
+                                }
+                                ModuleLoadState.Loaded(
+                                    books = books.map { book ->
+                                        HomepageBookItemUi(
+                                            book = book,
+                                            shelfState = resolveBookShelfState(
+                                                book.name, book.author, book.bookUrl, _bookshelf.value
+                                            )
+                                        )
+                                    },
+                                    hasMore = isInfinite(module.type, module.layoutConfig) && books.isNotEmpty()
+                                )
+                            }.getOrElse { ModuleLoadState.Error(it.stackTraceToString()) }
+
+                            HomepageMultiSourceUi(title = kind.title, url = kind.url, state = result)
+                        }
+                    }.awaitAll()
+                }
+            }.onSuccess { sources ->
                 _moduleContentStates.update {
-                    it + (module.id to ModuleLoadState.Loaded(
-                        books.map { book ->
-                            HomepageBookItemUi(
-                                book = book,
-                                shelfState = resolveBookShelfState(book.name, book.author, book.bookUrl, shelf)
-                            )
-                        },
-                        hasMore = hasMore
-                    ))
+                    if (sources.size == 1) {
+                        val state = sources.first().state
+                        it + (module.id to state)
+                    } else {
+                        it + (module.id to ModuleLoadState.MultiSources(sources))
+                    }
                 }
             }.onFailure { e ->
                 _moduleContentStates.update { it + (module.id to ModuleLoadState.Error(e.stackTraceToString())) }
