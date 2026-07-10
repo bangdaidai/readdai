@@ -276,14 +276,7 @@ fun HomepageModuleManageSheet(
         val module = editingModule!!
         val kinds = remember(module.sourceUrl) { viewModel.getSourceExploreKinds(module.sourceUrl) }
         LaunchedEffect(module.sourceUrl) {
-            if (module.type == "ranking") viewModel.loadExploreKinds(module.sourceUrl)
-        }
-        val prefillKindTitles = remember {
-            if (module.type == "ranking") {
-                emptyList()
-            } else {
-                listOf(module.title)
-            }
+            viewModel.loadExploreKinds(module.sourceUrl)
         }
         AddCustomModuleDialog(
             sourceUrl = module.sourceUrl,
@@ -295,7 +288,6 @@ fun HomepageModuleManageSheet(
             prefillLayoutConfig = module.layoutConfig ?: "",
             canSelectInfinite = canSelectInfiniteGlobal,
             allKinds = kinds,
-            prefillKindTitles = prefillKindTitles,
             onDismissRequest = { editingModule = null },
             onConfirm = { def -> viewModel.updateModule(module.id, def); editingModule = null },
         )
