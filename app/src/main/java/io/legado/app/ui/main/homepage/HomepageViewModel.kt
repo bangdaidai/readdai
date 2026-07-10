@@ -426,8 +426,14 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                     val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
                         ?: throw Exception("Source not found")
                     val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
-                    val selectedTitles =
-                        module.args?.let { GSON.fromJsonArray<String>(it).getOrNull() }
+                    // 优先从 MultiKindsArgs 解析，兼容旧格式 JSON 数组
+                    val parsed = module.args?.let {
+                        kotlin.runCatching { GSON.fromJson(it, MultiKindsArgs::class.java) }.getOrNull()
+                    }
+                    val selectedTitles = when {
+                        parsed?.isMultiKinds == true -> parsed.kindTitles
+                        else -> module.args?.let { GSON.fromJsonArray<String>(it).getOrNull() }
+                    }
                     if (selectedTitles.isNullOrEmpty()) allKinds.take(HOMEPAGE_MAX_BUTTON_GROUP_KINDS)
                     else selectedTitles.mapNotNull { t -> allKinds.find { it.title == t } }
                 }.onSuccess { kinds ->
@@ -708,11 +714,11 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
         val id = ModuleDef.globalIdOf(sourceUrl, key, setId)
 
         val resolvedArgs = when {
-            isButtonGroup -> GSON.toJson(kindTitles)
-            hasMultiKinds -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles))
-            args.isNotBlank() -> args
-            else -> ""
-        }
+        isButtonGroup -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles))
+        hasMultiKinds -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles))
+        args.isNotBlank() -> args
+        else -> ""
+    }
 
         viewModelScope.launch {
             val source = appDb.bookSourceDao.getBookSource(sourceUrl)
