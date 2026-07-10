@@ -417,7 +417,6 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     private fun loadModule(module: ModuleItem) {
         loadJobs[module.id]?.cancel()
 
-        val multiKindTitles = module.multiKindTitles()
         val isMultiPageType = module.type == HomepageModuleType.Ranking.key || module.type == HomepageModuleType.GridRanking.key
 
         if (module.type == HomepageModuleType.ButtonGroup.key) {
@@ -452,13 +451,15 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
 
                 val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
 
-                val sources = if (multiKindTitles != null) {
-                    val args = module.args?.let {
-                        kotlin.runCatching { GSON.fromJson(it, MultiKindsArgs::class.java) }.getOrNull()
-                    }
-                    val urls = args?.kindUrls ?: emptyList()
-                    multiKindTitles.mapIndexedNotNull { index, title ->
-                        val url = urls.getOrNull(index)
+                val args = module.args?.let {
+                    kotlin.runCatching { GSON.fromJson(it, MultiKindsArgs::class.java) }.getOrNull()
+                }
+                val kindUrls = args?.kindUrls ?: emptyList()
+                val kindTitles = args?.kindTitles?.takeIf { it.size >= 2 } ?: args?.kindTitles
+
+                val sources = if (kindTitles != null && kindTitles.isNotEmpty()) {
+                    kindTitles.mapIndexedNotNull { index, title ->
+                        val url = kindUrls.getOrNull(index)
                         if (url != null) allKinds.find { it.url == url }
                             ?: ExploreKind(title = title, url = url)
                         else allKinds.find { it.title == title }
@@ -977,16 +978,6 @@ private data class MultiKindsArgs(
     val kindTitles: List<String> = emptyList(),
     val kindUrls: List<String?> = emptyList()
 )
-
-private fun ModuleItem.multiKindTitles(): List<String>? {
-    val multiKindsArgs = args ?: return null
-    return kotlin.runCatching {
-        GSON.fromJson(multiKindsArgs, MultiKindsArgs::class.java)
-    }.getOrNull()
-        ?.takeIf { it.isMultiKinds && it.kindTitles.size >= 2 }
-        ?.kindTitles
-        ?.takeIf { it.size > 1 }
-}
 
 private fun ModuleLoadState.mapStateBooks(
     transform: (HomepageBookItemUi) -> HomepageBookItemUi
