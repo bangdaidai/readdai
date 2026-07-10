@@ -12,6 +12,7 @@ import io.legado.app.data.entities.SearchBook
 import io.legado.app.databinding.ItemExploreBookGridBinding
 import io.legado.app.databinding.ItemSearchBinding
 import io.legado.app.help.config.AppConfig
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.utils.gone
 import io.legado.app.utils.visible
 
@@ -50,6 +51,9 @@ class ExploreShowAdapter(context: Context, val callBack: CallBack) :
                 }
             }
             is ItemExploreBookGridBinding -> {
+                binding.root.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                    ThemeStore.backgroundCard(context)
+                )
                 bindGrid(binding, item)
             }
         }
