@@ -318,7 +318,7 @@ fun SourceBrowseDetailPage(
                                 OutlinedTextField(
                                     value = query,
                                     onValueChange = { query = it },
-                                    placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.bodyMedium) },
+                                    placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.bodySmall) },
                                     modifier = Modifier.weight(1f).height(36.dp),
                                     singleLine = true,
                                     textStyle = MaterialTheme.typography.bodyMedium,
