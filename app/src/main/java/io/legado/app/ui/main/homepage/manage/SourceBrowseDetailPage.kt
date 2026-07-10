@@ -537,28 +537,9 @@ fun calculateExploreKindRows(
     kinds: List<ExploreKind>,
     maxSpan: Int = 4,
 ): List<List<Pair<ExploreKind, Int>>> {
-    val rows = mutableListOf<MutableList<Pair<ExploreKind, Int>>>()
+    val rows = mutableListOf<List<Pair<ExploreKind, Int>>>()
     var currentRow = mutableListOf<Pair<ExploreKind, Int>>()
     var currentSpan = 0
-
-    fun fillCurrentRowTail() {
-        if (currentRow.isEmpty()) return
-        val remain = maxSpan - currentSpan
-        if (remain <= 0) return
-        val addEach = remain / currentRow.size
-        var extra = remain % currentRow.size
-        currentRow.indices.forEach { index ->
-            val (kind, span) = currentRow[index]
-            val add = addEach + if (extra > 0) {
-                extra -= 1
-                1
-            } else {
-                0
-            }
-            currentRow[index] = kind to (span + add)
-        }
-        currentSpan += remain
-    }
 
     kinds.forEach { kind ->
         val style = kind.style()
@@ -570,7 +551,6 @@ fun calculateExploreKindRows(
             else -> 1
         }
         if ((style.layout_wrapBefore && currentRow.isNotEmpty()) || (currentSpan + span > maxSpan)) {
-            fillCurrentRowTail()
             rows.add(currentRow)
             currentRow = mutableListOf()
             currentSpan = 0
@@ -584,7 +564,6 @@ fun calculateExploreKindRows(
         }
     }
     if (currentRow.isNotEmpty()) {
-        fillCurrentRowTail()
         rows.add(currentRow)
     }
     return rows
