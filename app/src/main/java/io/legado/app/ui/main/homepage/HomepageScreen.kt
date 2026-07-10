@@ -388,7 +388,8 @@ private fun ModuleList(
                                 } else {
                                     moduleUi.exploreUrl
                                 }
-                                viewModel.onModuleHeaderClick(moduleUi.sourceUrl, exploreUrl, moduleUi.title)
+                                val displayTitle = selectedSource?.title ?: moduleUi.title
+                                viewModel.onModuleHeaderClick(moduleUi.sourceUrl, exploreUrl, displayTitle)
                             }
                         },
                     )
