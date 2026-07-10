@@ -79,8 +79,7 @@ fun SourceBrowseDetailPage(
     onReorderModules: (List<String>) -> Unit,
     onEditModule: (HomepageModuleManageUi) -> Unit,
     onAddCustomModule: (String, String?, ModuleDef) -> Unit,
-    onAddButtonGroupFromKinds: (String, String?, String, List<String>) -> Unit,
-    onAddRankingFromKinds: (String, String?, String, List<String>) -> Unit = { _, _, _, _ -> },
+    onAddModuleFromKinds: (String, String?, String, List<String>, String) -> Unit,
     // 多选状态回调
     onMultiSelectChanged: (Boolean, List<ExploreKind>) -> Unit = { _, _ -> },
     onSelectedKindsChanged: (Set<String>) -> Unit = {},
@@ -438,18 +437,8 @@ fun SourceBrowseDetailPage(
                         onDismissRequest = { showCreateModuleDialog = false },
                         onConfirm = { def ->
                             val kindTitles = selectedKinds.toList()
-                            val resolvedUrl = def.url.takeIf { it.isNotBlank() }
-                                ?: selectedKindObjects.firstOrNull()?.url ?: ""
-                            val resolvedDef = if (resolvedUrl != def.url) def.copy(url = resolvedUrl) else def
-                            if (resolvedDef.type == HomepageModuleType.Ranking.key && kindTitles.size >= 2) {
-                                val title = resolvedDef.title.ifBlank { kindTitles.joinToString("·") }
-                                onAddRankingFromKinds(browseUrl, currentSetId, title, kindTitles)
-                            } else if (resolvedDef.type == HomepageModuleType.ButtonGroup.key) {
-                                val title = resolvedDef.title.ifBlank { kindTitles.joinToString("·") }
-                                onAddButtonGroupFromKinds(browseUrl, currentSetId, title, kindTitles)
-                            } else {
-                                onAddCustomModule(browseUrl, currentSetId, resolvedDef)
-                            }
+                            val title = def.title.ifBlank { if (kindTitles.isNotEmpty()) kindTitles.joinToString("·") else "" }
+                            onAddModuleFromKinds(browseUrl, currentSetId, title, kindTitles, def.type)
                             showCreateModuleDialog = false
                             selectedKinds = emptySet()
                         },

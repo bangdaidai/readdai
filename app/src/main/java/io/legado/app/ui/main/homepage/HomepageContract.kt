@@ -40,7 +40,7 @@ data class HomepageManageActions(
     val onToggleModule: (String, Boolean) -> Unit = { _, _ -> },
     val onJoinModule: (String, String?, ModuleDef) -> Unit = { _, _, _ -> },
     val onAddCustomModule: (String, String?, ModuleDef) -> Unit = { _, _, _ -> },
-    val onAddButtonGroupFromKinds: (String, String?, String, List<String>) -> Unit = { _, _, _, _ -> },
+    val onAddModuleFromKinds: (String, String?, String, List<String>, String) -> Unit = { _, _, _, _, _ -> },
     val onGetExploreKinds: (String) -> List<Pair<String, String>> = { emptyList() },
     val onUpdateModule: (String, ModuleDef) -> Unit = { _, _ -> },
     val onDeleteModule: (String) -> Unit = {},
@@ -110,8 +110,8 @@ sealed interface ModuleLoadState {
     data class Buttons(val kinds: List<ExploreKind>) : ModuleLoadState
 
     @Stable
-    data class Rankings(
-        val sources: List<HomepageRankingSourceUi>
+    data class MultiSources(
+        val sources: List<HomepageMultiSourceUi>
     ) : ModuleLoadState
 
     @Stable
@@ -119,7 +119,7 @@ sealed interface ModuleLoadState {
 }
 
 @Stable
-data class HomepageRankingSourceUi(
+data class HomepageMultiSourceUi(
     val title: String,
     val url: String?,
     val state: ModuleLoadState,

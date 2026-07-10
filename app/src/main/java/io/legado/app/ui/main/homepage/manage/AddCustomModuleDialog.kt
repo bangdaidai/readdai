@@ -47,8 +47,8 @@ import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.main.homepage.HomepageViewModel
 import io.legado.app.utils.GSON
 
-private data class RankingKindsArgs(
-    val isHomepageRankingGroup: Boolean = false,
+private data class MultiKindsArgs(
+    val isMultiKinds: Boolean = false,
     val kindTitles: List<String> = emptyList()
 )
 
@@ -70,14 +70,14 @@ fun AddCustomModuleDialog(
 ) {
     val parsedArgs = remember(prefillArgs) {
         kotlin.runCatching {
-            GSON.fromJson(prefillArgs, RankingKindsArgs::class.java)
+            GSON.fromJson(prefillArgs, MultiKindsArgs::class.java)
         }.getOrNull()
     }
 
     val initialKindTitles = remember {
         when {
             prefillKindTitles.isNotEmpty() -> prefillKindTitles.toMutableList()
-            parsedArgs?.isHomepageRankingGroup == true -> parsedArgs.kindTitles.toMutableList()
+            parsedArgs?.isMultiKinds == true -> parsedArgs.kindTitles.toMutableList()
             else -> mutableListOf()
         }
     }
@@ -94,7 +94,7 @@ fun AddCustomModuleDialog(
     var args by remember {
         mutableStateOf(
             if (initialKindTitles.isNotEmpty()) {
-                GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = initialKindTitles))
+                GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = initialKindTitles))
             } else {
                 prefillArgs
             }
@@ -255,7 +255,7 @@ fun AddCustomModuleDialog(
                 selectedKindTitles = kinds.map { it.title }.toMutableList()
                 if (selectedKindTitles.isNotEmpty()) {
                     title = selectedKindTitles.joinToString("·")
-                    args = GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = selectedKindTitles))
+                    args = GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = selectedKindTitles))
                 }
                 showKindSelect = false
             },

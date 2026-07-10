@@ -417,51 +417,8 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     private fun loadModule(module: ModuleItem) {
         loadJobs[module.id]?.cancel()
 
-        val multiKindTitles = module.rankingKindTitles()
-        if (multiKindTitles != null) {
-            loadJobs[module.id] = viewModelScope.launch {
-                kotlin.runCatching {
-                    val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
-                        ?: throw Exception("Source not found")
-                    val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
-                    val selectedKinds = multiKindTitles.mapNotNull { title ->
-                        allKinds.find { it.title == title }
-                    }
-                    if (selectedKinds.isEmpty()) throw Exception("Ranking kinds not found")
-
-                    coroutineScope {
-                        selectedKinds.map { kind ->
-                            async {
-                                val result = kotlin.runCatching {
-                                    val books = WebBook.exploreBookAwait(source, kind.url ?: "", 1)
-                                    ModuleLoadState.Loaded(
-                                        books = books.map { book ->
-                                            HomepageBookItemUi(
-                                                book = book,
-                                                shelfState = resolveBookShelfState(
-                                                    book.name, book.author, book.bookUrl, _bookshelf.value
-                                                )
-                                            )
-                                        }
-                                    )
-                                }.getOrElse { ModuleLoadState.Error(it.stackTraceToString()) }
-
-                                HomepageRankingSourceUi(title = kind.title, url = kind.url, state = result)
-                            }
-                        }.awaitAll()
-                    }
-                }.onSuccess { sources ->
-                    _moduleContentStates.update {
-                        it + (module.id to ModuleLoadState.Rankings(sources))
-                    }
-                }.onFailure { e ->
-                    _moduleContentStates.update {
-                        it + (module.id to ModuleLoadState.Error(e.stackTraceToString()))
-                    }
-                }
-            }.also { it.invokeOnCompletion { loadJobs.remove(module.id) } }
-            return
-        }
+        val multiKindTitles = module.multiKindTitles()
+        val isMultiPageType = module.type == HomepageModuleType.Ranking.key || module.type == HomepageModuleType.GridRanking.key
 
         if (module.type == HomepageModuleType.ButtonGroup.key) {
             loadJobs[module.id] = viewModelScope.launch {
@@ -481,17 +438,74 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             }.also { it.invokeOnCompletion { loadJobs.remove(module.id) } }
             return
         }
+
+        if (multiKindTitles != null) {
+            loadJobs[module.id] = viewModelScope.launch {
+                kotlin.runCatching {
+                    val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
+                        ?: throw Exception("Source not found")
+                    val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
+                    val selectedKinds = multiKindTitles.mapNotNull { title ->
+                        allKinds.find { it.title == title }
+                    }
+                    if (selectedKinds.isEmpty()) throw Exception("Kinds not found")
+
+                    coroutineScope {
+                        selectedKinds.map { kind ->
+                            async {
+                                val result = kotlin.runCatching {
+                                    val books = if (isMultiPageType) {
+                                        val allBooks = mutableListOf<SearchBook>()
+                                        var page = 1
+                                        while (allBooks.size < 20 && page <= 3) {
+                                            val pageBooks = WebBook.exploreBookAwait(source, kind.url ?: "", page)
+                                            if (pageBooks.isEmpty()) break
+                                            allBooks.addAll(pageBooks)
+                                            page++
+                                        }
+                                        allBooks.take(20)
+                                    } else {
+                                        WebBook.exploreBookAwait(source, kind.url ?: "", 1)
+                                    }
+                                    ModuleLoadState.Loaded(
+                                        books = books.map { book ->
+                                            HomepageBookItemUi(
+                                                book = book,
+                                                shelfState = resolveBookShelfState(
+                                                    book.name, book.author, book.bookUrl, _bookshelf.value
+                                                )
+                                            )
+                                        },
+                                        hasMore = isInfinite(module.type, module.layoutConfig) && books.isNotEmpty()
+                                    )
+                                }.getOrElse { ModuleLoadState.Error(it.stackTraceToString()) }
+
+                                HomepageMultiSourceUi(title = kind.title, url = kind.url, state = result)
+                            }
+                        }.awaitAll()
+                    }
+                }.onSuccess { sources ->
+                    _moduleContentStates.update {
+                        it + (module.id to ModuleLoadState.MultiSources(sources))
+                    }
+                }.onFailure { e ->
+                    _moduleContentStates.update {
+                        it + (module.id to ModuleLoadState.Error(e.stackTraceToString()))
+                    }
+                }
+            }.also { it.invokeOnCompletion { loadJobs.remove(module.id) } }
+            return
+        }
+
         loadJobs[module.id] = viewModelScope.launch {
             kotlin.runCatching {
                 val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
                     ?: throw Exception("Source not found: ${module.sourceUrl}")
-                val isRanking =
-                    module.type == HomepageModuleType.Ranking.key || module.type == HomepageModuleType.GridRanking.key
                 val exploreUrl = module.url.takeIf { it.isNotBlank() } ?: source.exploreUrl
                 if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
                 val books = withContext(Dispatchers.IO) {
-                    if (isRanking) {
+                    if (isMultiPageType) {
                         val allBooks = mutableListOf<SearchBook>()
                         var page = 1
                         while (allBooks.size < 20 && page <= 3) {
@@ -658,9 +672,24 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
     }
 
     fun addCustomModule(sourceUrl: String, targetSetId: String?, def: ModuleDef) {
-        val key = def.key.ifBlank { def.title }
+        addModuleFromKinds(sourceUrl, targetSetId, def.title, emptyList(), def.type, def.url, def.args, def.layoutConfig)
+    }
+
+    fun addModuleFromKinds(
+        sourceUrl: String,
+        targetSetId: String?,
+        title: String,
+        kindTitles: List<String>,
+        type: String,
+        url: String = "",
+        args: String = "",
+        layoutConfig: String = ""
+    ) {
         val setId = targetSetId ?: "src_$sourceUrl"
-        if (isInfinite(def.type, def.layoutConfig)) {
+        val isButtonGroup = type == HomepageModuleType.ButtonGroup.key
+        val hasMultiKinds = kindTitles.size >= 2 && !isButtonGroup
+
+        if (isInfinite(type, layoutConfig)) {
             if (allModulesCache.value.any {
                     it.customSetId == setId && isInfinite(it.type, it.layoutConfig)
                 }) {
@@ -670,12 +699,36 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 return
             }
         }
+
+        val key = if (hasMultiKinds) {
+            "multi_${type}_${jsonHash(GSON.toJson(kindTitles)).take(12)}"
+        } else {
+            kindTitles.firstOrNull() ?: title
+        }
         val id = ModuleDef.globalIdOf(sourceUrl, key, setId)
+
+        val resolvedArgs = when {
+            isButtonGroup -> GSON.toJson(kindTitles)
+            hasMultiKinds -> GSON.toJson(MultiKindsArgs(isMultiKinds = true, kindTitles = kindTitles))
+            args.isNotBlank() -> args
+            else -> ""
+        }
+
         val module = ModuleItem(
-            id = id, sourceUrl = sourceUrl, moduleKey = key, type = def.type, title = def.title,
-            args = def.args, layoutConfig = def.layoutConfig, url = def.url, isEnabled = true,
-            isUserCreated = true, customSetId = setId, syncedAt = System.currentTimeMillis()
+            id = id,
+            sourceUrl = sourceUrl,
+            moduleKey = key,
+            type = type,
+            title = title,
+            args = resolvedArgs,
+            layoutConfig = layoutConfig,
+            url = if (hasMultiKinds) null else url.takeIf { it.isNotBlank() },
+            isEnabled = true,
+            isUserCreated = true,
+            customSetId = setId,
+            syncedAt = System.currentTimeMillis()
         )
+
         viewModelScope.launch {
             val source = appDb.bookSourceDao.getBookSource(sourceUrl)
             if (source != null) ensureSetForSource(sourceUrl, source.bookSourceName)
@@ -766,58 +819,6 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
 
     fun syncSourceModules(sourceUrl: String) {
         viewModelScope.launch { resolveBookSource(sourceUrl)?.let { syncModulesFromSource(it) } }
-    }
-
-    fun addButtonGroupFromKinds(sourceUrl: String, targetSetId: String?, title: String, kindTitles: List<String>) {
-        val key = kindTitles.firstOrNull() ?: title
-        val setId = targetSetId ?: "src_$sourceUrl"
-        val id = ModuleDef.globalIdOf(sourceUrl, key, setId)
-        val module = ModuleItem(
-            id = id, sourceUrl = sourceUrl, moduleKey = key, type = "buttonGroup",
-            title = title, args = GSON.toJson(kindTitles), isEnabled = true,
-            isUserCreated = true, customSetId = setId, syncedAt = System.currentTimeMillis(),
-        )
-        viewModelScope.launch {
-            val source = appDb.bookSourceDao.getBookSource(sourceUrl)
-            if (source != null) ensureSetForSource(sourceUrl, source.bookSourceName)
-            gateway.upsertAll(listOf(module))
-            _pendingUserModules.update { list -> if (list.any { it.id == id }) list else list + module }
-            notifyConfigChanged()
-        }
-    }
-
-    fun addRankingFromKinds(sourceUrl: String, targetSetId: String?, title: String, kindTitles: List<String>) {
-        if (kindTitles.isEmpty() || kindTitles.size < 2) return
-        viewModelScope.launch {
-            val source = appDb.bookSourceDao.getBookSource(sourceUrl) ?: return@launch
-            val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
-            val selectedKinds = kindTitles.mapNotNull { selectedTitle ->
-                allKinds.find { it.title == selectedTitle }
-            }
-            if (selectedKinds.size < 2) return@launch
-
-            val setId = targetSetId ?: ensureSetForSource(sourceUrl, source.bookSourceName)
-            val key = "ranking_${jsonHash(GSON.toJson(kindTitles)).take(12)}"
-            val id = ModuleDef.globalIdOf(sourceUrl, key, setId)
-            val module = ModuleItem(
-                id = id,
-                sourceUrl = sourceUrl,
-                moduleKey = key,
-                type = HomepageModuleType.Ranking.key,
-                title = title,
-                args = GSON.toJson(RankingKindsArgs(isHomepageRankingGroup = true, kindTitles = kindTitles)),
-                url = null,
-                isEnabled = true,
-                isUserCreated = true,
-                customSetId = setId,
-                syncedAt = System.currentTimeMillis(),
-            )
-            gateway.upsertAll(listOf(module))
-            _pendingUserModules.update { pending ->
-                if (pending.any { it.id == id }) pending else pending + module
-            }
-            notifyConfigChanged()
-        }
     }
 
     fun assignModuleToCustomSet(moduleId: String, customSetId: String?) {
@@ -965,18 +966,17 @@ private data class HomepageUiFlags(
     val isConfigMode: Boolean
 )
 
-private data class RankingKindsArgs(
-    val isHomepageRankingGroup: Boolean = false,
+private data class MultiKindsArgs(
+    val isMultiKinds: Boolean = false,
     val kindTitles: List<String> = emptyList()
 )
 
-private fun ModuleItem.rankingKindTitles(): List<String>? {
-    if (type != HomepageModuleType.Ranking.key) return null
-    val rankingArgs = args ?: return null
+private fun ModuleItem.multiKindTitles(): List<String>? {
+    val multiKindsArgs = args ?: return null
     return kotlin.runCatching {
-        GSON.fromJson(rankingArgs, RankingKindsArgs::class.java)
+        GSON.fromJson(multiKindsArgs, MultiKindsArgs::class.java)
     }.getOrNull()
-        ?.takeIf { it.isHomepageRankingGroup }
+        ?.takeIf { it.isMultiKinds }
         ?.kindTitles
         ?.takeIf { it.size > 1 }
 }
@@ -987,7 +987,7 @@ private fun ModuleLoadState.mapStateBooks(
     is ModuleLoadState.Loaded -> copy(
         books = books.map(transform)
     )
-    is ModuleLoadState.Rankings -> copy(
+    is ModuleLoadState.MultiSources -> copy(
         sources = sources.map { source ->
             source.copy(state = source.state.mapStateBooks(transform))
         }
