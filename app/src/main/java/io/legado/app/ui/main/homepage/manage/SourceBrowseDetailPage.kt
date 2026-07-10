@@ -563,7 +563,8 @@ fun calculateExploreKindRows(
         }
     }
     if (currentRow.isNotEmpty()) {
-        rows.add(currentRow)
+        val minSpan = currentRow.minOf { it.second }
+        rows.add(currentRow.map { it.first to minSpan })
     }
     return rows
 }
