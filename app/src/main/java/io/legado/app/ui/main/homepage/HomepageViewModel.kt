@@ -464,7 +464,9 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                         else allKinds.find { it.title == title }
                     }
                 } else {
-                    val url = module.url?.takeIf { it.isNotBlank() } ?: source.exploreUrl ?: ""
+                    val url = module.url?.takeIf { it.isNotBlank() }
+                        ?: allKinds.find { it.title == module.title }?.url
+                        ?: source.exploreUrl ?: ""
                     listOf(ExploreKind(title = module.title, url = url))
                 }
 
@@ -701,6 +703,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             val resolvedUrl = when {
                 hasMultiKinds -> null
                 url.isNotBlank() -> url
+                kindUrls.isNotEmpty() -> kindUrls.first()
                 kindTitles.size == 1 && source != null -> {
                     val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
                     allKinds.find { it.title == kindTitles.first() }?.url
