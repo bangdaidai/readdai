@@ -438,14 +438,17 @@ fun SourceBrowseDetailPage(
                         onDismissRequest = { showCreateModuleDialog = false },
                         onConfirm = { def ->
                             val kindTitles = selectedKinds.toList()
-                            if (def.type == HomepageModuleType.Ranking.key && kindTitles.size >= 2) {
-                                val title = def.title.ifBlank { kindTitles.joinToString("·") }
+                            val resolvedUrl = def.url.takeIf { it.isNotBlank() }
+                                ?: selectedKindObjects.firstOrNull()?.url ?: ""
+                            val resolvedDef = if (resolvedUrl != def.url) def.copy(url = resolvedUrl) else def
+                            if (resolvedDef.type == HomepageModuleType.Ranking.key && kindTitles.size >= 2) {
+                                val title = resolvedDef.title.ifBlank { kindTitles.joinToString("·") }
                                 onAddRankingFromKinds(browseUrl, currentSetId, title, kindTitles)
-                            } else if (def.type == HomepageModuleType.ButtonGroup.key) {
-                                val title = def.title.ifBlank { kindTitles.joinToString("·") }
+                            } else if (resolvedDef.type == HomepageModuleType.ButtonGroup.key) {
+                                val title = resolvedDef.title.ifBlank { kindTitles.joinToString("·") }
                                 onAddButtonGroupFromKinds(browseUrl, currentSetId, title, kindTitles)
                             } else {
-                                onAddCustomModule(browseUrl, currentSetId, def)
+                                onAddCustomModule(browseUrl, currentSetId, resolvedDef)
                             }
                             showCreateModuleDialog = false
                             selectedKinds = emptySet()
