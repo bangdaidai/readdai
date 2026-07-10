@@ -557,7 +557,8 @@ private fun ModuleHeader(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                items(sourceTabs!!, key = { it.title }) { source ->
+                items(sourceTabs!!.size, key = { index -> "${sourceTabs[index].title}_$index" }) { index ->
+                    val source = sourceTabs[index]
                     val isSelected = selectedSourceTitle == source.title
                     Surface(
                         shape = RoundedCornerShape(16.dp),
