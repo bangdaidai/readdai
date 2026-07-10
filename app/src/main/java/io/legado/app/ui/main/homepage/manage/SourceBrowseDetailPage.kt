@@ -425,10 +425,13 @@ fun SourceBrowseDetailPage(
                 }
 
                 if (showCreateModuleDialog) {
+                    val selectedKindObjects = exploreKinds.filter { it.title in selectedKinds }
+                    val prefillUrl = selectedKindObjects.firstOrNull()?.url ?: ""
                     AddCustomModuleDialog(
                         sourceUrl = browseUrl,
                         targetSetId = currentSetId,
                         prefillType = "ranking",
+                        prefillUrl = prefillUrl,
                         canSelectInfinite = canSelectInfiniteGlobal,
                         allKinds = exploreKinds,
                         prefillKindTitles = selectedKinds.toList(),
