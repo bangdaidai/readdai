@@ -153,39 +153,39 @@ fun AddCustomModuleDialog(
                     }
                 }
 
-                if (allKinds.isNotEmpty()) {
-                    if (selectedKindTitles.isNotEmpty()) {
-                        Text(stringResource(R.string.hp_selected_categories), style = MaterialTheme.typography.labelMedium)
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            selectedKindTitles.forEach { kindTitle ->
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                if (selectedKindTitles.isNotEmpty()) {
+                    Text(stringResource(R.string.hp_selected_categories), style = MaterialTheme.typography.labelMedium)
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        selectedKindTitles.forEach { kindTitle ->
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            ) {
+                                androidx.compose.foundation.layout.Row(
+                                    modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    androidx.compose.foundation.layout.Row(
-                                        modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
+                                    Text(kindTitle, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    IconButton(
+                                        onClick = {
+                                            selectedKindTitles = selectedKindTitles.toMutableList().apply { remove(kindTitle) }
+                                        },
+                                        modifier = Modifier.size(20.dp),
                                     ) {
-                                        Text(kindTitle, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        IconButton(
-                                            onClick = {
-                                                selectedKindTitles = selectedKindTitles.toMutableList().apply { remove(kindTitle) }
-                                            },
-                                            modifier = Modifier.size(20.dp),
-                                        ) {
-                                            Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp))
-                                        }
+                                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(14.dp))
                                     }
                                 }
                             }
                         }
                     }
+                }
 
+                if (allKinds.isNotEmpty()) {
                     OutlinedButton(
                         onClick = { showKindSelect = true },
                         modifier = Modifier.fillMaxWidth(),
