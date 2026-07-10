@@ -445,7 +445,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             return
         }
 
-        if (multiKindTitles != null) {
+        if (multiKindTitles != null && multiKindTitles.size >= 2) {
             loadJobs[module.id] = viewModelScope.launch {
                 kotlin.runCatching {
                     val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
@@ -507,7 +507,12 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             kotlin.runCatching {
                 val source = appDb.bookSourceDao.getBookSource(module.sourceUrl)
                     ?: throw Exception("Source not found: ${module.sourceUrl}")
-                val exploreUrl = module.url?.takeIf { it.isNotBlank() } ?: source.exploreUrl
+                val exploreUrl = module.url?.takeIf { it.isNotBlank() }
+                    ?: multiKindTitles?.firstOrNull()?.let { title ->
+                        withContext(Dispatchers.IO) { source.exploreKinds() }
+                            .find { it.title == title }?.url
+                    }
+                    ?: source.exploreUrl
                 if (exploreUrl.isNullOrBlank()) throw Exception("No explore URL for module ${module.title}")
 
                 val books = withContext(Dispatchers.IO) {
