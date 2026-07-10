@@ -83,8 +83,8 @@ fun ExploreKindSelectSheet(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.bodySmall) },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).height(38.dp),
+                placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.labelSmall) },
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).height(36.dp),
                 singleLine = true,
                 shape = RoundedCornerShape(50),
             )
