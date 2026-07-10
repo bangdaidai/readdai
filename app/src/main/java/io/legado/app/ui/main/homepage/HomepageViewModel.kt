@@ -714,24 +714,35 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             else -> ""
         }
 
-        val module = ModuleItem(
-            id = id,
-            sourceUrl = sourceUrl,
-            moduleKey = key,
-            type = type,
-            title = title,
-            args = resolvedArgs,
-            layoutConfig = layoutConfig,
-            url = if (hasMultiKinds) null else url.takeIf { it.isNotBlank() },
-            isEnabled = true,
-            isUserCreated = true,
-            customSetId = setId,
-            syncedAt = System.currentTimeMillis()
-        )
-
         viewModelScope.launch {
             val source = appDb.bookSourceDao.getBookSource(sourceUrl)
             if (source != null) ensureSetForSource(sourceUrl, source.bookSourceName)
+
+            // 单选且 url 为空时，从书源的 exploreKinds 查找选中分类的 URL
+            val resolvedUrl = when {
+                hasMultiKinds -> null
+                url.isNotBlank() -> url
+                kindTitles.size == 1 && source != null -> {
+                    val allKinds = withContext(Dispatchers.IO) { source.exploreKinds() }
+                    allKinds.find { it.title == kindTitles.first() }?.url
+                }
+                else -> null
+            }
+
+            val module = ModuleItem(
+                id = id,
+                sourceUrl = sourceUrl,
+                moduleKey = key,
+                type = type,
+                title = title,
+                args = resolvedArgs,
+                layoutConfig = layoutConfig,
+                url = resolvedUrl,
+                isEnabled = true,
+                isUserCreated = true,
+                customSetId = setId,
+                syncedAt = System.currentTimeMillis()
+            )
             gateway.upsertAll(listOf(module))
             _pendingUserModules.update { list -> if (list.any { it.id == id }) list else list + module }
             notifyConfigChanged()
