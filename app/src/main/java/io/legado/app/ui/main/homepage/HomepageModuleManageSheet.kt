@@ -278,6 +278,13 @@ fun HomepageModuleManageSheet(
         LaunchedEffect(module.sourceUrl) {
             viewModel.loadExploreKinds(module.sourceUrl)
         }
+        // 单选模块没存 kindTitles，用 url 反查分类名
+        val prefillKindTitles = remember(module.url, kinds) {
+            val moduleUrl = module.url?.takeIf { it.isNotBlank() }
+            if (moduleUrl != null) {
+                kinds.firstOrNull { it.url == moduleUrl }?.title?.let { listOf(it) }
+            } else null
+        }
         AddCustomModuleDialog(
             sourceUrl = module.sourceUrl,
             targetSetId = module.customSetId ?: "",
@@ -288,6 +295,7 @@ fun HomepageModuleManageSheet(
             prefillLayoutConfig = module.layoutConfig ?: "",
             canSelectInfinite = canSelectInfiniteGlobal,
             allKinds = kinds,
+            prefillKindTitles = prefillKindTitles ?: emptyList(),
             onDismissRequest = { editingModule = null },
             onConfirm = { def -> viewModel.updateModule(module.id, def); editingModule = null },
         )
