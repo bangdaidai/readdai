@@ -222,7 +222,7 @@ object Restore {
         // 恢复高亮规则
         File(path, "highlightRules.json").takeIf { it.exists() }?.runCatching {
             val json = readText()
-            val backupData = GSON.fromJson<HighlightRuleStore.BackupData>(json)
+            val backupData = GSON.fromJson(json, HighlightRuleStore.BackupData::class.java)
             if (backupData != null) {
                 HighlightRuleStore.restoreBackupData(appCtx, backupData)
             }
