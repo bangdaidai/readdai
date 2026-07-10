@@ -58,6 +58,7 @@ import io.legado.app.domain.model.HomepageModuleType
 import io.legado.app.domain.model.ModuleDef
 import io.legado.app.ui.main.homepage.HomepageModuleManageUi
 import io.legado.app.ui.main.homepage.HomepageViewModel
+import io.legado.app.utils.GSON
 import androidx.compose.foundation.ExperimentalFoundationApi
 import kotlin.math.roundToInt
 import sh.calvin.reorderable.ReorderableItem
@@ -436,8 +437,14 @@ fun SourceBrowseDetailPage(
                         prefillKindTitles = selectedKindObjects.map { it.title },
                         onDismissRequest = { showCreateModuleDialog = false },
                         onConfirm = { def ->
-                            val kindTitles = selectedKindObjects.map { it.title }
-                            val kindUrls = selectedKindObjects.map { it.url }
+                            val parsedArgs = kotlin.runCatching {
+                                def.args?.let { GSON.fromJson(it, MultiKindsArgs::class.java) }
+                            }.getOrNull()
+                            val isMultiKinds = parsedArgs?.isMultiKinds == true && parsedArgs.kindTitles.size >= 2
+                            val kindTitles = if (isMultiKinds) parsedArgs!!.kindTitles
+                                else listOfNotNull(def.title.takeIf { it.isNotBlank() })
+                            val kindUrls = if (isMultiKinds) parsedArgs!!.kindUrls
+                                else listOf(def.url)
                             val title = def.title.ifBlank { if (kindTitles.isNotEmpty()) kindTitles.joinToString("·") else "" }
                             onAddModuleFromKinds(browseUrl, currentSetId, title, kindTitles, def.type, kindUrls)
                             showCreateModuleDialog = false

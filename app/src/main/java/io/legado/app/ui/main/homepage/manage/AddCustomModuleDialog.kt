@@ -47,7 +47,7 @@ import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.ui.main.homepage.HomepageViewModel
 import io.legado.app.utils.GSON
 
-private data class MultiKindsArgs(
+internal data class MultiKindsArgs(
     val isMultiKinds: Boolean = false,
     val kindTitles: List<String> = emptyList(),
     val kindUrls: List<String?> = emptyList()
