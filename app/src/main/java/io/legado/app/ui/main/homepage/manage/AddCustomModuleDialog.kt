@@ -153,13 +153,19 @@ fun AddCustomModuleDialog(
                     }
                 }
 
-                if (selectedKindTitles.isNotEmpty()) {
-                    Text(stringResource(R.string.hp_selected_categories), style = MaterialTheme.typography.labelMedium)
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
+                Text(stringResource(R.string.hp_selected_categories), style = MaterialTheme.typography.labelMedium)
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (selectedKindTitles.isEmpty()) {
+                        Text(
+                            stringResource(R.string.hp_no_category_selected),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
                         selectedKindTitles.forEach { kindTitle ->
                             Surface(
                                 shape = RoundedCornerShape(16.dp),
@@ -244,7 +250,6 @@ fun AddCustomModuleDialog(
             show = true,
             onDismissRequest = { showKindSelect = false },
             kinds = allKinds,
-            multiple = true,
             initialSelectedTitles = selectedKindTitles.toSet(),
             onSelected = { kinds ->
                 selectedKindTitles = kinds.map { it.title }.toMutableList()

@@ -44,7 +44,6 @@ fun ExploreKindSelectSheet(
     onDismissRequest: () -> Unit,
     kinds: List<ExploreKind>,
     onSelected: (List<ExploreKind>) -> Unit,
-    multiple: Boolean = false,
     initialSelectedTitles: Set<String> = emptySet(),
 ) {
     if (!show) return
@@ -109,15 +108,10 @@ fun ExploreKindSelectSheet(
                                         isSelected = isSelected,
                                         modifier = Modifier.weight(span.toFloat()),
                                         onClick = {
-                                            if (multiple) {
-                                                selectedTitles = if (isSelected) {
-                                                    selectedTitles.toMutableSet().apply { remove(kind.title) }
-                                                } else {
-                                                    selectedTitles.toMutableSet().apply { add(kind.title) }
-                                                }
+                                            selectedTitles = if (isSelected) {
+                                                selectedTitles.toMutableSet().apply { remove(kind.title) }
                                             } else {
-                                                onSelected(listOf(kind))
-                                                onDismissRequest()
+                                                selectedTitles.toMutableSet().apply { add(kind.title) }
                                             }
                                         },
                                     )
@@ -131,27 +125,25 @@ fun ExploreKindSelectSheet(
                 }
             }
 
-            if (multiple) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        TextButton(onClick = onDismissRequest) {
-                            Text(stringResource(R.string.hp_cancel))
-                        }
-                        if (selectedTitles.isNotEmpty()) {
-                            TextButton(onClick = {
-                                val selectedKinds = kinds.filter { it.title in selectedTitles }
-                                onSelected(selectedKinds)
-                                onDismissRequest()
-                            }) {
-                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.padding(start = 4.dp))
-                                Text(stringResource(R.string.hp_determine))
-                            }
+                    TextButton(onClick = onDismissRequest) {
+                        Text(stringResource(R.string.hp_cancel))
+                    }
+                    if (selectedTitles.isNotEmpty()) {
+                        TextButton(onClick = {
+                            val selectedKinds = kinds.filter { it.title in selectedTitles }
+                            onSelected(selectedKinds)
+                            onDismissRequest()
+                        }) {
+                            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.padding(start = 4.dp))
+                            Text(stringResource(R.string.hp_determine))
                         }
                     }
                 }

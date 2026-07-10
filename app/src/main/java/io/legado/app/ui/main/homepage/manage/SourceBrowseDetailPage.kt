@@ -284,9 +284,7 @@ fun SourceBrowseDetailPage(
 
             2 -> {
                 val exploreKinds = onGetExploreKinds(browseUrl)
-                var editingKind by remember { mutableStateOf<ExploreKind?>(null) }
                 var query by remember { mutableStateOf("") }
-                var multiSelect by remember { mutableStateOf(false) }
                 var selectedKinds by remember { mutableStateOf<Set<String>>(emptySet()) }
                 var showCreateModuleDialog by remember { mutableStateOf(false) }
 
@@ -319,42 +317,9 @@ fun SourceBrowseDetailPage(
                                     value = query,
                                     onValueChange = { query = it },
                                     placeholder = stringResource(R.string.hp_search_category),
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.fillMaxWidth(),
                                     textStyle = MaterialTheme.typography.bodySmall,
                                 )
-                                Spacer(modifier = Modifier.padding(start = 8.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (multiSelect) MaterialTheme.colorScheme.primaryContainer
-                                    else MaterialTheme.colorScheme.surfaceContainerHigh,
-                                    onClick = {
-                                        multiSelect = !multiSelect
-                                        if (!multiSelect) selectedKinds = emptySet()
-                                        onMultiSelectChanged(multiSelect, exploreKinds)
-                                        onSelectedKindsChanged(if (multiSelect) selectedKinds else emptySet())
-                                    },
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        if (multiSelect) {
-                                            Icon(
-                                                Icons.Default.Check,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.primary,
-                                            )
-                                            Spacer(modifier = Modifier.padding(start = 4.dp))
-                                        }
-                                        Text(
-                                            stringResource(R.string.hp_multi_select),
-                                            fontSize = 12.sp,
-                                            color = if (multiSelect) MaterialTheme.colorScheme.onPrimaryContainer
-                                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
                             }
 
                             val kindRows = remember(filteredKinds) {
@@ -373,7 +338,7 @@ fun SourceBrowseDetailPage(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                                     ) {
                                         rowItems.forEach { (kind, span) ->
-                                            val isSelected = multiSelect && kind.title in selectedKinds
+                                            val isSelected = kind.title in selectedKinds
                                             val style = kind.style()
                                             val hasUrl = !kind.url.isNullOrBlank()
                                             Surface(
@@ -385,16 +350,12 @@ fun SourceBrowseDetailPage(
                                                 modifier = Modifier
                                                     .weight(span.toFloat())
                                                     .then(if (hasUrl) Modifier.clickable {
-                                                        if (multiSelect) {
-                                                            selectedKinds = if (isSelected) {
-                                                                selectedKinds - kind.title
-                                                            } else {
-                                                                selectedKinds + kind.title
-                                                            }
-                                                            onSelectedKindsChanged(selectedKinds)
+                                                        selectedKinds = if (isSelected) {
+                                                            selectedKinds - kind.title
                                                         } else {
-                                                            editingKind = kind
+                                                            selectedKinds + kind.title
                                                         }
+                                                        onSelectedKindsChanged(selectedKinds)
                                                     } else Modifier),
                                             ) {
                                                 Row(
@@ -422,8 +383,8 @@ fun SourceBrowseDetailPage(
                                                             modifier = Modifier.size(14.dp).padding(start = 2.dp),
                                                             tint = MaterialTheme.colorScheme.primary,
                                                         )
-                                                    }
-                                                }
+            }
+        }
                                             }
                                         }
                                         if (totalSpan < 12) {
@@ -433,19 +394,17 @@ fun SourceBrowseDetailPage(
                                 }
                             }
 
-                            if (!multiSelect) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                TextButton(
-                                    onClick = { showAddDialog = true },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(stringResource(R.string.hp_manual_add))
-                                }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            TextButton(
+                                onClick = { showAddDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.hp_manual_add))
                             }
                         }
 
-                        // 多选时显示悬浮确认按钮
-                        if (multiSelect && selectedKinds.isNotEmpty()) {
+                        // 选中分类后显示悬浮确认按钮
+                        if (selectedKinds.isNotEmpty()) {
                             androidx.compose.material3.FloatingActionButton(
                                 onClick = { showCreateModuleDialog = true },
                                 modifier = Modifier
@@ -486,27 +445,11 @@ fun SourceBrowseDetailPage(
                                 onAddCustomModule(browseUrl, currentSetId, def)
                             }
                             showCreateModuleDialog = false
-                            multiSelect = false
                             selectedKinds = emptySet()
                         },
                     )
                 }
 
-                if (editingKind != null) {
-                    AddCustomModuleDialog(
-                        sourceUrl = browseUrl,
-                        targetSetId = currentSetId,
-                        prefillTitle = editingKind!!.title,
-                        prefillUrl = editingKind!!.url ?: "",
-                        prefillType = "card",
-                        prefillArgs = editingKind!!.title,
-                        canSelectInfinite = canSelectInfiniteGlobal,
-                        allKinds = exploreKinds,
-                        prefillKindTitles = listOf(editingKind!!.title),
-                        onDismissRequest = { editingKind = null },
-                        onConfirm = { def -> onAddCustomModule(browseUrl, currentSetId, def); editingKind = null },
-                    )
-                }
             }
         }
     }
