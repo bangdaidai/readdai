@@ -284,7 +284,7 @@ fun SourceBrowseDetailPage(
             2 -> {
                 val exploreKinds = onGetExploreKinds(browseUrl)
                 var query by remember { mutableStateOf("") }
-                var selectedKinds by remember { mutableStateOf<Set<String>>(emptySet()) }
+                var selectedKinds by remember { mutableStateOf<Set<ExploreKind>>(emptySet()) }
                 var showCreateModuleDialog by remember { mutableStateOf(false) }
 
                 val filteredKinds = remember(query, exploreKinds) {
@@ -337,7 +337,7 @@ fun SourceBrowseDetailPage(
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                                     ) {
                                         rowItems.forEach { (kind, span) ->
-                                            val isSelected = kind.title in selectedKinds
+                                            val isSelected = kind in selectedKinds
                                             val style = kind.style()
                                             val hasUrl = !kind.url.isNullOrBlank()
                                             Surface(
@@ -350,11 +350,11 @@ fun SourceBrowseDetailPage(
                                                     .weight(span.toFloat())
                                                     .then(if (hasUrl) Modifier.clickable {
                                                         selectedKinds = if (isSelected) {
-                                                            selectedKinds - kind.title
+                                                            selectedKinds - kind
                                                         } else {
-                                                            selectedKinds + kind.title
+                                                            selectedKinds + kind
                                                         }
-                                                        onSelectedKindsChanged(selectedKinds)
+                                                        onSelectedKindsChanged(selectedKinds.map { it.title }.toSet())
                                                     } else Modifier),
                                             ) {
                                                 Row(
@@ -424,7 +424,7 @@ fun SourceBrowseDetailPage(
                 }
 
                 if (showCreateModuleDialog) {
-                    val selectedKindObjects = exploreKinds.filter { it.title in selectedKinds }
+                    val selectedKindObjects = selectedKinds.toList()
                     val prefillUrl = selectedKindObjects.firstOrNull()?.url ?: ""
                     AddCustomModuleDialog(
                         sourceUrl = browseUrl,
@@ -433,10 +433,10 @@ fun SourceBrowseDetailPage(
                         prefillUrl = prefillUrl,
                         canSelectInfinite = canSelectInfiniteGlobal,
                         allKinds = exploreKinds,
-                        prefillKindTitles = selectedKinds.toList(),
+                        prefillKindTitles = selectedKindObjects.map { it.title },
                         onDismissRequest = { showCreateModuleDialog = false },
                         onConfirm = { def ->
-                            val kindTitles = selectedKinds.toList()
+                            val kindTitles = selectedKindObjects.map { it.title }
                             val title = def.title.ifBlank { if (kindTitles.isNotEmpty()) kindTitles.joinToString("·") else "" }
                             onAddModuleFromKinds(browseUrl, currentSetId, title, kindTitles, def.type)
                             showCreateModuleDialog = false
