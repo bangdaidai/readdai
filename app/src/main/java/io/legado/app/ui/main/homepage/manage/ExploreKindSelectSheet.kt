@@ -84,8 +84,9 @@ fun ExploreKindSelectSheet(
                 value = query,
                 onValueChange = { query = it },
                 placeholder = { Text(stringResource(R.string.hp_search_category), style = MaterialTheme.typography.labelSmall) },
-                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).height(40.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).height(36.dp),
                 singleLine = true,
+                textStyle = MaterialTheme.typography.bodySmall,
                 shape = RoundedCornerShape(50),
             )
 
