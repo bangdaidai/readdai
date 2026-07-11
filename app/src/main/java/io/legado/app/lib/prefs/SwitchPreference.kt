@@ -31,7 +31,12 @@ class SwitchPreference(context: Context, attrs: AttributeSet) :
         )
         if (v is SwitchCompat && !v.isInEditMode) {
             v.applyTint(context.accentColor)
-            // 设置SwitchCompat的高度为36dp
+            if (v.textOn == null) {
+                v.textOn = ""
+            }
+            if (v.textOff == null) {
+                v.textOff = ""
+            }
             val height = (36 * context.resources.displayMetrics.density).toInt()
             val lp = v.layoutParams
             lp.height = height

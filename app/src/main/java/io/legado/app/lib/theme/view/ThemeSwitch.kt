@@ -17,6 +17,12 @@ class ThemeSwitch(context: Context, attrs: AttributeSet? = null) : SwitchCompat(
         if (!isInEditMode) {
             applyTint(context.accentColor)
         }
+        if (textOn == null) {
+            textOn = ""
+        }
+        if (textOff == null) {
+            textOff = ""
+        }
     }
 
     override fun performClick(): Boolean {
