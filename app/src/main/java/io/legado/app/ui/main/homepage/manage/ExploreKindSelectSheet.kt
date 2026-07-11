@@ -161,8 +161,8 @@ fun ExploreKindSelectSheet(
     }
 }
 
-internal fun kindKey(kind: ExploreKind): String {
-    return "${kind.title}||${kind.url}||${kind.type}||${kind.action}||${kind.default}"
+private fun kindKey(kind: ExploreKind): String {
+    return "${kind.title}||${kind.url}"
 }
 
 @Composable
