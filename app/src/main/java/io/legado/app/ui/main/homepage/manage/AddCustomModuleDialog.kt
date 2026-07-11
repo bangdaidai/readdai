@@ -198,6 +198,7 @@ fun AddCustomModuleDialog(
                                             } else {
                                                 args = ""
                                                 url = selectedKindUrls.firstOrNull() ?: url
+                                                title = selectedKindTitles.first()
                                             }
                                         },
                                         modifier = Modifier.size(20.dp),
