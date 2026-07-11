@@ -272,122 +272,36 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                 return@withContext
                             }
                             
-                            // 保存当前标签容器的高度，避免跳动
-                            val currentHeight = binding.tvTags.height
-                            
                             // 清空标签容器
                             binding.tvTags.removeAllViews()
                             
-                            if (tags.isNotEmpty()) {
-                            // 计算容器宽度，只添加能容纳的标签
-                            val containerWidth = binding.tvTags.width
-                            if (containerWidth > 0) {
-                                var currentWidth = 0
-                                for (tag in tags) {
-                                    val bookTagView = android.widget.TextView(binding.root.context)
-                                    bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                        com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
-                                    )
-                                    bookTagView.setText(tag.name)
-                                    bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                                    bookTagView.setPadding(8, 0, 8, 0) // 增加左右内边距
-                                    bookTagView.setGravity(android.view.Gravity.CENTER)
-                                    bookTagView.setSingleLine(true)
-                                    bookTagView.setEllipsize(null) // 不显示省略号，确保标签完整显示
-                                    bookTagView.setMaxLines(1)
-                                    // 使用矩形背景，有圆角和边框
-                                    val bookTagBg = binding.root.context.resources.getDrawable(io.legado.app.R.drawable.bg_tag_rectangle)
-                                    val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24) // 10%透明度
-                                    bookTagBg?.setTint(bookTagBackgroundColor)
-                                    // 设置边框颜色为标签文字颜色
-                                    if (bookTagBg is android.graphics.drawable.GradientDrawable) {
-                                        bookTagBg.setStroke(1, tag.color)
-                                    }
-                                    bookTagView.background = bookTagBg
-                                    bookTagView.setTextColor(tag.color)
-                                    
-                                    // 添加右侧间距
-                                    val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
-                                    layoutParams.setMarginEnd(8)
-                                    bookTagView.layoutParams = layoutParams
-                                    
-                                    // 测量标签宽度
-                                    bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
-                                    val tagWidth = bookTagView.measuredWidth + 8 // 加上右边距
-                                    
-                                    if (currentWidth + tagWidth <= containerWidth) {
-                                        // 标签能容纳，添加到容器
-                                        binding.tvTags.addView(bookTagView)
-                                        currentWidth += tagWidth
-                                    } else {
-                                        // 标签超出容器，停止添加
-                                        break
-                                    }
+                            for (tag in tags) {
+                                val bookTagView = android.widget.TextView(binding.root.context)
+                                bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                                )
+                                bookTagView.setText(tag.name)
+                                bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                                bookTagView.setPadding(8, 0, 8, 0)
+                                bookTagView.setGravity(android.view.Gravity.CENTER)
+                                bookTagView.setSingleLine(true)
+                                bookTagView.setEllipsize(null)
+                                bookTagView.setMaxLines(1)
+                                val bookTagBg = binding.root.context.resources.getDrawable(io.legado.app.R.drawable.bg_tag_rectangle)
+                                val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
+                                bookTagBg?.setTint(bookTagBackgroundColor)
+                                if (bookTagBg is android.graphics.drawable.GradientDrawable) {
+                                    bookTagBg.setStroke(1, tag.color)
                                 }
-                            } else {
-                                // 容器宽度为0，添加布局监听器
-                                binding.tvTags.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
-                                    override fun onGlobalLayout() {
-                                        // 移除监听器，避免重复调用
-                                        binding.tvTags.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                                        
-                                        // 清空标签容器
-                                        binding.tvTags.removeAllViews()
-                                        
-                                        // 重新计算标签显示
-                                        val containerWidth = binding.tvTags.width
-                                        if (containerWidth > 0) {
-                                            var currentWidth = 0
-                                            for (tag in tags) {
-                                                val bookTagView = android.widget.TextView(binding.root.context)
-                                                bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
-                                                )
-                                                bookTagView.setText(tag.name)
-                                                bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                                                bookTagView.setPadding(8, 0, 8, 0)
-                                                bookTagView.setGravity(android.view.Gravity.CENTER)
-                                                bookTagView.setSingleLine(true)
-                                                bookTagView.setEllipsize(null)
-                                                bookTagView.setMaxLines(1)
-                                                val bookTagBg = binding.root.context.resources.getDrawable(io.legado.app.R.drawable.bg_tag_rectangle)
-                                                val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
-                                                bookTagBg?.setTint(bookTagBackgroundColor)
-                                                if (bookTagBg is android.graphics.drawable.GradientDrawable) {
-                                                    bookTagBg.setStroke(1, tag.color)
-                                                }
-                                                bookTagView.background = bookTagBg
-                                                bookTagView.setTextColor(tag.color)
-                                                
-                                                val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
-                                                layoutParams.setMarginEnd(8)
-                                                bookTagView.layoutParams = layoutParams
-                                                
-                                                // 测量标签宽度
-                                                bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
-                                                val tagWidth = bookTagView.measuredWidth + 8
-                                                
-                                                if (currentWidth + tagWidth <= containerWidth) {
-                                                    binding.tvTags.addView(bookTagView)
-                                                    currentWidth += tagWidth
-                                                } else {
-                                                    // 超出容器，停止添加
-                                                    break
-                                                }
-                                            }
-                                        }
-                                    }
-                                })
-                            }
-                        }
-                            
-                            // 如果之前有标签，保持高度不变，避免跳动
-                            if (currentHeight > 0) {
-                                binding.tvTags.layoutParams = binding.tvTags.layoutParams.apply {
-                                    height = currentHeight
-                                }
+                                bookTagView.background = bookTagBg
+                                bookTagView.setTextColor(tag.color)
+                                
+                                val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
+                                layoutParams.setMarginEnd(8)
+                                bookTagView.layoutParams = layoutParams
+                                
+                                binding.tvTags.addView(bookTagView)
                             }
                         }
                     }
