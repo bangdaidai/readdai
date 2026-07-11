@@ -277,9 +277,9 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                             
                             for (tag in tags) {
                                 val bookTagView = android.widget.TextView(binding.root.context)
-                                bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                                bookTagView.layoutParams = android.widget.LinearLayout.LayoutParams(
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                                 )
                                 bookTagView.setText(tag.name)
                                 bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
@@ -297,7 +297,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                 bookTagView.background = bookTagBg
                                 bookTagView.setTextColor(tag.color)
                                 
-                                val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
+                                val layoutParams = bookTagView.layoutParams as android.widget.LinearLayout.LayoutParams
                                 layoutParams.setMarginEnd(8)
                                 bookTagView.layoutParams = layoutParams
                                 
@@ -700,9 +700,9 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                             
                             for (tag in tags) {
                                 val bookTagView = android.widget.TextView(binding.root.context)
-                                bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                                bookTagView.layoutParams = android.widget.LinearLayout.LayoutParams(
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                                 )
                                 bookTagView.setText(tag.name)
                                 bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
@@ -717,7 +717,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                 bookTagView.background = bookTagBg
                                 bookTagView.setTextColor(tag.color)
                                 
-                                val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
+                                val layoutParams = bookTagView.layoutParams as android.widget.LinearLayout.LayoutParams
                                 layoutParams.setMarginStart(10)
                                 bookTagView.layoutParams = layoutParams
                                 
