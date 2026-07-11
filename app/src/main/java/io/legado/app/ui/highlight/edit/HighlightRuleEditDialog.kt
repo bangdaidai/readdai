@@ -123,6 +123,10 @@ class HighlightRuleEditDialog(
         accentColor = requireContext().accentColor
 
         binding.tvPageTitle.setTextColor(primaryTextColor)
+        binding.btnSave.setTextColor(
+            if (ColorUtils.isColorLight(accentColor)) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+        )
+        binding.btnSave.setBackgroundColor(accentColor)
 
         binding.etPattern.setTextColor(primaryTextColor)
         binding.etPattern.setHintTextColor(secondaryTextColor)
