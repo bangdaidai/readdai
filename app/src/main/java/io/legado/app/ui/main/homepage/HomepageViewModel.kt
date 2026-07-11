@@ -76,7 +76,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 val key = module.customSetId?.let { customSetUrl(it) } ?: module.sourceUrl
                 result.getOrPut(key) { mutableListOf() }.add(module)
             }
-            return result
+            return result.mapValues { it.value.sortedBy { module -> module.sortOrder } }
         }
     }
 
