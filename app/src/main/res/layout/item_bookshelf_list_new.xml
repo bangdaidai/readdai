@@ -190,13 +190,11 @@
                 app:layout_constraintRight_toRightOf="@+id/fl_has_new"
                 app:layout_constraintTop_toBottomOf="@+id/tv_author">
 
-                <com.google.android.flexbox.FlexboxLayout
+                <LinearLayout
                     android:id="@+id/tagContainer"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:maxLines="1"
-                    app:flexWrap="nowrap"
-                    app:justifyContent="flex_start" />
+                    android:orientation="horizontal" />
 
             </HorizontalScrollView>
 
