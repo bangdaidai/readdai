@@ -75,7 +75,7 @@ fun AddCustomModuleDialog(
         }.getOrNull()
     }
 
-    val initialKindTitles = remember {
+    val initialKindTitles: MutableList<String> = remember {
         when {
             prefillKindTitles.isNotEmpty() -> prefillKindTitles.toMutableList()
             parsedArgs?.isMultiKinds == true -> parsedArgs.kindTitles.toMutableList()
@@ -83,14 +83,14 @@ fun AddCustomModuleDialog(
         }
     }
 
-    val initialKindUrls = remember {
+    val initialKindUrls: MutableList<String?> = remember {
+        val list = mutableListOf<String?>()
         if (parsedArgs?.kindUrls != null) {
-            parsedArgs.kindUrls.toMutableList()
+            list.addAll(parsedArgs.kindUrls)
         } else if (initialKindTitles.isNotEmpty() && prefillUrl.isNotBlank()) {
-            mutableListOf(prefillUrl)
-        } else {
-            mutableListOf()
+            list.add(prefillUrl)
         }
+        list
     }
 
     var title by remember {
