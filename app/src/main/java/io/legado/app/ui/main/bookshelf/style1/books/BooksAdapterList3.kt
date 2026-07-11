@@ -241,107 +241,32 @@ class BooksAdapterList3(
                 withContext(Dispatchers.Main) {
                     if (binding.tagContainer.tag != item.bookUrl) return@withContext
 
-                    val currentHeight = binding.tagContainer.height
-
-                    // 清空标签容器（防止延迟回调残留）
                     binding.tagContainer.removeAllViews()
 
-                    if (tags.isNotEmpty()) {
-                        // 计算容器宽度，只添加能容纳的标签
-                        val containerWidth = binding.tagContainer.width
-                        if (containerWidth > 0) {
-                            var currentWidth = 0
-                            for (tag in tags) {
-                                val bookTagView = android.widget.TextView(context)
-                                bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                    com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
-                                )
-                                bookTagView.setText(tag.name)
-                                bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                                bookTagView.setPadding(8, 0, 8, 0)
-                                bookTagView.setGravity(android.view.Gravity.CENTER)
-                                bookTagView.setSingleLine(true)
-                                bookTagView.setEllipsize(null)
-                                bookTagView.setMaxLines(1)
-                                val bookTagBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
-                                val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
-                                bookTagBg?.setTint(bookTagBackgroundColor)
-                                bookTagView.background = bookTagBg
-                                bookTagView.setTextColor(tag.color)
+                    for (tag in tags) {
+                        val bookTagView = android.widget.TextView(context)
+                        bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
+                            com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
+                            com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        bookTagView.setText(tag.name)
+                        bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                        bookTagView.setPadding(8, 0, 8, 0)
+                        bookTagView.setGravity(android.view.Gravity.CENTER)
+                        bookTagView.setSingleLine(true)
+                        bookTagView.setEllipsize(null)
+                        bookTagView.setMaxLines(1)
+                        val bookTagBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
+                        val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
+                        bookTagBg?.setTint(bookTagBackgroundColor)
+                        bookTagView.background = bookTagBg
+                        bookTagView.setTextColor(tag.color)
 
-                                val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
-                                layoutParams.setMarginStart(10)
-                                bookTagView.layoutParams = layoutParams
+                        val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
+                        layoutParams.setMarginStart(10)
+                        bookTagView.layoutParams = layoutParams
 
-                                bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
-                                val tagWidth = bookTagView.measuredWidth + 10
-
-                                if (currentWidth + tagWidth <= containerWidth) {
-                                    binding.tagContainer.addView(bookTagView)
-                                    currentWidth += tagWidth
-                                } else {
-                                    break
-                                }
-                            }
-                        } else {
-                            // 容器宽度为0，添加布局监听器
-                            binding.tagContainer.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
-                                override fun onGlobalLayout() {
-                                    binding.tagContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
-
-                                    // 校验ViewHolder是否仍然有效
-                                    if (binding.tagContainer.tag != item.bookUrl) return
-
-                                    binding.tagContainer.removeAllViews()
-
-                                    val containerWidth = binding.tagContainer.width
-                                    if (containerWidth > 0) {
-                                        var currentWidth = 0
-                                        for (tag in tags) {
-                                            val bookTagView = android.widget.TextView(context)
-                                            bookTagView.layoutParams = com.google.android.flexbox.FlexboxLayout.LayoutParams(
-                                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                                                com.google.android.flexbox.FlexboxLayout.LayoutParams.WRAP_CONTENT
-                                            )
-                                            bookTagView.setText(tag.name)
-                                            bookTagView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
-                                            bookTagView.setPadding(8, 0, 8, 0)
-                                            bookTagView.setGravity(android.view.Gravity.CENTER)
-                                            bookTagView.setSingleLine(true)
-                                            bookTagView.setEllipsize(null)
-                                            bookTagView.setMaxLines(1)
-                                            val bookTagBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
-                                            val bookTagBackgroundColor = tag.color and 0x00FFFFFF or (0x1A shl 24)
-                                            bookTagBg?.setTint(bookTagBackgroundColor)
-                                            bookTagView.background = bookTagBg
-                                            bookTagView.setTextColor(tag.color)
-
-                                            val layoutParams = bookTagView.layoutParams as com.google.android.flexbox.FlexboxLayout.LayoutParams
-                                            layoutParams.setMarginStart(10)
-                                            bookTagView.layoutParams = layoutParams
-
-                                            bookTagView.measure(android.view.View.MeasureSpec.UNSPECIFIED, android.view.View.MeasureSpec.UNSPECIFIED)
-                                            val tagWidth = bookTagView.measuredWidth + 10
-
-                                            if (currentWidth + tagWidth <= containerWidth) {
-                                                binding.tagContainer.addView(bookTagView)
-                                                currentWidth += tagWidth
-                                            } else {
-                                                break
-                                            }
-                                        }
-                                    }
-                                }
-                            })
-                        }
-                    }
-
-                    // 如果之前有标签，保持高度不变，避免跳动
-                    if (currentHeight > 0) {
-                        binding.tagContainer.layoutParams = binding.tagContainer.layoutParams.apply {
-                            height = currentHeight
-                        }
+                        binding.tagContainer.addView(bookTagView)
                     }
                 }
             } catch (e: Exception) {

@@ -178,19 +178,27 @@
                 app:layout_constraintTop_toTopOf="@+id/tv_author"
                 tools:ignore="TextContrastCheck" />
 
-            <!-- 第三行：标签 -->
-            <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/tagContainer"
+            <!-- 第三行：标签（可横向滑动） -->
+            <HorizontalScrollView
+                android:id="@+id/tagScroll"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="0dp"
-                android:maxLines="1"
+                android:scrollbars="none"
+                android:overScrollMode="never"
                 app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
                 app:layout_constraintLeft_toLeftOf="@+id/tv_name"
                 app:layout_constraintRight_toRightOf="@+id/fl_has_new"
-                app:layout_constraintTop_toBottomOf="@+id/tv_author"
-                app:flexWrap="nowrap"
-                app:justifyContent="flex_start" />
+                app:layout_constraintTop_toBottomOf="@+id/tv_author">
+
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/tagContainer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    app:flexWrap="nowrap"
+                    app:justifyContent="flex_start" />
+
+            </HorizontalScrollView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
