@@ -66,7 +66,6 @@ fun AddCustomModuleDialog(
     canSelectInfinite: Boolean = true,
     allKinds: List<ExploreKind> = emptyList(),
     prefillKindTitles: List<String> = emptyList(),
-    prefillKindUrls: List<String?> = emptyList(),
     onDismissRequest: () -> Unit,
     onConfirm: (ModuleDef) -> Unit,
 ) {
@@ -88,8 +87,6 @@ fun AddCustomModuleDialog(
         val list = mutableListOf<String?>()
         if (parsedArgs?.kindUrls != null) {
             list.addAll(parsedArgs.kindUrls)
-        } else if (prefillKindUrls.isNotEmpty()) {
-            list.addAll(prefillKindUrls)
         } else if (initialKindTitles.isNotEmpty() && prefillUrl.isNotBlank()) {
             list.add(prefillUrl)
         }
