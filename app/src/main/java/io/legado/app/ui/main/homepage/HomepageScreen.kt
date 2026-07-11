@@ -347,7 +347,7 @@ private fun ModuleList(
             if (infinite != null) others + infinite else others
         }
 
-        var selectedMultiSources by rememberSaveable { mutableStateOf(hashMapOf<String, String>()) }
+        var selectedMultiSources by rememberSaveable { mutableStateOf(hashMapOf<String, Int>()) }
 
         val gridColumns = remember(processedModules) {
             val infiniteModule = processedModules.find { m ->
@@ -365,19 +365,19 @@ private fun ModuleList(
         ) {
             processedModules.forEach { moduleUi ->
                 val multiSources = (moduleUi.state as? ModuleLoadState.MultiSources)?.sources
-                val selectedTitle = selectedMultiSources[moduleUi.globalId]
-                val selectedSource = multiSources?.firstOrNull { it.title == selectedTitle }
+                val selectedIndex = selectedMultiSources[moduleUi.globalId] ?: 0
+                val selectedSource = multiSources?.getOrNull(selectedIndex)
                     ?: multiSources?.firstOrNull()
 
                 item(key = "header_${moduleUi.globalId}", span = StaggeredGridItemSpan.FullLine) {
                     ModuleHeader(
                         title = moduleUi.title,
                         sourceTabs = multiSources,
-                        selectedSourceTitle = selectedSource?.title,
+                        selectedSourceIndex = if (multiSources != null) selectedIndex else null,
                         onSourceSelected = if (multiSources != null) {
-                            { title ->
+                            { index ->
                                 selectedMultiSources = HashMap(selectedMultiSources).apply {
-                                    put(moduleUi.globalId, title)
+                                    put(moduleUi.globalId, index)
                                 }
                             }
                         } else null,
@@ -541,8 +541,8 @@ private fun ModuleList(
 private fun ModuleHeader(
     title: String,
     sourceTabs: List<HomepageMultiSourceUi>? = null,
-    selectedSourceTitle: String? = null,
-    onSourceSelected: ((String) -> Unit)? = null,
+    selectedSourceIndex: Int? = null,
+    onSourceSelected: ((Int) -> Unit)? = null,
     onNavigate: (() -> Unit)? = null,
 ) {
     val hasSourceTabs = sourceTabs != null && sourceTabs.size > 1 && onSourceSelected != null
@@ -559,12 +559,12 @@ private fun ModuleHeader(
             ) {
                 items(sourceTabs!!.size, key = { index -> "${sourceTabs[index].title}_$index" }) { index ->
                     val source = sourceTabs[index]
-                    val isSelected = selectedSourceTitle == source.title
+                    val isSelected = selectedSourceIndex == index
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
                         else MaterialTheme.colorScheme.surfaceContainerHigh,
-                        onClick = { onSourceSelected(source.title) },
+                        onClick = { onSourceSelected(index) },
                     ) {
                         Text(
                             text = source.title,
