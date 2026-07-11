@@ -37,7 +37,14 @@ data class BookGroup(
         const val IdNetNone = -4L
         const val IdLocalNone = -5L
         const val IdVideo = -6L
+        const val IdManga = -7L
+        const val IdText = -8L
         const val IdError = -11L
+        const val IdReading = -20L
+        const val IdUnread = -21L
+        const val IdReadFinished = -22L
+        const val IdReadFinishedUpdate = -23L
+        const val IdReadFinishedComplete = -24L
     }
 
     fun getManageName(context: Context): String {
@@ -48,7 +55,14 @@ data class BookGroup(
             IdNetNone -> "$groupName(${context.getString(R.string.net_no_group)})"
             IdLocalNone -> "$groupName(${context.getString(R.string.local_no_group)})"
             IdVideo -> "$groupName(${context.getString(R.string.video)})"
+            IdManga -> "$groupName(${context.getString(R.string.manga)})"
+            IdText -> "$groupName(${context.getString(R.string.text)})"
             IdError -> "$groupName(${context.getString(R.string.update_book_fail)})"
+            IdReading -> "$groupName(${context.getString(R.string.reading)})"
+            IdUnread -> "$groupName(${context.getString(R.string.unread)})"
+            IdReadFinished -> "$groupName(${context.getString(R.string.read_finished)})"
+            IdReadFinishedUpdate -> "$groupName(${context.getString(R.string.read_finished_update)})"
+            IdReadFinishedComplete -> "$groupName(${context.getString(R.string.read_finished_complete)})"
             else -> groupName
         }
     }

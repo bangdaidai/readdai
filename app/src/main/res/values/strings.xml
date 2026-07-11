@@ -1544,6 +1544,11 @@
     <string name="show_bookname">显示书名</string>
     <string name="float_permission_rationale" translatable="false">阅读需要悬浮窗权限来显示播放窗口</string>
     <string name="video" translatable="false">视频</string>
+    <string name="manga" translatable="false">漫画</string>
+    <string name="unread" translatable="false">未读</string>
+    <string name="read_finished" translatable="false">已读</string>
+    <string name="read_finished_update" translatable="false">连载已读</string>
+    <string name="read_finished_complete" translatable="false">完本已读</string>
     <string name="float_window" translatable="false">悬浮窗</string>
     <string name="video_play" translatable="false">视频播放</string>
     <string name="no_more_chapter" translatable="false">没有更多章节</string>

@@ -27,7 +27,14 @@ interface BookDao {
             BookGroup.IdNetNone -> flowNetNoGroup()
             BookGroup.IdLocalNone -> flowLocalNoGroup()
             BookGroup.IdVideo -> flowVideo()
+            BookGroup.IdManga -> flowManga()
+            BookGroup.IdText -> flowText()
             BookGroup.IdError -> flowUpdateError()
+            BookGroup.IdReading -> flowReading()
+            BookGroup.IdUnread -> flowUnread()
+            BookGroup.IdReadFinished -> flowReadFinished()
+            BookGroup.IdReadFinishedUpdate -> flowReadFinishedUpdate()
+            BookGroup.IdReadFinishedComplete -> flowReadFinishedComplete()
             else -> flowByUserGroup(groupId)
         }.map { list ->
             list.filterNot { it.isNotShelf }
@@ -80,6 +87,27 @@ interface BookDao {
 
     @Query("SELECT * FROM books where type & ${BookType.updateError} > 0 order by durChapterTime desc")
     fun flowUpdateError(): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE type & ${BookType.image} > 0")
+    fun flowManga(): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE type & ${BookType.text} > 0 AND type & ${BookType.audio} = 0 AND type & ${BookType.image} = 0")
+    fun flowText(): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex > 0 AND durChapterIndex < totalChapterNum - 1 order by durChapterTime desc")
+    fun flowReading(): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE durChapterIndex = 0 AND durChapterPos = 0 order by durChapterTime desc")
+    fun flowUnread(): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 order by durChapterTime desc")
+    fun flowReadFinished(): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 AND canUpdate = 1 order by durChapterTime desc")
+    fun flowReadFinishedUpdate(): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 AND canUpdate = 0 order by durChapterTime desc")
+    fun flowReadFinishedComplete(): Flow<List<Book>>
 
     @Query("SELECT * FROM books WHERE (`group` & :group) > 0")
     fun getBooksByGroup(group: Long): List<Book>

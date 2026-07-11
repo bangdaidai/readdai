@@ -215,6 +215,55 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent()
                 db.execSQL(insertBookGroupErrorSql)
                 @Language("sql")
+                val insertBookGroupMangaSql = """
+                    insert into book_groups(groupId, groupName, 'order', show) 
+                    select ${BookGroup.IdManga}, '漫画', -4, 1
+                    where not exists (select * from book_groups where groupId = ${BookGroup.IdManga})
+                """.trimIndent()
+                db.execSQL(insertBookGroupMangaSql)
+                @Language("sql")
+                val insertBookGroupTextSql = """
+                    insert into book_groups(groupId, groupName, 'order', show) 
+                    select ${BookGroup.IdText}, '小说', -3, 1
+                    where not exists (select * from book_groups where groupId = ${BookGroup.IdText})
+                """.trimIndent()
+                db.execSQL(insertBookGroupTextSql)
+                @Language("sql")
+                val insertBookGroupReadingSql = """
+                    insert into book_groups(groupId, groupName, 'order', show) 
+                    select ${BookGroup.IdReading}, '在读', -30, 1
+                    where not exists (select * from book_groups where groupId = ${BookGroup.IdReading})
+                """.trimIndent()
+                db.execSQL(insertBookGroupReadingSql)
+                @Language("sql")
+                val insertBookGroupUnreadSql = """
+                    insert into book_groups(groupId, groupName, 'order', show) 
+                    select ${BookGroup.IdUnread}, '未读', -31, 1
+                    where not exists (select * from book_groups where groupId = ${BookGroup.IdUnread})
+                """.trimIndent()
+                db.execSQL(insertBookGroupUnreadSql)
+                @Language("sql")
+                val insertBookGroupReadFinishedSql = """
+                    insert into book_groups(groupId, groupName, 'order', show) 
+                    select ${BookGroup.IdReadFinished}, '已读', -32, 1
+                    where not exists (select * from book_groups where groupId = ${BookGroup.IdReadFinished})
+                """.trimIndent()
+                db.execSQL(insertBookGroupReadFinishedSql)
+                @Language("sql")
+                val insertBookGroupReadFinishedUpdateSql = """
+                    insert into book_groups(groupId, groupName, 'order', show) 
+                    select ${BookGroup.IdReadFinishedUpdate}, '连载已读', -33, 0
+                    where not exists (select * from book_groups where groupId = ${BookGroup.IdReadFinishedUpdate})
+                """.trimIndent()
+                db.execSQL(insertBookGroupReadFinishedUpdateSql)
+                @Language("sql")
+                val insertBookGroupReadFinishedCompleteSql = """
+                    insert into book_groups(groupId, groupName, 'order', show) 
+                    select ${BookGroup.IdReadFinishedComplete}, '完本已读', -34, 0
+                    where not exists (select * from book_groups where groupId = ${BookGroup.IdReadFinishedComplete})
+                """.trimIndent()
+                db.execSQL(insertBookGroupReadFinishedCompleteSql)
+                @Language("sql")
                 val upBookSourceLoginUiSql =
                     "update book_sources set loginUi = null where loginUi = 'null'"
                 db.execSQL(upBookSourceLoginUiSql)
