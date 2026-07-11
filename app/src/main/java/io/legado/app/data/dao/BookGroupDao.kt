@@ -40,8 +40,8 @@ interface BookGroupDao {
             or (groupId = -20 and exists (select 1 from books where totalChapterNum > 0 and durChapterIndex > 0 and durChapterIndex < totalChapterNum - 1))
             or (groupId = -21 and exists (select 1 from books where durChapterIndex = 0 and durChapterPos = 0))
             or (groupId = -22 and exists (select 1 from books where totalChapterNum > 0 and durChapterIndex >= totalChapterNum - 1))
-            or (groupId = -23 and exists (select 1 from books where totalChapterNum > 0 and durChapterIndex >= totalChapterNum - 1 and canUpdate = 1))
-            or (groupId = -24 and exists (select 1 from books where totalChapterNum > 0 and durChapterIndex >= totalChapterNum - 1 and canUpdate = 0))
+            or (groupId = -23 and exists (select 1 from books where totalChapterNum > 0 and durChapterIndex >= totalChapterNum - 1 and kind like '%连载%'))
+            or (groupId = -24 and exists (select 1 from books where totalChapterNum > 0 and durChapterIndex >= totalChapterNum - 1 and kind like '%完结%'))
             or (groupId = -4 
                 and exists (
                     select 1 from books 

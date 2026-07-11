@@ -103,10 +103,10 @@ interface BookDao {
     @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 order by durChapterTime desc")
     fun flowReadFinished(): Flow<List<Book>>
 
-    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 AND canUpdate = 1 order by durChapterTime desc")
+    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 AND kind LIKE '%连载%' order by durChapterTime desc")
     fun flowReadFinishedUpdate(): Flow<List<Book>>
 
-    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 AND canUpdate = 0 order by durChapterTime desc")
+    @Query("SELECT * FROM books WHERE totalChapterNum > 0 AND durChapterIndex >= totalChapterNum - 1 AND kind LIKE '%完结%' order by durChapterTime desc")
     fun flowReadFinishedComplete(): Flow<List<Book>>
 
     @Query("SELECT * FROM books WHERE (`group` & :group) > 0")
