@@ -161,10 +161,8 @@ class HighlightRuleEditDialog(
         )
         binding.switchEnable.trackTintList = switchTrackColorList
         binding.switchEnable.thumbTintList = switchThumbColorList
-        binding.switchEnable.thumbIconTintList = switchThumbIconColorList
         binding.switchBold.trackTintList = switchTrackColorList
         binding.switchBold.thumbTintList = switchThumbColorList
-        binding.switchBold.thumbIconTintList = switchThumbIconColorList
 
         binding.etPattern.setTextColor(primaryTextColor)
         binding.etPattern.setHintTextColor(secondaryTextColor)

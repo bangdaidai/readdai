@@ -245,13 +245,10 @@
                             android:textColor="@color/primaryText"
                             android:textSize="13sp" />
 
-                        <com.google.android.material.materialswitch.MaterialSwitch
+                        <io.legado.app.lib.theme.view.ThemeSwitch
                             android:id="@+id/switch_enable"
                             android:layout_width="wrap_content"
-                            android:layout_height="36dp"
-                            android:textOn=""
-                            android:textOff=""
-                            app:showText="false" />
+                            android:layout_height="36dp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -315,13 +312,10 @@
                             android:textColor="@color/primaryText"
                             android:textSize="13sp" />
 
-                        <com.google.android.material.materialswitch.MaterialSwitch
+                        <io.legado.app.lib.theme.view.ThemeSwitch
                             android:id="@+id/switch_bold"
                             android:layout_width="wrap_content"
-                            android:layout_height="36dp"
-                            android:textOn=""
-                            android:textOff=""
-                            app:showText="false" />
+                            android:layout_height="36dp" />
                     </LinearLayout>
 
                     <TextView
