@@ -248,7 +248,10 @@
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/switch_enable"
                             android:layout_width="wrap_content"
-                            android:layout_height="36dp" />
+                            android:layout_height="36dp"
+                            android:textOn=""
+                            android:textOff=""
+                            app:showText="false" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -315,7 +318,10 @@
                         <com.google.android.material.materialswitch.MaterialSwitch
                             android:id="@+id/switch_bold"
                             android:layout_width="wrap_content"
-                            android:layout_height="36dp" />
+                            android:layout_height="36dp"
+                            android:textOn=""
+                            android:textOff=""
+                            app:showText="false" />
                     </LinearLayout>
 
                     <TextView
