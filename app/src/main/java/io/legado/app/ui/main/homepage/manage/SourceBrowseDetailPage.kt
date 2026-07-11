@@ -435,6 +435,7 @@ fun SourceBrowseDetailPage(
                         canSelectInfinite = canSelectInfiniteGlobal,
                         allKinds = exploreKinds,
                         prefillKindTitles = selectedKindObjects.map { it.title },
+                        prefillKindUrls = selectedKindObjects.map { it.url },
                         onDismissRequest = { showCreateModuleDialog = false },
                         onConfirm = { def ->
                             val parsedArgs = kotlin.runCatching {
