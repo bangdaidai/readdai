@@ -250,39 +250,57 @@ object ThemeConfig {
             val isNightTheme = config.isNightTheme
             val transparentNavBar = config.transparentNavBar
             val backgroundPath = config.backgroundImgPath
+            var resolvedBgPath = backgroundPath
 
-            if (backgroundPath != null && backgroundPath.startsWith("http")) {
+            if (resolvedBgPath != null) {
                 val fileRoot = context.externalFiles
                 val preferenceKey = if (isNightTheme) {
                     PreferKey.bgImageN
                 } else {
                     PreferKey.bgImage
                 }
-                val name = getUrlToFile(backgroundPath)
-                val fileFold = File(fileRoot, preferenceKey)
-                if (!fileFold.exists()) {
-                    fileFold.mkdirs()
-                }
-                val fileImg = File(fileFold, name)
-                if (!fileImg.exists()) {
-                    appCtx.toastOnUi("下载背景图片中...")
-                    Coroutine.async {
-                        kotlin.runCatching {
-                            val res = okHttpClient.newCallResponse(0) {
-                                url(backgroundPath)
-                            }
-                            res.body.byteStream().use { inputStream ->
-                                FileOutputStream(fileImg).use { outputStream ->
-                                    inputStream.copyTo(outputStream)
+
+                if (resolvedBgPath.startsWith("http")) {
+                    val name = getUrlToFile(resolvedBgPath)
+                    val fileFold = File(fileRoot, preferenceKey)
+                    if (!fileFold.exists()) {
+                        fileFold.mkdirs()
+                    }
+                    val fileImg = File(fileFold, name)
+                    if (!fileImg.exists()) {
+                        appCtx.toastOnUi("下载背景图片中...")
+                        Coroutine.async {
+                            kotlin.runCatching {
+                                val res = okHttpClient.newCallResponse(0) {
+                                    url(resolvedBgPath)
                                 }
+                                res.body.byteStream().use { inputStream ->
+                                    FileOutputStream(fileImg).use { outputStream ->
+                                        inputStream.copyTo(outputStream)
+                                    }
+                                }
+                            }.onSuccess {
+                                appCtx.toastOnUi("背景图下载成功\n请重新应用主题")
+                            }.onFailure {
+                                appCtx.toastOnUi(it.localizedMessage)
                             }
-                        }.onSuccess {
-                            appCtx.toastOnUi("背景图下载成功\n请重新应用主题")
-                        }.onFailure {
-                            appCtx.toastOnUi(it.localizedMessage)
+                        }
+                        return
+                    }
+                } else {
+                    val bgFile = File(resolvedBgPath)
+                    if (!bgFile.exists()) {
+                        val altPath = resolvedBgPath.replace(
+                            "io.legado.app.release",
+                            context.packageName
+                        )
+                        val altFile = File(altPath)
+                        if (altFile.exists()) {
+                            resolvedBgPath = altPath
+                        } else {
+                            appCtx.toastOnUi("背景图片文件不存在\n请重新选择背景图片")
                         }
                     }
-                    return
                 }
             }
             val backgroundBlur = config.backgroundImgBlur
@@ -299,7 +317,7 @@ object ThemeConfig {
                 context.putPrefInt(PreferKey.cNTextSecondary, textSecondary)
                 context.putPrefInt(PreferKey.cNTextOther, textOther)
                 context.putPrefBoolean(PreferKey.tNavBarN, transparentNavBar)
-                context.putPrefString(PreferKey.bgImageN, backgroundPath)
+                context.putPrefString(PreferKey.bgImageN, resolvedBgPath)
                 context.putPrefInt(PreferKey.bgImageNBlurring, backgroundBlur)
             } else {
                 context.putPrefString(PreferKey.dThemeName, config.themeName)
@@ -314,7 +332,7 @@ object ThemeConfig {
                 context.putPrefInt(PreferKey.cTextSecondary, textSecondary)
                 context.putPrefInt(PreferKey.cTextOther, textOther)
                 context.putPrefBoolean(PreferKey.tNavBar, transparentNavBar)
-                context.putPrefString(PreferKey.bgImage, backgroundPath)
+                context.putPrefString(PreferKey.bgImage, resolvedBgPath)
                 context.putPrefInt(PreferKey.bgImageBlurring, backgroundBlur)
             }
             if (switchNightMode) {
