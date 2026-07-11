@@ -700,6 +700,9 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
             val source = appDb.bookSourceDao.getBookSource(sourceUrl)
             if (source != null) ensureSetForSource(sourceUrl, source.bookSourceName)
 
+            val existingModulesInSet = allModulesCache.value.filter { it.customSetId == setId }
+            val maxSortOrder = existingModulesInSet.maxOfOrNull { it.sortOrder } ?: -1
+
             // 单选且 url 为空时，从书源的 exploreKinds 查找选中分类的 URL
             val resolvedUrl = when {
                 hasMultiKinds -> null
@@ -724,6 +727,7 @@ class HomepageViewModel(application: Application) : BaseViewModel(application) {
                 isEnabled = true,
                 isUserCreated = true,
                 customSetId = setId,
+                sortOrder = maxSortOrder + 1,
                 syncedAt = System.currentTimeMillis()
             )
             gateway.upsertAll(listOf(module))
