@@ -229,27 +229,6 @@ abstract class AppDatabase : RoomDatabase() {
                 """.trimIndent()
                 db.execSQL(insertBookGroupTextSql)
                 @Language("sql")
-                val insertBookGroupReadingSql = """
-                    insert into book_groups(groupId, groupName, 'order', show) 
-                    select ${BookGroup.IdReading}, '在读', -30, 1
-                    where not exists (select * from book_groups where groupId = ${BookGroup.IdReading})
-                """.trimIndent()
-                db.execSQL(insertBookGroupReadingSql)
-                @Language("sql")
-                val insertBookGroupUnreadSql = """
-                    insert into book_groups(groupId, groupName, 'order', show) 
-                    select ${BookGroup.IdUnread}, '未读', -31, 1
-                    where not exists (select * from book_groups where groupId = ${BookGroup.IdUnread})
-                """.trimIndent()
-                db.execSQL(insertBookGroupUnreadSql)
-                @Language("sql")
-                val insertBookGroupReadFinishedSql = """
-                    insert into book_groups(groupId, groupName, 'order', show) 
-                    select ${BookGroup.IdReadFinished}, '已读', -32, 1
-                    where not exists (select * from book_groups where groupId = ${BookGroup.IdReadFinished})
-                """.trimIndent()
-                db.execSQL(insertBookGroupReadFinishedSql)
-                @Language("sql")
                 val insertBookGroupReadFinishedUpdateSql = """
                     insert into book_groups(groupId, groupName, 'order', show) 
                     select ${BookGroup.IdReadFinishedUpdate}, '连载已读', -33, 0
