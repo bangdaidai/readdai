@@ -271,7 +271,13 @@ fun AddCustomModuleDialog(
 
     if (showKindSelect) {
         val initialSelectedKeys = selectedKindTitles.mapIndexed { index, title ->
-            "${title}||${selectedKindUrls.getOrNull(index)}"
+            val url = selectedKindUrls.getOrNull(index)
+            if (!url.isNullOrBlank()) {
+                "${title}||${url}"
+            } else {
+                allKinds.find { it.title == title }?.let { "${it.title}||${it.url}" }
+                    ?: "${title}||${url}"
+            }
         }.toSet()
         ExploreKindSelectSheet(
             show = true,
