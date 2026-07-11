@@ -268,6 +268,32 @@ class BooksAdapterList3(
 
                         binding.tagContainer.addView(bookTagView)
                     }
+
+                    if (!item.wordCount.isNullOrBlank()) {
+                        val wordCountView = android.widget.TextView(context)
+                        wordCountView.layoutParams = android.widget.LinearLayout.LayoutParams(
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                            android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        wordCountView.setText(item.wordCount)
+                        wordCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                        wordCountView.setPadding(8, 0, 8, 0)
+                        wordCountView.setGravity(android.view.Gravity.CENTER)
+                        wordCountView.setSingleLine(true)
+                        wordCountView.setEllipsize(null)
+                        wordCountView.setMaxLines(1)
+                        val wordCountBg = context.resources.getDrawable(R.drawable.bg_tag_rectangle)
+                        val wordCountBgColor = (0x1A shl 24) or 0x00888888.toInt()
+                        wordCountBg?.setTint(wordCountBgColor)
+                        wordCountView.background = wordCountBg
+                        wordCountView.setTextColor(0xFF888888.toInt())
+
+                        val wcLayoutParams = wordCountView.layoutParams as android.widget.LinearLayout.LayoutParams
+                        wcLayoutParams.setMarginStart(10)
+                        wordCountView.layoutParams = wcLayoutParams
+
+                        binding.tagContainer.addView(wordCountView)
+                    }
                 }
             } catch (e: Exception) {
                 // 发生异常时，清空标签容器

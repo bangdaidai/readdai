@@ -303,6 +303,32 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                 
                                 binding.tvTags.addView(bookTagView)
                             }
+
+                            if (!item.wordCount.isNullOrBlank()) {
+                                val wordCountView = android.widget.TextView(binding.root.context)
+                                wordCountView.layoutParams = android.widget.LinearLayout.LayoutParams(
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                                )
+                                wordCountView.setText(item.wordCount)
+                                wordCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                                wordCountView.setPadding(8, 0, 8, 0)
+                                wordCountView.setGravity(android.view.Gravity.CENTER)
+                                wordCountView.setSingleLine(true)
+                                wordCountView.setEllipsize(null)
+                                wordCountView.setMaxLines(1)
+                                val wordCountBg = binding.root.context.resources.getDrawable(io.legado.app.R.drawable.bg_tag_rectangle)
+                                val wordCountBgColor = (0x1A shl 24) or 0x00888888.toInt()
+                                wordCountBg?.setTint(wordCountBgColor)
+                                wordCountView.background = wordCountBg
+                                wordCountView.setTextColor(0xFF888888.toInt())
+
+                                val wcLayoutParams = wordCountView.layoutParams as android.widget.LinearLayout.LayoutParams
+                                wcLayoutParams.setMarginEnd(8)
+                                wordCountView.layoutParams = wcLayoutParams
+
+                                binding.tvTags.addView(wordCountView)
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -722,6 +748,32 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                 bookTagView.layoutParams = layoutParams
                                 
                                 binding.tagContainer.addView(bookTagView)
+                            }
+
+                            if (!item.wordCount.isNullOrBlank()) {
+                                val wordCountView = android.widget.TextView(binding.root.context)
+                                wordCountView.layoutParams = android.widget.LinearLayout.LayoutParams(
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                                )
+                                wordCountView.setText(item.wordCount)
+                                wordCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+                                wordCountView.setPadding(8, 0, 8, 0)
+                                wordCountView.setGravity(android.view.Gravity.CENTER)
+                                wordCountView.setSingleLine(true)
+                                wordCountView.setEllipsize(null)
+                                wordCountView.setMaxLines(1)
+                                val wordCountBg = binding.root.context.resources.getDrawable(R.drawable.bg_tag_rectangle)
+                                val wordCountBgColor = (0x1A shl 24) or 0x00888888.toInt()
+                                wordCountBg?.setTint(wordCountBgColor)
+                                wordCountView.background = wordCountBg
+                                wordCountView.setTextColor(0xFF888888.toInt())
+
+                                val wcLayoutParams = wordCountView.layoutParams as android.widget.LinearLayout.LayoutParams
+                                wcLayoutParams.setMarginStart(10)
+                                wordCountView.layoutParams = wcLayoutParams
+
+                                binding.tagContainer.addView(wordCountView)
                             }
                         }
                     }
