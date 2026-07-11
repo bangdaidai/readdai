@@ -112,8 +112,8 @@ fun AddCustomModuleDialog(
         )
     }
     var layoutConfig by remember { mutableStateOf(prefillLayoutConfig) }
-    var selectedKindTitles: MutableList<String> by remember { mutableStateOf(initialKindTitles) }
-    var selectedKindUrls: MutableList<String?> by remember { mutableStateOf(initialKindUrls) }
+    var selectedKindTitles: MutableList<String> by remember { mutableStateOf<MutableList<String>>(initialKindTitles) }
+    var selectedKindUrls: MutableList<String?> by remember { mutableStateOf<MutableList<String?>>(initialKindUrls) }
     var showKindSelect by remember { mutableStateOf(false) }
 
     val typeList = remember(canSelectInfinite) {
