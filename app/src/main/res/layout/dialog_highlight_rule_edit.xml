@@ -52,11 +52,10 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <io.legado.app.ui.widget.text.AccentTextView
                 android:id="@+id/btn_save"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:background="@color/accent"
                 android:gravity="center"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
