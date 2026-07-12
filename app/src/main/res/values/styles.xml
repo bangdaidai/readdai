@@ -92,7 +92,7 @@
     </style>
 
     <style name="SpinnerDropDownItemStyle" parent="@android:style/Widget.DropDownItem.Spinner">
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/menu_color_default</item>
     </style>
 
