@@ -53,19 +53,19 @@
             <io.legado.app.ui.widget.text.TextInputLayout
                 android:id="@+id/til_group_name"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:hint="@string/group_name"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                app:boxCollapsedPaddingTop="0dp">
+                android:paddingTop="0dp"
+                android:paddingBottom="2dp"
+                app:boxCollapsedPaddingTop="0dp"
+                app:boxStrokeWidth="1dp">
 
                 <io.legado.app.lib.theme.view.ThemeEditText
                     android:id="@+id/tie_group_name"
                     android:layout_width="match_parent"
-                    android:layout_height="36dp"
+                    android:layout_height="28dp"
                     android:maxLines="2"
-                    android:paddingStart="0dp"
-                    android:paddingEnd="0dp"
                     android:paddingTop="0dp"
                     android:paddingBottom="0dp"
                     android:gravity="center_vertical"
@@ -76,15 +76,11 @@
                     tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
             </io.legado.app.ui.widget.text.TextInputLayout>
 
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
             <LinearLayout
                 android:id="@+id/sort_container"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="4dp">
@@ -109,45 +105,33 @@
                     tools:ignore="RtlHardcoded" />
             </LinearLayout>
 
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
             <io.legado.app.lib.theme.view.ThemeCheckBox
                 android:id="@+id/cb_enable_refresh"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:checked="true"
                 android:minHeight="0dp"
                 android:paddingVertical="2dp"
                 android:textSize="14sp"
                 android:text="@string/allow_drop_down_refresh" />
 
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
             <io.legado.app.lib.theme.view.ThemeCheckBox
                 android:id="@+id/cb_enable_only_read"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:checked="false"
                 android:minHeight="0dp"
                 android:paddingVertical="2dp"
                 android:textSize="14sp"
                 android:text="@string/only_update_read" />
 
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
-
             <io.legado.app.lib.theme.view.ThemeCheckBox
                 android:id="@+id/cb_filter_only_text"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:checked="false"
                 android:minHeight="0dp"
                 android:paddingVertical="2dp"
