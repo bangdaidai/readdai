@@ -89,12 +89,11 @@
 
     <style name="SpinnerWithSmallText" parent="Spinner">
         <item name="android:dropDownItemStyle">@style/SpinnerDropDownItemStyle</item>
-    </style>
-
-    <style name="SpinnerDropDownItemStyle" parent="@android:style/Widget.DropDownItem.Spinner">
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/menu_color_default</item>
     </style>
+
+    <style name="SpinnerDropDownItemStyle" parent="@android:style/Widget.DropDownItem.Spinner" />
 
     <style name="TextAppearanceSmall" parent="TextAppearance.AppCompat.Small">
         <item name="android:textSize">12sp</item>
