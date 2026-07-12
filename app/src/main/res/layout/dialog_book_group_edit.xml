@@ -45,7 +45,6 @@
             android:layout_height="wrap_content"
             android:hint="@string/group_name"
                 android:paddingTop="16dp"
-                android:paddingBottom="2dp"
                 app:boxStrokeWidth="1dp"
             app:layout_constraintBottom_toTopOf="@+id/sort_container"
             app:layout_constraintLeft_toRightOf="@+id/iv_cover"
