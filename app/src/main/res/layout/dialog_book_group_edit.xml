@@ -107,7 +107,6 @@
             android:layout_height="wrap_content"
             android:checked="true"
             android:minHeight="0dp"
-            android:paddingVertical="2dp"
             android:textSize="14sp"
             android:text="@string/allow_drop_down_refresh"
             app:layout_constraintBottom_toTopOf="@+id/cb_enable_only_read"
