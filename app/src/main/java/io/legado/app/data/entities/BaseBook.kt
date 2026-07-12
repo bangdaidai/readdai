@@ -57,11 +57,7 @@ interface BaseBook : RuleDataInterface {
             val clean = wc.replace("[^0-9.]".toRegex(), "")
             val num = clean.toFloatOrNull() ?: return wc
             val total = if (wc.contains("万")) num * 10000f else num
-            when {
-                total >= 10000f -> "%.2f万字".format(total / 10000f)
-                total >= 1f -> "${total.toInt()}字"
-                else -> ""
-            }
+            "%.2f万字".format(total / 10000f)
         } catch (_: Exception) {
             wc
         }
