@@ -58,6 +58,8 @@ interface BaseBook : RuleDataInterface {
             val num = clean.toFloatOrNull() ?: return wc
             val total = if (wc.contains("万")) num * 10000f else num
             "%.2f万字".format(total / 10000f)
+                .replace(Regex("0+万$"), "万")
+                .replace(Regex("\\.万"), "万")
         } catch (_: Exception) {
             wc
         }
