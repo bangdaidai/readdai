@@ -310,7 +310,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
                                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                                 )
-                                wordCountView.setText(item.wordCount)
+                                wordCountView.setText(item.formatWordCount())
                                 wordCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
                                 wordCountView.setPadding(8, 0, 8, 0)
                                 wordCountView.setGravity(android.view.Gravity.CENTER)
@@ -756,7 +756,7 @@ class BooksAdapterList(context: Context, callBack: CallBack) :
                                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
                                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
                                 )
-                                wordCountView.setText(item.wordCount)
+                                wordCountView.setText(item.formatWordCount())
                                 wordCountView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
                                 wordCountView.setPadding(8, 0, 8, 0)
                                 wordCountView.setGravity(android.view.Gravity.CENTER)
