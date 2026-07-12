@@ -56,7 +56,7 @@
                 android:layout_height="0dp"
                 android:layout_weight="1"
                 android:hint="@string/group_name"
-                android:paddingTop="0dp"
+                android:paddingTop="6dp"
                 android:paddingBottom="2dp"
                 app:boxCollapsedPaddingTop="0dp"
                 app:boxStrokeWidth="1dp">
