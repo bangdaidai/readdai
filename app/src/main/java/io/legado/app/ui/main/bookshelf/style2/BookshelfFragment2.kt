@@ -214,6 +214,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     }
 
     private fun initBooksData() {
+        var filterOnlyText = false
         if (groupId == BookGroup.IdRoot) {
             if (isAdded) {
                 binding.titleBar.title = getString(R.string.bookshelf)
@@ -228,11 +229,12 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
                 binding.refreshLayout.isEnabled = it.enableRefresh
                 enableRefresh = it.enableRefresh
                 onlyUpdateRead = it.onlyUpdateRead
+                filterOnlyText = it.filterOnlyText
             }
         }
         booksFlowJob?.cancel()
         booksFlowJob = viewLifecycleOwner.lifecycleScope.launch {
-            appDb.bookDao.flowByGroup(groupId).map { list ->
+            appDb.bookDao.flowByGroup(groupId, filterOnlyText).map { list ->
                 //排序
                 when (AppConfig.getBookSortByGroupId(groupId)) {
                     1 -> list.sortedByDescending {

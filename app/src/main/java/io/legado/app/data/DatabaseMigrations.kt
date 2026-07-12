@@ -23,7 +23,8 @@ object DatabaseMigrations {
             migration_39_40, migration_40_41, migration_41_42, migration_42_43,
             migration_88_89, migration_89_90, migration_93_94, migration_97_98,
             migration_98_99, migration_99_100, migration_101_102, migration_102_103, migration_103_104,
-            migration_104_105, migration_105_106, migration_106_107, migration_107_108
+            migration_104_105, migration_105_106, migration_106_107, migration_107_108,
+            migration_108_109
         )
     }
 
@@ -652,6 +653,13 @@ object DatabaseMigrations {
             db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '书籍' WHERE `groupName` = '书籍模板'")
             db.execSQL("UPDATE `bookplateTemplates` SET `groupName` = '统计' WHERE `groupName` = '统计模板'")
             db.execSQL("UPDATE `bookplateTemplates` SET `htmlContent` = REPLACE(`htmlContent`, '{{noteContent}}', '{{content}}') WHERE `htmlContent` LIKE '%{{noteContent}}%'")
+        }
+    }
+
+    val migration_108_109 = object : Migration(108, 109) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `book_groups` ADD COLUMN `filterOnlyText` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("DELETE FROM `book_groups` WHERE groupId IN (-20, -21, -22)")
         }
     }
 }

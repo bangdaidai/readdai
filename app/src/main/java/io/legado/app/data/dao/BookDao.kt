@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.map
 @Dao
 interface BookDao {
 
-    fun flowByGroup(groupId: Long): Flow<List<Book>> {
+    fun flowByGroup(groupId: Long, filterOnlyText: Boolean = false): Flow<List<Book>> {
         return when (groupId) {
             BookGroup.IdRoot -> flowRoot()
             BookGroup.IdAll -> flowAll()
@@ -35,7 +35,7 @@ interface BookDao {
             BookGroup.IdReadFinished -> flowReadFinished()
             BookGroup.IdReadFinishedUpdate -> flowReadFinishedUpdate()
             BookGroup.IdReadFinishedComplete -> flowReadFinishedComplete()
-            else -> flowByUserGroup(groupId)
+            else -> if (filterOnlyText) flowByUserGroupFilteredText(groupId) else flowByUserGroup(groupId)
         }.map { list ->
             list.filterNot { it.isNotShelf }
         }
@@ -81,6 +81,9 @@ interface BookDao {
 
     @Query("SELECT * FROM books WHERE (`group` & :group) > 0")
     fun flowByUserGroup(group: Long): Flow<List<Book>>
+
+    @Query("SELECT * FROM books WHERE (`group` & :group) > 0 AND type & ${BookType.text} > 0 AND type & ${BookType.audio} = 0 AND type & ${BookType.image} = 0")
+    fun flowByUserGroupFilteredText(group: Long): Flow<List<Book>>
 
     @Query("SELECT * FROM books WHERE name like '%'||:key||'%' or author like '%'||:key||'%'")
     fun flowSearch(key: String): Flow<List<Book>>

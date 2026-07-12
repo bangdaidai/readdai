@@ -22,7 +22,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="140dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="8dp">
 
         <io.legado.app.ui.widget.image.CoverImageView
@@ -33,7 +33,6 @@
             android:contentDescription="@string/img_cover"
             android:scaleType="centerCrop"
             android:src="@drawable/image_cover_default"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             tools:ignore="ImageContrastCheck" />
@@ -41,13 +40,12 @@
         <!-- 右侧容器 -->
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
             android:paddingTop="0dp"
             android:paddingBottom="0dp"
             android:paddingLeft="8dp"
             android:paddingRight="8dp"
             android:orientation="vertical"
-            android:weightSum="4"
             app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
             app:layout_constraintLeft_toRightOf="@+id/iv_cover"
             app:layout_constraintRight_toRightOf="parent"
@@ -80,7 +78,7 @@
             <!-- 排序 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="40dp"
+                android:layout_height="32dp"
                 android:layout_marginTop="2dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
@@ -92,6 +90,7 @@
                     android:layout_height="wrap_content"
                     android:padding="3dp"
                     android:text="@string/sort"
+                    android:textSize="12sp"
                     android:textColor="@color/primaryText" />
 
                 <androidx.appcompat.widget.AppCompatSpinner
@@ -104,24 +103,39 @@
                     tools:ignore="RtlHardcoded" />
             </LinearLayout>
 
-            <!-- 允许下拉刷新 -->
+            <!-- 把复选框推到底部 -->
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
 
-            <!-- 仅更新已读完 -->
             <io.legado.app.lib.theme.view.ThemeCheckBox
                 android:id="@+id/cb_enable_refresh"
                 android:layout_width="wrap_content"
                 android:layout_height="20dp"
                 android:layout_marginTop="2dp"
                 android:checked="true"
+                android:textSize="12sp"
                 android:text="@string/allow_drop_down_refresh" />
 
             <io.legado.app.lib.theme.view.ThemeCheckBox
                 android:id="@+id/cb_enable_only_read"
                 android:layout_width="wrap_content"
                 android:layout_height="20dp"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="4dp"
                 android:paddingBottom="0dp"
+                android:textSize="12sp"
                 android:text="@string/only_update_read"
+                android:checked="false" />
+
+            <io.legado.app.lib.theme.view.ThemeCheckBox
+                android:id="@+id/cb_filter_only_text"
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:layout_marginTop="4dp"
+                android:paddingBottom="0dp"
+                android:textSize="12sp"
+                android:text="只显示小说"
                 android:checked="false" />
         </LinearLayout>
 

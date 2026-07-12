@@ -60,6 +60,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         bundle.putInt("bookSort", group.getRealBookSort())
         bundle.putBoolean("enableRefresh", group.enableRefresh)
         bundle.putBoolean("onlyUpdateRead", group.onlyUpdateRead)
+        bundle.putBoolean("filterOnlyText", group.filterOnlyText)
         arguments = bundle
     }
 
@@ -92,6 +93,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
     private var upLastUpdateTimeJob: Job? = null
     private var enableRefresh = true
     private var onlyUpdateRead = false
+    private var filterOnlyText = false
     private val bookshelfMargin by lazy { AppConfig.bookshelfMargin }
     private var itemCount = 0
     private var totalRows = 0
@@ -103,6 +105,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
             bookSort = it.getInt("bookSort", 0)
             enableRefresh = it.getBoolean("enableRefresh", true)
             onlyUpdateRead = it.getBoolean("onlyUpdateRead", false)
+            filterOnlyText = it.getBoolean("filterOnlyText", false)
             binding.refreshLayout.isEnabled = enableRefresh
         }
         initRecyclerView()
@@ -226,7 +229,7 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
     private fun upRecyclerData() {
         booksFlowJob?.cancel()
         booksFlowJob = viewLifecycleOwner.lifecycleScope.launch {
-            appDb.bookDao.flowByGroup(groupId).map { list ->
+            appDb.bookDao.flowByGroup(groupId, filterOnlyText).map { list ->
                 //排序
                 when (bookSort) {
                     1 -> list.sortedByDescending { it.latestChapterTime }
