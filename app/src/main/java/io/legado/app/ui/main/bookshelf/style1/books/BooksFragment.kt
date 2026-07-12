@@ -223,6 +223,13 @@ class BooksFragment() : BaseFragment(R.layout.fragment_books),
         binding.refreshLayout.isEnabled = enable
     }
 
+    fun setFilterOnlyText(filter: Boolean) {
+        if (filterOnlyText != filter) {
+            filterOnlyText = filter
+            upRecyclerData()
+        }
+    }
+
     /**
      * 更新书籍列表信息
      */

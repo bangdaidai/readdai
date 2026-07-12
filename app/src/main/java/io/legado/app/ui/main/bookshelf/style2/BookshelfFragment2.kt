@@ -194,7 +194,7 @@ class BookshelfFragment2() : BaseBookshelfFragment(R.layout.fragment_bookshelf2)
     override fun upGroup(data: List<BookGroup>) {
         if (data != bookGroups) {
             bookGroups = data
-            booksAdapter?.updateItems(groupId)
+            initBooksData()
             itemCount = getItemCount()
             val spanCount = when {
                 bookshelfLayout >= 3 -> bookshelfLayout - 1
