@@ -57,8 +57,7 @@
                 android:hint="@string/group_name"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
-                app:boxCollapsedPaddingTop="0dp"
-                app:hintEnabled="false">
+                app:boxCollapsedPaddingTop="0dp">
 
                 <io.legado.app.lib.theme.view.ThemeEditText
                     android:id="@+id/tie_group_name"
