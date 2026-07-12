@@ -120,6 +120,24 @@ object ThemeConfig {
                 return null
             }
             path = filePath
+        } else {
+            val file = File(path)
+            if (!file.exists()) {
+                val fileName = file.name
+                val fallbackPath = FileUtils.getPath(
+                    context.externalFiles, preferenceKey, fileName
+                )
+                if (FileUtils.exist(fallbackPath)) {
+                    path = fallbackPath
+                } else {
+                    val altPath = path.replace(
+                        "io.legado.app.release", context.packageName
+                    )
+                    if (File(altPath).exists()) {
+                        path = altPath
+                    }
+                }
+            }
         }
         if (path.endsWith(".9.png")) {
             val bgDrawable = BitmapUtils.decodeNinePatchDrawable(path)
