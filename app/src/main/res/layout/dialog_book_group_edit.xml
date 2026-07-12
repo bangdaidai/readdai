@@ -43,6 +43,7 @@
             android:id="@+id/til_group_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:minHeight="48dp"
             android:hint="@string/group_name"
             app:boxStrokeWidth="1dp"
             app:layout_constraintBottom_toTopOf="@+id/sort_container"
