@@ -57,7 +57,7 @@
             <io.legado.app.lib.theme.view.ThemeEditText
                 android:id="@+id/tie_group_name"
                 android:layout_width="match_parent"
-                android:layout_height="28dp"
+                android:layout_height="24dp"
                 android:maxLines="2"
                 android:paddingTop="0dp"
                 android:paddingBottom="0dp"
