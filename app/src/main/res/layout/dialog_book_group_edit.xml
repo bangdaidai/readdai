@@ -55,9 +55,9 @@
         <View
             android:id="@+id/underline"
             android:layout_width="0dp"
-            android:layout_height="1dp"
+            android:layout_height="2dp"
             android:layout_marginStart="12dp"
-            android:background="?attr/colorAccent"
+            android:background="@color/accent"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tie_group_name" />
