@@ -158,15 +158,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cancel"
-            android:padding="6dp" />
+            android:padding="6dp"
+            android:layout_marginEnd="16dp" />
 
         <io.legado.app.ui.widget.text.AccentTextView
             android:id="@+id/btn_ok"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/ok"
-            android:padding="6dp"
-            android:layout_marginStart="4dp" />
+            android:padding="6dp" />
     </LinearLayout>
 
 </LinearLayout>
