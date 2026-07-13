@@ -42,6 +42,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:hint="@string/group_name"
+            app:expandedHintEnabled="false"
             app:boxCollapsedPaddingTop="0dp"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
