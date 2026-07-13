@@ -18,9 +18,9 @@
         app:titleTextAppearance="@style/ToolbarTitle" />
 
     <!-- 主内容区（高度写死，AS 预览救星） -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="200dp"
         android:padding="12dp">
 
         <!-- 封面 -->
