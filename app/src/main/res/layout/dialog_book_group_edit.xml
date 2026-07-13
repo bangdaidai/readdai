@@ -20,7 +20,7 @@
     <!-- 主内容区（高度写死，AS 预览救星） -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="wrap_content"
         android:padding="12dp">
 
         <!-- 封面 -->
@@ -49,6 +49,17 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/iv_cover" />
 
+        <View
+            android:id="@+id/underline"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="2dp"
+            android:background="@color/accent"
+            app:layout_constraintStart_toEndOf="@id/iv_cover"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tie_group_name" />
+
         <!-- 排序 -->
         <LinearLayout
             android:id="@+id/sort_container"
@@ -60,7 +71,7 @@
             android:gravity="center_vertical"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tie_group_name">
+            app:layout_constraintTop_toBottomOf="@id/underline">
 
             <io.legado.app.ui.widget.text.AccentTextView
                 android:layout_width="wrap_content"
