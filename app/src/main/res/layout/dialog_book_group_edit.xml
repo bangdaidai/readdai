@@ -47,6 +47,7 @@
             android:textSize="14sp"
             android:textStyle="bold"
             android:includeFontPadding="false"
+            android:paddingBottom="2dp"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
