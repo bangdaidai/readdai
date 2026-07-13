@@ -20,8 +20,9 @@
     <!-- 主内容区（高度写死，AS 预览救星） -->
      <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:layout_height="180dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
 
         <!-- 封面 -->
         <io.legado.app.ui.widget.image.CoverImageView
