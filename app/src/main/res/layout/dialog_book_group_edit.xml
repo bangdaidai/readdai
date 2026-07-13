@@ -36,28 +36,21 @@
             app:layout_constraintBottom_toBottomOf="parent" />
 
         <!-- 分组名称 -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_group_name"
+        <io.legado.app.lib.theme.view.ThemeEditText
+            android:id="@+id/tie_group_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
+            android:layout_marginTop="5dp"
             android:hint="@string/group_name"
-            app:expandedHintEnabled="false"
-            app:boxCollapsedPaddingTop="0dp"
+            android:maxLines="1"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:textSize="14sp"
+            android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/iv_cover">
-
-            <io.legado.app.lib.theme.view.ThemeEditText
-                android:id="@+id/tie_group_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-        </com.google.android.material.textfield.TextInputLayout>
+            app:layout_constraintTop_toTopOf="@id/iv_cover" />
 
         <!-- 排序 -->
         <LinearLayout
@@ -70,7 +63,7 @@
             android:gravity="center_vertical"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/til_group_name">
+            app:layout_constraintTop_toBottomOf="@id/tie_group_name">
 
             <io.legado.app.ui.widget.text.AccentTextView
                 android:layout_width="wrap_content"
