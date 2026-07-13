@@ -37,30 +37,37 @@
             android:layout_marginTop="12dp" />
 
         <!-- 分组名称 -->
-        <io.legado.app.lib.theme.view.ThemeEditText
-            android:id="@+id/tie_group_name"
+        <LinearLayout
+            android:id="@+id/name_container"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:hint="@string/group_name"
-            android:maxLines="1"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:includeFontPadding="false"
-            android:paddingBottom="2dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
 
-        <View
-            android:id="@+id/underline"
-            android:layout_width="0dp"
-            android:layout_height="2dp"
-            android:layout_marginStart="12dp"
-            android:background="@color/accent"
-            app:layout_constraintStart_toEndOf="@id/iv_cover"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tie_group_name" />
+            <io.legado.app.ui.widget.text.AccentTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/group_name"
+                android:textSize="14sp"
+                android:textColor="@color/primaryText" />
+
+            <io.legado.app.lib.theme.view.ThemeEditText
+                android:id="@+id/tie_group_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="@string/group_name"
+                android:maxLines="1"
+                android:includeFontPadding="false"
+                android:paddingBottom="2dp"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <!-- 排序 -->
         <LinearLayout
@@ -73,7 +80,7 @@
             android:gravity="center_vertical"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/underline">
+            app:layout_constraintTop_toBottomOf="@id/name_container">
 
             <io.legado.app.ui.widget.text.AccentTextView
                 android:layout_width="wrap_content"
