@@ -48,7 +48,7 @@
             android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/iv_cover" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <View
             android:id="@+id/underline"
