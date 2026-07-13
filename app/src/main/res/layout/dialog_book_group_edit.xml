@@ -20,7 +20,7 @@
     <!-- 主内容区（高度写死，AS 预览救星） -->
      <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="wrap_content"
         android:padding="12dp">
 
         <!-- 封面 -->
@@ -32,8 +32,7 @@
             android:src="@drawable/image_cover_default"
             android:contentDescription="@string/img_cover"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- 分组名称 -->
         <io.legado.app.lib.theme.view.ThemeEditText
