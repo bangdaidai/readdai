@@ -38,18 +38,13 @@
         <!-- 分组名称 -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_group_name"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:minHeight="48dp"
             android:layout_marginStart="12dp"
             android:hint="@string/group_name"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/iv_cover"
-            app:layout_constraintBottom_toTopOf="@id/sort_container"
-            app:layout_constraintVertical_chainStyle="spread_inside"
-            app:layout_constraintVertical_weight="1">
+            app:layout_constraintTop_toTopOf="@id/iv_cover">
 
             <io.legado.app.lib.theme.view.ThemeEditText
                 android:id="@+id/tie_group_name"
@@ -57,10 +52,7 @@
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:textSize="14sp"
-                android:textStyle="bold"
-                android:gravity="center_vertical"
-                android:paddingTop="0dp"
-                android:paddingBottom="8dp" />
+                android:textStyle="bold" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- 排序 -->
@@ -74,8 +66,7 @@
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/til_group_name"
-            app:layout_constraintBottom_toTopOf="@id/cb_enable_refresh"
-            app:layout_constraintVertical_weight="1">
+            app:layout_constraintBottom_toTopOf="@id/cb_enable_refresh">
 
             <io.legado.app.ui.widget.text.AccentTextView
                 android:layout_width="wrap_content"
@@ -108,8 +99,7 @@
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/sort_container"
-            app:layout_constraintBottom_toTopOf="@id/cb_enable_only_read"
-            app:layout_constraintVertical_weight="1" />
+            app:layout_constraintBottom_toTopOf="@id/cb_enable_only_read" />
 
         <!-- 仅更新已读 -->
         <io.legado.app.lib.theme.view.ThemeCheckBox
@@ -125,8 +115,7 @@
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cb_enable_refresh"
-            app:layout_constraintBottom_toTopOf="@id/cb_filter_only_text"
-            app:layout_constraintVertical_weight="1" />
+            app:layout_constraintBottom_toTopOf="@id/cb_filter_only_text" />
 
         <!-- 只显示小说 -->
         <io.legado.app.lib.theme.view.ThemeCheckBox
@@ -142,8 +131,7 @@
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cb_enable_only_read"
-            app:layout_constraintBottom_toBottomOf="@id/iv_cover"
-            app:layout_constraintVertical_weight="1" />
+            app:layout_constraintBottom_toBottomOf="@id/iv_cover" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
