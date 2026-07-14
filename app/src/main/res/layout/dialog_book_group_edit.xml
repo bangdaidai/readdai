@@ -37,54 +37,26 @@
             android:layout_marginTop="12dp" />
 
         <!-- 分组名称 -->
-        <LinearLayout
+        <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/name_container"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginTop="10dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:hint="@string/group_name"
+            app:hintTextAppearance="@style/TextAppearance.AppCompat.Small"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <io.legado.app.ui.widget.text.AccentTextView
-                android:layout_width="wrap_content"
+            <io.legado.app.lib.theme.view.ThemeEditText
+                android:id="@+id/tie_group_name"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="名称"
+                android:maxLines="1"
                 android:textSize="14sp"
-                android:textColor="@color/primaryText"
-                android:layout_gravity="bottom"
-                android:paddingBottom="3dp" />
-
-            <LinearLayout
-                android:id="@+id/edit_container"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <io.legado.app.lib.theme.view.ThemeEditText
-                    android:id="@+id/tie_group_name"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="3dp"
-                    android:hint="名称"
-                    android:maxLines="1"
-                    android:includeFontPadding="false"
-                    android:paddingBottom="2dp"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <View
-                    android:id="@+id/underline"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginStart="3dp"
-                    android:background="@android:color/transparent" />
-            </LinearLayout>
-        </LinearLayout>
+                android:textStyle="bold" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- 排序 -->
         <LinearLayout
