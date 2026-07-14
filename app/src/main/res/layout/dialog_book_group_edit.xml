@@ -69,7 +69,7 @@
                     android:id="@+id/tie_group_name"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="3dp"
                     android:hint="名称"
                     android:maxLines="1"
                     android:includeFontPadding="false"
@@ -81,7 +81,7 @@
                     android:id="@+id/underline"
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="3dp"
                     android:background="@android:color/transparent" />
             </LinearLayout>
         </LinearLayout>
