@@ -40,7 +40,7 @@
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/name_container"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="45dp"
             android:layout_marginStart="12dp"
             android:layout_marginTop="10dp"
             android:hint="@string/group_name"
@@ -62,9 +62,8 @@
         <LinearLayout
             android:id="@+id/sort_container"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="45dp"
             android:layout_marginStart="12dp"
-            android:layout_marginTop="6dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
@@ -92,12 +91,11 @@
         <io.legado.app.lib.theme.view.ThemeCheckBox
             android:id="@+id/cb_enable_refresh"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="30dp"
             android:layout_marginStart="6dp"
             android:text="@string/allow_drop_down_refresh"
             android:textSize="13sp"
             android:gravity="center_vertical"
-            android:layout_height="24dp"
             android:minHeight="0dp"
             android:paddingTop="0dp"
             android:paddingBottom="0dp"
@@ -109,7 +107,7 @@
         <io.legado.app.lib.theme.view.ThemeCheckBox
             android:id="@+id/cb_enable_only_read"
             android:layout_width="0dp"
-            android:layout_height="24dp"
+            android:layout_height="30dp"
             android:layout_marginStart="6dp"
             android:text="@string/only_update_read"
             android:textSize="13sp"
@@ -125,7 +123,7 @@
         <io.legado.app.lib.theme.view.ThemeCheckBox
             android:id="@+id/cb_filter_only_text"
             android:layout_width="0dp"
-            android:layout_height="24dp"
+            android:layout_height="30dp"
             android:layout_marginStart="6dp"
             android:text="只显示小说"
             android:textSize="13sp"
