@@ -77,6 +77,7 @@ class GroupEditDialog() : BaseDialogFragment(R.layout.dialog_book_group_edit) {
         // 为对话框内容区域设置背景色
         val backgroundColor = ThemeStore.backgroundColor(requireContext())
         binding.root.setBackgroundColor(backgroundColor)
+        binding.underline.setBackgroundColor(ThemeStore.accentColor(requireContext()))
         @Suppress("DEPRECATION")
         bookGroup = arguments?.getParcelable("group")
         bookGroup?.let {
