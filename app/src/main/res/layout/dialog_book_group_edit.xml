@@ -56,7 +56,7 @@
                 android:maxLines="1"
                 android:textSize="14sp"
                 android:textStyle="bold" />
-        </com.google.android.material.textfield.TextInputLayout>
+        </io.legado.app.ui.widget.text.TextInputLayout>
 
         <!-- 排序 -->
         <LinearLayout
