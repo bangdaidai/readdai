@@ -108,6 +108,8 @@
             android:minHeight="0dp"
             android:paddingTop="0dp"
             android:paddingBottom="0dp"
+            android:scaleX="0.85"
+            android:scaleY="0.85"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/sort_container" />
@@ -124,6 +126,8 @@
             android:minHeight="0dp"
             android:paddingTop="0dp"
             android:paddingBottom="0dp"
+            android:scaleX="0.85"
+            android:scaleY="0.85"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cb_enable_refresh" />
@@ -140,6 +144,8 @@
             android:minHeight="0dp"
             android:paddingTop="0dp"
             android:paddingBottom="0dp"
+            android:scaleX="0.85"
+            android:scaleY="0.85"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/cb_enable_only_read" />
