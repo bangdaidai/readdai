@@ -44,7 +44,6 @@
             android:layout_marginStart="12dp"
             android:layout_marginTop="0dp"
             android:hint="@string/group_name"
-            android:paddingHorizontal="0dp"
             app:layout_constraintStart_toEndOf="@id/iv_cover"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -55,7 +54,10 @@
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:textSize="14sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:paddingTop="0dp"
+                android:paddingBottom="2dp"
+                android:gravity="bottom" />
         </io.legado.app.ui.widget.text.TextInputLayout>
 
         <!-- 排序 -->
