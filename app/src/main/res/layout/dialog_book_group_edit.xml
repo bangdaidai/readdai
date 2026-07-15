@@ -55,7 +55,7 @@
             <io.legado.app.lib.theme.view.ThemeEditText
                 android:id="@+id/tie_group_name"
                 android:layout_width="match_parent"
-                android:layout_height="42dp"
+                android:layout_height="40dp"
                 android:maxLines="1"
                 android:textSize="14sp"
                 android:textStyle="bold"
@@ -100,7 +100,7 @@
         <io.legado.app.lib.theme.view.ThemeCheckBox
             android:id="@+id/cb_enable_refresh"
             android:layout_width="0dp"
-            android:layout_height="24dp"
+            android:layout_height="26dp"
             android:layout_marginStart="6dp"
             android:text="@string/allow_drop_down_refresh"
             android:textSize="13sp"
@@ -116,7 +116,7 @@
         <io.legado.app.lib.theme.view.ThemeCheckBox
             android:id="@+id/cb_enable_only_read"
             android:layout_width="0dp"
-            android:layout_height="24dp"
+            android:layout_height="26dp"
             android:layout_marginStart="6dp"
             android:text="@string/only_update_read"
             android:textSize="13sp"
@@ -132,7 +132,7 @@
         <io.legado.app.lib.theme.view.ThemeCheckBox
             android:id="@+id/cb_filter_only_text"
             android:layout_width="0dp"
-            android:layout_height="24dp"
+            android:layout_height="26dp"
             android:layout_marginStart="6dp"
             android:text="只显示小说"
             android:textSize="13sp"
