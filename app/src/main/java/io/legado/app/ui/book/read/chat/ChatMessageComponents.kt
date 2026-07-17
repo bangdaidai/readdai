@@ -200,49 +200,51 @@ private fun AssistantMessageBubble(
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (totalBranches > 1 && onSwitchBranch != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(14.dp)
-                            .clickable(enabled = branchIndex > 0) {
-                                onSwitchBranch(-1)
-                            },
-                        tint = if (branchIndex > 0) Color(context.secondaryTextColor)
-                               else Color(context.secondaryTextColor).copy(alpha = 0.3f)
-                    )
-                    Text(
-                        text = "${branchIndex + 1}/$totalBranches",
-                        color = Color(context.secondaryTextColor),
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(14.dp)
-                            .clickable(enabled = branchIndex < totalBranches - 1) {
-                                onSwitchBranch(1)
-                            },
-                        tint = if (branchIndex < totalBranches - 1) Color(context.secondaryTextColor)
-                               else Color(context.secondaryTextColor).copy(alpha = 0.3f)
-                    )
+        if (!isStreaming) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (totalBranches > 1 && onSwitchBranch != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clickable(enabled = branchIndex > 0) {
+                                    onSwitchBranch(-1)
+                                },
+                            tint = if (branchIndex > 0) Color(context.secondaryTextColor)
+                                   else Color(context.secondaryTextColor).copy(alpha = 0.3f)
+                        )
+                        Text(
+                            text = "${branchIndex + 1}/$totalBranches",
+                            color = Color(context.secondaryTextColor),
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clickable(enabled = branchIndex < totalBranches - 1) {
+                                    onSwitchBranch(1)
+                                },
+                            tint = if (branchIndex < totalBranches - 1) Color(context.secondaryTextColor)
+                                   else Color(context.secondaryTextColor).copy(alpha = 0.3f)
+                        )
+                    }
                 }
+                TextButtonSmall(text = "复制", onClick = onCopy)
+                TextButtonSmall(text = "分享", onClick = onShare)
+                TextButtonSmall(text = "重写", onClick = onRegenerate)
+                TextButtonSmall(text = "删除", onClick = onDelete)
             }
-            TextButtonSmall(text = "复制", onClick = onCopy)
-            TextButtonSmall(text = "分享", onClick = onShare)
-            TextButtonSmall(text = "重写", onClick = onRegenerate)
-            TextButtonSmall(text = "删除", onClick = onDelete)
         }
     }
 }

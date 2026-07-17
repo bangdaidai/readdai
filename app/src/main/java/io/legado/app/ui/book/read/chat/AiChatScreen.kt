@@ -79,6 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.legado.app.R
+import io.legado.app.help.config.ThemeConfig
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.backgroundCard
@@ -166,17 +167,25 @@ fun AiChatScreen(
                 )
             }
         ) {
+            val hasBgImage = remember(context) {
+                try {
+                    ThemeConfig.getBgImage(context, context.resources.displayMetrics) != null
+                } catch (_: Exception) { false }
+            }
+            val pageBgColor = Color(context.backgroundColor)
+            val effectiveBgColor = if (hasBgImage) Color.Transparent else pageBgColor
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(context.backgroundColor))
+                    .background(effectiveBgColor)
             ) {
                 val systemBottomPadding = maxOf(
                     WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
                     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 )
                 val topContentPadding = 88.dp
-                val bottomContentPadding = 120.dp + systemBottomPadding
+                val bottomContentPadding = 60.dp + systemBottomPadding
 
                 val isNearBottom by remember {
                     derivedStateOf {
@@ -270,38 +279,12 @@ fun AiChatScreen(
                         .imePadding()
                         .navigationBarsPadding()
                 ) {
-                    val bgColor = Color(context.backgroundCard)
-                    Spacer(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(bottomContentPadding - systemBottomPadding)
-                            .background(
-                                Brush.verticalGradient(
-                                    colorStops = arrayOf(
-                                        0f to bgColor.copy(alpha = 0f),
-                                        0.58f to bgColor.copy(alpha = 0f),
-                                        0.82f to bgColor.copy(alpha = 0.64f),
-                                        1f to bgColor.copy(alpha = 0.88f)
-                                    )
-                                )
-                            )
-                    )
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(systemBottomPadding)
-                            .background(bgColor.copy(alpha = 0.88f))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
+                            .padding(4.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 32.dp)
-                        ) {
-                            if (!isAtBottom && uiState.messages.isNotEmpty()) {
+                        if (!isAtBottom && uiState.messages.isNotEmpty()) {
                                 Box(
                                     modifier = Modifier.fillMaxWidth(),
                                     contentAlignment = Alignment.Center
@@ -410,13 +393,13 @@ fun AiChatScreen(
                             contentAlignment = Alignment.CenterStart
                         ) {
                             Surface(
-                                modifier = Modifier.height(40.dp),
+                                modifier = Modifier.height(34.dp),
                                 shape = RoundedCornerShape(50),
                                 color = Color(context.backgroundCard)
                             ) {
                                 Column(
                                     modifier = Modifier
-                                        .height(40.dp)
+                                        .height(34.dp)
                                         .padding(horizontal = 12.dp),
                                     horizontalAlignment = Alignment.Start,
                                     verticalArrangement = Arrangement.Center
