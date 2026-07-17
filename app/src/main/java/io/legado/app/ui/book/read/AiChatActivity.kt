@@ -33,7 +33,9 @@ class AiChatActivity : AppCompatActivity() {
                 selectedText = selectedText,
                 onFinish = { finish() },
                 onOpenSettings = {
-                    ConfigActivity.startConfig(this@AiChatActivity, ConfigTag.AI_CONFIG)
+                    startActivity(Intent(this@AiChatActivity, ConfigActivity::class.java).apply {
+                        putExtra("configTag", ConfigTag.AI_CONFIG)
+                    })
                 }
             )
         }

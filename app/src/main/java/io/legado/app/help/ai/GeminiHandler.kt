@@ -1,9 +1,5 @@
 package io.legado.app.help.ai
 
-import io.legado.app.help.ai.AiEntities.ChatMessage
-import io.legado.app.help.ai.AiEntities.ChatTool
-import io.legado.app.help.ai.AiEntities.StreamChunk
-import io.legado.app.help.ai.AiEntities.StreamResponseResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -161,8 +157,8 @@ class GeminiHandler : BaseProtocolHandler() {
         onChunk: suspend (StreamChunk) -> Unit
     ): StreamResponseResult {
         val content = StringBuilder()
-        val toolSteps = mutableListOf<AiEntities.ToolStep>()
-        var currentToolStep: AiEntities.ToolStep? = null
+        val toolSteps = mutableListOf<ToolStep>()
+        var currentToolStep: ToolStep? = null
         var currentToolIndex = 0
 
         val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
@@ -194,11 +190,11 @@ class GeminiHandler : BaseProtocolHandler() {
                                 val args = functionCall.optJSONObject("args")?.toString() ?: "{}"
                                 if (currentToolStep == null || currentToolStep.name != name) {
                                     currentToolStep?.let { toolSteps.add(it) }
-                                    currentToolStep = AiEntities.ToolStep(
+                                    currentToolStep = ToolStep(
                                         id = name,
                                         name = name,
                                         input = args,
-                                        status = AiEntities.ToolStep.Status.RUNNING
+                                        status = ToolStepStatus.RUNNING
                                     )
                                 }
                                 onChunk(StreamChunk.ToolCallDelta(currentToolIndex, name, args))
@@ -208,7 +204,7 @@ class GeminiHandler : BaseProtocolHandler() {
                     val finishReason = candidate.optString("finishReason", "")
                     if (finishReason.isNotEmpty()) {
                         currentToolStep?.let {
-                            toolSteps.add(it.copy(status = AiEntities.ToolStep.Status.PENDING))
+                            toolSteps.add(it.copy(status = ToolStepStatus.PENDING))
                             currentToolIndex++
                             currentToolStep = null
                         }
@@ -219,7 +215,7 @@ class GeminiHandler : BaseProtocolHandler() {
             }
         }
         reader.close()
-        currentToolStep?.let { toolSteps.add(it.copy(status = AiEntities.ToolStep.Status.PENDING)) }
+        currentToolStep?.let { toolSteps.add(it.copy(status = ToolStepStatus.PENDING)) }
         return StreamResponseResult(content.toString(), "", toolSteps)
     }
 }

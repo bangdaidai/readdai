@@ -1,13 +1,13 @@
 package io.legado.app.help.ai.repository
 
 import io.legado.app.help.ai.AiApiClient
-import io.legado.app.help.ai.AiEntities
-import io.legado.app.help.ai.AiEntities.ChatMessage
-import io.legado.app.help.ai.AiEntities.ChatTool
-import io.legado.app.help.ai.AiEntities.StreamChunk
-import io.legado.app.help.ai.AiEntities.StreamResponseResult
+import io.legado.app.help.ai.AiChatSession
 import io.legado.app.help.ai.AiHistoryStore
 import io.legado.app.help.ai.AiProviderEntity
+import io.legado.app.help.ai.ChatMessage
+import io.legado.app.help.ai.ChatTool
+import io.legado.app.help.ai.StreamChunk
+import io.legado.app.help.ai.StreamResponseResult
 import io.legado.app.help.ai.gateway.AiChatGateway
 import io.legado.app.help.ai.gateway.AiHistoryGateway
 import io.legado.app.help.ai.gateway.AiProviderGateway
@@ -71,11 +71,11 @@ class AiProviderRepository : AiProviderGateway {
 
 class AiHistoryRepository : AiHistoryGateway {
 
-    override suspend fun getSessions(): List<AiEntities.AiChatSession> {
+    override suspend fun getSessions(): List<AiChatSession> {
         return AiHistoryStore.readHistory()
     }
 
-    override suspend fun saveSession(session: AiEntities.AiChatSession) {
+    override suspend fun saveSession(session: AiChatSession) {
         AiHistoryStore.upsertSession(session)
     }
 

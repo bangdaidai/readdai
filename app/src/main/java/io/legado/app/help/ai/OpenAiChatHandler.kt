@@ -1,9 +1,5 @@
 package io.legado.app.help.ai
 
-import io.legado.app.help.ai.AiEntities.ChatMessage
-import io.legado.app.help.ai.AiEntities.ChatTool
-import io.legado.app.help.ai.AiEntities.StreamChunk
-import io.legado.app.help.ai.AiEntities.StreamResponseResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -128,8 +124,8 @@ class OpenAiChatHandler : BaseProtocolHandler() {
     ): StreamResponseResult {
         val content = StringBuilder()
         val reasoningContent = StringBuilder()
-        val toolSteps = mutableListOf<AiEntities.ToolStep>()
-        var currentToolStep: AiEntities.ToolStep? = null
+        val toolSteps = mutableListOf<ToolStep>()
+        var currentToolStep: ToolStep? = null
 
         val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
         var line: String?
@@ -170,11 +166,11 @@ class OpenAiChatHandler : BaseProtocolHandler() {
 
                     if (currentToolStep == null || currentToolStep.id != id) {
                         currentToolStep?.let { toolSteps.add(it) }
-                        currentToolStep = AiEntities.ToolStep(
+                        currentToolStep = ToolStep(
                             id = id,
                             name = name,
                             input = args,
-                            status = AiEntities.ToolStep.Status.RUNNING
+                            status = ToolStepStatus.RUNNING
                         )
                     } else {
                         currentToolStep = currentToolStep.copy(
@@ -187,7 +183,7 @@ class OpenAiChatHandler : BaseProtocolHandler() {
                 val finishReason = choices.getJSONObject(0).optString("finish_reason", "")
                 if (finishReason.isNotEmpty() && finishReason != "null") {
                     currentToolStep?.let {
-                        toolSteps.add(it.copy(status = AiEntities.ToolStep.Status.PENDING))
+                        toolSteps.add(it.copy(status = ToolStepStatus.PENDING))
                         currentToolStep = null
                     }
                     onChunk(StreamChunk.Finish(finishReason))
@@ -196,7 +192,7 @@ class OpenAiChatHandler : BaseProtocolHandler() {
             }
         }
         reader.close()
-        currentToolStep?.let { toolSteps.add(it.copy(status = AiEntities.ToolStep.Status.PENDING)) }
+        currentToolStep?.let { toolSteps.add(it.copy(status = ToolStepStatus.PENDING)) }
         return StreamResponseResult(
             content.toString(),
             reasoningContent.toString(),

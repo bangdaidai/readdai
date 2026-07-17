@@ -1,7 +1,6 @@
 package io.legado.app.help.ai
 
 data class ChatMessageItem(
-    val id: String = java.util.UUID.randomUUID().toString(),
     val role: String,
     val content: String,
     val reasoningContent: String? = "",
@@ -11,7 +10,8 @@ data class ChatMessageItem(
     val branchIndex: Int = 0,
     val isSelected: Boolean = true,
     var isExpanded: Boolean = true,
-    var isReasoningExpanded: Boolean = false
+    var isReasoningExpanded: Boolean = false,
+    val id: String = java.util.UUID.randomUUID().toString()
 ) {
     fun toMap(): Map<String, Any> = mapOf(
         "role" to role,

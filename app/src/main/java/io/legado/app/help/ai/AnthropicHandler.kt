@@ -1,9 +1,5 @@
 package io.legado.app.help.ai
 
-import io.legado.app.help.ai.AiEntities.ChatMessage
-import io.legado.app.help.ai.AiEntities.ChatTool
-import io.legado.app.help.ai.AiEntities.StreamChunk
-import io.legado.app.help.ai.AiEntities.StreamResponseResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -173,8 +169,8 @@ class AnthropicHandler : BaseProtocolHandler() {
     ): StreamResponseResult {
         val content = StringBuilder()
         val reasoningContent = StringBuilder()
-        val toolSteps = mutableListOf<AiEntities.ToolStep>()
-        var currentToolStep: AiEntities.ToolStep? = null
+        val toolSteps = mutableListOf<ToolStep>()
+        var currentToolStep: ToolStep? = null
         var currentToolIndex = 0
 
         val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
@@ -192,11 +188,11 @@ class AnthropicHandler : BaseProtocolHandler() {
                         if (block?.optString("type") == "tool_use") {
                             val id = block.optString("id", "")
                             val name = block.optString("name", "")
-                            currentToolStep = AiEntities.ToolStep(
+                            currentToolStep = ToolStep(
                                 id = id,
                                 name = name,
                                 input = "",
-                                status = AiEntities.ToolStep.Status.RUNNING
+                                status = ToolStepStatus.RUNNING
                             )
                         }
                     }
@@ -223,7 +219,7 @@ class AnthropicHandler : BaseProtocolHandler() {
                     }
                     "content_block_stop" -> {
                         currentToolStep?.let {
-                            toolSteps.add(it.copy(status = AiEntities.ToolStep.Status.PENDING))
+                            toolSteps.add(it.copy(status = ToolStepStatus.PENDING))
                             currentToolIndex++
                             currentToolStep = null
                         }

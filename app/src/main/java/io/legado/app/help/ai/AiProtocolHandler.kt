@@ -1,10 +1,5 @@
 package io.legado.app.help.ai
 
-import io.legado.app.help.ai.AiEntities.ChatMessage
-import io.legado.app.help.ai.AiEntities.ChatTool
-import io.legado.app.help.ai.AiEntities.StreamChunk
-import io.legado.app.help.ai.AiEntities.StreamResponseResult
-
 interface AiProtocolHandler {
 
     val protocols: Set<String>

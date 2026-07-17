@@ -69,25 +69,6 @@ class AiApiClient(
     }
 
     /**
-     * 工具调用结果
-     */
-    data class ToolCall(
-        val id: String,
-        val name: String,
-        val arguments: String
-    )
-
-    /**
-     * 流式响应解析结果
-     */
-    data class StreamChunk(
-        val content: String = "",
-        val reasoningContent: String = "",
-        val toolCalls: List<ToolCall> = emptyList(),
-        val finishReason: String? = null
-    )
-
-    /**
      * 获取可用模型列表
      * 完善实现，支持更多服务商
      */
@@ -449,7 +430,9 @@ data class TestConnectionResult(
  */
 data class StreamResponseResult(
     val content: String,
-    val finishReason: String?
+    val reasoningContent: String = "",
+    val toolSteps: List<ToolStep> = emptyList(),
+    val finishReason: String? = null
 )
 
 /**
@@ -516,6 +499,25 @@ data class ChatTool(
             })
         }
     }
+
+    fun toAnthropicJson(): JSONObject {
+        return JSONObject().apply {
+            put("name", function.name)
+            put("description", function.description)
+            put("input_schema", JSONObject().apply {
+                put("type", function.parameters.type)
+                val props = JSONObject()
+                function.parameters.properties.forEach { (name, prop) ->
+                    props.put(name, JSONObject().apply {
+                        put("type", prop.type)
+                        put("description", prop.description)
+                    })
+                }
+                put("properties", props)
+                put("required", JSONArray(function.parameters.required))
+            })
+        }
+    }
 }
 
 /**
@@ -556,4 +558,17 @@ fun AiToolDefinition.toChatTool(): ChatTool {
             )
         )
     )
+}
+
+data class ToolCall(
+    val id: String,
+    val name: String,
+    val arguments: String
+)
+
+sealed class StreamChunk {
+    data class Content(val content: String) : StreamChunk()
+    data class Reasoning(val content: String) : StreamChunk()
+    data class ToolCallDelta(val index: Int, val name: String, val arguments: String) : StreamChunk()
+    data class Finish(val reason: String) : StreamChunk()
 }

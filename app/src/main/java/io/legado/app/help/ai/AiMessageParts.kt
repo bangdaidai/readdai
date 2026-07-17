@@ -22,7 +22,7 @@ sealed interface AiMessagePart {
         val input: String = "",
         val output: String? = null,
         val approvalState: AiToolApprovalState = AiToolApprovalState.APPROVED,
-        val status: AiEntities.ToolStep.Status = AiEntities.ToolStep.Status.PENDING
+        val status: ToolStepStatus = ToolStepStatus.PENDING
     ) : AiMessagePart
 
     @Serializable

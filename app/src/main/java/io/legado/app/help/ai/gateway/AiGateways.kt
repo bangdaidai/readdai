@@ -1,11 +1,11 @@
 package io.legado.app.help.ai.gateway
 
-import io.legado.app.help.ai.AiEntities
-import io.legado.app.help.ai.AiEntities.ChatMessage
-import io.legado.app.help.ai.AiEntities.ChatTool
-import io.legado.app.help.ai.AiEntities.StreamChunk
-import io.legado.app.help.ai.AiEntities.StreamResponseResult
+import io.legado.app.help.ai.AiChatSession
 import io.legado.app.help.ai.AiProviderEntity
+import io.legado.app.help.ai.ChatMessage
+import io.legado.app.help.ai.ChatTool
+import io.legado.app.help.ai.StreamChunk
+import io.legado.app.help.ai.StreamResponseResult
 
 interface AiChatGateway {
 
@@ -37,8 +37,8 @@ interface AiProviderGateway {
 }
 
 interface AiHistoryGateway {
-    suspend fun getSessions(): List<AiEntities.AiChatSession>
-    suspend fun saveSession(session: AiEntities.AiChatSession)
+    suspend fun getSessions(): List<AiChatSession>
+    suspend fun saveSession(session: AiChatSession)
     suspend fun deleteSession(id: String)
     suspend fun clear()
 }
