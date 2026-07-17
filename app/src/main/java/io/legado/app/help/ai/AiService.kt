@@ -14,7 +14,18 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
-class AiService(private val context: Context) {
+class AiService private constructor(private val context: Context) {
+
+    companion object {
+        @Volatile
+        private var instance: AiService? = null
+
+        fun getInstance(context: Context): AiService {
+            return instance ?: synchronized(this) {
+                instance ?: AiService(context.applicationContext).also { instance = it }
+            }
+        }
+    }
 
     private val aiDatabase = AiDatabase.getInstance(context)
     private var promptManager: PromptManager? = null
@@ -84,42 +95,29 @@ class AiService(private val context: Context) {
      */
     @Deprecated("Use ReadingContextService instead", ReplaceWith("ReadingContextService.updateContext(...)"))
     fun setToolContext(book: Book?, chapter: BookChapter?, content: String?) {
-        toolContext = AiToolContext(
-            currentBook = book,
-            currentChapter = chapter,
-            chapterContent = content,
-            bookUrl = book?.bookUrl ?: "",
-            appDatabase = appDb,
-            appContext = context
-        )
+        toolContext = createToolContext(book, chapter, content)
         toolContext?.let { AiTools.registerAll(it) }
-        
-        // 同时更新ReadingContextService以保持同步
-        updateReadingContextFromLegacy(book, chapter, content)
-    }
-    
-    /**
-     * 从旧版上下文更新ReadingContextService
-     */
-    private fun updateReadingContextFromLegacy(book: Book?, chapter: BookChapter?, content: String?) {
-        if (book == null) return
 
-        ReadingContextService.updateContext(ReadingContextUpdate(
-            bookId = book.bookUrl,
-            bookTitle = book.name,
-            author = book.author ?: "",
-            currentChapter = chapter?.let {
-                ReadingContext.ChapterInfo(
-                    index = it.index,
-                    title = it.title,
-                    url = it.url
-                )
-            },
-            surroundingText = content ?: ""
-        ))
-        
-        // 更新toolContext（Assistant将在下次请求时自动使用新上下文）
-        toolContext = AiToolContext(
+        if (book != null) {
+            ReadingContextService.updateContext(ReadingContextUpdate(
+                bookId = book.bookUrl,
+                bookTitle = book.name,
+                author = book.author ?: "",
+                currentChapter = chapter?.let {
+                    ReadingContext.ChapterInfo(
+                        index = it.index,
+                        title = it.title,
+                        url = it.url
+                    )
+                },
+                surroundingText = content ?: ""
+            ))
+        }
+    }
+
+    private fun createToolContext(book: Book?, chapter: BookChapter?, content: String?): AiToolContext? {
+        if (book == null) return null
+        return AiToolContext(
             currentBook = book,
             currentChapter = chapter,
             chapterContent = content,
@@ -504,6 +502,35 @@ class AiService(private val context: Context) {
 
     private fun getCurrentProviderSync(): AiProviderEntity? {
         return currentProvider
+    }
+
+    private fun buildBaseMessages(systemPrompt: String): MutableList<ChatMessage> {
+        return mutableListOf(ChatMessage("system", systemPrompt))
+    }
+
+    private fun buildBaseMessageMaps(systemPrompt: String): MutableList<Map<String, Any>> {
+        return mutableListOf(mapOf("role" to "system", "content" to systemPrompt))
+    }
+
+    private fun getSystemPrompt(): String = promptManager?.getSystemPrompt() ?: ""
+
+    private fun applyVariables(content: String, variables: Map<String, String>): String {
+        var result = content
+        variables.forEach { (key, value) ->
+            result = result.replace("{$key}", value)
+        }
+        return result
+    }
+
+    private suspend fun <T> withClient(block: suspend (AiApiClient) -> T): T? {
+        val provider = getCurrentProviderSync() ?: return null
+        val client = AiApiClient(provider)
+        currentApiClient = client
+        return try {
+            block(client)
+        } finally {
+            currentApiClient = null
+        }
     }
 
     fun executePrompt(

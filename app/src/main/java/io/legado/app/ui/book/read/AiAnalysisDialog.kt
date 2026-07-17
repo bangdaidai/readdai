@@ -119,7 +119,7 @@ class AiAnalysisDialog : DialogFragment() {
     }
 
     private fun executeSkill() {
-        aiService = AiService(requireContext())
+        aiService = AiService.getInstance(requireContext())
 
         CoroutineScope(Dispatchers.Main).launch {
             aiService?.init()

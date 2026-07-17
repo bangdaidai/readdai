@@ -27,11 +27,7 @@ import java.util.concurrent.TimeUnit
  */
 class AiApiClient(
     private val provider: AiProviderEntity,
-    private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+    private val okHttpClient: OkHttpClient = aiOkHttpClient
 ) {
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
@@ -40,6 +36,32 @@ class AiApiClient(
     private var currentProvider: AiProviderEntity = provider
     private var currentCall: Call? = null
     private var currentJob: Job? = null
+
+    private suspend fun <T> executeWithRetry(
+        maxAttempts: Int = 3,
+        block: suspend () -> Result<T>
+    ): Result<T> {
+        return try {
+            Result.success(retryWithBackoff(
+                maxAttempts = maxAttempts,
+                onRetry = { attempt, delayMs, error ->
+                    AiLogManager.log(
+                        AiLogManager.LogLevel.WARNING,
+                        "ApiClient",
+                        "请求失败，第 ${attempt} 次重试 (${delayMs}ms): ${error.message}"
+                    )
+                    if (currentProvider.getApiKeyList().size > 1) {
+                        advanceKeyIndex()
+                    }
+                }
+            ) {
+                val result = block()
+                result.getOrThrow()
+            })
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     fun updateProvider(provider: AiProviderEntity) {
         currentProvider = provider
@@ -380,85 +402,69 @@ class AiApiClient(
         onChunk: suspend (String) -> Unit
     ): Result<String> = withContext(Dispatchers.IO) {
         AiLogManager.log(AiLogManager.LogLevel.INFO, "ApiClient", "发送API请求: provider=${currentProvider.identifier}, model=${currentProvider.model}, messages=${messages.size}")
-        
-        try {
-            val apiKey = getCurrentApiKey() ?: return@withContext Result.failure(
-                IOException("No valid API key")
-            )
 
-            val requestBody = buildRequestBody(messages)
-            val headers = mutableMapOf(
-                "Authorization" to "Bearer $apiKey",
-                "Content-Type" to "application/json"
-            )
-
-            // 根据协议添加额外header
-            when (currentProvider.protocol) {
-                "claude" -> {
-                    headers["x-api-key"] = apiKey
-                    headers["anthropic-version"] = "2023-06-01"
-                }
-                "gemini" -> {
-                    headers.remove("Authorization")
-                    headers["Authorization"] to "Bearer $apiKey"
-                }
-            }
-
-            val requestBuilder = Request.Builder()
-                .url(buildChatUrl(currentProvider))
-
-            headers.forEach { (key, value) ->
-                requestBuilder.addHeader(key, value)
-            }
-
-            requestBuilder.post(requestBody)
-
-            val request = requestBuilder.build()
-
-            // 保存当前调用以便取消
-            currentCall = okHttpClient.newCall(request)
-
-            val response = currentCall!!.execute()
-
-            if (!response.isSuccessful) {
-                AiLogManager.log(AiLogManager.LogLevel.ERROR, "ApiClient", "API请求失败: HTTP ${response.code}, ${response.message}")
-                currentCall = null
-                return@withContext Result.failure(
-                    IOException("HTTP ${response.code}: ${response.message}")
-                )
-            }
-
-            val body = response.body ?: run {
-                AiLogManager.log(AiLogManager.LogLevel.ERROR, "ApiClient", "API响应为空")
-                currentCall = null
-                return@withContext Result.failure(
-                    IOException("Empty response body")
-                )
-            }
-
-            // 解析流式响应
-            val content = parseStreamResponse(body.byteStream()) { chunk ->
-                onChunk(chunk)
-            }
-
-            currentCall = null
-            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "ApiClient", "API响应成功: content长度=${content.length}")
-            Result.success(content)
-        } catch (e: java.lang.SecurityException) {
-            // 请求被取消
-            AiLogManager.log(AiLogManager.LogLevel.WARNING, "ApiClient", "请求被取消")
-            currentCall = null
-            Result.failure(IOException("请求已取消"))
-        } catch (e: java.io.InterruptedIOException) {
-            // 请求被中断（取消）
-            AiLogManager.log(AiLogManager.LogLevel.WARNING, "ApiClient", "请求被中断")
-            currentCall = null
-            Result.failure(IOException("请求已取消"))
-        } catch (e: Exception) {
-            AiLogManager.log(AiLogManager.LogLevel.ERROR, "ApiClient", "API请求异常", e)
-            currentCall = null
-            Result.failure(e)
+        executeWithRetry {
+            doChatOnce(messages, onChunk)
         }
+    }
+
+    private suspend fun doChatOnce(
+        messages: List<ChatMessage>,
+        onChunk: suspend (String) -> Unit
+    ): Result<String> {
+        val apiKey = getCurrentApiKey() ?: return Result.failure(
+            IOException("No valid API key")
+        )
+
+        val requestBody = buildRequestBody(messages)
+        val headers = mutableMapOf(
+            "Authorization" to "Bearer $apiKey",
+            "Content-Type" to "application/json"
+        )
+
+        when (currentProvider.protocol) {
+            "claude" -> {
+                headers["x-api-key"] = apiKey
+                headers["anthropic-version"] = "2023-06-01"
+            }
+            "gemini" -> {
+                headers["Authorization"] = "Bearer $apiKey"
+            }
+        }
+
+        val requestBuilder = Request.Builder()
+            .url(buildChatUrl(currentProvider))
+
+        headers.forEach { (key, value) ->
+            requestBuilder.addHeader(key, value)
+        }
+
+        requestBuilder.post(requestBody)
+
+        val request = requestBuilder.build()
+        currentCall = okHttpClient.newCall(request)
+
+        val response = currentCall!!.execute()
+
+        if (!response.isSuccessful) {
+            AiLogManager.log(AiLogManager.LogLevel.ERROR, "ApiClient", "API请求失败: HTTP ${response.code}, ${response.message}")
+            currentCall = null
+            throw IOException("HTTP ${response.code}: ${response.message}")
+        }
+
+        val body = response.body ?: run {
+            AiLogManager.log(AiLogManager.LogLevel.ERROR, "ApiClient", "API响应为空")
+            currentCall = null
+            throw IOException("Empty response body")
+        }
+
+        val content = parseStreamResponse(body.byteStream()) { chunk ->
+            onChunk(chunk)
+        }
+
+        currentCall = null
+        AiLogManager.log(AiLogManager.LogLevel.DEBUG, "ApiClient", "API响应成功: content长度=${content.length}")
+        return Result.success(content)
     }
 
     /**
@@ -666,7 +672,7 @@ class AiApiClient(
                                 val contentText = delta.optString("content", "")
                                 if (contentText.isNotEmpty()) {
                                     content.append(contentText)
-                                    onChunk(content.toString())
+                                    onChunk(contentText)
                                 }
                             }
                         }
@@ -687,72 +693,71 @@ class AiApiClient(
     suspend fun chatNoStream(
         messages: List<ChatMessage>
     ): Result<String> = withContext(Dispatchers.IO) {
-        try {
-            val apiKey = getCurrentApiKey() ?: return@withContext Result.failure(
-                IOException("No valid API key")
-            )
-
-            val requestBody = buildNoStreamRequestBody(messages)
-
-            val headers = mutableMapOf(
-                "Authorization" to "Bearer $apiKey",
-                "Content-Type" to "application/json"
-            )
-
-            when (currentProvider.protocol) {
-                "claude" -> {
-                    headers["x-api-key"] = apiKey
-                    headers["anthropic-version"] = "2023-06-01"
-                }
-            }
-
-            val requestBuilder = Request.Builder()
-                .url(buildChatUrl(currentProvider))
-
-            headers.forEach { (key, value) ->
-                requestBuilder.addHeader(key, value)
-            }
-
-            requestBuilder.post(requestBody)
-
-            val request = requestBuilder.build()
-
-            val response = okHttpClient.newCall(request).execute()
-
-            if (!response.isSuccessful) {
-                return@withContext Result.failure(
-                    IOException("HTTP ${response.code}: ${response.message}")
-                )
-            }
-
-            val body = response.body?.string()
-                ?: return@withContext Result.failure(IOException("Empty response"))
-
-            val json = JSONObject(body)
-
-            // 处理Claude响应格式
-            if (currentProvider.protocol == "claude") {
-                val content = json.optJSONArray("content")
-                if (content != null && content.length() > 0) {
-                    val text = content.getJSONObject(0).optString("text", "")
-                    if (text.isNotEmpty()) {
-                        return@withContext Result.success(text)
-                    }
-                }
-                return@withContext Result.failure(IOException("No content in response"))
-            }
-
-            val choices = json.getJSONArray("choices")
-            if (choices.length() > 0) {
-                val message = choices.getJSONObject(0).getJSONObject("message")
-                val content = message.getString("content")
-                Result.success(content)
-            } else {
-                Result.failure(IOException("No choices in response"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+        executeWithRetry {
+            doChatNoStreamOnce(messages)
         }
+    }
+
+    private suspend fun doChatNoStreamOnce(
+        messages: List<ChatMessage>
+    ): Result<String> {
+        val apiKey = getCurrentApiKey() ?: return Result.failure(
+            IOException("No valid API key")
+        )
+
+        val requestBody = buildNoStreamRequestBody(messages)
+
+        val headers = mutableMapOf(
+            "Authorization" to "Bearer $apiKey",
+            "Content-Type" to "application/json"
+        )
+
+        when (currentProvider.protocol) {
+            "claude" -> {
+                headers["x-api-key"] = apiKey
+                headers["anthropic-version"] = "2023-06-01"
+            }
+        }
+
+        val requestBuilder = Request.Builder()
+            .url(buildChatUrl(currentProvider))
+
+        headers.forEach { (key, value) ->
+            requestBuilder.addHeader(key, value)
+        }
+
+        requestBuilder.post(requestBody)
+
+        val request = requestBuilder.build()
+        val response = okHttpClient.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            throw IOException("HTTP ${response.code}: ${response.message}")
+        }
+
+        val body = response.body?.string()
+            ?: throw IOException("Empty response")
+
+        val json = JSONObject(body)
+
+        if (currentProvider.protocol == "claude") {
+            val content = json.optJSONArray("content")
+            if (content != null && content.length() > 0) {
+                val text = content.getJSONObject(0).optString("text", "")
+                if (text.isNotEmpty()) {
+                    return Result.success(text)
+                }
+            }
+            throw IOException("No content in response")
+        }
+
+        val choices = json.getJSONArray("choices")
+        if (choices.length() > 0) {
+            val message = choices.getJSONObject(0).getJSONObject("message")
+            val content = message.getString("content")
+            return Result.success(content)
+        }
+        throw IOException("No choices in response")
     }
 
     /**
@@ -764,62 +769,9 @@ class AiApiClient(
         onChunk: suspend (StreamChunk) -> Unit
     ): Result<StreamResponseResult> = withContext(Dispatchers.IO) {
         try {
-            val apiKey = getCurrentApiKey() ?: return@withContext Result.failure(
-                IOException("No valid API key")
-            )
-
-            val requestBody = buildRequestBodyFromMaps(messages, tools)
-            val headers = mutableMapOf(
-                "Authorization" to "Bearer $apiKey",
-                "Content-Type" to "application/json"
-            )
-
-            when (currentProvider.protocol) {
-                "claude" -> {
-                    headers["x-api-key"] = apiKey
-                    headers["anthropic-version"] = "2023-06-01"
-                }
-                "gemini" -> {
-                    headers.remove("Authorization")
-                    headers["Authorization"] to "Bearer $apiKey"
-                }
+            executeWithRetry {
+                doChatWithToolsOnce(messages, tools, onChunk)
             }
-
-            val requestBuilder = Request.Builder()
-                .url(buildChatUrl(currentProvider))
-
-            headers.forEach { (key, value) ->
-                requestBuilder.addHeader(key, value)
-            }
-
-            requestBuilder.post(requestBody)
-
-            val request = requestBuilder.build()
-
-            currentCall = okHttpClient.newCall(request)
-
-            val response = currentCall!!.execute()
-
-            if (!response.isSuccessful) {
-                currentCall = null
-                return@withContext Result.failure(
-                    IOException("HTTP ${response.code}: ${response.message}")
-                )
-            }
-
-            val body = response.body ?: run {
-                currentCall = null
-                return@withContext Result.failure(
-                    IOException("Empty response body")
-                )
-            }
-
-            val result = parseStreamResponseWithTools(body.byteStream()) { chunk ->
-                onChunk(chunk)
-            }
-
-            currentCall = null
-            Result.success(result)
         } catch (e: java.lang.SecurityException) {
             currentCall = null
             Result.failure(IOException("请求已取消"))
@@ -830,6 +782,63 @@ class AiApiClient(
             currentCall = null
             Result.failure(e)
         }
+    }
+
+    private suspend fun doChatWithToolsOnce(
+        messages: List<Map<String, Any>>,
+        tools: List<ChatTool>,
+        onChunk: suspend (StreamChunk) -> Unit
+    ): Result<StreamResponseResult> {
+        val apiKey = getCurrentApiKey() ?: return Result.failure(
+            IOException("No valid API key")
+        )
+
+        val requestBody = buildRequestBodyFromMaps(messages, tools)
+        val headers = mutableMapOf(
+            "Authorization" to "Bearer $apiKey",
+            "Content-Type" to "application/json"
+        )
+
+        when (currentProvider.protocol) {
+            "claude" -> {
+                headers["x-api-key"] = apiKey
+                headers["anthropic-version"] = "2023-06-01"
+            }
+            "gemini" -> {
+                headers["Authorization"] = "Bearer $apiKey"
+            }
+        }
+
+        val requestBuilder = Request.Builder()
+            .url(buildChatUrl(currentProvider))
+
+        headers.forEach { (key, value) ->
+            requestBuilder.addHeader(key, value)
+        }
+
+        requestBuilder.post(requestBody)
+
+        val request = requestBuilder.build()
+        currentCall = okHttpClient.newCall(request)
+
+        val response = currentCall!!.execute()
+
+        if (!response.isSuccessful) {
+            currentCall = null
+            throw IOException("HTTP ${response.code}: ${response.message}")
+        }
+
+        val body = response.body ?: run {
+            currentCall = null
+            throw IOException("Empty response body")
+        }
+
+        val result = parseStreamResponseWithTools(body.byteStream()) { chunk ->
+            onChunk(chunk)
+        }
+
+        currentCall = null
+        return Result.success(result)
     }
 
     /**

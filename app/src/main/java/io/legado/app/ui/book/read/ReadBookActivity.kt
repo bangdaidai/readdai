@@ -484,7 +484,7 @@ class ReadBookActivity : BaseReadBookActivity(),
                 val btnContinue = dialogView.findViewById<io.legado.app.ui.widget.text.AccentTextView>(R.id.btn_continue)
 
                 // 调用AI生成前情提要
-                val aiService = AiService(this@ReadBookActivity)
+                val aiService = AiService.getInstance(this@ReadBookActivity)
                 aiService.init()
 
                 val prompt = buildPreviousSummaryPrompt(previousContent)

@@ -1,16 +1,15 @@
 package io.legado.app.help.ai.rag
 
+import io.legado.app.help.ai.aiOkHttpClient
 import io.legado.app.help.ai.rag.VectorConfig
 import io.legado.app.help.ai.rag.EmbeddingModels
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 /**
  * 向量化服务
@@ -18,12 +17,6 @@ import java.util.concurrent.TimeUnit
  * 支持多种嵌入模型提供商
  */
 class EmbeddingService(private val config: VectorConfig) {
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
 
     /**
      * 获取嵌入维度
@@ -176,7 +169,7 @@ class EmbeddingService(private val config: VectorConfig) {
             .post(requestBody.toRequestBody("application/json".toMediaType()))
             .build()
 
-        val response = client.newCall(request).execute()
+        val response = aiOkHttpClient.newCall(request).execute()
         
         if (!response.isSuccessful) {
             val errorBody = response.body?.string() ?: "No error body"
@@ -225,7 +218,7 @@ class EmbeddingService(private val config: VectorConfig) {
             .post(requestBody.toRequestBody("application/json".toMediaType()))
             .build()
 
-        val response = client.newCall(request).execute()
+        val response = aiOkHttpClient.newCall(request).execute()
         
         if (!response.isSuccessful) {
             val errorBody = response.body?.string() ?: "No error body"
@@ -263,7 +256,7 @@ class EmbeddingService(private val config: VectorConfig) {
             .post(requestBody)
             .build()
 
-        val response = client.newCall(request).execute()
+        val response = aiOkHttpClient.newCall(request).execute()
         
         if (!response.isSuccessful) {
             throw Exception("Aliyun API error: ${response.code}")
@@ -289,7 +282,7 @@ class EmbeddingService(private val config: VectorConfig) {
             .post(requestBody)
             .build()
 
-        val response = client.newCall(request).execute()
+        val response = aiOkHttpClient.newCall(request).execute()
         
         if (!response.isSuccessful) {
             throw Exception("DeepSeek API error: ${response.code}")
@@ -317,7 +310,7 @@ class EmbeddingService(private val config: VectorConfig) {
                 .post(requestBody)
                 .build()
 
-            val response = client.newCall(request).execute()
+            val response = aiOkHttpClient.newCall(request).execute()
             
             if (!response.isSuccessful) {
                 throw Exception("Ollama API error: ${response.code}")
