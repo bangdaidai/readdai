@@ -21,8 +21,6 @@ class AiChatActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setupSystemBar()
-        upBackgroundImage()
 
         val bookUrl = intent.getStringExtra("bookUrl")
         val bookTitle = intent.getStringExtra("bookTitle")
@@ -49,6 +47,9 @@ class AiChatActivity : AppCompatActivity() {
                 }
             )
         }
+
+        setupSystemBar()
+        upBackgroundImage()
     }
 
     private fun upBackgroundImage() {
