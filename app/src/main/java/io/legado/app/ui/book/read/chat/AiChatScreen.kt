@@ -239,7 +239,6 @@ fun AiChatScreen(
                                 shouldStickToBottom = nearBottom
                         }
                     }
-                    }
                 }
 
                 LaunchedEffect(shouldStickToBottom, uiState.messages.size, uiState.isSending) {
