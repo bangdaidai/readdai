@@ -2860,7 +2860,7 @@ class RagTocTool(
         }
 
         return try {
-            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase(context.appContext)
+            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase()
             val chunks = chunkDb.getChunksByBookUrl(bookUrl)
 
             if (chunks.isEmpty()) {
@@ -2937,7 +2937,7 @@ class RagContextTool(
         }
 
         return try {
-            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase(context.appContext)
+            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase()
             val chunks = chunkDb.getChunksByBookUrl(bookUrl)
 
             if (chunks.isEmpty()) {
@@ -3008,8 +3008,8 @@ class VectorizationStatusTool(
         val config = VectorConfigManager.getConfig()
 
         return try {
-            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase(context.appContext)
-            val vectorDb = io.legado.app.help.ai.rag.VectorDb(context.appContext)
+            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase()
+            val vectorDb = io.legado.app.help.ai.rag.VectorDb()
 
             val chunks = chunkDb.getChunksByBookUrl(bookUrl)
             val vectors = vectorDb.getByBookUrl(bookUrl)
@@ -3071,7 +3071,7 @@ class SummarizeContentTool(
         }
 
         return try {
-            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase(context.appContext)
+            val chunkDb = io.legado.app.help.ai.rag.TextChunkDatabase()
             val chapterDao = context.appDatabase.bookChapterDao
 
             val chunks = if (scope == "chapter" && chapterIndex != null) {

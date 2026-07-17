@@ -1,10 +1,15 @@
 package io.legado.app.help.ai
 
 data class ChatMessageItem(
+    val id: String = java.util.UUID.randomUUID().toString(),
     val role: String,
     val content: String,
     val reasoningContent: String? = "",
     val toolSteps: List<ToolStep> = emptyList(),
+    val parts: List<AiMessagePart> = emptyList(),
+    val parentMessageId: String? = null,
+    val branchIndex: Int = 0,
+    val isSelected: Boolean = true,
     var isExpanded: Boolean = true,
     var isReasoningExpanded: Boolean = false
 ) {

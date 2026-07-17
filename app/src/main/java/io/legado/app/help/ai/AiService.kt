@@ -512,8 +512,6 @@ class AiService private constructor(private val context: Context) {
         return mutableListOf(mapOf("role" to "system", "content" to systemPrompt))
     }
 
-    private fun getSystemPrompt(): String = promptManager?.getSystemPrompt() ?: ""
-
     private fun applyVariables(content: String, variables: Map<String, String>): String {
         var result = content
         variables.forEach { (key, value) ->

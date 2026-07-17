@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
@@ -72,6 +71,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,10 +85,8 @@ import io.legado.app.lib.theme.dividerColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.secondaryTextColor
-import io.legado.app.lib.theme.titleBarTextIconColor
 import io.legado.app.ui.main.homepage.ReaddaiTheme
 import kotlinx.coroutines.launch
-import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun AiChatScreen(
@@ -216,12 +214,13 @@ private fun ChatTopBar(
 ) {
     val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
+    val titleBarColor = Color(ThemeStore.titleBarTextIconColor(context))
 
     TopAppBar(
         title = {
             Text(
                 text = "AI阅读助手",
-                color = Color(context.titleBarTextIconColor),
+                color = titleBarColor,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -231,7 +230,7 @@ private fun ChatTopBar(
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "返回",
-                    tint = Color(context.titleBarTextIconColor)
+                    tint = titleBarColor
                 )
             }
         },
@@ -240,14 +239,14 @@ private fun ChatTopBar(
                 Icon(
                     imageVector = Icons.Default.History,
                     contentDescription = "历史",
-                    tint = Color(context.titleBarTextIconColor)
+                    tint = titleBarColor
                 )
             }
             IconButton(onClick = onNewChat) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "新建",
-                    tint = Color(context.titleBarTextIconColor)
+                    tint = titleBarColor
                 )
             }
             Box {
@@ -255,7 +254,7 @@ private fun ChatTopBar(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "更多",
-                        tint = Color(context.titleBarTextIconColor)
+                        tint = titleBarColor
                     )
                 }
                 DropdownMenu(
@@ -303,9 +302,9 @@ private fun MessageList(
 ) {
     val listState = rememberLazyListState()
 
-    LaunchedEffect(state.messages.size, state.isSending) {
+    LaunchedEffect(state.messages.count(), state.isSending) {
         if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.size - 1)
+            listState.animateScrollToItem(state.messages.count() - 1)
         }
     }
 
@@ -316,7 +315,7 @@ private fun MessageList(
     ) {
         items(
             items = state.messages,
-            key = { index, _ -> index }
+            key = { it.id }
         ) { message ->
             val isLast = message === state.messages.lastOrNull()
             ChatMessageBubble(
@@ -333,7 +332,7 @@ private fun MessageList(
 
 @Composable
 private fun EmptyStateSuggestions(
-    suggestions: kotlinx.collections.immutable.ImmutableList<SuggestionItemUi>,
+    suggestions: List<SuggestionItemUi>,
     onExecute: (SuggestionItemUi) -> Unit
 ) {
     val context = LocalContext.current
@@ -382,7 +381,7 @@ private fun EmptyStateSuggestions(
                         )
                     }
                 }
-                if (rowItems.size < 2) {
+                if (rowItems.count() < 2) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
@@ -487,7 +486,17 @@ private fun ChatInputBar(
                         ),
                         textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
                         maxLines = 5,
-                        imeAction = ImeAction.Send
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(
+                            onSend = {
+                                if (input.text.isNotBlank()) {
+                                    onSend(input.text)
+                                    input = TextFieldValue()
+                                }
+                            }
+                        ),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            imeAction = ImeAction.Send
+                        )
                     )
 
                     Row(
@@ -562,7 +571,7 @@ private fun QuoteBar(
             .fillMaxWidth()
             .background(semiAccent)
             .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "引用: ${text.take(50)}${if (text.length > 50) "..." else ""}",
@@ -644,7 +653,7 @@ private fun Chip(
 
 @Composable
 private fun HistoryDrawer(
-    conversations: kotlinx.collections.immutable.ImmutableList<AiChatConversationUi>,
+    conversations: List<AiChatConversationUi>,
     onSelect: (String) -> Unit,
     onDelete: (String) -> Unit,
     onNewChat: () -> Unit

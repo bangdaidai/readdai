@@ -194,7 +194,11 @@ data class ChatMessage(
     val type: String,    // "human", "ai", "system", "tool"
     val content: String,  // 消息内容
     val toolCallId: String? = null,  // 工具调用ID（用于tool类型的消息）
-    val toolSteps: List<ToolStep> = emptyList()  // 工具调用步骤列表
+    val toolSteps: List<ToolStep> = emptyList(),  // 工具调用步骤列表
+    val parts: List<AiMessagePart> = emptyList(),
+    val parentMessageId: String? = null,
+    val branchIndex: Int = 0,
+    val isSelected: Boolean = true
 ) {
     fun toMap(): Map<String, Any> = mapOf(
         "type" to type,

@@ -19,9 +19,6 @@ import io.legado.app.help.ai.ReadingContextService
 import io.legado.app.help.ai.SkillManager
 import io.legado.app.help.ai.ToolStep
 import io.legado.app.help.ai.ToolStepStatus
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -148,7 +145,7 @@ class AiChatViewModel(
         streamingIndex = aiIndex
 
         _uiState.value = _uiState.value.copy(
-            messages = currentMessages.toPersistentList(),
+            messages = currentMessages.toList(),
             isSending = true
         )
 
@@ -251,7 +248,7 @@ class AiChatViewModel(
             else -> Unit
         }
 
-        _uiState.value = _uiState.value.copy(messages = currentMessages.toPersistentList())
+        _uiState.value = _uiState.value.copy(messages = currentMessages.toList())
     }
 
     private fun stopGenerating() {
@@ -266,7 +263,7 @@ class AiChatViewModel(
             }
         }
         _uiState.value = _uiState.value.copy(
-            messages = currentMessages.toPersistentList(),
+            messages = currentMessages.toList(),
             isSending = false
         )
         streamingIndex = -1
@@ -310,7 +307,7 @@ class AiChatViewModel(
                     else -> null
                 }
             }.take(4)
-            _uiState.value = _uiState.value.copy(quickActions = items.toPersistentList())
+            _uiState.value = _uiState.value.copy(quickActions = items.toList())
         }
     }
 
@@ -340,7 +337,7 @@ class AiChatViewModel(
                     else -> null
                 }
             }.take(4)
-            _uiState.value = _uiState.value.copy(suggestions = items.toPersistentList())
+            _uiState.value = _uiState.value.copy(suggestions = items.toList())
         }
     }
 
@@ -377,7 +374,7 @@ class AiChatViewModel(
         currentMessages.add(ChatMessageItem("ai", ""))
         streamingIndex = aiIndex
         _uiState.value = _uiState.value.copy(
-            messages = currentMessages.toPersistentList(),
+            messages = currentMessages.toList(),
             isSending = true
         )
 
@@ -472,7 +469,7 @@ class AiChatViewModel(
     private fun createNewSession() {
         val session = createNewSessionInternal()
         _uiState.value = _uiState.value.copy(
-            messages = emptyList<ChatMessageItem>().toPersistentList(),
+            messages = emptyList<ChatMessageItem>().toList(),
             isSending = false
         )
         streamingIndex = -1
@@ -498,7 +495,7 @@ class AiChatViewModel(
                 _uiState.value = _uiState.value.copy(
                     currentSession = session,
                     currentConversationId = session.id,
-                    messages = messages.toPersistentList(),
+                    messages = messages.toList(),
                     isSending = false
                 )
                 streamingIndex = -1
@@ -533,7 +530,7 @@ class AiChatViewModel(
                     isSelected = session.id == currentId
                 )
             }
-            _uiState.value = _uiState.value.copy(conversations = conversations.toPersistentList())
+            _uiState.value = _uiState.value.copy(conversations = conversations.toList())
         }
     }
 
@@ -565,7 +562,7 @@ class AiChatViewModel(
         val lastUserIndex = messages.indexOfLast { it.role == "user" }
         if (lastUserIndex >= 0) {
             val newMessages = messages.take(lastUserIndex).toMutableList()
-            _uiState.value = _uiState.value.copy(messages = newMessages.toPersistentList())
+            _uiState.value = _uiState.value.copy(messages = newMessages.toList())
             val lastUserMsg = messages[lastUserIndex]
             sendMessage(lastUserMsg.content)
         }
@@ -585,11 +582,11 @@ class AiChatViewModel(
     private fun deleteMessage(message: ChatMessageItem) {
         val currentMessages = _uiState.value.messages.toMutableList()
         currentMessages.remove(message)
-        _uiState.value = _uiState.value.copy(messages = currentMessages.toPersistentList())
+        _uiState.value = _uiState.value.copy(messages = currentMessages.toList())
     }
 
     private fun clearChat() {
-        _uiState.value = _uiState.value.copy(messages = emptyList<ChatMessageItem>().toPersistentList())
+        _uiState.value = _uiState.value.copy(messages = emptyList<ChatMessageItem>().toList())
         _effects.tryEmit(AiChatEffect.ShowToast("已清空当前对话"))
     }
 
