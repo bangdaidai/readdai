@@ -168,7 +168,6 @@ abstract class BaseTool(
 
 /**
  * AI工具解析结果
- * 用于LangChain4j集成
  */
 data class AiResolvedTool(
     val name: String,

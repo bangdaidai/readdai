@@ -389,9 +389,4 @@ dependencies {
 
     // 内存检测（按需开启）
     // debugImplementation('com.squareup.leakcanary:leakcanary-android:2.12')
-
-    // LangChain4j - AI Agent框架（支持Function Calling）
-    // ✅ 使用 0.35.0 稳定版本（JDK 8+ 兼容，API 更稳定）
-    implementation 'dev.langchain4j:langchain4j:0.35.0'
-    implementation 'dev.langchain4j:langchain4j-open-ai:0.35.0'
 }

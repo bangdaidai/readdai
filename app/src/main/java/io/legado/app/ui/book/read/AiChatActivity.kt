@@ -1413,7 +1413,6 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
         saveDraftSession(fullMessage)
 
         lifecycleScope.launch {
-            // 不再每次都调用init()，LangChain4j使用无状态模式
             // init()只在Activity初始化或服务商配置变化时调用
 
             // ✅ 关键修复：构建发送给AI的消息时，使用保存的引用副本
@@ -1434,7 +1433,6 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                 }
             }
 
-            // 强制使用LangChain4j（参考anx/readany的实现）
             aiService.chat(messageWithOptions, currentSession).collectLatest { result ->
                     when (result) {
                         is ChatResult.Chunk -> {
@@ -1634,7 +1632,7 @@ class AiChatActivity : BaseActivity<ActivityAiChatBinding>() {
                             io.legado.app.help.ai.AiLogManager.log(
                                 io.legado.app.help.ai.AiLogManager.LogLevel.ERROR,
                                 "AiChat",
-                                "LangChain4j错误: ${result.message}"
+                                "AI错误: ${result.message}"
                             )
                             val existingMsg = messages.getOrNull(streamingPosition)
                             if (existingMsg != null) {

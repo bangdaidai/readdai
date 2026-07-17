@@ -5,7 +5,6 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.help.config.AppConfig
-import io.legado.app.help.ai.langchain4j.LangChain4jAgentService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
@@ -20,15 +19,11 @@ class AiService(private val context: Context) {
     private val aiDatabase = AiDatabase.getInstance(context)
     private var promptManager: PromptManager? = null
     private var skillManager: SkillManager? = null
-    
-    // LangChain4j Agent服务
-    private var langChain4jService: LangChain4jAgentService? = null
 
     private var currentProvider: AiProviderEntity? = null
     private var toolContext: AiToolContext? = null
     private var currentApiClient: AiApiClient? = null
     private var currentJob: Job? = null
-    private var langChain4jJob: Job? = null  // LangChain4j请求的Job
 
     @Volatile
     private var isInitialized = false
@@ -69,35 +64,6 @@ class AiService(private val context: Context) {
 
         // 注册基于上下文的工具
         toolContext?.let { AiTools.registerAll(it) }
-        
-        // 初始化LangChain4j Agent服务
-        currentProvider?.let { provider ->
-            try {
-                AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "开始初始化LangChain4j...")
-                langChain4jService = LangChain4jAgentService()
-                
-                // 获取第一个有效的API Key
-                val apiKeyList = provider.getApiKeyList()
-                AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "API Key列表大小: ${apiKeyList.size}")
-                
-                val firstValidKey = apiKeyList.firstOrNull { it.enabled && it.key.isNotBlank() }?.key
-                    ?: throw IllegalStateException("没有有效的API Key (列表大小=${apiKeyList.size})")
-                
-                AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "使用API Key: ${firstValidKey.take(8)}...")
-                
-                langChain4jService?.initialize(
-                    apiKey = firstValidKey,
-                    baseUrl = provider.apiUrl,
-                    modelName = provider.model
-                )
-                AiLogManager.log(AiLogManager.LogLevel.INFO, "AiService", "LangChain4j Agent服务初始化成功")
-            } catch (e: Exception) {
-                AiLogManager.log(AiLogManager.LogLevel.ERROR, "AiService", "LangChain4j Agent服务初始化失败: ${e.message}", e)
-                e.printStackTrace()
-            }
-        } ?: run {
-            AiLogManager.log(AiLogManager.LogLevel.WARNING, "AiService", "currentProvider为null，跳过LangChain4j初始化")
-        }
 
         isInitialized = true
         AiLogManager.log(AiLogManager.LogLevel.INFO, "AiService", "AI服务初始化完成")
@@ -173,125 +139,14 @@ class AiService(private val context: Context) {
     }
 
     fun cancelCurrentRequest() {
-        // 取消原生API请求
         currentApiClient?.cancelRequest()
         currentJob?.cancel()
         currentApiClient = null
         currentJob = null
-        
-        // 取消LangChain4j请求
-        langChain4jJob?.cancel()
-        langChain4jJob = null
-        
+
         AiLogManager.log(AiLogManager.LogLevel.INFO, "AiService", "所有AI请求已取消")
     }
     
-    /**
-     * 使用LangChain4j Agent聊天（支持Function Calling）
-     */
-    suspend fun chatWithLangChain4j(message: String): String = withContext(Dispatchers.IO) {
-        ensureInitialized()
-        
-        val service = langChain4jService
-            ?: throw IllegalStateException("LangChain4j service not initialized")
-        
-        try {
-            AiLogManager.log(AiLogManager.LogLevel.INFO, "AiService", "使用LangChain4j Agent聊天: $message")
-            
-            // 获取当前上下文
-            val context = toolContext ?: AiToolContext(
-                currentBook = null,
-                currentChapter = null,
-                chapterContent = null,
-                bookUrl = "",
-                appDatabase = appDb,
-                appContext = this@AiService.context
-            )
-            
-            val response = service.chat(message, context)
-            AiLogManager.log(AiLogManager.LogLevel.INFO, "AiService", "LangChain4j响应: ${response.take(100)}...")
-            response
-        } catch (e: Exception) {
-            // 详细记录网络错误信息
-            val errorType = when {
-                e.message?.contains("Unable to resolve host") == true -> "DNS解析失败"
-                e.message?.contains("Connection refused") == true -> "连接被拒绝"
-                e.message?.contains("timeout") == true -> "连接超时"
-                e is java.net.UnknownHostException -> "未知主机"
-                else -> "网络错误"
-            }
-            AiLogManager.log(AiLogManager.LogLevel.ERROR, "AiService", 
-                "LangChain4j聊天失败 [$errorType]: ${e.message}", e)
-            throw e
-        }
-    }
-    
-    /**
-     * 使用LangChain4j Agent流式聊天
-     */
-    fun chatStreamWithLangChain4j(message: String): Flow<ChatResult> = callbackFlow {
-        ensureInitialized()
-        
-        val service = langChain4jService
-            ?: run {
-                trySend(ChatResult.Error("LangChain4j service not initialized"))
-                close()
-                return@callbackFlow
-            }
-        
-        // 获取当前上下文
-        val context = toolContext ?: AiToolContext(
-            currentBook = null,
-            currentChapter = null,
-            chapterContent = null,
-            bookUrl = "",
-            appDatabase = appDb,
-            appContext = this@AiService.context
-        )
-        
-        // 保存当前Job以便取消
-        langChain4jJob = coroutineContext[Job]
-        
-        try {
-            AiLogManager.log(AiLogManager.LogLevel.INFO, "AiService", "使用LangChain4j流式聊天: $message")
-            
-            langChain4jService!!.chatStream(message, context).collect { response ->
-                // 发送工具步骤
-                for (step in response.toolSteps) {
-                    when (step.status) {
-                        io.legado.app.help.ai.ToolStepStatus.PENDING -> {
-                            trySend(ChatResult.ToolCall(step.name, step.input ?: ""))
-                        }
-                        io.legado.app.help.ai.ToolStepStatus.RUNNING -> {
-                            trySend(ChatResult.ToolStart(step.name))
-                        }
-                        io.legado.app.help.ai.ToolStepStatus.SUCCESS -> {
-                            trySend(ChatResult.ToolResult(step.name, step.output ?: ""))
-                        }
-                        io.legado.app.help.ai.ToolStepStatus.FAILED -> {
-                            trySend(ChatResult.Error("工具 ${step.name} 执行失败: ${step.error}"))
-                        }
-                    }
-                }
-                
-                // 发送最终内容
-                trySend(ChatResult.Chunk(response.content))
-                trySend(ChatResult.Success(response.content))
-            }
-            close()
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) {
-                AiLogManager.log(AiLogManager.LogLevel.WARNING, "AiService", "LangChain4j流式聊天被取消")
-            } else {
-                AiLogManager.log(AiLogManager.LogLevel.ERROR, "AiService", "LangChain4j流式聊天失败: ${e.message}")
-                trySend(ChatResult.Error(e.message ?: "Unknown error"))
-            }
-            close()
-        } finally {
-            langChain4jJob = null
-        }
-    }
-
     fun hasActiveRequest(): Boolean {
         return currentApiClient?.isRequestActive() == true
     }
@@ -300,85 +155,9 @@ class AiService(private val context: Context) {
         message: String,
         session: AiChatSession? = null,
         enabledToolIds: Set<String>? = null
-    ): Flow<ChatResult> = callbackFlow {
-        // LangChain4j使用通用Tool执行器，所有Tool都已注册，不需要enabledToolIds参数
+    ): Flow<ChatResult> {
         AiLogManager.log(AiLogManager.LogLevel.INFO, "AiService", "开始聊天: message长度=${message.length}, session=${session?.id ?: "null"}")
-        
-        // 强制使用LangChain4j（参考anx/readany的实现）
-        // LangChain4j内部会处理HTTP请求，不需要单独的ApiClient
-        if (langChain4jService == null) {
-            AiLogManager.log(AiLogManager.LogLevel.ERROR, "AiService", "LangChain4j未初始化")
-            trySend(ChatResult.Error("LangChain4j未初始化，请检查AI服务商配置"))
-            close()
-            return@callbackFlow
-        }
-        
-        // 获取当前上下文
-        val context = toolContext ?: AiToolContext(
-            currentBook = null,
-            currentChapter = null,
-            chapterContent = null,
-            bookUrl = "",
-            appDatabase = appDb,
-            appContext = this@AiService.context
-        )
-        
-        AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "使用LangChain4j Agent模式（支持Tool调用）")
-        AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "当前上下文: book=${context.currentBook?.name ?: "null"}, chapter=${context.currentChapter?.title ?: "null"}")
-        
-        try {
-            // 关键修复：传递会话历史消息给LangChain4j，保持上下文
-            val sessionMessages = session?.messages ?: emptyList()
-            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "传递 ${sessionMessages.size} 条历史消息")
-            
-            langChain4jService!!.chatStream(message, context, sessionMessages).collect { response ->
-                // 关键：先发送工具步骤，再发送内容
-                // 这样UI可以按顺序显示工具调用过程
-                for (step in response.toolSteps) {
-                    when (step.status) {
-                        io.legado.app.help.ai.ToolStepStatus.PENDING -> {
-                            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "发送ToolCall: ${step.name}")
-                            trySend(ChatResult.ToolCall(step.name, step.input ?: ""))
-                            // 短暂延迟，让UI有时间渲染
-                            kotlinx.coroutines.delay(100)
-                        }
-                        io.legado.app.help.ai.ToolStepStatus.RUNNING -> {
-                            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "发送ToolStart: ${step.name}")
-                            trySend(ChatResult.ToolStart(step.name))
-                            kotlinx.coroutines.delay(100)
-                        }
-                        io.legado.app.help.ai.ToolStepStatus.SUCCESS -> {
-                            AiLogManager.log(AiLogManager.LogLevel.DEBUG, "AiService", "发送ToolResult: ${step.name}, output长度=${step.output?.length ?: 0}")
-                            trySend(ChatResult.ToolResult(step.name, step.output ?: ""))
-                            kotlinx.coroutines.delay(100)
-                        }
-                        io.legado.app.help.ai.ToolStepStatus.FAILED -> {
-                            AiLogManager.log(AiLogManager.LogLevel.ERROR, "AiService", "工具失败: ${step.name}, error=${step.error}")
-                            trySend(ChatResult.Error("工具 ${step.name} 执行失败: ${step.error}"))
-                            kotlinx.coroutines.delay(100)
-                        }
-                    }
-                }
-                
-                // 发送最终内容
-                if (response.content.isNotEmpty()) {
-                    trySend(ChatResult.Chunk(response.content))
-                    trySend(ChatResult.Success(response.content, toolSteps = response.toolSteps))
-                } else if (response.toolSteps.isNotEmpty()) {
-                    // 如果只有工具步骤没有内容，也发送Success
-                    trySend(ChatResult.Success("", toolSteps = response.toolSteps))
-                }
-            }
-            close()
-        } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) {
-                AiLogManager.log(AiLogManager.LogLevel.WARNING, "AiService", "LangChain4j聊天被取消")
-            } else {
-                AiLogManager.log(AiLogManager.LogLevel.ERROR, "AiService", "LangChain4j聊天失败: ${e.message}", e)
-                trySend(ChatResult.Error(e.message ?: "Unknown error"))
-            }
-            close()
-        }
+        return chatStream(message, session, enabledToolIds)
     }
 
     private fun chatStream(

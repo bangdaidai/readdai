@@ -194,39 +194,9 @@ cn.hutool.core.util.**{*;}
     public <init>(android.content.Context, android.util.AttributeSet, int);
 }
 
-# LangChain4j - 保留Tool注解和相关类
--keep class io.legado.app.help.ai.langchain4j.** { *; }
--keepattributes RuntimeVisibleAnnotations
--keepclassmembers class * {
-    @dev.langchain4j.agent.tool.Tool <methods>;
-}
-
-# LangChain4j - 保留OpenAI模型类及其字段（防止model参数丢失）
--keep class dev.langchain4j.model.openai.** { *; }
--keep class dev.langchain4j.model.chat.** { *; }
--keep class dev.ai4j.openai4j.** { *; }
--keepclassmembers class dev.langchain4j.model.openai.OpenAiChatModel {
-    <fields>;
-}
-
-# LangChain4j 1.x - 忽略Android不支持的java.net.http类
-# Android使用OkHttp作为HTTP客户端，不需要java.net.http
--dontwarn java.net.http.**
--dontnote java.net.http.**
-
-# Retrofit - 保留泛型签名（LangChain4j内部使用Retrofit）
--keepattributes Signature
--dontwarn retrofit2.**
--keep class retrofit2.** { *; }
--keepattributes Exceptions
-
-# OkHttp - 保留内部类（LangChain4j 依赖）
--keep class okhttp3.** { *; }
--keepclassmembers class okhttp3.** {
-    <fields>;
-    <methods>;
-}
--dontwarn okhttp3.internal.**
+# OkHttp - 保留必要的类
+-keep class okhttp3.* { *; }
+-keep class okio.* { *; }
 
 # LiquidGlass - 防止混淆导致空指针异常
 -keep class com.qmdeve.liquidglass.** { *; }
