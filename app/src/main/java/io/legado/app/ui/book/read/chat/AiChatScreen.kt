@@ -237,8 +237,9 @@ fun AiChatScreen(
                         .collectLatest { (isScrolling, nearBottom) ->
                             if (isScrolling) {
                                 shouldStickToBottom = nearBottom
-                            }
                         }
+                    }
+                    }
                 }
 
                 LaunchedEffect(shouldStickToBottom, uiState.messages.size, uiState.isSending) {
@@ -367,11 +368,7 @@ fun AiChatScreen(
                     color = effectiveTitleBarColor,
                     shadowElevation = if (isTransparentNavBar || (isImmNavBar && hasBgImage)) 0.dp else 4.dp,
                 ) {
-                    Column(
-                        modifier = Modifier.then(
-                            if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier
-                        )
-                    ) {
+                    Box {
                         if (hasBgImage) {
                             Image(
                                 bitmap = bgImageBitmap,
@@ -380,7 +377,12 @@ fun AiChatScreen(
                                 contentScale = ContentScale.FillBounds
                             )
                         }
-                        Row(
+                        Column(
+                            modifier = Modifier.then(
+                                if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier
+                            )
+                        ) {
+                            Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp)
@@ -469,6 +471,7 @@ fun AiChatScreen(
                                     )
                                 }
                             }
+                        }
                         }
                     }
                 }
