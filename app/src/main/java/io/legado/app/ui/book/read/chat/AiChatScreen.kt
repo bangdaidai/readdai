@@ -42,6 +42,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -203,6 +204,7 @@ fun AiChatScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatTopBar(
     onBack: () -> Unit,
@@ -571,7 +573,7 @@ private fun QuoteBar(
             .fillMaxWidth()
             .background(semiAccent)
             .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterHorizontally
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "引用: ${text.take(50)}${if (text.length > 50) "..." else ""}",

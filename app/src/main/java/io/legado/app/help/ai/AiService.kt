@@ -232,34 +232,38 @@ class AiService private constructor(private val context: Context) {
 
             // 发送请求并处理流式响应
             val result = client.chatWithTools(messages, chatTools) { chunk ->
-                // 处理文本内容
-                if (chunk.content.isNotEmpty()) {
-                    fullContent.append(chunk.content)
-                    val events = parser.push(chunk.content)
-                    for (event in events) {
-                        when (event) {
-                            is ReasoningChunk.Text -> {
-                                trySend(ChatResult.Chunk(event.content))
-                            }
-                            is ReasoningChunk.Reasoning -> {
-                                reasoningContent += event.content
-                                trySend(ChatResult.ReasoningChunk(event.content))
+                when (chunk) {
+                    is StreamChunk.Content -> {
+                        fullContent.append(chunk.content)
+                        val events = parser.push(chunk.content)
+                        for (event in events) {
+                            when (event) {
+                                is ReasoningChunk.Text -> {
+                                    trySend(ChatResult.Chunk(event.content))
+                                }
+                                is ReasoningChunk.Reasoning -> {
+                                    reasoningContent += event.content
+                                    trySend(ChatResult.ReasoningChunk(event.content))
+                                }
                             }
                         }
                     }
-                }
-
-                // 处理工具调用
-                for (toolCall in chunk.toolCalls) {
-                    pendingToolCalls.add(ToolCallInfo(
-                        id = toolCall.id,
-                        name = toolCall.name,
-                        arguments = toolCall.arguments
-                    ))
-                    trySend(ChatResult.ToolCall(
-                        name = toolCall.name,
-                        arguments = toolCall.arguments
-                    ))
+                    is StreamChunk.Reasoning -> {
+                        reasoningContent += chunk.content
+                        trySend(ChatResult.ReasoningChunk(chunk.content))
+                    }
+                    is StreamChunk.ToolCallDelta -> {
+                        pendingToolCalls.add(ToolCallInfo(
+                            id = chunk.name,
+                            name = chunk.name,
+                            arguments = chunk.arguments
+                        ))
+                        trySend(ChatResult.ToolCall(
+                            name = chunk.name,
+                            arguments = chunk.arguments
+                        ))
+                    }
+                    is StreamChunk.Finish -> {}
                 }
             }
 

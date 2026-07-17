@@ -21,7 +21,7 @@ abstract class BaseProtocolHandler : AiProtocolHandler {
         block: suspend (String) -> T
     ): Result<T> = withContext(Dispatchers.IO) {
         try {
-            val keyRotator = KeyRotator(provider.getCurrentApiKey() ?: "")
+            val keyRotator = KeyRotator(provider.getCurrentApiKey()?.key ?: "")
             Result.success(retryWithBackoff(
                 maxAttempts = 3,
                 keyRotator = null,
@@ -36,7 +36,7 @@ abstract class BaseProtocolHandler : AiProtocolHandler {
                     }
                 }
             ) {
-                block(provider.getCurrentApiKey() ?: "")
+                block(provider.getCurrentApiKey()?.key ?: "")
             })
         } catch (e: Exception) {
             Result.failure(e)
@@ -58,7 +58,7 @@ abstract class BaseProtocolHandler : AiProtocolHandler {
         return when (provider.protocol) {
             "claude" -> "$normalizedUrl/v1/messages"
             "gemini" -> {
-                val apiKey = provider.getCurrentApiKey() ?: ""
+                val apiKey = provider.getCurrentApiKey()?.key ?: ""
                 "$normalizedUrl/v1beta/models/${provider.model}:streamGenerateContent?alt=sse&key=$apiKey"
             }
             else -> "$normalizedUrl/v1/chat/completions"

@@ -200,15 +200,15 @@ class GeminiHandler : BaseProtocolHandler() {
                                 onChunk(StreamChunk.ToolCallDelta(currentToolIndex, name, args))
                             }
                         }
-                    }
-                    val finishReason = candidate.optString("finishReason", "")
-                    if (finishReason.isNotEmpty()) {
-                        currentToolStep?.let {
-                            toolSteps.add(it.copy(status = ToolStepStatus.PENDING))
-                            currentToolIndex++
-                            currentToolStep = null
+                        val finishReason = candidate.optString("finishReason", "")
+                        if (finishReason.isNotEmpty()) {
+                            currentToolStep?.let {
+                                toolSteps.add(it.copy(status = ToolStepStatus.PENDING))
+                                currentToolIndex++
+                                currentToolStep = null
+                            }
+                            onChunk(StreamChunk.Finish(finishReason))
                         }
-                        onChunk(StreamChunk.Finish(finishReason))
                     }
                 }
             } catch (_: Exception) {
