@@ -3,6 +3,9 @@ package io.legado.app.ui.book.read.chat
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
@@ -11,73 +14,72 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.onSizeChanged
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.legado.app.R
-import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.backgroundCard
@@ -86,8 +88,15 @@ import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.ui.main.homepage.ReaddaiTheme
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiChatScreen(
     viewModel: AiChatViewModel = viewModel(),
@@ -101,15 +110,18 @@ fun AiChatScreen(
     onOpenSettings: () -> Unit
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(Unit) {
         viewModel.init(bookUrl, bookTitle, author, chapterTitle, chapterContent, selectedText)
     }
 
     val uiState by viewModel.uiState.collectAsState()
-    val drawerState = rememberDrawerState(androidx.compose.material3.DrawerValue.Closed)
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var draft by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+    var topOverlayHeightPx by remember { mutableIntStateOf(0) }
+    var bottomOverlayHeightPx by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
@@ -138,417 +150,539 @@ fun AiChatScreen(
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
-                HistoryDrawer(
+                RecentChatsDrawer(
                     conversations = uiState.conversations,
-                    onSelect = { id ->
-                        scope.launch { drawerState.close() }
-                        viewModel.onIntent(AiChatIntent.SelectConversation(id))
-                    },
-                    onDelete = { id ->
-                        viewModel.onIntent(AiChatIntent.DeleteConversation(id))
-                    },
                     onNewChat = {
-                        scope.launch { drawerState.close() }
                         viewModel.onIntent(AiChatIntent.NewConversation)
+                        scope.launch { drawerState.close() }
+                    },
+                    onSelectConversation = {
+                        viewModel.onIntent(AiChatIntent.SelectConversation(it))
+                        scope.launch { drawerState.close() }
+                    },
+                    onDeleteConversation = {
+                        viewModel.onIntent(AiChatIntent.DeleteConversation(it))
                     }
                 )
             }
         ) {
-            Scaffold(
-                containerColor = Color(context.backgroundColor),
-                topBar = {
-                    ChatTopBar(
-                        onBack = onFinish,
-                        onOpenHistory = { scope.launch { drawerState.open() } },
-                        onNewChat = { viewModel.onIntent(AiChatIntent.NewConversation) },
-                        onClearChat = { viewModel.onIntent(AiChatIntent.ClearChat) },
-                        onExport = { viewModel.onIntent(AiChatIntent.ExportChat) },
-                        onOpenSettings = onOpenSettings
-                    )
-                },
-                bottomBar = {
-                    ChatInputBar(
-                        state = uiState,
-                        onSend = { viewModel.onIntent(AiChatIntent.SendMessage(it)) },
-                        onStop = { viewModel.onIntent(AiChatIntent.StopGenerating) },
-                        onToggleDeepThinking = { viewModel.onIntent(AiChatIntent.ToggleDeepThinking(it)) },
-                        onToggleSpoilerFree = { viewModel.onIntent(AiChatIntent.ToggleSpoilerFree(it)) },
-                        onRemoveQuote = { viewModel.onIntent(AiChatIntent.SetQuote(null)) },
-                        onQuickAction = { viewModel.onIntent(AiChatIntent.ExecuteQuickAction(it)) }
-                    )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(context.backgroundColor))
+            ) {
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val systemBottomPadding = maxOf(
+                    WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
+                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                )
+                val topContentPadding = with(density) { topOverlayHeightPx.toDp() }
+                val bottomContentPadding = with(density) { bottomOverlayHeightPx.toDp() } + systemBottomPadding
+
+                val isNearBottom by remember {
+                    derivedStateOf {
+                        val info = listState.layoutInfo
+                        val lastVisible = info.visibleItemsInfo.lastOrNull()
+                        lastVisible == null || lastVisible.index >= info.totalItemsCount - 3
+                    }
                 }
-            ) { padding ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
+                val isAtBottom by remember {
+                    derivedStateOf {
+                        val info = listState.layoutInfo
+                        val lastVisible = info.visibleItemsInfo.lastOrNull()
+                        lastVisible == null || lastVisible.index >= info.totalItemsCount - 1
+                    }
+                }
+
+                var shouldStickToBottom by remember { mutableStateOf(true) }
+
+                LaunchedEffect(uiState.messages.size, uiState.isSending) {
+                    shouldStickToBottom = true
+                }
+
+                LaunchedEffect(listState) {
+                    snapshotFlow { listState.isScrollInProgress to isNearBottom }
+                        .collectLatest { (isScrolling, nearBottom) ->
+                            if (isScrolling) {
+                                shouldStickToBottom = nearBottom
+                            }
+                        }
+                }
+
+                LaunchedEffect(shouldStickToBottom, uiState.messages.size, uiState.isSending) {
+                    if (shouldStickToBottom && !listState.isScrollInProgress && uiState.messages.isNotEmpty()) {
+                        val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                        if (lastIndex >= 0) {
+                            listState.animateScrollToItem(lastIndex)
+                        }
+                    }
+                }
+
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 8.dp,
+                        top = topContentPadding + 8.dp,
+                        end = 8.dp,
+                        bottom = bottomContentPadding + 8.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (uiState.messages.isEmpty() && uiState.suggestions.isNotEmpty()) {
-                        EmptyStateSuggestions(
-                            suggestions = uiState.suggestions,
-                            onExecute = { viewModel.onIntent(AiChatIntent.ExecuteSuggestion(it)) }
-                        )
-                    } else {
-                        MessageList(
-                            state = uiState,
+                        item {
+                            EmptyChatHint(
+                                suggestions = uiState.suggestions,
+                                onExecute = { viewModel.onIntent(AiChatIntent.ExecuteSuggestion(it)) }
+                            )
+                        }
+                    }
+                    items(uiState.messages, key = { it.id }) { message ->
+                        val isLast = message === uiState.messages.lastOrNull()
+                        ChatMessageBubble(
+                            message = message,
+                            isStreaming = uiState.isSending && isLast && message.role == "ai",
                             onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
                             onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
                             onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(it)) },
                             onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
                         )
                     }
+                    item(key = "bottom_anchor") {
+                        Spacer(modifier = Modifier.height(1.dp))
+                    }
                 }
-            }
-        }
-    }
-}
 
-@Composable
-private fun ChatTopBar(
-    onBack: () -> Unit,
-    onOpenHistory: () -> Unit,
-    onNewChat: () -> Unit,
-    onClearChat: () -> Unit,
-    onExport: () -> Unit,
-    onOpenSettings: () -> Unit
-) {
-    val context = LocalContext.current
-    var showMenu by remember { mutableStateOf(false) }
-    val titleBarColor = Color(ThemeStore.titleBarTextIconColor(context))
-
-    TopAppBar(
-        title = {
-            Text(
-                text = "AI阅读助手",
-                color = titleBarColor,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Medium
-            )
-        },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "返回",
-                    tint = titleBarColor
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onOpenHistory) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = "历史",
-                    tint = titleBarColor
-                )
-            }
-            IconButton(onClick = onNewChat) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "新建",
-                    tint = titleBarColor
-                )
-            }
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "更多",
-                        tint = titleBarColor
-                    )
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    containerColor = Color(context.backgroundCard)
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("清空对话", color = Color(context.primaryTextColor)) },
-                        onClick = {
-                            showMenu = false
-                            onClearChat()
-                        }
+                    val bgColor = Color(context.backgroundCard)
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(bottomContentPadding - systemBottomPadding)
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0f to bgColor.copy(alpha = 0f),
+                                        0.58f to bgColor.copy(alpha = 0f),
+                                        0.82f to bgColor.copy(alpha = 0.64f),
+                                        1f to bgColor.copy(alpha = 0.88f)
+                                    )
+                                )
+                            )
                     )
-                    DropdownMenuItem(
-                        text = { Text("导出对话", color = Color(context.primaryTextColor)) },
-                        onClick = {
-                            showMenu = false
-                            onExport()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("设置", color = Color(context.primaryTextColor)) },
-                        onClick = {
-                            showMenu = false
-                            onOpenSettings()
-                        }
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(systemBottomPadding)
+                            .background(bgColor.copy(alpha = 0.88f))
                     )
                 }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .imePadding()
+                        .navigationBarsPadding()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onSizeChanged { bottomOverlayHeightPx = it.height }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 32.dp)
+                        ) {
+                            if (!isAtBottom && uiState.messages.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(18.dp))
+                                            .background(Color(context.backgroundCard))
+                                            .clickable {
+                                                scope.launch {
+                                                    val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                                    if (lastIndex >= 0) {
+                                                        listState.animateScrollToItem(lastIndex)
+                                                    }
+                                                    shouldStickToBottom = true
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = Color(context.primaryTextColor)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            AnimatedVisibility(
+                                visible = uiState.selectedQuote?.isNotBlank() == true,
+                                enter = expandVertically(),
+                                exit = shrinkVertically()
+                            ) {
+                                QuoteBar(
+                                    text = uiState.selectedQuote ?: "",
+                                    onRemove = { viewModel.onIntent(AiChatIntent.SetQuote(null)) }
+                                )
+                            }
+
+                            ChatInputBar(
+                                value = draft,
+                                isSending = uiState.isSending,
+                                deepThinkingEnabled = uiState.deepThinkingEnabled,
+                                spoilerFreeEnabled = uiState.spoilerFreeEnabled,
+                                onValueChange = { draft = it },
+                                onSend = {
+                                    val text = draft
+                                    draft = ""
+                                    viewModel.onIntent(AiChatIntent.SendMessage(text))
+                                },
+                                onStop = { viewModel.onIntent(AiChatIntent.StopGenerating) },
+                                onToggleDeepThinking = { viewModel.onIntent(AiChatIntent.ToggleDeepThinking(it)) },
+                                onToggleSpoilerFree = { viewModel.onIntent(AiChatIntent.ToggleSpoilerFree(it)) }
+                            )
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .onSizeChanged { topOverlayHeightPx = it.height }
+                ) {
+                    val bgColor = Color(context.backgroundColor)
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colorStops = arrayOf(
+                                        0f to bgColor.copy(alpha = 0.88f),
+                                        0.38f to bgColor.copy(alpha = 0.72f),
+                                        0.72f to bgColor.copy(alpha = 0.40f),
+                                        1f to bgColor.copy(alpha = 0f)
+                                    )
+                                )
+                            )
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(Color(context.backgroundCard))
+                                .clickable(onClick = onFinish),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                contentDescription = "返回",
+                                tint = Color(context.primaryTextColor)
+                            )
+                        }
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Surface(
+                                modifier = Modifier.height(40.dp),
+                                shape = RoundedCornerShape(50),
+                                color = Color(context.backgroundCard)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .height(40.dp)
+                                        .padding(horizontal = 12.dp),
+                                    horizontalAlignment = Alignment.Start,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = "AI阅读助手",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(context.primaryTextColor),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "AI阅读助手",
+                                        fontSize = 11.sp,
+                                        color = Color(context.secondaryTextColor),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color(context.backgroundCard))
+                                    .clickable { scope.launch { drawerState.open() } },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "历史",
+                                    tint = Color(context.primaryTextColor)
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color(context.backgroundCard))
+                                    .clickable { viewModel.onIntent(AiChatIntent.NewConversation) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "新建",
+                                    tint = Color(context.primaryTextColor)
+                                )
+                            }
+                        }
+                    }
+                }
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color(context.primaryColor)
-        )
-    )
-}
-
-@Composable
-private fun MessageList(
-    state: AiChatUiState,
-    onCopy: (String) -> Unit,
-    onShare: (String) -> Unit,
-    onDelete: (io.legado.app.help.ai.ChatMessageItem) -> Unit,
-    onRegenerate: () -> Unit
-) {
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(state.messages.count(), state.isSending) {
-        if (state.messages.isNotEmpty()) {
-            listState.animateScrollToItem(state.messages.count() - 1)
-        }
-    }
-
-    LazyColumn(
-        state = listState,
-        modifier = Modifier.fillMaxSize(),
-        reverseLayout = false
-    ) {
-        items(
-            items = state.messages,
-            key = { it.id }
-        ) { message ->
-            val isLast = message === state.messages.lastOrNull()
-            ChatMessageBubble(
-                message = message,
-                isStreaming = state.isSending && isLast && message.role == "ai",
-                onCopy = onCopy,
-                onShare = onShare,
-                onDelete = { onDelete(message) },
-                onRegenerate = onRegenerate
-            )
         }
     }
 }
 
 @Composable
-private fun EmptyStateSuggestions(
+private fun EmptyChatHint(
     suggestions: List<SuggestionItemUi>,
     onExecute: (SuggestionItemUi) -> Unit
 ) {
     val context = LocalContext.current
 
-    Column(
+    Box(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .fillMaxWidth()
+            .padding(top = 64.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "AI阅读助手",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(context.primaryTextColor)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "可以帮你总结、翻译、分析小说内容",
-            fontSize = 14.sp,
-            color = Color(context.secondaryTextColor)
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        suggestions.chunked(2).forEach { rowItems ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                rowItems.forEach { item ->
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { onExecute(item) },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(context.backgroundCard)
-                        )
-                    ) {
-                        Text(
-                            text = item.displayText,
-                            modifier = Modifier.padding(16.dp),
-                            fontSize = 14.sp,
-                            color = Color(context.primaryTextColor)
-                        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "AI阅读助手",
+                fontSize = 20.sp,
+                color = Color(context.secondaryTextColor),
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            suggestions.chunked(2).forEach { rowItems ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowItems.forEach { item ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(context.backgroundCard))
+                                .clickable { onExecute(item) }
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = item.displayText,
+                                fontSize = 13.sp,
+                                color = Color(context.primaryTextColor)
+                            )
+                        }
+                    }
+                    if (rowItems.size < 2) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
-                if (rowItems.count() < 2) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
-            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
 
 @Composable
 private fun ChatInputBar(
-    state: AiChatUiState,
-    onSend: (String) -> Unit,
+    value: String,
+    isSending: Boolean,
+    deepThinkingEnabled: Boolean,
+    spoilerFreeEnabled: Boolean,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
     onStop: () -> Unit,
     onToggleDeepThinking: (Boolean) -> Unit,
-    onToggleSpoilerFree: (Boolean) -> Unit,
-    onRemoveQuote: () -> Unit,
-    onQuickAction: (QuickActionItemUi) -> Unit
+    onToggleSpoilerFree: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    var input by remember { mutableStateOf(TextFieldValue()) }
+    val isKeyboardVisible =
+        WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
+    val horizontalPadding by animateDpAsState(
+        targetValue = if (isKeyboardVisible) 16.dp else 46.dp,
+        animationSpec = tween(durationMillis = 250),
+        label = "AiChatInputHorizontalPadding"
+    )
+    val bottomPadding by animateDpAsState(
+        targetValue = if (isKeyboardVisible) 16.dp else 32.dp,
+        animationSpec = tween(durationMillis = 250),
+        label = "AiChatInputBottomPadding"
+    )
 
-    val accentColor = Color(context.accentColor)
-    val cardBg = Color(context.backgroundCard)
-    val dividerColor = Color(context.dividerColor)
-    val textPrimary = Color(context.primaryTextColor)
-    val textSecondary = Color(context.secondaryTextColor)
+    var showOptions by remember { mutableStateOf(false) }
 
     Surface(
-        color = Color.Transparent,
         modifier = Modifier
             .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.ime)
-            .navigationBarsPadding()
+            .padding(
+                start = horizontalPadding,
+                end = horizontalPadding,
+                bottom = bottomPadding
+            ),
+        shape = RoundedCornerShape(32.dp),
+        color = Color(context.backgroundCard)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
+        Column {
             AnimatedVisibility(
-                visible = state.quickActions.isNotEmpty() && !state.isSending,
+                visible = showOptions,
                 enter = expandVertically(),
                 exit = shrinkVertically()
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    state.quickActions.take(4).forEach { item ->
-                        Chip(
-                            text = item.displayName,
-                            onClick = { onQuickAction(item) },
-                            cardBg = cardBg,
-                            dividerColor = dividerColor,
-                            textColor = textPrimary
-                        )
-                    }
+                    OptionChip(
+                        text = "深度思考",
+                        iconRes = R.drawable.ic_brain,
+                        selected = deepThinkingEnabled,
+                        onClick = { onToggleDeepThinking(!deepThinkingEnabled) }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OptionChip(
+                        text = "防剧透",
+                        iconRes = R.drawable.ic_visibility_off,
+                        selected = spoilerFreeEnabled,
+                        onClick = { onToggleSpoilerFree(!spoilerFreeEnabled) }
+                    )
                 }
             }
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = cardBg),
-                border = androidx.compose.foundation.BorderStroke(1.dp, dividerColor)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(all = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Column {
-                    AnimatedVisibility(
-                        visible = state.selectedQuote?.isNotBlank() == true,
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(
+                            if (showOptions) Color(context.accentColor).copy(alpha = 0.15f)
+                            else Color.Transparent
+                        )
+                        .clickable { showOptions = !showOptions },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lightbulb,
+                        contentDescription = "选项",
+                        tint = if (deepThinkingEnabled || spoilerFreeEnabled) Color(context.accentColor)
+                        else Color(context.secondaryTextColor)
+                    )
+                }
+
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    enabled = !isSending,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 36.dp, max = 160.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 15.sp,
+                        color = Color(context.primaryTextColor)
+                    ),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (value.isEmpty()) {
+                                Text(
+                                    text = "输入消息...",
+                                    fontSize = 15.sp,
+                                    color = Color(context.secondaryTextColor)
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
+                )
+
+                if (isSending) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(50))
+                            .clickable(onClick = onStop),
+                        contentAlignment = Alignment.Center
                     ) {
-                        QuoteBar(
-                            text = state.selectedQuote ?: "",
-                            onRemove = onRemoveQuote,
-                            accentColor = accentColor,
-                            textPrimary = textPrimary
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = "停止",
+                            tint = Color(context.accentColor)
                         )
                     }
-
-                    OutlinedTextField(
-                        value = input,
-                        onValueChange = { input = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = {
-                            Text(
-                                text = "输入消息...",
-                                color = textSecondary,
-                                fontSize = 15.sp
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            cursorColor = accentColor,
-                            focusedTextColor = textPrimary,
-                            unfocusedTextColor = textPrimary
-                        ),
-                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
-                        maxLines = 5,
-                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(
-                            onSend = {
-                                if (input.text.isNotBlank()) {
-                                    onSend(input.text)
-                                    input = TextFieldValue()
-                                }
-                            }
-                        ),
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            imeAction = ImeAction.Send
-                        )
-                    )
-
-                    Row(
+                } else {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(50))
+                            .then(
+                                if (value.isNotBlank()) Modifier.clickable(onClick = onSend)
+                                else Modifier
+                            ),
+                        contentAlignment = Alignment.Center
                     ) {
-                        OptionChip(
-                            text = "深度思考",
-                            iconRes = R.drawable.ic_brain,
-                            selected = state.deepThinkingEnabled,
-                            onClick = { onToggleDeepThinking(!state.deepThinkingEnabled) },
-                            accentColor = accentColor,
-                            textSecondary = textSecondary
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "发送",
+                            tint = if (value.isNotBlank()) Color(context.accentColor)
+                            else Color(context.secondaryTextColor)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        OptionChip(
-                            text = "防剧透",
-                            iconRes = R.drawable.ic_visibility_off,
-                            selected = state.spoilerFreeEnabled,
-                            onClick = { onToggleSpoilerFree(!state.spoilerFreeEnabled) },
-                            accentColor = accentColor,
-                            textSecondary = textSecondary
-                        )
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        if (state.isSending) {
-                            IconButton(onClick = onStop) {
-                                Icon(
-                                    imageVector = Icons.Default.Stop,
-                                    contentDescription = "停止",
-                                    tint = accentColor
-                                )
-                            }
-                        } else {
-                            IconButton(
-                                onClick = {
-                                    if (input.text.isNotBlank()) {
-                                        onSend(input.text)
-                                        input = TextFieldValue()
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Send,
-                                    contentDescription = "发送",
-                                    tint = accentColor
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -559,35 +693,42 @@ private fun ChatInputBar(
 @Composable
 private fun QuoteBar(
     text: String,
-    onRemove: () -> Unit,
-    accentColor: Color,
-    textPrimary: Color
+    onRemove: () -> Unit
 ) {
     val context = LocalContext.current
+    val accentColor = Color(context.accentColor)
     val semiAccent = accentColor.copy(alpha = 0.3f)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 46.dp)
+            .clip(RoundedCornerShape(12.dp))
             .background(semiAccent)
             .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterHorizontally
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "引用: ${text.take(50)}${if (text.length > 50) "..." else ""}",
             fontSize = 13.sp,
-            color = textPrimary,
+            color = Color(context.primaryTextColor),
             modifier = Modifier.weight(1f)
         )
-        IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clickable(onClick = onRemove),
+            contentAlignment = Alignment.Center
+        ) {
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "移除引用",
                 modifier = Modifier.size(16.dp),
-                tint = textPrimary
+                tint = Color(context.primaryTextColor)
             )
         }
     }
+    Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Composable
@@ -595,18 +736,18 @@ private fun OptionChip(
     text: String,
     iconRes: Int,
     selected: Boolean,
-    onClick: () -> Unit,
-    accentColor: Color,
-    textSecondary: Color
+    onClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val bgColor = if (selected) accentColor else Color.Transparent
-    val textColor = if (selected) Color.White else textSecondary
-    val borderColor = if (selected) accentColor else textSecondary
+    val accentColor = Color(context.accentColor)
+    val bgColor = if (selected) accentColor.copy(alpha = 0.15f) else Color.Transparent
+    val textColor = if (selected) accentColor else Color(context.secondaryTextColor)
+    val borderColor = if (selected) accentColor.copy(alpha = 0.5f) else Color(context.dividerColor)
 
     Row(
         modifier = Modifier
-            .background(bgColor, RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(999.dp))
+            .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(999.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
@@ -627,42 +768,20 @@ private fun OptionChip(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Chip(
-    text: String,
-    onClick: () -> Unit,
-    cardBg: Color,
-    dividerColor: Color,
-    textColor: Color
-) {
-    Row(
-        modifier = Modifier
-            .background(cardBg, RoundedCornerShape(12.dp))
-            .border(1.dp, dividerColor, RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = text,
-            fontSize = 13.sp,
-            color = textColor
-        )
-    }
-}
-
-@Composable
-private fun HistoryDrawer(
+private fun RecentChatsDrawer(
     conversations: List<AiChatConversationUi>,
-    onSelect: (String) -> Unit,
-    onDelete: (String) -> Unit,
-    onNewChat: () -> Unit
+    onNewChat: () -> Unit,
+    onSelectConversation: (String) -> Unit,
+    onDeleteConversation: (String) -> Unit
 ) {
     val context = LocalContext.current
+    var conversationToDelete by remember { mutableStateOf<AiChatConversationUi?>(null) }
 
     ModalDrawerSheet(
-        drawerContainerColor = Color(context.backgroundColor),
-        drawerContentColor = Color(context.primaryTextColor)
+        modifier = Modifier.width(280.dp),
+        drawerContainerColor = Color(context.backgroundColor)
     ) {
         Row(
             modifier = Modifier
@@ -673,69 +792,86 @@ private fun HistoryDrawer(
             Text(
                 text = "历史对话",
                 fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = Color(context.primaryTextColor),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            IconButton(onClick = onNewChat) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onNewChat),
+                contentAlignment = Alignment.Center
+            ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "新建",
-                    tint = Color(context.accentColor)
+                    tint = Color(context.primaryTextColor)
                 )
             }
         }
-
-        Divider(color = Color(context.dividerColor))
-
-        if (conversations.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "暂无历史记录",
-                    color = Color(context.secondaryTextColor),
-                    fontSize = 14.sp
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(conversations) { conv ->
-                    Row(
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            if (conversations.isEmpty()) {
+                item {
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(
-                                if (conv.isSelected) Color(context.accentColor).copy(alpha = 0.15f)
-                                else Color.Transparent
-                            )
-                            .clickable { onSelect(conv.id) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
                     ) {
+                        Text(
+                            text = "暂无历史记录",
+                            color = Color(context.secondaryTextColor),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+            items(conversations, key = { it.id }) { conversation ->
+                val isSelected = conversation.isSelected
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isSelected) Color(context.accentColor).copy(alpha = 0.15f)
+                            else Color.Transparent
+                        )
+                        .clickable { onSelectConversation(conversation.id) }
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = conv.title,
+                                text = conversation.title,
                                 fontSize = 14.sp,
-                                color = Color(context.primaryTextColor),
-                                maxLines = 1
+                                maxLines = 2,
+                                color = if (isSelected) Color(context.accentColor)
+                                else Color(context.primaryTextColor)
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = formatTimestamp(conv.updatedAt),
+                                text = formatRelativeTime(conversation.updatedAt),
                                 fontSize = 12.sp,
                                 color = Color(context.secondaryTextColor)
                             )
                         }
-                        IconButton(onClick = { onDelete(conv.id) }) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clickable { conversationToDelete = conversation },
+                            contentAlignment = Alignment.Center
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "删除",
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(16.dp),
                                 tint = Color(context.secondaryTextColor)
                             )
                         }
@@ -744,22 +880,65 @@ private fun HistoryDrawer(
             }
         }
     }
+
+    if (conversationToDelete != null) {
+        androidx.compose.material3.AlertDialog(
+            containerColor = Color(context.backgroundCard),
+            onDismissRequest = { conversationToDelete = null },
+            title = {
+                Text(
+                    text = "删除",
+                    color = Color(context.primaryTextColor)
+                )
+            },
+            text = {
+                Text(
+                    text = "确定删除此对话？",
+                    color = Color(context.primaryTextColor)
+                )
+            },
+            confirmButton = {
+                Text(
+                    text = "删除",
+                    color = Color(context.accentColor),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            conversationToDelete?.let { onDeleteConversation(it.id) }
+                            conversationToDelete = null
+                        }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            },
+            dismissButton = {
+                Text(
+                    text = "取消",
+                    color = Color(context.secondaryTextColor),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { conversationToDelete = null }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+        )
+    }
 }
 
-private fun formatTimestamp(timestamp: Long): String {
+private fun formatRelativeTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+    val hours = TimeUnit.MILLISECONDS.toHours(diff)
+    val days = TimeUnit.MILLISECONDS.toDays(diff)
     return when {
-        diff < 60 * 1000 -> "刚刚"
-        diff < 60 * 60 * 1000 -> "${diff / (60 * 1000)}分钟前"
-        diff < 24 * 60 * 60 * 1000 -> "${diff / (60 * 60 * 1000)}小时前"
+        minutes < 1 -> "刚刚"
+        minutes < 60 -> "${minutes}分钟前"
+        hours < 24 -> "${hours}小时前"
+        days < 7 -> "${days}天前"
+        days < 30 -> "${days / 7}周前"
         else -> {
-            val date = java.util.Date(timestamp)
-            java.text.DateFormat.getDateTimeInstance(
-                java.text.DateFormat.SHORT,
-                java.text.DateFormat.SHORT,
-                java.util.Locale.getDefault()
-            ).format(date)
+            val sdf = SimpleDateFormat("MM/dd", Locale.getDefault())
+            sdf.format(Date(timestamp))
         }
     }
 }

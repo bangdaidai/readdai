@@ -23,7 +23,6 @@ class ConfigActivity : VMBaseActivity<ActivityConfigBinding, ConfigViewModel>() 
             ConfigTag.COVER_CONFIG -> replaceFragment<CoverConfigFragment>(configTag)
             ConfigTag.WELCOME_CONFIG -> replaceFragment<WelcomeConfigFragment>(configTag)
             ConfigTag.AI_SETTINGS -> replaceFragment<AiSettingsPreferenceFragment>(configTag)
-            ConfigTag.AI_CONFIG -> replaceFragment<AiSettingsFragment>(configTag)
             else -> finish()
         }
     }

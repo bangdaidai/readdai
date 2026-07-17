@@ -54,14 +54,32 @@ abstract class BaseProtocolHandler : AiProtocolHandler {
     }
 
     protected fun buildChatUrl(provider: AiProviderEntity): String {
-        val normalizedUrl = provider.apiUrl.trim().trimEnd('/')
-        return when (provider.protocol) {
-            "claude" -> "$normalizedUrl/v1/messages"
-            "gemini" -> {
-                val apiKey = provider.getCurrentApiKey() ?: ""
-                "$normalizedUrl/v1beta/models/${provider.model}:streamGenerateContent?alt=sse&key=$apiKey"
+        val defaultPath = when (provider.protocol) {
+            "claude" -> "/v1/messages"
+            "gemini" -> "/v1beta/models/${provider.model}:streamGenerateContent"
+            else -> "/v1/chat/completions"
+        }
+        val url = resolveChatUrl(provider.apiUrl, defaultPath)
+        return if (provider.protocol == "gemini") {
+            val apiKey = provider.getCurrentApiKey() ?: ""
+            "$url?alt=sse&key=$apiKey"
+        } else {
+            url
+        }
+    }
+
+    private fun resolveChatUrl(baseUrl: String, defaultPath: String): String {
+        val normalized = baseUrl.trim().trimEnd('/')
+        return when {
+            normalized.endsWith(defaultPath) -> normalized
+            normalized.endsWith("/v1") && defaultPath.startsWith("/v1/") -> {
+                normalized.removeSuffix("/v1") + defaultPath
             }
-            else -> "$normalizedUrl/v1/chat/completions"
+            normalized.contains("/v1/") && defaultPath.startsWith("/v1/") -> {
+                normalized.substringBeforeLast("/v1/") + defaultPath
+            }
+            normalized.endsWith("/v1") && defaultPath.startsWith("/") -> "$normalized$defaultPath"
+            else -> "$normalized$defaultPath"
         }
     }
 
