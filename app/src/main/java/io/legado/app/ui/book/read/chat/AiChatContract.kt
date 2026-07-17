@@ -22,6 +22,7 @@ data class AiChatUiState(
     val conversations: List<AiChatConversationUi> = emptyList(),
     val currentConversationId: String? = null,
     val reasoningLevel: AiReasoningLevel = AiReasoningLevel.default,
+    val deepThinkingEnabled: Boolean = false,
     val spoilerFreeEnabled: Boolean = false,
     val pendingToolConfirmation: AiPendingToolConfirmation? = null,
     val conversationTitle: String = "",

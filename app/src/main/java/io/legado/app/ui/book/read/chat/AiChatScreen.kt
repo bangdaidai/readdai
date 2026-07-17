@@ -242,26 +242,26 @@ fun AiChatScreen(
                             isStreaming = false,
                             onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
                             onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
-                            onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(it)) },
+                            onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(message)) },
                             onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
                         )
                     }
                     uiState.streamingMessage?.let { msg ->
-                        item(key = "streaming_message") {
-                            ChatMessageBubble(
-                                message = msg,
-                                isStreaming = true,
-                                onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
-                                onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
-                                onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(it)) },
-                                onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
-                            )
-                        }
-                    }
-                    item(key = "bottom_anchor") {
-                        Spacer(modifier = Modifier.height(1.dp))
+                    item(key = "streaming_message") {
+                        ChatMessageBubble(
+                            message = msg,
+                            isStreaming = true,
+                            onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
+                            onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
+                            onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(msg)) },
+                            onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
+                        )
                     }
                 }
+                item(key = "bottom_anchor") {
+                    Spacer(modifier = Modifier.height(1.dp))
+                }
+                    }
 
                 Box(
                     modifier = Modifier

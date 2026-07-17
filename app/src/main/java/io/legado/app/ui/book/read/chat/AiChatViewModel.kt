@@ -140,11 +140,6 @@ class AiChatViewModel(
 
         currentJob?.cancel()
 
-        val provider = aiService.getCurrentProvider()
-        val providerName = provider?.title ?: "AI"
-        val modelName = provider?.model ?: "default"
-        val assistantLabel = "$providerName · $modelName"
-
         val currentMessages = _uiState.value.messages.toMutableList()
         currentMessages.add(ChatMessageItem("user", fullContent))
 
@@ -152,18 +147,27 @@ class AiChatViewModel(
             role = "ai",
             content = "",
             toolSteps = emptyList(),
-            assistantLabel = assistantLabel
+            assistantLabel = "AI"
         )
 
         _uiState.value = _uiState.value.copy(
             messages = currentMessages.toList(),
             streamingMessage = streamingMsg,
-            isSending = true,
-            providerName = providerName,
-            modelName = modelName
+            isSending = true
         )
 
         currentJob = viewModelScope.launch {
+            val provider = aiService.getCurrentProvider()
+            val providerName = provider?.title ?: "AI"
+            val modelName = provider?.model ?: "default"
+            val assistantLabel = "$providerName · $modelName"
+
+            _uiState.value = _uiState.value.copy(
+                streamingMessage = _uiState.value.streamingMessage?.copy(assistantLabel = assistantLabel),
+                providerName = providerName,
+                modelName = modelName
+            )
+
             try {
                 val session = _uiState.value.currentSession ?: run {
                     createNewSessionInternal()
@@ -511,16 +515,11 @@ class AiChatViewModel(
         }
         currentMessages.add(ChatMessageItem("user", fullMsg))
 
-        val provider = aiService.getCurrentProvider()
-        val providerName = provider?.title ?: "AI"
-        val modelName = provider?.model ?: "default"
-        val assistantLabel = "$providerName · $modelName"
-
         val streamingMsg = ChatMessageItem(
             role = "ai",
             content = "",
             toolSteps = emptyList(),
-            assistantLabel = assistantLabel
+            assistantLabel = "AI"
         )
 
         _uiState.value = _uiState.value.copy(
@@ -530,6 +529,17 @@ class AiChatViewModel(
         )
 
         currentJob = viewModelScope.launch {
+            val provider = aiService.getCurrentProvider()
+            val providerName = provider?.title ?: "AI"
+            val modelName = provider?.model ?: "default"
+            val assistantLabel = "$providerName · $modelName"
+
+            _uiState.value = _uiState.value.copy(
+                streamingMessage = _uiState.value.streamingMessage?.copy(assistantLabel = assistantLabel),
+                providerName = providerName,
+                modelName = modelName
+            )
+
             try {
                 val skill = skillManager.getSkill(skillId) ?: return@launch
                 val readingContext = ReadingContextService.getContext()
@@ -629,17 +639,19 @@ class AiChatViewModel(
 
     private fun createNewSession() {
         val session = createNewSessionInternal()
-        val provider = aiService.getCurrentProvider()
-        _uiState.value = _uiState.value.copy(
-            messages = emptyList<ChatMessageItem>().toList(),
-            streamingMessage = null,
-            isSending = false,
-            conversationTitle = "",
-            providerName = provider?.title ?: "AI",
-            modelName = provider?.model ?: "default"
-        )
-        refreshConversations()
-        _effects.tryEmit(AiChatEffect.ShowToast("已新建对话"))
+        viewModelScope.launch {
+            val provider = aiService.getCurrentProvider()
+            _uiState.value = _uiState.value.copy(
+                messages = emptyList<ChatMessageItem>().toList(),
+                streamingMessage = null,
+                isSending = false,
+                conversationTitle = "",
+                providerName = provider?.title ?: "AI",
+                modelName = provider?.model ?: "default"
+            )
+            refreshConversations()
+            _effects.tryEmit(AiChatEffect.ShowToast("已新建对话"))
+        }
     }
 
     private fun selectConversation(id: String) {
