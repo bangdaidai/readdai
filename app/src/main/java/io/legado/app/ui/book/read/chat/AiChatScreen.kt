@@ -45,6 +45,9 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -285,64 +288,54 @@ fun AiChatScreen(
                             .padding(4.dp)
                     ) {
                         if (!isAtBottom && uiState.messages.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Box(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(RoundedCornerShape(18.dp))
+                                        .background(Color(context.backgroundCard))
+                                        .clickable {
+                                            scope.launch {
+                                                val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                                if (lastIndex >= 0) {
+                                                    listState.animateScrollToItem(lastIndex)
+                                                }
+                                                shouldStickToBottom = true
+                                            }
+                                        },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(18.dp))
-                                            .background(Color(context.backgroundCard))
-                                            .clickable {
-                                                scope.launch {
-                                                    val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                                                    if (lastIndex >= 0) {
-                                                        listState.animateScrollToItem(lastIndex)
-                                                    }
-                                                    shouldStickToBottom = true
-                                                }
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.KeyboardArrowDown,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp),
-                                            tint = Color(context.primaryTextColor)
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = Color(context.primaryTextColor)
+                                    )
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
                             }
-
-                            AnimatedVisibility(
-                                visible = uiState.selectedQuote?.isNotBlank() == true,
-                                enter = expandVertically(),
-                                exit = shrinkVertically()
-                            ) {
-                                QuoteBar(
-                                    text = uiState.selectedQuote ?: "",
-                                    onRemove = { viewModel.onIntent(AiChatIntent.SetQuote(null)) }
-                                )
-                            }
-
-                            ChatInputBar(
-                                value = draft,
-                                isSending = uiState.isSending,
-                                deepThinkingEnabled = uiState.deepThinkingEnabled,
-                                spoilerFreeEnabled = uiState.spoilerFreeEnabled,
-                                onValueChange = { draft = it },
-                                onSend = {
-                                    val text = draft
-                                    draft = ""
-                                    viewModel.onIntent(AiChatIntent.SendMessage(text))
-                                },
-                                onStop = { viewModel.onIntent(AiChatIntent.StopGenerating) },
-                                onToggleDeepThinking = { viewModel.onIntent(AiChatIntent.ToggleDeepThinking(it)) },
-                                onToggleSpoilerFree = { viewModel.onIntent(AiChatIntent.ToggleSpoilerFree(it)) }
-                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
+
+                        ChatInputBar(
+                            value = draft,
+                            isSending = uiState.isSending,
+                            quote = uiState.selectedQuote,
+                            deepThinkingEnabled = uiState.deepThinkingEnabled,
+                            spoilerFreeEnabled = uiState.spoilerFreeEnabled,
+                            onValueChange = { draft = it },
+                            onSend = {
+                                val text = draft
+                                draft = ""
+                                viewModel.onIntent(AiChatIntent.SendMessage(text))
+                            },
+                            onStop = { viewModel.onIntent(AiChatIntent.StopGenerating) },
+                            onRemoveQuote = { viewModel.onIntent(AiChatIntent.SetQuote(null)) },
+                            onToggleDeepThinking = { viewModel.onIntent(AiChatIntent.ToggleDeepThinking(it)) },
+                            onToggleSpoilerFree = { viewModel.onIntent(AiChatIntent.ToggleSpoilerFree(it)) }
+                        )
                     }
                 }
 
@@ -502,144 +495,139 @@ private fun EmptyChatHint(
 private fun ChatInputBar(
     value: String,
     isSending: Boolean,
+    quote: String?,
     deepThinkingEnabled: Boolean,
     spoilerFreeEnabled: Boolean,
     onValueChange: (String) -> Unit,
     onSend: () -> Unit,
     onStop: () -> Unit,
+    onRemoveQuote: () -> Unit,
     onToggleDeepThinking: (Boolean) -> Unit,
     onToggleSpoilerFree: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    val isKeyboardVisible =
-        WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
-    val horizontalPadding by animateDpAsState(
-        targetValue = if (isKeyboardVisible) 16.dp else 46.dp,
-        animationSpec = tween(durationMillis = 250),
-        label = "AiChatInputHorizontalPadding"
-    )
-    val bottomPadding by animateDpAsState(
-        targetValue = if (isKeyboardVisible) 16.dp else 32.dp,
-        animationSpec = tween(durationMillis = 250),
-        label = "AiChatInputBottomPadding"
-    )
 
-    var showOptions by remember { mutableStateOf(false) }
-
-    Surface(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(
-                start = horizontalPadding,
-                end = horizontalPadding,
-                bottom = bottomPadding
-            ),
-        shape = RoundedCornerShape(32.dp),
-        color = Color(context.backgroundCard)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(context.backgroundCard)
+        ),
+        border = BorderStroke(2.dp, Color(context.dividerColor))
     ) {
-        Column {
-            AnimatedVisibility(
-                visible = showOptions,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            if (!quote.isNullOrBlank()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(context.accentColor).copy(alpha = 0.12f))
+                        .padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    OptionChip(
-                        text = "深度思考",
-                        iconRes = R.drawable.ic_brain,
-                        selected = deepThinkingEnabled,
-                        onClick = { onToggleDeepThinking(!deepThinkingEnabled) }
+                    Text(
+                        text = quote.take(80) + if (quote.length > 80) "..." else "",
+                        fontSize = 12.sp,
+                        color = Color(context.primaryTextColor),
+                        maxLines = 2,
+                        modifier = Modifier.weight(1f)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    OptionChip(
-                        text = "防剧透",
-                        iconRes = R.drawable.ic_visibility_off,
-                        selected = spoilerFreeEnabled,
-                        onClick = { onToggleSpoilerFree(!spoilerFreeEnabled) }
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "移除引用",
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clickable(onClick = onRemoveQuote),
+                        tint = Color(context.secondaryTextColor)
                     )
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
+
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                enabled = !isSending,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 36.dp, max = 160.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    fontSize = 14.sp,
+                    color = Color(context.primaryTextColor)
+                ),
+                decorationBox = { innerTextField ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (value.isEmpty()) {
+                            Text(
+                                text = "请输入问题...",
+                                fontSize = 14.sp,
+                                color = Color(context.secondaryTextColor)
+                            )
+                        }
+                        innerTextField()
+                    }
+                }
+            )
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(all = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(
-                            if (showOptions) Color(context.accentColor).copy(alpha = 0.15f)
-                            else Color.Transparent
-                        )
-                        .clickable { showOptions = !showOptions },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lightbulb,
-                        contentDescription = "选项",
-                        tint = if (deepThinkingEnabled || spoilerFreeEnabled) Color(context.accentColor)
-                        else Color(context.secondaryTextColor)
-                    )
-                }
-
-                BasicTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    enabled = !isSending,
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 36.dp, max = 160.dp),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        fontSize = 15.sp,
-                        color = Color(context.primaryTextColor)
-                    ),
-                    decorationBox = { innerTextField ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (value.isEmpty()) {
-                                Text(
-                                    text = "输入消息...",
-                                    fontSize = 15.sp,
-                                    color = Color(context.secondaryTextColor)
-                                )
-                            }
-                            innerTextField()
-                        }
-                    }
+                OptionChip(
+                    text = "深度思考",
+                    iconRes = R.drawable.ic_brain,
+                    selected = deepThinkingEnabled,
+                    onClick = { onToggleDeepThinking(!deepThinkingEnabled) }
                 )
+                Spacer(modifier = Modifier.width(6.dp))
+                OptionChip(
+                    text = "防剧透",
+                    iconRes = R.drawable.ic_visibility_off,
+                    selected = spoilerFreeEnabled,
+                    onClick = { onToggleSpoilerFree(!spoilerFreeEnabled) }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
 
                 if (isSending) {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(28.dp)
                             .clip(RoundedCornerShape(50))
+                            .background(Color(context.accentColor))
                             .clickable(onClick = onStop),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Stop,
                             contentDescription = "停止",
-                            tint = Color(context.accentColor)
+                            modifier = Modifier.size(14.dp),
+                            tint = Color.White
                         )
                     }
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(28.dp)
                             .clip(RoundedCornerShape(50))
+                            .background(
+                                if (value.isNotBlank()) Color(context.accentColor)
+                                else Color(context.secondaryTextColor).copy(alpha = 0.3f)
+                            )
                             .then(
                                 if (value.isNotBlank()) Modifier.clickable(onClick = onSend)
                                 else Modifier
@@ -649,55 +637,14 @@ private fun ChatInputBar(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "发送",
-                            tint = if (value.isNotBlank()) Color(context.accentColor)
-                            else Color(context.secondaryTextColor)
+                            modifier = Modifier.size(14.dp),
+                            tint = Color.White
                         )
                     }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun QuoteBar(
-    text: String,
-    onRemove: () -> Unit
-) {
-    val context = LocalContext.current
-    val accentColor = Color(context.accentColor)
-    val semiAccent = accentColor.copy(alpha = 0.3f)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 46.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(semiAccent)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "引用: ${text.take(50)}${if (text.length > 50) "..." else ""}",
-            fontSize = 13.sp,
-            color = Color(context.primaryTextColor),
-            modifier = Modifier.weight(1f)
-        )
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .clickable(onClick = onRemove),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "移除引用",
-                modifier = Modifier.size(16.dp),
-                tint = Color(context.primaryTextColor)
-            )
-        }
-    }
-    Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Composable
@@ -708,30 +655,27 @@ private fun OptionChip(
     onClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val accentColor = Color(context.accentColor)
-    val bgColor = if (selected) accentColor.copy(alpha = 0.15f) else Color.Transparent
-    val textColor = if (selected) accentColor else Color(context.secondaryTextColor)
-    val borderColor = if (selected) accentColor.copy(alpha = 0.5f) else Color(context.dividerColor)
+    val textColor = if (selected) Color(context.accentColor) else Color(context.secondaryTextColor)
+    val borderColor = if (selected) Color(context.accentColor) else Color(context.dividerColor)
 
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(999.dp))
-            .background(bgColor)
             .border(1.dp, borderColor, RoundedCornerShape(999.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(14.dp),
+            modifier = Modifier.size(12.dp),
             tint = textColor
         )
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = text,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             color = textColor
         )
     }

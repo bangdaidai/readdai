@@ -1,8 +1,11 @@
 package io.legado.app.ui.book.read.chat
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,11 +19,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -33,7 +39,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,14 +52,10 @@ import io.legado.app.help.ai.ToolStep
 import io.legado.app.help.ai.ToolStepStatus
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundCard
+import io.legado.app.lib.theme.dividerColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.utils.MarkdownUtils
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
 
 @Composable
 fun ChatMessageBubble(
@@ -144,7 +149,7 @@ private fun AssistantMessageBubble(
         ) {
             val parts = message.parts
             if (parts.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     parts.forEach { part ->
                         when (part) {
                             is AiMessagePart.Text -> {
@@ -157,19 +162,17 @@ private fun AssistantMessageBubble(
                             }
                             is AiMessagePart.Reasoning -> {
                                 if (part.text.isNotBlank()) {
-                                    ReasoningCard(content = part.text)
+                                    ReasoningCard(content = part.text, isStreaming = isStreaming)
                                 }
                             }
                             is AiMessagePart.Tool -> {
-                                ToolStepsCard(
-                                    steps = listOf(
-                                        ToolStep(
-                                            id = part.id,
-                                            name = part.name,
-                                            input = part.input,
-                                            output = part.output,
-                                            status = part.status
-                                        )
+                                ToolStepRow(
+                                    step = ToolStep(
+                                        id = part.id,
+                                        name = part.name,
+                                        input = part.input,
+                                        output = part.output,
+                                        status = part.status
                                     )
                                 )
                             }
@@ -185,7 +188,7 @@ private fun AssistantMessageBubble(
                 }
             } else {
                 if (message.reasoningContent?.isNotBlank() == true) {
-                    ReasoningCard(content = message.reasoningContent)
+                    ReasoningCard(content = message.reasoningContent, isStreaming = isStreaming)
                 }
                 if (message.toolSteps.isNotEmpty()) {
                     ToolStepsCard(steps = message.toolSteps)
@@ -266,21 +269,31 @@ private fun TextButtonSmall(
 @Composable
 fun ReasoningCard(
     content: String,
+    isStreaming: Boolean = false,
     initiallyExpanded: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(initiallyExpanded) }
+    if (content.isBlank()) return
+    var expanded by remember { mutableStateOf(initiallyExpanded || isStreaming) }
     val rotation by animateFloatAsState(if (expanded) 180f else 0f)
     val context = LocalContext.current
 
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(context.backgroundCard)
+            containerColor = Color.Transparent
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            2.dp,
+            Color(context.dividerColor)
         )
     ) {
-        Column {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .animateContentSize()
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -289,36 +302,42 @@ fun ReasoningCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
+                    imageVector = Icons.Default.Lightbulb,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color(context.secondaryTextColor)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (isStreaming) "深度思考中..." else "思考过程",
+                    color = Color(context.primaryTextColor),
+                    fontSize = 14.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = null,
                     modifier = Modifier
-                        .size(18.dp)
+                        .size(24.dp)
                         .rotate(rotation),
-                    tint = Color(context.accentColor)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "深度思考",
-                    color = Color(context.accentColor),
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
+                    tint = Color(context.secondaryTextColor)
                 )
             }
 
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = fadeIn() + expandVertically(),
+                exit = shrinkVertically() + fadeOut()
             ) {
                 Text(
                     text = content,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp)
+                        .padding(horizontal = 12.dp, vertical = 0.dp)
                         .padding(bottom = 12.dp),
                     color = Color(context.secondaryTextColor),
                     fontSize = 13.sp,
-                    lineHeight = 20.sp
+                    lineHeight = 18.sp
                 )
             }
         }
@@ -330,58 +349,66 @@ fun ToolStepsCard(
     steps: List<ToolStep>,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(context.backgroundCard)
-        )
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "调用工具",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(context.primaryTextColor),
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
-            steps.forEach { step ->
-                ToolStepItem(step = step)
-            }
+        steps.forEach { step ->
+            ToolStepRow(step = step)
         }
     }
 }
 
 @Composable
-private fun ToolStepItem(step: ToolStep) {
+private fun ToolStepRow(step: ToolStep) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(if (expanded) 180f else 0f)
+    val hasContent = step.output?.isNotBlank() == true || step.input?.isNotBlank() == true
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .then(if (hasContent) Modifier.clickable { expanded = !expanded } else Modifier)
+                .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ToolStatusDot(status = step.status)
-            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(Color(context.backgroundCard)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = Color(context.accentColor)
+                )
+            }
             Text(
                 text = step.name,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
                 color = Color(context.primaryTextColor),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                maxLines = 1
             )
-            if (step.output?.isNotBlank() == true || step.input?.isNotBlank() == true) {
+            val statusText = when (step.status) {
+                ToolStepStatus.PENDING -> "等待中"
+                ToolStepStatus.RUNNING -> "运行中"
+                ToolStepStatus.SUCCESS -> "已完成"
+                ToolStepStatus.FAILED -> "失败"
+            }
+            Text(
+                text = statusText,
+                fontSize = 11.sp,
+                color = Color(context.secondaryTextColor)
+            )
+            if (hasContent) {
                 Icon(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = null,
@@ -395,43 +422,47 @@ private fun ToolStepItem(step: ToolStep) {
 
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically(),
-            exit = shrinkVertically()
+            enter = fadeIn() + expandVertically(),
+            exit = shrinkVertically() + fadeOut()
         ) {
-            Column(modifier = Modifier.padding(start = 24.dp, top = 4.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 28.dp, end = 4.dp, bottom = 6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 step.input?.takeIf { it.isNotBlank() }?.let {
                     Text(
-                        text = "输入: ${it.take(200)}",
-                        fontSize = 12.sp,
+                        text = "输入",
+                        fontSize = 11.sp,
                         color = Color(context.secondaryTextColor),
-                        modifier = Modifier.padding(bottom = 2.dp)
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = it.take(300),
+                        fontSize = 11.sp,
+                        color = Color(context.secondaryTextColor),
+                        maxLines = 6
                     )
                 }
                 step.output?.takeIf { it.isNotBlank() }?.let {
+                    Spacer(modifier = Modifier.size(2.dp))
                     Text(
-                        text = "结果: ${it.take(300)}",
-                        fontSize = 12.sp,
-                        color = Color(context.secondaryTextColor)
+                        text = "输出",
+                        fontSize = 11.sp,
+                        color = Color(context.secondaryTextColor),
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = it.take(400),
+                        fontSize = 11.sp,
+                        color = Color(context.secondaryTextColor),
+                        maxLines = 8
                     )
                 }
             }
         }
     }
-}
-
-@Composable
-private fun ToolStatusDot(status: ToolStepStatus) {
-    val color = when (status) {
-        ToolStepStatus.PENDING -> Color.Gray
-        ToolStepStatus.RUNNING -> Color(0xFF4CAF50)
-        ToolStepStatus.SUCCESS -> Color(0xFF2196F3)
-        ToolStepStatus.FAILED -> Color(0xFFF44336)
-    }
-    Box(
-        modifier = Modifier
-            .size(8.dp)
-            .background(color = color, shape = RoundedCornerShape(4.dp))
-    )
 }
 
 @Composable
