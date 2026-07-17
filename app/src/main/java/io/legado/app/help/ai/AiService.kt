@@ -219,7 +219,9 @@ class AiService private constructor(private val context: Context) {
         var reasoningContent = ""
         var iterations = 0
         val maxIterations = 10
+        val maxConsecutiveFailures = 3
         var finalContent = ""
+        var consecutiveFailures = 0
 
         // Agent循环
         while (iterations < maxIterations) {
@@ -228,7 +230,6 @@ class AiService private constructor(private val context: Context) {
             parser.reset()
 
             val pendingToolCalls = mutableListOf<ToolCallInfo>()
-            var currentToolCallArgs = StringBuilder()
 
             // 发送请求并处理流式响应
             val result = client.chatWithTools(messages, chatTools) { chunk ->
@@ -253,11 +254,20 @@ class AiService private constructor(private val context: Context) {
                         trySend(ChatResult.ReasoningChunk(chunk.content))
                     }
                     is StreamChunk.ToolCallDelta -> {
-                        pendingToolCalls.add(ToolCallInfo(
-                            id = chunk.name,
-                            name = chunk.name,
-                            arguments = chunk.arguments
-                        ))
+                        val existing = pendingToolCalls.find { it.id == chunk.id && it.id.isNotEmpty() }
+                        if (existing != null) {
+                            val idx = pendingToolCalls.indexOf(existing)
+                            pendingToolCalls[idx] = existing.copy(
+                                name = existing.name.ifBlank { chunk.name },
+                                arguments = existing.arguments + chunk.arguments
+                            )
+                        } else {
+                            pendingToolCalls.add(ToolCallInfo(
+                                id = chunk.id,
+                                name = chunk.name,
+                                arguments = chunk.arguments
+                            ))
+                        }
                         trySend(ChatResult.ToolCall(
                             name = chunk.name,
                             arguments = chunk.arguments
@@ -296,6 +306,8 @@ class AiService private constructor(private val context: Context) {
             messages.add(mapOf("role" to "assistant", "content" to contentStr))
 
             // 执行每个工具
+            var roundSuccessCount = 0
+            var roundFailureCount = 0
             for (toolCall in pendingToolCalls) {
                 trySend(ChatResult.ToolStart(toolCall.name))
 
@@ -303,6 +315,9 @@ class AiService private constructor(private val context: Context) {
                 if (tool != null) {
                     try {
                         val argsMap = parseJsonArguments(toolCall.arguments)
+                        if (argsMap.isEmpty() && toolCall.arguments.isNotBlank()) {
+                            throw IllegalArgumentException("Tool arguments JSON is malformed: ${toolCall.arguments.take(100)}")
+                        }
                         val toolResult = tool.execute(argsMap)
 
                         val resultContent = when (toolResult.status) {
@@ -324,6 +339,12 @@ class AiService private constructor(private val context: Context) {
                         ))
 
                         trySend(ChatResult.ToolResult(toolCall.name, resultContent))
+
+                        if (toolResult.status == "ok") {
+                            roundSuccessCount++
+                        } else {
+                            roundFailureCount++
+                        }
                     } catch (e: Exception) {
                         val errorResult = JSONObject().apply {
                             put("status", "error")
@@ -337,6 +358,7 @@ class AiService private constructor(private val context: Context) {
                         ))
 
                         trySend(ChatResult.ToolResult(toolCall.name, errorResult))
+                        roundFailureCount++
                     }
                 } else {
                     val errorResult = JSONObject().apply {
@@ -351,7 +373,20 @@ class AiService private constructor(private val context: Context) {
                     ))
 
                     trySend(ChatResult.ToolResult(toolCall.name, errorResult))
+                    roundFailureCount++
                 }
+            }
+
+            // 如果本轮全部工具调用失败，则连续失败计数+1，否则重置
+            if (roundFailureCount > 0 && roundSuccessCount == 0) {
+                consecutiveFailures++
+            } else {
+                consecutiveFailures = 0
+            }
+
+            // 连续失败达到阈值，退出工具调用循环
+            if (consecutiveFailures >= maxConsecutiveFailures) {
+                break
             }
         }
 

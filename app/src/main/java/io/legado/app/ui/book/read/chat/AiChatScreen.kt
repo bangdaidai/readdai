@@ -8,6 +8,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,7 +72,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -82,7 +85,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.legado.app.R
+import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ThemeConfig
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.lib.theme.backgroundCard
@@ -90,6 +95,7 @@ import io.legado.app.lib.theme.dividerColor
 import io.legado.app.lib.theme.primaryColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.secondaryTextColor
+import io.legado.app.lib.theme.transparentNavBar
 import io.legado.app.ui.main.homepage.ReaddaiTheme
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
@@ -123,6 +129,7 @@ fun AiChatScreen(
     val scope = rememberCoroutineScope()
     var draft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    var showModelPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
@@ -170,13 +177,27 @@ fun AiChatScreen(
                 )
             }
         ) {
-            val hasBgImage = remember(context) {
+            val bgImageBitmap = remember(context) {
                 try {
-                    ThemeConfig.getBgImage(context, context.resources.displayMetrics) != null
-                } catch (_: Exception) { false }
+                    val drawable = ThemeConfig.getBgImage(context, context.resources.displayMetrics)
+                    val bitmap = (drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    bitmap?.asImageBitmap()
+                } catch (_: Exception) { null }
             }
+            val hasBgImage = bgImageBitmap != null
             val pageBgColor = Color(context.backgroundColor)
             val effectiveBgColor = if (hasBgImage) Color.Transparent else pageBgColor
+
+            val isTransparentNavBar = context.transparentNavBar
+            val isTransparentStatusBar = AppConfig.isTransparentStatusBar
+            val isImmNavBar = AppConfig.immNavigationBar
+            val titleBarBgColor = if (isTransparentNavBar) Color.Transparent else Color(context.primaryColor)
+            val titleBarTextColor = Color(ThemeStore.titleBarTextIconColor(context))
+            val effectiveTitleBarColor = if (isImmNavBar) {
+                if (hasBgImage) Color.Transparent else pageBgColor
+            } else {
+                titleBarBgColor
+            }
 
             Box(
                 modifier = Modifier
@@ -339,94 +360,210 @@ fun AiChatScreen(
                     }
                 }
 
-                Box(
+                Surface(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .fillMaxWidth()
+                        .fillMaxWidth(),
+                    color = effectiveTitleBarColor,
+                    shadowElevation = if (isTransparentNavBar || (isImmNavBar && hasBgImage)) 0.dp else 4.dp,
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.then(
+                            if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier
+                        )
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(Color(context.backgroundCard))
-                                .clickable(onClick = onFinish),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                                contentDescription = "返回",
-                                tint = Color(context.primaryTextColor)
+                        if (hasBgImage) {
+                            Image(
+                                bitmap = bgImageBitmap,
+                                contentDescription = null,
+                                modifier = Modifier.matchParentSize(),
+                                contentScale = ContentScale.FillBounds
                             )
                         }
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.CenterStart
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                modifier = Modifier.height(34.dp),
-                                shape = RoundedCornerShape(50),
-                                color = Color(context.backgroundCard)
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color(context.backgroundCard))
+                                    .clickable(onClick = onFinish),
+                                contentAlignment = Alignment.Center
                             ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                                    contentDescription = "返回",
+                                    tint = titleBarTextColor
+                                )
+                            }
+                            Box(
+                                modifier = Modifier.weight(1f),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                Surface(
+                                    modifier = Modifier
+                                        .height(40.dp)
+                                        .clickable { showModelPicker = true },
+                                    shape = RoundedCornerShape(50),
+                                    color = Color(context.backgroundCard)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .height(40.dp)
+                                            .padding(horizontal = 12.dp),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = uiState.providerName.ifBlank { "AI" },
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = titleBarTextColor,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = uiState.modelName.ifBlank { "default" },
+                                                fontSize = 11.sp,
+                                                color = Color(context.secondaryTextColor),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Box(
                                     modifier = Modifier
-                                        .height(34.dp)
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.CenterStart
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Color(context.backgroundCard))
+                                        .clickable { scope.launch { drawerState.open() } },
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = uiState.conversationTitle.ifBlank { "新对话" },
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color(context.primaryTextColor),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                    Icon(
+                                        imageVector = Icons.Default.Menu,
+                                        contentDescription = "历史",
+                                        tint = titleBarTextColor
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .background(Color(context.backgroundCard))
+                                        .clickable { viewModel.onIntent(AiChatIntent.NewConversation) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "新建",
+                                        tint = titleBarTextColor
                                     )
                                 }
                             }
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(Color(context.backgroundCard))
-                                    .clickable { scope.launch { drawerState.open() } },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Menu,
-                                    contentDescription = "历史",
-                                    tint = Color(context.primaryTextColor)
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .background(Color(context.backgroundCard))
-                                    .clickable { viewModel.onIntent(AiChatIntent.NewConversation) },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "新建",
-                                    tint = Color(context.primaryTextColor)
-                                )
-                            }
-                        }
                     }
+                }
+
+                if (showModelPicker) {
+                    ModelPickerDialog(
+                        providers = uiState.availableProviders,
+                        currentIdentifier = uiState.availableProviders.find { p ->
+                            p.title == uiState.providerName && p.model == uiState.modelName
+                        }?.identifier,
+                        onSelect = { identifier ->
+                            viewModel.onIntent(AiChatIntent.SelectProvider(identifier))
+                            showModelPicker = false
+                        },
+                        onDismiss = { showModelPicker = false }
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ModelPickerDialog(
+    providers: List<ProviderModelUi>,
+    currentIdentifier: String?,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    androidx.compose.material3.AlertDialog(
+        containerColor = Color(context.backgroundCard),
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "选择模型",
+                color = Color(context.primaryTextColor),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        text = {
+            Column {
+                providers.forEach { provider ->
+                    val isCurrent = provider.identifier == currentIdentifier
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isCurrent) Color(context.accentColor).copy(alpha = 0.15f)
+                                else Color.Transparent
+                            )
+                            .clickable { onSelect(provider.identifier) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = provider.title,
+                                fontSize = 14.sp,
+                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isCurrent) Color(context.accentColor)
+                                else Color(context.primaryTextColor)
+                            )
+                            Text(
+                                text = provider.model,
+                                fontSize = 12.sp,
+                                color = Color(context.secondaryTextColor)
+                            )
+                        }
+                        if (isCurrent) {
+                            Text(
+                                text = "当前",
+                                fontSize = 11.sp,
+                                color = Color(context.accentColor)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            Text(
+                text = "取消",
+                color = Color(context.secondaryTextColor),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(onClick = onDismiss)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        }
+    )
 }
 
 @Composable
@@ -507,7 +644,7 @@ private fun ChatInputBar(
         colors = CardDefaults.cardColors(
             containerColor = Color(context.backgroundCard)
         ),
-        border = BorderStroke(2.dp, Color(context.dividerColor))
+        border = BorderStroke(1.dp, Color(context.dividerColor))
     ) {
         Column(
             modifier = Modifier
@@ -655,7 +792,7 @@ private fun OptionChip(
             .clip(RoundedCornerShape(999.dp))
             .border(1.dp, borderColor, RoundedCornerShape(999.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 8.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

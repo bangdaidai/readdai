@@ -93,6 +93,7 @@ class AiChatViewModel(
 
             loadQuickActions()
             loadSuggestions()
+            loadAvailableProviders()
             createNewSession()
 
             if (!selectedText.isNullOrBlank()) {
@@ -122,6 +123,7 @@ class AiChatViewModel(
             AiChatIntent.ClearChat -> clearChat()
             AiChatIntent.ExportChat -> exportChat()
             AiChatIntent.OpenSettings -> openSettings()
+            is AiChatIntent.SelectProvider -> selectProvider(intent.identifier)
         }
     }
 
@@ -791,6 +793,43 @@ class AiChatViewModel(
 
     private fun openSettings() {
         _effects.tryEmit(AiChatEffect.NavigateSettings)
+    }
+
+    private fun loadAvailableProviders() {
+        viewModelScope.launch {
+            try {
+                val dao = io.legado.app.help.ai.AiDatabase.getInstance(context).aiDao()
+                val providers = dao.getAllProviders()
+                _uiState.value = _uiState.value.copy(
+                    availableProviders = providers.map {
+                        ProviderModelUi(
+                            identifier = it.identifier,
+                            title = it.title,
+                            model = it.model
+                        )
+                    }
+                )
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun selectProvider(identifier: String) {
+        viewModelScope.launch {
+            try {
+                val dao = io.legado.app.help.ai.AiDatabase.getInstance(context).aiDao()
+                val provider = dao.getAllProviders().find { it.identifier == identifier }
+                if (provider != null) {
+                    aiService.setProvider(provider)
+                    _uiState.value = _uiState.value.copy(
+                        providerName = provider.title,
+                        modelName = provider.model
+                    )
+                    _effects.tryEmit(AiChatEffect.ShowToast("已切换至 ${provider.title} · ${provider.model}"))
+                }
+            } catch (e: Exception) {
+                _effects.tryEmit(AiChatEffect.ShowToast("切换失败: ${e.message}"))
+            }
+        }
     }
 
     fun onDestroy() {

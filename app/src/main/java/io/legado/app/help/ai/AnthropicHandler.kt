@@ -172,6 +172,7 @@ class AnthropicHandler : BaseProtocolHandler() {
         val toolSteps = mutableListOf<ToolStep>()
         var currentToolStep: ToolStep? = null
         var currentToolIndex = 0
+        var finishReasonValue: String? = null
 
         val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
         var line: String?
@@ -212,7 +213,7 @@ class AnthropicHandler : BaseProtocolHandler() {
                                     currentToolStep = currentToolStep?.copy(
                                         input = currentToolStep.input + partialJson
                                     )
-                                    onChunk(StreamChunk.ToolCallDelta(currentToolIndex, currentToolStep?.name ?: "", partialJson))
+                                    onChunk(StreamChunk.ToolCallDelta(currentToolIndex, currentToolStep?.id ?: "", currentToolStep?.name ?: "", partialJson))
                                 }
                             }
                         }
@@ -227,6 +228,7 @@ class AnthropicHandler : BaseProtocolHandler() {
                     "message_delta" -> {
                         val stopReason = json.optJSONObject("delta")?.optString("stop_reason", "")
                         if (stopReason?.isNotEmpty() == true) {
+                            finishReasonValue = stopReason
                             onChunk(StreamChunk.Finish(stopReason))
                         }
                     }
@@ -238,7 +240,8 @@ class AnthropicHandler : BaseProtocolHandler() {
         return StreamResponseResult(
             content.toString(),
             reasoningContent.toString(),
-            toolSteps
+            toolSteps,
+            finishReason = finishReasonValue
         )
     }
 }

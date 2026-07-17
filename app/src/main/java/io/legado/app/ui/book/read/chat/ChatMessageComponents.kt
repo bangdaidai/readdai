@@ -152,7 +152,7 @@ private fun AssistantMessageBubble(
         ) {
             val parts = message.parts
             if (parts.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     parts.forEach { part ->
                         when (part) {
                             is AiMessagePart.Text -> {
@@ -377,12 +377,12 @@ private fun ToolStepRow(step: ToolStep) {
         ),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(context.dividerColor))
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Column(        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 0.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(if (hasContent) Modifier.clickable { expanded = !expanded } else Modifier)
-                .padding(vertical = 6.dp),
+                .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {

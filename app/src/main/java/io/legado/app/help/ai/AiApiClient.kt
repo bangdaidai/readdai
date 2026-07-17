@@ -569,6 +569,6 @@ data class ToolCall(
 sealed class StreamChunk {
     data class Content(val content: String) : StreamChunk()
     data class Reasoning(val content: String) : StreamChunk()
-    data class ToolCallDelta(val index: Int, val name: String, val arguments: String) : StreamChunk()
+    data class ToolCallDelta(val index: Int, val id: String, val name: String, val arguments: String) : StreamChunk()
     data class Finish(val reason: String) : StreamChunk()
 }

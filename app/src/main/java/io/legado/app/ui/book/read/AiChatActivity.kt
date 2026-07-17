@@ -5,18 +5,23 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ThemeConfig
+import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.backgroundColor
 import io.legado.app.ui.book.read.chat.AiChatScreen
 import io.legado.app.ui.book.read.chat.AiChatViewModel
 import io.legado.app.ui.config.ConfigActivity
 import io.legado.app.ui.config.ConfigTag
+import io.legado.app.utils.ColorUtils
+import io.legado.app.utils.setLightStatusBar
 import io.legado.app.utils.windowSize
 
 class AiChatActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupSystemBar()
         upBackgroundImage()
 
         val bookUrl = intent.getStringExtra("bookUrl")
@@ -59,6 +64,13 @@ class AiChatActivity : AppCompatActivity() {
         } catch (e: Exception) {
             window.decorView.setBackgroundColor(backgroundColor)
         }
+    }
+
+    private fun setupSystemBar() {
+        val isTransparentStatusBar = AppConfig.isTransparentStatusBar
+        val statusBarColor = ThemeStore.statusBarColor(this, isTransparentStatusBar)
+        window.statusBarColor = statusBarColor
+        setLightStatusBar(ColorUtils.isColorLight(statusBarColor))
     }
 
     override fun onDestroy() {

@@ -160,6 +160,7 @@ class GeminiHandler : BaseProtocolHandler() {
         val toolSteps = mutableListOf<ToolStep>()
         var currentToolStep: ToolStep? = null
         var currentToolIndex = 0
+        var finishReasonValue: String? = null
 
         val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
         var line: String?
@@ -197,11 +198,12 @@ class GeminiHandler : BaseProtocolHandler() {
                                         status = ToolStepStatus.RUNNING
                                     )
                                 }
-                                onChunk(StreamChunk.ToolCallDelta(currentToolIndex, name, args))
+                                onChunk(StreamChunk.ToolCallDelta(currentToolIndex, name, name, args))
                             }
                         }
                         val finishReason = candidate.optString("finishReason", "")
                         if (finishReason.isNotEmpty()) {
+                            finishReasonValue = finishReason
                             currentToolStep?.let {
                                 toolSteps.add(it.copy(status = ToolStepStatus.PENDING))
                                 currentToolIndex++
@@ -216,6 +218,6 @@ class GeminiHandler : BaseProtocolHandler() {
         }
         reader.close()
         currentToolStep?.let { toolSteps.add(it.copy(status = ToolStepStatus.PENDING)) }
-        return StreamResponseResult(content.toString(), "", toolSteps)
+        return StreamResponseResult(content.toString(), "", toolSteps, finishReason = finishReasonValue)
     }
 }

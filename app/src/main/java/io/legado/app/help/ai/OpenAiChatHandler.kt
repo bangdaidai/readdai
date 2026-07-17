@@ -126,6 +126,7 @@ class OpenAiChatHandler : BaseProtocolHandler() {
         val reasoningContent = StringBuilder()
         val toolSteps = mutableListOf<ToolStep>()
         var currentToolStep: ToolStep? = null
+        var finishReasonValue: String? = null
 
         val reader = java.io.BufferedReader(java.io.InputStreamReader(inputStream))
         var line: String?
@@ -177,7 +178,7 @@ class OpenAiChatHandler : BaseProtocolHandler() {
                             input = currentToolStep.input + args
                         )
                     }
-                    onChunk(StreamChunk.ToolCallDelta(index, name, args))
+                    onChunk(StreamChunk.ToolCallDelta(index, id, name, args))
                 }
 
                 val finishReason = choices.getJSONObject(0).optString("finish_reason", "")
@@ -186,6 +187,7 @@ class OpenAiChatHandler : BaseProtocolHandler() {
                         toolSteps.add(it.copy(status = ToolStepStatus.PENDING))
                         currentToolStep = null
                     }
+                    finishReasonValue = finishReason
                     onChunk(StreamChunk.Finish(finishReason))
                 }
             } catch (_: Exception) {
@@ -196,7 +198,8 @@ class OpenAiChatHandler : BaseProtocolHandler() {
         return StreamResponseResult(
             content.toString(),
             reasoningContent.toString(),
-            toolSteps
+            toolSteps,
+            finishReason = finishReasonValue
         )
     }
 }

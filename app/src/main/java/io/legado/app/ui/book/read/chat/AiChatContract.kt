@@ -33,7 +33,8 @@ data class AiChatUiState(
     val quickActions: List<QuickActionItemUi> = emptyList(),
     val suggestions: List<SuggestionItemUi> = emptyList(),
     val bookInfo: BookInfoUi? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val availableProviders: List<ProviderModelUi> = emptyList()
 )
 
 @Stable
@@ -69,6 +70,13 @@ data class BookInfoUi(
     val chapterContent: String? = null
 )
 
+@Stable
+data class ProviderModelUi(
+    val identifier: String,
+    val title: String,
+    val model: String
+)
+
 sealed interface AiChatIntent {
     data class SendMessage(val content: String) : AiChatIntent
     object StopGenerating : AiChatIntent
@@ -89,6 +97,7 @@ sealed interface AiChatIntent {
     object ClearChat : AiChatIntent
     object ExportChat : AiChatIntent
     object OpenSettings : AiChatIntent
+    data class SelectProvider(val identifier: String) : AiChatIntent
 }
 
 sealed interface AiChatEffect {
