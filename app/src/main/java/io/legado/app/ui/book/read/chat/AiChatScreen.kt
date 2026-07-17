@@ -46,7 +46,15 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Stop
+<<<<<<< HEAD
 import androidx.compose.material3.DrawerValue
+=======
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+>>>>>>> 3262c31c5b941d54e33efc7f7650a26b18fb5ea7
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
@@ -253,10 +261,72 @@ fun AiChatScreen(
                     }
                 }
 
+<<<<<<< HEAD
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
+=======
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ChatTopBar(
+    onBack: () -> Unit,
+    onOpenHistory: () -> Unit,
+    onNewChat: () -> Unit,
+    onClearChat: () -> Unit,
+    onExport: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    val context = LocalContext.current
+    var showMenu by remember { mutableStateOf(false) }
+    val titleBarColor = Color(ThemeStore.titleBarTextIconColor(context))
+
+    TopAppBar(
+        title = {
+            Text(
+                text = "AI阅读助手",
+                color = titleBarColor,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Medium
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "返回",
+                    tint = titleBarColor
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onOpenHistory) {
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "历史",
+                    tint = titleBarColor
+                )
+            }
+            IconButton(onClick = onNewChat) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "新建",
+                    tint = titleBarColor
+                )
+            }
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "更多",
+                        tint = titleBarColor
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    containerColor = Color(context.backgroundCard)
+>>>>>>> 3262c31c5b941d54e33efc7f7650a26b18fb5ea7
                 ) {
                     val bgColor = Color(context.backgroundCard)
                     Spacer(

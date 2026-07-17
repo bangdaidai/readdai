@@ -21,7 +21,7 @@ abstract class BaseProtocolHandler : AiProtocolHandler {
         block: suspend (String) -> T
     ): Result<T> = withContext(Dispatchers.IO) {
         try {
-            val keyRotator = KeyRotator(provider.getCurrentApiKey() ?: "")
+            val keyRotator = KeyRotator(provider.getCurrentApiKey()?.key ?: "")
             Result.success(retryWithBackoff(
                 maxAttempts = 3,
                 keyRotator = null,
@@ -36,7 +36,7 @@ abstract class BaseProtocolHandler : AiProtocolHandler {
                     }
                 }
             ) {
-                block(provider.getCurrentApiKey() ?: "")
+                block(provider.getCurrentApiKey()?.key ?: "")
             })
         } catch (e: Exception) {
             Result.failure(e)
@@ -54,31 +54,29 @@ abstract class BaseProtocolHandler : AiProtocolHandler {
     }
 
     protected fun buildChatUrl(provider: AiProviderEntity): String {
+        val normalizedUrl = provider.apiUrl.trim().trimEnd('/')
         val defaultPath = when (provider.protocol) {
             "claude" -> "/v1/messages"
-            "gemini" -> "/v1beta/models/${provider.model}:streamGenerateContent"
+            "gemini" -> null
             else -> "/v1/chat/completions"
         }
-        val url = resolveChatUrl(provider.apiUrl, defaultPath)
-        return if (provider.protocol == "gemini") {
-            val apiKey = provider.getCurrentApiKey() ?: ""
-            "$url?alt=sse&key=$apiKey"
-        } else {
-            url
+        if (provider.protocol == "gemini") {
+            val apiKey = provider.getCurrentApiKey()?.key ?: ""
+            return "$normalizedUrl/v1beta/models/${provider.model}:streamGenerateContent?alt=sse&key=$apiKey"
         }
+        return resolveUrl(normalizedUrl, defaultPath!!)
     }
 
-    private fun resolveChatUrl(baseUrl: String, defaultPath: String): String {
+    private fun resolveUrl(baseUrl: String, defaultPath: String): String {
         val normalized = baseUrl.trim().trimEnd('/')
         return when {
             normalized.endsWith(defaultPath) -> normalized
-            normalized.endsWith("/v1") && defaultPath.startsWith("/v1/") -> {
-                normalized.removeSuffix("/v1") + defaultPath
-            }
             normalized.contains("/v1/") && defaultPath.startsWith("/v1/") -> {
                 normalized.substringBeforeLast("/v1/") + defaultPath
             }
-            normalized.endsWith("/v1") && defaultPath.startsWith("/") -> "$normalized$defaultPath"
+            normalized.endsWith("/v1") && defaultPath.startsWith("/v1/") -> {
+                normalized.removeSuffix("/v1") + defaultPath
+            }
             else -> "$normalized$defaultPath"
         }
     }
