@@ -351,21 +351,6 @@ fun AiChatScreen(
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
                 ) {
-                    val bgColor = Color(context.backgroundColor)
-                    Spacer(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colorStops = arrayOf(
-                                        0f to bgColor.copy(alpha = 0.88f),
-                                        0.38f to bgColor.copy(alpha = 0.72f),
-                                        0.72f to bgColor.copy(alpha = 0.40f),
-                                        1f to bgColor.copy(alpha = 0f)
-                                    )
-                                )
-                            )
-                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
