@@ -108,6 +108,9 @@ cn.hutool.core.util.**{*;}
 -keep class okio.*{*;}
 -keep class com.jayway.jsonpath.*{*;}
 
+# 忽略 Jackson 相关类（jsonpath 3.0+ 已不再强制依赖 Jackson，使用内置 JSON 或 Gson 即可）
+-dontwarn com.fasterxml.jackson.**
+
 # LiveEventBus
 -keepclassmembers class androidx.lifecycle.LiveData {
     *** mObservers;
