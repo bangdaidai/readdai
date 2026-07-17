@@ -11,6 +11,7 @@ import io.legado.app.help.ai.AiHistoryStore
 import io.legado.app.help.ai.AiService
 import io.legado.app.help.ai.AiToolContext
 import io.legado.app.help.ai.AiTools
+import io.legado.app.help.ai.AiMessagePart
 import io.legado.app.help.ai.ChatMessageItem
 import io.legado.app.help.ai.ChatResult
 import io.legado.app.help.ai.PromptManager
@@ -41,7 +42,6 @@ class AiChatViewModel(
 
     private var currentJob: Job? = null
     private var bookInfo: BookInfoUi? = null
-    private var streamingIndex: Int = -1
 
     private val _uiState = MutableStateFlow(AiChatUiState())
     val uiState: StateFlow<AiChatUiState> = _uiState.asStateFlow()
@@ -140,26 +140,24 @@ class AiChatViewModel(
 
         currentJob?.cancel()
 
-        val provider = aiService.getProvider()
+        val provider = aiService.getCurrentProvider()
         val providerName = provider?.title ?: "AI"
         val modelName = provider?.model ?: "default"
         val assistantLabel = "$providerName · $modelName"
 
         val currentMessages = _uiState.value.messages.toMutableList()
         currentMessages.add(ChatMessageItem("user", fullContent))
-        val aiIndex = currentMessages.size
-        currentMessages.add(
-            ChatMessageItem(
-                role = "ai",
-                content = "",
-                toolSteps = emptyList(),
-                assistantLabel = assistantLabel
-            )
+
+        val streamingMsg = ChatMessageItem(
+            role = "ai",
+            content = "",
+            toolSteps = emptyList(),
+            assistantLabel = assistantLabel
         )
-        streamingIndex = aiIndex
 
         _uiState.value = _uiState.value.copy(
             messages = currentMessages.toList(),
+            streamingMessage = streamingMsg,
             isSending = true,
             providerName = providerName,
             modelName = modelName
@@ -180,17 +178,25 @@ class AiChatViewModel(
             } catch (e: Exception) {
                 _effects.tryEmit(AiChatEffect.ShowToast("发送失败: ${e.message}"))
             } finally {
-                _uiState.value = _uiState.value.copy(isSending = false)
-                streamingIndex = -1
+                val finalMsg = _uiState.value.streamingMessage
+                if (finalMsg != null) {
+                    val msgs = _uiState.value.messages.toMutableList()
+                    msgs.add(finalMsg)
+                    _uiState.value = _uiState.value.copy(
+                        messages = msgs.toList(),
+                        streamingMessage = null,
+                        isSending = false
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(isSending = false)
+                }
             }
         }
     }
 
     private fun handleChatResult(result: ChatResult) {
-        val currentMessages = _uiState.value.messages.toMutableList()
-        if (streamingIndex < 0 || streamingIndex >= currentMessages.size) return
-
-        val current = currentMessages[streamingIndex]
+        var current = _uiState.value.streamingMessage ?: return
+        val currentParts = current.parts.toMutableList()
 
         when (result) {
             is ChatResult.Chunk -> {
@@ -199,11 +205,33 @@ class AiChatViewModel(
                 } else {
                     current.content + result.content
                 }
-                currentMessages[streamingIndex] = current.copy(content = newContent)
+                if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Text) {
+                    currentParts.add(AiMessagePart.Text(result.content))
+                } else {
+                    val lastText = currentParts.last() as AiMessagePart.Text
+                    currentParts[currentParts.lastIndex] = AiMessagePart.Text(lastText.text + result.content)
+                }
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        content = newContent,
+                        parts = currentParts.toList()
+                    )
+                )
             }
             is ChatResult.ReasoningChunk -> {
                 val newReasoning = (current.reasoningContent ?: "") + result.content
-                currentMessages[streamingIndex] = current.copy(reasoningContent = newReasoning)
+                if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Reasoning) {
+                    currentParts.add(AiMessagePart.Reasoning(result.content))
+                } else {
+                    val lastReasoning = currentParts.last() as AiMessagePart.Reasoning
+                    currentParts[currentParts.lastIndex] = AiMessagePart.Reasoning(lastReasoning.text + result.content)
+                }
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        reasoningContent = newReasoning,
+                        parts = currentParts.toList()
+                    )
+                )
             }
             is ChatResult.ToolCall -> {
                 val formattedArgs = try {
@@ -219,15 +247,39 @@ class AiChatViewModel(
                         input = formattedArgs
                     )
                 )
-                currentMessages[streamingIndex] = current.copy(toolSteps = updatedSteps)
+                val toolId = result.name + "_" + System.currentTimeMillis()
+                currentParts.add(
+                    AiMessagePart.Tool(
+                        id = toolId,
+                        name = result.name,
+                        input = formattedArgs,
+                        status = ToolStepStatus.PENDING
+                    )
+                )
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        toolSteps = updatedSteps,
+                        parts = currentParts.toList()
+                    )
+                )
             }
             is ChatResult.ToolStart -> {
                 val updatedSteps = current.toolSteps.toMutableList()
                 val idx = updatedSteps.indexOfFirst { it.name == result.name }
                 if (idx >= 0) {
                     updatedSteps[idx] = updatedSteps[idx].copy(status = ToolStepStatus.RUNNING)
-                    currentMessages[streamingIndex] = current.copy(toolSteps = updatedSteps)
                 }
+                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.name == result.name }
+                if (toolIdx >= 0) {
+                    val tool = currentParts[toolIdx] as AiMessagePart.Tool
+                    currentParts[toolIdx] = tool.copy(status = ToolStepStatus.RUNNING)
+                }
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        toolSteps = updatedSteps,
+                        parts = currentParts.toList()
+                    )
+                )
             }
             is ChatResult.ToolResult -> {
                 val updatedSteps = current.toolSteps.toMutableList()
@@ -237,8 +289,21 @@ class AiChatViewModel(
                         status = ToolStepStatus.SUCCESS,
                         output = result.result
                     )
-                    currentMessages[streamingIndex] = current.copy(toolSteps = updatedSteps)
                 }
+                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.name == result.name }
+                if (toolIdx >= 0) {
+                    val tool = currentParts[toolIdx] as AiMessagePart.Tool
+                    currentParts[toolIdx] = tool.copy(
+                        status = ToolStepStatus.SUCCESS,
+                        output = result.result
+                    )
+                }
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        toolSteps = updatedSteps,
+                        parts = currentParts.toList()
+                    )
+                )
             }
             is ChatResult.ToolStepUpdate -> {
                 val updatedSteps = current.toolSteps.toMutableList()
@@ -248,41 +313,84 @@ class AiChatViewModel(
                 } else {
                     updatedSteps.add(result.step)
                 }
-                currentMessages[streamingIndex] = current.copy(toolSteps = updatedSteps)
+                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.name == result.step.name }
+                if (toolIdx >= 0) {
+                    currentParts[toolIdx] = AiMessagePart.Tool(
+                        id = (currentParts[toolIdx] as AiMessagePart.Tool).id,
+                        name = result.step.name,
+                        input = result.step.input ?: "",
+                        output = result.step.output,
+                        status = result.step.status
+                    )
+                } else {
+                    currentParts.add(
+                        AiMessagePart.Tool(
+                            id = result.step.name + "_" + System.currentTimeMillis(),
+                            name = result.step.name,
+                            input = result.step.input ?: "",
+                            output = result.step.output,
+                            status = result.step.status
+                        )
+                    )
+                }
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        toolSteps = updatedSteps,
+                        parts = currentParts.toList()
+                    )
+                )
             }
             is ChatResult.Success -> {
                 if (current.content.isEmpty() && result.content.isNotEmpty()) {
-                    currentMessages[streamingIndex] = current.copy(content = result.content)
+                    if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Text) {
+                        currentParts.add(AiMessagePart.Text(result.content))
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        streamingMessage = current.copy(
+                            content = result.content,
+                            parts = currentParts.toList()
+                        )
+                    )
                 }
             }
             is ChatResult.Error -> {
-                currentMessages[streamingIndex] = current.copy(
-                    content = current.content.ifEmpty { "错误: ${result.message}" }
+                val newContent = current.content.ifEmpty { "错误: ${result.message}" }
+                if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Text) {
+                    currentParts.add(AiMessagePart.Text(newContent))
+                }
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        content = newContent,
+                        parts = currentParts.toList()
+                    )
                 )
                 _effects.tryEmit(AiChatEffect.ShowToast(result.message))
             }
             else -> Unit
         }
-
-        _uiState.value = _uiState.value.copy(messages = currentMessages.toList())
     }
 
     private fun stopGenerating() {
         currentJob?.cancel()
         aiService.cancelCurrentRequest()
 
-        val currentMessages = _uiState.value.messages.toMutableList()
-        if (streamingIndex in currentMessages.indices) {
-            val current = currentMessages[streamingIndex]
-            if (current.content.isEmpty()) {
-                currentMessages[streamingIndex] = current.copy(content = "[请求已取消]")
+        val streamingMsg = _uiState.value.streamingMessage
+        if (streamingMsg != null) {
+            val msgs = _uiState.value.messages.toMutableList()
+            val finalMsg = if (streamingMsg.content.isEmpty()) {
+                streamingMsg.copy(content = "[请求已取消]")
+            } else {
+                streamingMsg
             }
+            msgs.add(finalMsg)
+            _uiState.value = _uiState.value.copy(
+                messages = msgs.toList(),
+                streamingMessage = null,
+                isSending = false
+            )
+        } else {
+            _uiState.value = _uiState.value.copy(isSending = false)
         }
-        _uiState.value = _uiState.value.copy(
-            messages = currentMessages.toList(),
-            isSending = false
-        )
-        streamingIndex = -1
     }
 
     private fun setQuote(text: String?) {
@@ -402,11 +510,22 @@ class AiChatViewModel(
             }
         }
         currentMessages.add(ChatMessageItem("user", fullMsg))
-        val aiIndex = currentMessages.size
-        currentMessages.add(ChatMessageItem("ai", ""))
-        streamingIndex = aiIndex
+
+        val provider = aiService.getCurrentProvider()
+        val providerName = provider?.title ?: "AI"
+        val modelName = provider?.model ?: "default"
+        val assistantLabel = "$providerName · $modelName"
+
+        val streamingMsg = ChatMessageItem(
+            role = "ai",
+            content = "",
+            toolSteps = emptyList(),
+            assistantLabel = assistantLabel
+        )
+
         _uiState.value = _uiState.value.copy(
             messages = currentMessages.toList(),
+            streamingMessage = streamingMsg,
             isSending = true
         )
 
@@ -476,8 +595,18 @@ class AiChatViewModel(
             } catch (e: Exception) {
                 _effects.tryEmit(AiChatEffect.ShowToast("技能执行失败: ${e.message}"))
             } finally {
-                _uiState.value = _uiState.value.copy(isSending = false)
-                streamingIndex = -1
+                val finalMsg = _uiState.value.streamingMessage
+                if (finalMsg != null) {
+                    val msgs = _uiState.value.messages.toMutableList()
+                    msgs.add(finalMsg)
+                    _uiState.value = _uiState.value.copy(
+                        messages = msgs.toList(),
+                        streamingMessage = null,
+                        isSending = false
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(isSending = false)
+                }
             }
         }
     }
@@ -500,15 +629,15 @@ class AiChatViewModel(
 
     private fun createNewSession() {
         val session = createNewSessionInternal()
-        val provider = aiService.getProvider()
+        val provider = aiService.getCurrentProvider()
         _uiState.value = _uiState.value.copy(
             messages = emptyList<ChatMessageItem>().toList(),
+            streamingMessage = null,
             isSending = false,
             conversationTitle = "",
             providerName = provider?.title ?: "AI",
             modelName = provider?.model ?: "default"
         )
-        streamingIndex = -1
         refreshConversations()
         _effects.tryEmit(AiChatEffect.ShowToast("已新建对话"))
     }
@@ -518,7 +647,7 @@ class AiChatViewModel(
             val sessions = AiHistoryStore.readHistory()
             val session = sessions.find { it.id == id }
             if (session != null) {
-                val provider = aiService.getProvider()
+                val provider = aiService.getCurrentProvider()
                 val messages = session.messages.map { msg ->
                     ChatMessageItem(
                         role = if (msg.type == "human") "user" else "ai",
@@ -537,12 +666,12 @@ class AiChatViewModel(
                     currentSession = session,
                     currentConversationId = session.id,
                     messages = messages.toList(),
+                    streamingMessage = null,
                     isSending = false,
                     conversationTitle = title,
                     providerName = provider?.title ?: "AI",
                     modelName = provider?.model ?: "default"
                 )
-                streamingIndex = -1
                 _effects.tryEmit(AiChatEffect.ShowToast("已加载历史对话"))
             }
         }

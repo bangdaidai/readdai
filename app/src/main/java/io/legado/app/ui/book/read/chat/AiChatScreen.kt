@@ -126,6 +126,9 @@ fun AiChatScreen(
                 is AiChatEffect.ShowToast -> {
                     android.widget.Toast.makeText(context, effect.message, android.widget.Toast.LENGTH_SHORT).show()
                 }
+                is AiChatEffect.ShowSnackbar -> {
+                    android.widget.Toast.makeText(context, effect.message, android.widget.Toast.LENGTH_SHORT).show()
+                }
                 is AiChatEffect.ShareText -> {
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
@@ -234,15 +237,26 @@ fun AiChatScreen(
                         }
                     }
                     items(uiState.messages, key = { it.id }) { message ->
-                        val isLast = message === uiState.messages.lastOrNull()
                         ChatMessageBubble(
                             message = message,
-                            isStreaming = uiState.isSending && isLast && message.role == "ai",
+                            isStreaming = false,
                             onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
                             onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
                             onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(it)) },
                             onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
                         )
+                    }
+                    uiState.streamingMessage?.let { msg ->
+                        item(key = "streaming_message") {
+                            ChatMessageBubble(
+                                message = msg,
+                                isStreaming = true,
+                                onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
+                                onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
+                                onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(it)) },
+                                onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
+                            )
+                        }
                     }
                     item(key = "bottom_anchor") {
                         Spacer(modifier = Modifier.height(1.dp))

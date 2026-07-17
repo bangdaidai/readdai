@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -35,6 +37,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.legado.app.help.ai.AiMessagePart
 import io.legado.app.help.ai.ChatMessageItem
 import io.legado.app.help.ai.ToolStep
 import io.legado.app.help.ai.ToolStepStatus
@@ -69,31 +72,11 @@ fun ChatMessageBubble(
             .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
-        if (message.reasoningContent?.isNotBlank() == true) {
-            ReasoningCard(
-                content = message.reasoningContent,
-                initiallyExpanded = message.isReasoningExpanded,
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .padding(bottom = 4.dp)
-            )
-        }
-
-        if (message.toolSteps.isNotEmpty()) {
-            ToolStepsCard(
-                steps = message.toolSteps,
-                modifier = Modifier
-                    .fillMaxWidth(0.85f)
-                    .padding(bottom = 4.dp)
-            )
-        }
-
         if (isUser) {
             UserMessageBubble(content = message.content)
         } else {
             AssistantMessageBubble(
-                content = message.content,
-                assistantLabel = message.assistantLabel,
+                message = message,
                 isStreaming = isStreaming,
                 totalBranches = message.totalBranches,
                 branchIndex = message.branchIndex,
@@ -129,8 +112,7 @@ private fun UserMessageBubble(content: String) {
 
 @Composable
 private fun AssistantMessageBubble(
-    content: String,
-    assistantLabel: String?,
+    message: ChatMessageItem,
     isStreaming: Boolean,
     totalBranches: Int,
     branchIndex: Int,
@@ -142,9 +124,10 @@ private fun AssistantMessageBubble(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val content = message.content
 
     Column(modifier = Modifier.fillMaxWidth(0.92f)) {
-        assistantLabel?.let {
+        message.assistantLabel?.let {
             Text(
                 text = it,
                 color = Color(context.secondaryTextColor),
@@ -159,19 +142,61 @@ private fun AssistantMessageBubble(
                 containerColor = Color.Transparent
             )
         ) {
-            if (content.isBlank()) {
-                if (isStreaming) {
-                    Text(
-                        text = "思考中...",
-                        color = Color(context.secondaryTextColor),
-                        fontSize = 14.sp
-                    )
+            val parts = message.parts
+            if (parts.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    parts.forEach { part ->
+                        when (part) {
+                            is AiMessagePart.Text -> {
+                                if (part.text.isNotBlank()) {
+                                    MarkdownText(
+                                        text = part.text,
+                                        modifier = Modifier.padding(vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            is AiMessagePart.Reasoning -> {
+                                if (part.text.isNotBlank()) {
+                                    ReasoningCard(content = part.text)
+                                }
+                            }
+                            is AiMessagePart.Tool -> {
+                                ToolStepsCard(
+                                    steps = listOf(
+                                        ToolStep(
+                                            id = part.id,
+                                            name = part.name,
+                                            input = part.input,
+                                            output = part.output,
+                                            status = part.status
+                                        )
+                                    )
+                                )
+                            }
+                            is AiMessagePart.BookResult -> {
+                                Text(
+                                    text = "📚 ${part.bookName}",
+                                    fontSize = 14.sp,
+                                    color = Color(context.primaryTextColor)
+                                )
+                            }
+                        }
+                    }
                 }
             } else {
-                MarkdownText(
-                    text = content,
-                    modifier = Modifier.padding(vertical = 2.dp)
-                )
+                if (message.reasoningContent?.isNotBlank() == true) {
+                    ReasoningCard(content = message.reasoningContent)
+                }
+                if (message.toolSteps.isNotEmpty()) {
+                    ToolStepsCard(steps = message.toolSteps)
+                }
+                if (content.isBlank()) {
+                    if (isStreaming) {
+                        Text(text = "思考中...", color = Color(context.secondaryTextColor), fontSize = 14.sp)
+                    }
+                } else {
+                    MarkdownText(text = content, modifier = Modifier.padding(vertical = 2.dp))
+                }
             }
         }
 
