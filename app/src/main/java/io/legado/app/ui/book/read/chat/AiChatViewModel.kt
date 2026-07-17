@@ -133,7 +133,7 @@ class AiChatViewModel(
         val fullContent = buildString {
             append(content)
             if (!quote.isNullOrBlank()) {
-                append("：")
+                append("\n\n")
                 append(quote)
             }
         }
@@ -153,7 +153,8 @@ class AiChatViewModel(
         _uiState.value = _uiState.value.copy(
             messages = currentMessages.toList(),
             streamingMessage = streamingMsg,
-            isSending = true
+            isSending = true,
+            selectedQuote = null
         )
 
         currentJob = viewModelScope.launch {
@@ -174,7 +175,7 @@ class AiChatViewModel(
                     _uiState.value.currentSession
                 }
 
-                aiService.chat(content, session).collectLatest { result ->
+                aiService.chat(fullContent, session).collectLatest { result ->
                     handleChatResult(result)
                 }
 
@@ -209,11 +210,13 @@ class AiChatViewModel(
                 } else {
                     current.content + result.content
                 }
-                if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Text) {
-                    currentParts.add(AiMessagePart.Text(result.content))
-                } else {
-                    val lastText = currentParts.last() as AiMessagePart.Text
-                    currentParts[currentParts.lastIndex] = AiMessagePart.Text(lastText.text + result.content)
+                if (result.content.isNotEmpty()) {
+                    if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Text) {
+                        currentParts.add(AiMessagePart.Text(result.content))
+                    } else {
+                        val lastText = currentParts.last() as AiMessagePart.Text
+                        currentParts[currentParts.lastIndex] = AiMessagePart.Text(lastText.text + result.content)
+                    }
                 }
                 _uiState.value = _uiState.value.copy(
                     streamingMessage = current.copy(
@@ -224,11 +227,13 @@ class AiChatViewModel(
             }
             is ChatResult.ReasoningChunk -> {
                 val newReasoning = (current.reasoningContent ?: "") + result.content
-                if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Reasoning) {
-                    currentParts.add(AiMessagePart.Reasoning(result.content))
-                } else {
-                    val lastReasoning = currentParts.last() as AiMessagePart.Reasoning
-                    currentParts[currentParts.lastIndex] = AiMessagePart.Reasoning(lastReasoning.text + result.content)
+                if (result.content.isNotEmpty()) {
+                    if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Reasoning) {
+                        currentParts.add(AiMessagePart.Reasoning(result.content))
+                    } else {
+                        val lastReasoning = currentParts.last() as AiMessagePart.Reasoning
+                        currentParts[currentParts.lastIndex] = AiMessagePart.Reasoning(lastReasoning.text + result.content)
+                    }
                 }
                 _uiState.value = _uiState.value.copy(
                     streamingMessage = current.copy(
@@ -525,7 +530,8 @@ class AiChatViewModel(
         _uiState.value = _uiState.value.copy(
             messages = currentMessages.toList(),
             streamingMessage = streamingMsg,
-            isSending = true
+            isSending = true,
+            selectedQuote = null
         )
 
         currentJob = viewModelScope.launch {
@@ -684,6 +690,7 @@ class AiChatViewModel(
                     providerName = provider?.title ?: "AI",
                     modelName = provider?.model ?: "default"
                 )
+                refreshConversations()
                 _effects.tryEmit(AiChatEffect.ShowToast("已加载历史对话"))
             }
         }

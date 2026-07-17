@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +45,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.text.method.LinkMovementMethod
+import android.widget.TextView
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.viewinterop.AndroidView
 import io.legado.app.help.ai.AiMessagePart
 import io.legado.app.help.ai.ChatMessageItem
 import io.legado.app.help.ai.ToolStep
@@ -366,7 +369,15 @@ private fun ToolStepRow(step: ToolStep) {
     val rotation by animateFloatAsState(if (expanded) 180f else 0f)
     val hasContent = step.output?.isNotBlank() == true || step.input?.isNotBlank() == true
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(context.backgroundCard)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(context.dividerColor))
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -463,16 +474,26 @@ private fun ToolStepRow(step: ToolStep) {
             }
         }
     }
+    }
 }
 
 @Composable
 private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    Text(
-        text = text,
-        modifier = modifier,
-        color = Color(context.primaryTextColor),
-        fontSize = 15.sp,
-        lineHeight = 22.sp
+    val textColor = Color(context.primaryTextColor).toArgb()
+    val markwon = remember { MarkdownUtils.getMarkwon(context) }
+
+    AndroidView(
+        factory = { ctx ->
+            TextView(ctx).apply {
+                setTextColor(textColor)
+                movementMethod = LinkMovementMethod.getInstance()
+            }
+        },
+        update = { textView ->
+            textView.setTextColor(textColor)
+            markwon.setMarkdown(textView, text)
+        },
+        modifier = modifier
     )
 }

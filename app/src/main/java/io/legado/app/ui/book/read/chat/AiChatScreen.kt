@@ -188,7 +188,7 @@ fun AiChatScreen(
                     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 )
                 val topContentPadding = 88.dp
-                val bottomContentPadding = 60.dp + systemBottomPadding
+                val bottomContentPadding = 140.dp + systemBottomPadding
 
                 val isNearBottom by remember {
                     derivedStateOf {
@@ -375,25 +375,17 @@ fun AiChatScreen(
                                 shape = RoundedCornerShape(50),
                                 color = Color(context.backgroundCard)
                             ) {
-                                Column(
+                                Box(
                                     modifier = Modifier
                                         .height(34.dp)
                                         .padding(horizontal = 12.dp),
-                                    horizontalAlignment = Alignment.Start,
-                                    verticalArrangement = Arrangement.Center
+                                    contentAlignment = Alignment.CenterStart
                                 ) {
                                     Text(
                                         text = uiState.conversationTitle.ifBlank { "新对话" },
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(context.primaryTextColor),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = uiState.modelName.ifBlank { "默认模型" },
-                                        fontSize = 11.sp,
-                                        color = Color(context.secondaryTextColor),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
