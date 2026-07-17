@@ -113,6 +113,8 @@ class AiChatViewModel(
             AiChatIntent.NewConversation -> createNewSession()
             is AiChatIntent.SelectConversation -> selectConversation(intent.id)
             is AiChatIntent.DeleteConversation -> deleteConversation(intent.id)
+            is AiChatIntent.SwitchBranch -> switchBranch(intent.messageId, intent.direction)
+            is AiChatIntent.RegenerateMessage -> regenerateMessage(intent.messageId)
             AiChatIntent.RegenerateLastMessage -> regenerateLastMessage()
             is AiChatIntent.CopyMessage -> copyToClipboard(intent.content)
             is AiChatIntent.ShareMessage -> shareMessage(intent.content)
@@ -138,15 +140,29 @@ class AiChatViewModel(
 
         currentJob?.cancel()
 
+        val provider = aiService.getProvider()
+        val providerName = provider?.title ?: "AI"
+        val modelName = provider?.model ?: "default"
+        val assistantLabel = "$providerName · $modelName"
+
         val currentMessages = _uiState.value.messages.toMutableList()
         currentMessages.add(ChatMessageItem("user", fullContent))
         val aiIndex = currentMessages.size
-        currentMessages.add(ChatMessageItem("ai", "", toolSteps = emptyList()))
+        currentMessages.add(
+            ChatMessageItem(
+                role = "ai",
+                content = "",
+                toolSteps = emptyList(),
+                assistantLabel = assistantLabel
+            )
+        )
         streamingIndex = aiIndex
 
         _uiState.value = _uiState.value.copy(
             messages = currentMessages.toList(),
-            isSending = true
+            isSending = true,
+            providerName = providerName,
+            modelName = modelName
         )
 
         currentJob = viewModelScope.launch {
@@ -279,6 +295,22 @@ class AiChatViewModel(
 
     private fun toggleSpoilerFree(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(spoilerFreeEnabled = enabled)
+    }
+
+    private fun switchBranch(messageId: String, direction: Int) {
+    }
+
+    private fun regenerateMessage(messageId: String) {
+        val messages = _uiState.value.messages
+        val msgIndex = messages.indexOfFirst { it.id == messageId }
+        if (msgIndex < 0) return
+        val lastUserIndex = messages.take(msgIndex).indexOfLast { it.role == "user" }
+        if (lastUserIndex >= 0) {
+            val newMessages = messages.take(lastUserIndex).toMutableList()
+            _uiState.value = _uiState.value.copy(messages = newMessages.toList())
+            val lastUserMsg = messages[lastUserIndex]
+            sendMessage(lastUserMsg.content)
+        }
     }
 
     private fun loadQuickActions() {
@@ -468,9 +500,13 @@ class AiChatViewModel(
 
     private fun createNewSession() {
         val session = createNewSessionInternal()
+        val provider = aiService.getProvider()
         _uiState.value = _uiState.value.copy(
             messages = emptyList<ChatMessageItem>().toList(),
-            isSending = false
+            isSending = false,
+            conversationTitle = "",
+            providerName = provider?.title ?: "AI",
+            modelName = provider?.model ?: "default"
         )
         streamingIndex = -1
         refreshConversations()
@@ -482,6 +518,7 @@ class AiChatViewModel(
             val sessions = AiHistoryStore.readHistory()
             val session = sessions.find { it.id == id }
             if (session != null) {
+                val provider = aiService.getProvider()
                 val messages = session.messages.map { msg ->
                     ChatMessageItem(
                         role = if (msg.type == "human") "user" else "ai",
@@ -489,14 +526,21 @@ class AiChatViewModel(
                         reasoningContent = "",
                         toolSteps = msg.toolSteps,
                         isExpanded = true,
-                        isReasoningExpanded = false
+                        isReasoningExpanded = false,
+                        assistantLabel = if (msg.type == "ai") "${provider?.title ?: "AI"} · ${provider?.model ?: "default"}" else null
                     )
+                }
+                val title = session.title.ifBlank {
+                    session.messages.firstOrNull { it.type == "human" }?.content?.take(30) ?: "新对话"
                 }
                 _uiState.value = _uiState.value.copy(
                     currentSession = session,
                     currentConversationId = session.id,
                     messages = messages.toList(),
-                    isSending = false
+                    isSending = false,
+                    conversationTitle = title,
+                    providerName = provider?.title ?: "AI",
+                    modelName = provider?.model ?: "default"
                 )
                 streamingIndex = -1
                 _effects.tryEmit(AiChatEffect.ShowToast("已加载历史对话"))
@@ -552,7 +596,10 @@ class AiChatViewModel(
                 updatedAt = System.currentTimeMillis()
             )
             AiHistoryStore.upsertSession(updatedSession)
-            _uiState.value = _uiState.value.copy(currentSession = updatedSession)
+            _uiState.value = _uiState.value.copy(
+                currentSession = updatedSession,
+                conversationTitle = updatedSession.title.ifBlank { "新对话" }
+            )
             refreshConversations()
         }
     }

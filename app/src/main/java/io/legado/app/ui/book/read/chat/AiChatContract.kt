@@ -2,8 +2,16 @@ package io.legado.app.ui.book.read.chat
 
 import androidx.compose.runtime.Stable
 import io.legado.app.help.ai.AiChatSession
+import io.legado.app.help.ai.AiReasoningLevel
 import io.legado.app.help.ai.ChatMessageItem
 import io.legado.app.help.ai.ToolStep
+
+@Stable
+data class AiPendingToolConfirmation(
+    val toolName: String,
+    val toolInput: String,
+    val messageId: String
+)
 
 @Stable
 data class AiChatUiState(
@@ -13,8 +21,13 @@ data class AiChatUiState(
     val currentSession: AiChatSession? = null,
     val conversations: List<AiChatConversationUi> = emptyList(),
     val currentConversationId: String? = null,
-    val deepThinkingEnabled: Boolean = false,
+    val reasoningLevel: AiReasoningLevel = AiReasoningLevel.default,
     val spoilerFreeEnabled: Boolean = false,
+    val pendingToolConfirmation: AiPendingToolConfirmation? = null,
+    val conversationTitle: String = "",
+    val providerName: String = "",
+    val modelName: String = "",
+    val initiallyPositionedConversationId: String? = null,
     val selectedQuote: String? = null,
     val quickActions: List<QuickActionItemUi> = emptyList(),
     val suggestions: List<SuggestionItemUi> = emptyList(),
@@ -66,6 +79,8 @@ sealed interface AiChatIntent {
     object NewConversation : AiChatIntent
     data class SelectConversation(val id: String) : AiChatIntent
     data class DeleteConversation(val id: String) : AiChatIntent
+    data class SwitchBranch(val messageId: String, val direction: Int) : AiChatIntent
+    data class RegenerateMessage(val messageId: String) : AiChatIntent
     object RegenerateLastMessage : AiChatIntent
     data class CopyMessage(val content: String) : AiChatIntent
     data class ShareMessage(val content: String) : AiChatIntent
@@ -77,6 +92,7 @@ sealed interface AiChatIntent {
 
 sealed interface AiChatEffect {
     data class ShowToast(val message: String) : AiChatEffect
+    data class ShowSnackbar(val message: String) : AiChatEffect
     data class ShareText(val text: String) : AiChatEffect
     object NavigateSettings : AiChatEffect
     object Finish : AiChatEffect

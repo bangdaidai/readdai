@@ -57,6 +57,7 @@ fun ChatMessageBubble(
     onShare: (String) -> Unit,
     onDelete: () -> Unit,
     onRegenerate: () -> Unit,
+    onSwitchBranch: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val isUser = message.role == "user"
@@ -92,11 +93,15 @@ fun ChatMessageBubble(
         } else {
             AssistantMessageBubble(
                 content = message.content,
+                assistantLabel = message.assistantLabel,
                 isStreaming = isStreaming,
+                totalBranches = message.totalBranches,
+                branchIndex = message.branchIndex,
                 onCopy = { onCopy(message.content) },
                 onShare = { onShare(message.content) },
                 onDelete = onDelete,
-                onRegenerate = onRegenerate
+                onRegenerate = onRegenerate,
+                onSwitchBranch = onSwitchBranch
             )
         }
     }
@@ -125,16 +130,29 @@ private fun UserMessageBubble(content: String) {
 @Composable
 private fun AssistantMessageBubble(
     content: String,
+    assistantLabel: String?,
     isStreaming: Boolean,
+    totalBranches: Int,
+    branchIndex: Int,
     onCopy: () -> Unit,
     onShare: () -> Unit,
     onDelete: () -> Unit,
-    onRegenerate: () -> Unit
+    onRegenerate: () -> Unit,
+    onSwitchBranch: ((Int) -> Unit)?
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    Column(modifier = Modifier.fillMaxWidth(0.85f)) {
+    Column(modifier = Modifier.fillMaxWidth(0.92f)) {
+        assistantLabel?.let {
+            Text(
+                text = it,
+                color = Color(context.secondaryTextColor),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(start = 2.dp, bottom = 4.dp)
+            )
+        }
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -161,8 +179,41 @@ private fun AssistantMessageBubble(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            if (totalBranches > 1 && onSwitchBranch != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clickable(enabled = branchIndex > 0) {
+                                onSwitchBranch(-1)
+                            },
+                        tint = if (branchIndex > 0) Color(context.secondaryTextColor)
+                               else Color(context.secondaryTextColor).copy(alpha = 0.3f)
+                    )
+                    Text(
+                        text = "${branchIndex + 1}/$totalBranches",
+                        color = Color(context.secondaryTextColor),
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clickable(enabled = branchIndex < totalBranches - 1) {
+                                onSwitchBranch(1)
+                            },
+                        tint = if (branchIndex < totalBranches - 1) Color(context.secondaryTextColor)
+                               else Color(context.secondaryTextColor).copy(alpha = 0.3f)
+                    )
+                }
+            }
             TextButtonSmall(text = "复制", onClick = onCopy)
             TextButtonSmall(text = "分享", onClick = onShare)
             TextButtonSmall(text = "重写", onClick = onRegenerate)

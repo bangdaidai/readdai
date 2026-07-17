@@ -8,7 +8,9 @@ data class ChatMessageItem(
     val parts: List<AiMessagePart> = emptyList(),
     val parentMessageId: String? = null,
     val branchIndex: Int = 0,
+    val totalBranches: Int = 1,
     val isSelected: Boolean = true,
+    val assistantLabel: String? = null,
     var isExpanded: Boolean = true,
     var isReasoningExpanded: Boolean = false,
     val id: String = java.util.UUID.randomUUID().toString()

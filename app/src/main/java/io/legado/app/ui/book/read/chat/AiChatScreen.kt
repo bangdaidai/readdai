@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.onSizeChanged
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -58,11 +57,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -120,8 +119,6 @@ fun AiChatScreen(
     val scope = rememberCoroutineScope()
     var draft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
-    var topOverlayHeightPx by remember { mutableIntStateOf(0) }
-    var bottomOverlayHeightPx by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         viewModel.effects.collect { effect ->
@@ -171,13 +168,12 @@ fun AiChatScreen(
                     .fillMaxSize()
                     .background(Color(context.backgroundColor))
             ) {
-                val density = androidx.compose.ui.platform.LocalDensity.current
                 val systemBottomPadding = maxOf(
                     WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
                     WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 )
-                val topContentPadding = with(density) { topOverlayHeightPx.toDp() }
-                val bottomContentPadding = with(density) { bottomOverlayHeightPx.toDp() } + systemBottomPadding
+                val topContentPadding = 88.dp
+                val bottomContentPadding = 120.dp + systemBottomPadding
 
                 val isNearBottom by remember {
                     derivedStateOf {
@@ -285,7 +281,6 @@ fun AiChatScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .onSizeChanged { bottomOverlayHeightPx = it.height }
                     ) {
                         Column(
                             modifier = Modifier
@@ -358,7 +353,6 @@ fun AiChatScreen(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
-                        .onSizeChanged { topOverlayHeightPx = it.height }
                 ) {
                     val bgColor = Color(context.backgroundColor)
                     Spacer(
@@ -414,7 +408,7 @@ fun AiChatScreen(
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
-                                        text = "AI阅读助手",
+                                        text = uiState.conversationTitle.ifBlank { "新对话" },
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = Color(context.primaryTextColor),
@@ -422,7 +416,7 @@ fun AiChatScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = "AI阅读助手",
+                                        text = uiState.modelName.ifBlank { "默认模型" },
                                         fontSize = 11.sp,
                                         color = Color(context.secondaryTextColor),
                                         maxLines = 1,

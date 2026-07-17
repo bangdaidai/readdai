@@ -50,6 +50,32 @@ enum class AiReasoningEffort {
     high
 }
 
+enum class AiReasoningLevel {
+    OFF,
+    AUTO,
+    LOW,
+    MEDIUM,
+    HIGH,
+    XHIGH;
+
+    val displayName: String
+        get() = when (this) {
+            OFF -> "关闭"
+            AUTO -> "自动"
+            LOW -> "低"
+            MEDIUM -> "中"
+            HIGH -> "高"
+            XHIGH -> "最高"
+        }
+
+    companion object {
+        val default = AUTO
+        fun fromName(name: String?): AiReasoningLevel {
+            return entries.firstOrNull { it.name == name } ?: default
+        }
+    }
+}
+
 /**
  * 聊天显示模式
  */
