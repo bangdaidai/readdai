@@ -235,7 +235,7 @@ fun AiChatScreen(
                                             verticalArrangement = Arrangement.spacedBy(2.dp)
                                         ) {
                                             Text(
-                                                text = uiState.providerName.ifBlank { "AI" },
+                                                text = uiState.providerName.ifBlank { "AI助手" },
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = titleBarTextColor,

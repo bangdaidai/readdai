@@ -149,7 +149,7 @@ class AiChatViewModel(
             role = "ai",
             content = "",
             toolSteps = emptyList(),
-            assistantLabel = "AI"
+            assistantLabel = "AI助手"
         )
 
         _uiState.value = _uiState.value.copy(
@@ -161,7 +161,7 @@ class AiChatViewModel(
 
         currentJob = viewModelScope.launch {
             val provider = aiService.getCurrentProvider()
-            val providerName = provider?.title ?: "AI"
+            val providerName = provider?.title ?: "AI助手"
             val modelName = provider?.model ?: "default"
             val assistantLabel = "$providerName · $modelName"
 
@@ -598,7 +598,7 @@ class AiChatViewModel(
             role = "ai",
             content = "",
             toolSteps = emptyList(),
-            assistantLabel = "AI"
+            assistantLabel = "AI助手"
         )
 
         _uiState.value = _uiState.value.copy(
@@ -610,7 +610,7 @@ class AiChatViewModel(
 
         currentJob = viewModelScope.launch {
             val provider = aiService.getCurrentProvider()
-            val providerName = provider?.title ?: "AI"
+            val providerName = provider?.title ?: "AI助手"
             val modelName = provider?.model ?: "default"
             val assistantLabel = "$providerName · $modelName"
 
@@ -726,7 +726,7 @@ class AiChatViewModel(
                 streamingMessage = null,
                 isSending = false,
                 conversationTitle = "",
-                providerName = provider?.title ?: "AI",
+                providerName = provider?.title ?: "AI助手",
                 modelName = provider?.model ?: "default"
             )
             refreshConversations()
@@ -748,7 +748,7 @@ class AiChatViewModel(
                         toolSteps = msg.toolSteps,
                         isExpanded = true,
                         isReasoningExpanded = false,
-                        assistantLabel = if (msg.type == "ai") "${provider?.title ?: "AI"} · ${provider?.model ?: "default"}" else null
+                        assistantLabel = if (msg.type == "ai") "${provider?.title ?: "AI助手"} · ${provider?.model ?: "default"}" else null
                     )
                 }
                 val title = session.title.ifBlank {
@@ -761,7 +761,7 @@ class AiChatViewModel(
                     streamingMessage = null,
                     isSending = false,
                     conversationTitle = title,
-                    providerName = provider?.title ?: "AI",
+                    providerName = provider?.title ?: "AI助手",
                     modelName = provider?.model ?: "default"
                 )
                 refreshConversations()
