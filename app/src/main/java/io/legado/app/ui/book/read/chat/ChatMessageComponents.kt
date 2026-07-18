@@ -117,6 +117,7 @@ private fun UserMessageBubble(content: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth(0.8f)
+            .wrapContentWidth(Alignment.End)
             .background(
                 color = Color(context.accentColor),
                 shape = RoundedCornerShape(16.dp)
@@ -576,8 +577,12 @@ private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
                 if (contentChanged) {
                     markwon.setMarkdown(textView, text)
                     applyBookTitleClickableSpans(textView, context)
-                    (textView.parent as? ViewGroup)?.let { root ->
-                        traverseAndApplyBookTitleSpans(root, context)
+                    textView.post {
+                        var root: ViewGroup? = textView.parent as? ViewGroup
+                        while (root?.parent is ViewGroup) {
+                            root = root.parent as ViewGroup
+                        }
+                        root?.let { traverseAndApplyBookTitleSpans(it, context) }
                     }
                 }
             },
