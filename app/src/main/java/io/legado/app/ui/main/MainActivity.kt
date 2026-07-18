@@ -1158,9 +1158,11 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             refreshBottomNavigationConfig()
         }
         observeEvent<String>(EventBus.THEME_CHANGED) {
-            // Refresh bottom navigation icon tint when theme changes
-            binding.bottomNavigationView.restoreThemeIconTint()
-            binding.bottomNavigationViewFloating.restoreThemeIconTint()
+            val currentEntry = NavigationBarIconConfig.currentEntry(AppConfig.isNightTheme)
+            if (currentEntry.config.enableTint) {
+                binding.bottomNavigationView.restoreThemeIconTint()
+                binding.bottomNavigationViewFloating.restoreThemeIconTint()
+            }
         }
         observeEvent<String>(PreferKey.threadCount) {
             viewModel.upPool()
