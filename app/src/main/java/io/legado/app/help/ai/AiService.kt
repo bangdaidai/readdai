@@ -223,8 +223,6 @@ class AiService private constructor(private val context: Context) {
         var finalContent = ""
         var consecutiveFailures = 0
         val toolTrace = ToolTraceBuilder()
-        val allToolParts = mutableListOf<AiMessagePart>()
-        val allBookResults = mutableListOf<AiMessagePart.BookResult>()
 
         // Agent循环
         while (iterations < maxIterations) {
@@ -407,9 +405,6 @@ class AiService private constructor(private val context: Context) {
                 }
             }
 
-            allToolParts.addAll(toolTrace.toParts())
-            allBookResults.addAll(toolTrace.bookResults())
-
             // 如果本轮全部工具调用失败，则连续失败计数+1，否则重置
             if (roundFailureCount > 0 && roundSuccessCount == 0) {
                 consecutiveFailures++
@@ -429,8 +424,8 @@ class AiService private constructor(private val context: Context) {
         trySend(ChatResult.Success(
             content = envelope.answerContent,
             reasoningContent = envelope.reasoningContent,
-            parts = allToolParts,
-            bookResults = allBookResults
+            parts = toolTrace.toParts(),
+            bookResults = toolTrace.bookResults()
         ))
 
         close()

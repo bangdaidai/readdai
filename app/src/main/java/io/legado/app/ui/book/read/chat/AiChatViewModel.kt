@@ -250,14 +250,14 @@ class AiChatViewModel(
                 } catch (e: Exception) {
                     result.arguments
                 }
-                val toolId = if (result.id.isNotEmpty()) "tool_" + result.id else "tool_idx_" + result.index
+                val toolId = result.id.ifBlank { "tool_idx_${result.index}" }
                 val existingIdx = currentParts.indexOfLast {
-                    it is AiMessagePart.Tool && it.toolCallId == toolId
+                    it is AiMessagePart.Tool && (it.toolCallId == toolId || it.toolCallId == result.id)
                 }
                 if (existingIdx >= 0) {
                     val existing = currentParts[existingIdx] as AiMessagePart.Tool
                     val updatedSteps = current.toolSteps.toMutableList()
-                    val stepIdx = updatedSteps.indexOfLast { it.id == toolId }
+                    val stepIdx = updatedSteps.indexOfLast { it.id == toolId || it.id == result.id }
                     if (stepIdx >= 0) {
                         updatedSteps[stepIdx] = updatedSteps[stepIdx].copy(
                             name = updatedSteps[stepIdx].name.ifBlank { result.name },
@@ -265,6 +265,7 @@ class AiChatViewModel(
                         )
                     }
                     currentParts[existingIdx] = existing.copy(
+                        toolCallId = toolId,
                         toolName = existing.toolName.ifBlank { result.name },
                         input = formattedArgs
                     )
@@ -303,11 +304,17 @@ class AiChatViewModel(
             }
             is ChatResult.ToolStart -> {
                 val updatedSteps = current.toolSteps.toMutableList()
-                val idx = updatedSteps.indexOfFirst { it.name == result.name }
+                val idx = updatedSteps.indexOfFirst {
+                    (result.id.isNotEmpty() && it.id == result.id) || it.name == result.name
+                }
                 if (idx >= 0) {
                     updatedSteps[idx] = updatedSteps[idx].copy(status = ToolStepStatus.RUNNING)
                 }
-                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.toolName == result.name }
+                val toolIdx = currentParts.indexOfLast {
+                    it is AiMessagePart.Tool && (
+                        (result.id.isNotEmpty() && it.toolCallId == result.id) || it.toolName == result.name
+                    )
+                }
                 if (toolIdx >= 0) {
                     val tool = currentParts[toolIdx] as AiMessagePart.Tool
                     currentParts[toolIdx] = tool.copy(status = ToolStepStatus.RUNNING)
@@ -321,14 +328,20 @@ class AiChatViewModel(
             }
             is ChatResult.ToolResult -> {
                 val updatedSteps = current.toolSteps.toMutableList()
-                val idx = updatedSteps.indexOfFirst { it.name == result.name }
+                val idx = updatedSteps.indexOfFirst {
+                    (result.id.isNotEmpty() && it.id == result.id) || it.name == result.name
+                }
                 if (idx >= 0) {
                     updatedSteps[idx] = updatedSteps[idx].copy(
                         status = ToolStepStatus.SUCCESS,
                         output = result.result
                     )
                 }
-                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.toolName == result.name }
+                val toolIdx = currentParts.indexOfLast {
+                    it is AiMessagePart.Tool && (
+                        (result.id.isNotEmpty() && it.toolCallId == result.id) || it.toolName == result.name
+                    )
+                }
                 if (toolIdx >= 0) {
                     val tool = currentParts[toolIdx] as AiMessagePart.Tool
                     currentParts[toolIdx] = tool.copy(
@@ -345,13 +358,19 @@ class AiChatViewModel(
             }
             is ChatResult.ToolStepUpdate -> {
                 val updatedSteps = current.toolSteps.toMutableList()
-                val idx = updatedSteps.indexOfFirst { it.name == result.step.name }
+                val idx = updatedSteps.indexOfFirst {
+                    (result.step.id.isNotEmpty() && it.id == result.step.id) || it.name == result.step.name
+                }
                 if (idx >= 0) {
                     updatedSteps[idx] = result.step
                 } else {
                     updatedSteps.add(result.step)
                 }
-                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.toolName == result.step.name }
+                val toolIdx = currentParts.indexOfLast {
+                    it is AiMessagePart.Tool && (
+                        (result.step.id.isNotEmpty() && it.toolCallId == result.step.id) || it.toolName == result.step.name
+                    )
+                }
                 if (toolIdx >= 0) {
                     currentParts[toolIdx] = AiMessagePart.Tool(
                         toolCallId = (currentParts[toolIdx] as AiMessagePart.Tool).toolCallId,

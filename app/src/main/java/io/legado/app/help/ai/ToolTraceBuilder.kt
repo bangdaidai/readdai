@@ -1,7 +1,7 @@
 package io.legado.app.help.ai
 
-import org.json.JSONArray
-import org.json.JSONObject
+import com.google.gson.JsonObject
+import io.legado.app.utils.GSON
 
 class ToolTraceBuilder {
     private val calls = linkedMapOf<String, ToolCallTrace>()
@@ -70,22 +70,20 @@ class ToolTraceBuilder {
     fun bookResults(): List<AiMessagePart.BookResult> {
         val books = linkedMapOf<String, AiMessagePart.BookResult>()
         calls.values.mapNotNull { it.result }.forEach { result ->
-            val root = runCatching { JSONObject(result) }.getOrNull() ?: return@forEach
-            root.optJSONArray("books")?.let { booksArray ->
-                for (i in 0 until booksArray.length()) {
-                    booksArray.optJSONObject(i)?.toBookResultPart()?.let {
-                        books.putIfAbsent(it.bookUrl, it)
-                    }
+            val root = runCatching {
+                GSON.fromJson(result, JsonObject::class.java)
+            }.getOrNull() ?: return@forEach
+            root.getAsJsonArrayOrNull("books")?.forEach { element ->
+                element.asJsonObjectOrNull()?.toBookResultPart()?.let {
+                    books.putIfAbsent(it.bookUrl, it)
                 }
             }
-            root.optJSONObject("book")?.toBookResultPart()?.let {
+            root.getAsJsonObjectOrNull("book")?.toBookResultPart()?.let {
                 books.putIfAbsent(it.bookUrl, it)
             }
-            root.optJSONArray("data")?.let { dataArray ->
-                for (i in 0 until dataArray.length()) {
-                    dataArray.optJSONObject(i)?.toBookResultPart()?.let {
-                        books.putIfAbsent(it.bookUrl, it)
-                    }
+            root.getAsJsonArrayOrNull("data")?.forEach { element ->
+                element.asJsonObjectOrNull()?.toBookResultPart()?.let {
+                    books.putIfAbsent(it.bookUrl, it)
                 }
             }
         }
@@ -128,18 +126,49 @@ data class AiToolCall(
     val arguments: String
 )
 
-private fun JSONObject.toBookResultPart(): AiMessagePart.BookResult? {
-    val bookUrl = optString("bookUrl").takeIf { it.isNotBlank() }
-        ?: optString("book_url").takeIf { it.isNotBlank() }
+data class PendingToolRun(
+    val request: AiGenerateRequest,
+    val fullText: String,
+    val fullReasoning: String,
+    val toolTrace: ToolTraceBuilder,
+    val toolCalls: List<AiToolCall>,
+    val assistantTextStart: Int,
+    val round: Int
+)
+
+internal fun JsonObject.toBookResultPart(): AiMessagePart.BookResult? {
+    val bookUrl = string("bookUrl")?.takeIf { it.isNotBlank() }
+        ?: string("book_url")?.takeIf { it.isNotBlank() }
         ?: return null
     return AiMessagePart.BookResult(
         bookUrl = bookUrl,
-        name = optString("name").ifBlank { optString("bookTitle").ifBlank { optString("title") } },
-        author = optString("author"),
-        origin = optString("origin") ?: optString("originName"),
-        coverPath = optString("coverPath") ?: optString("coverUrl"),
-        latestChapterTitle = optString("latestChapterTitle").takeIf { it.isNotBlank() },
-        currentChapterTitle = optString("currentChapterTitle").takeIf { it.isNotBlank() },
-        intro = optString("intro").takeIf { it.isNotBlank() }
+        name = string("name").orEmpty(),
+        author = string("author").orEmpty(),
+        origin = string("origin") ?: string("originName"),
+        coverPath = string("coverPath") ?: string("coverUrl"),
+        latestChapterTitle = string("latestChapterTitle"),
+        currentChapterTitle = string("currentChapterTitle"),
+        intro = string("intro")
     )
+}
+
+internal fun JsonObject.string(name: String): String? {
+    return get(name)?.takeIf { !it.isJsonNull }?.asString
+}
+
+internal fun JsonObject.getAsJsonObjectOrNull(name: String): JsonObject? {
+    return get(name)?.let { if (it.isJsonObject) it.asJsonObject else null }
+}
+
+internal fun JsonObject.getAsJsonArrayOrNull(name: String) = runCatching {
+    get(name)?.takeIf { !it.isJsonNull && it.isJsonArray }?.asJsonArray
+}.getOrNull()
+
+internal fun com.google.gson.JsonElement.asJsonObjectOrNull(): JsonObject? {
+    return takeIf { !it.isJsonNull && it.isJsonObject }?.asJsonObject
+}
+
+internal fun String.truncateToolOutput(): String {
+    if (length <= 8000) return this
+    return take(8000) + "\n\n[...truncated from ${length} chars]"
 }
