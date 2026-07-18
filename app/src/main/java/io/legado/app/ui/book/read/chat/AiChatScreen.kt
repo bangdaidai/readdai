@@ -421,7 +421,7 @@ fun AiChatScreen(
                                         contentAlignment = Alignment.CenterStart
                                     ) {
                                         Column(
-                                            verticalArrangement = Arrangement.spacedBy((-1).dp)
+                                            verticalArrangement = Arrangement.spacedBy(2.dp)
                                         ) {
                                             Text(
                                                 text = uiState.providerName.ifBlank { "AI" },
@@ -430,7 +430,7 @@ fun AiChatScreen(
                                                 color = titleBarTextColor,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
-                                                lineHeight = 14.sp
+                                                lineHeight = 16.sp
                                             )
                                             Text(
                                                 text = uiState.modelName.ifBlank { "default" },
@@ -438,7 +438,7 @@ fun AiChatScreen(
                                                 color = Color(context.secondaryTextColor),
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis,
-                                                lineHeight = 13.sp
+                                                lineHeight = 14.sp
                                             )
                                         }
                                     }
