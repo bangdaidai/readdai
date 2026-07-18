@@ -36,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +58,8 @@ import android.content.Intent
 import android.text.Spannable
 import android.text.TextPaint
 import android.text.style.ClickableSpan
+import android.view.View
+import android.view.ViewGroup
 import io.legado.app.help.ai.AiMessagePart
 import io.legado.app.help.ai.ChatMessageItem
 import io.legado.app.help.ai.ToolStep
@@ -113,6 +116,7 @@ private fun UserMessageBubble(content: String) {
     val context = LocalContext.current
     Box(
         modifier = Modifier
+            .fillMaxWidth(0.8f)
             .background(
                 color = Color(context.accentColor),
                 shape = RoundedCornerShape(16.dp)
@@ -144,7 +148,7 @@ private fun AssistantMessageBubble(
     val context = LocalContext.current
     val content = message.content
 
-    Column(modifier = Modifier.fillMaxWidth(0.92f)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         message.assistantLabel?.let {
             Text(
                 text = it,
@@ -252,17 +256,23 @@ private fun AssistantMessageBubble(
                     }
                 }
             } else {
+                var hasContentAbove = false
                 if (message.reasoningContent?.isNotBlank() == true) {
                     ReasoningCard(content = message.reasoningContent, isStreaming = isStreaming)
+                    hasContentAbove = true
                 }
                 if (message.toolSteps.isNotEmpty()) {
+                    if (hasContentAbove) Spacer(modifier = Modifier.height(8.dp))
                     ToolStepsCard(steps = message.toolSteps)
+                    hasContentAbove = true
                 }
                 if (content.isBlank()) {
                     if (isStreaming) {
+                        if (hasContentAbove) Spacer(modifier = Modifier.height(8.dp))
                         Text(text = "思考中...", color = Color(context.secondaryTextColor), fontSize = 14.sp)
                     }
                 } else {
+                    if (hasContentAbove) Spacer(modifier = Modifier.height(8.dp))
                     SelectionContainer {
                         MarkdownText(text = content, modifier = Modifier.padding(vertical = 2.dp))
                     }
@@ -342,6 +352,11 @@ fun ReasoningCard(
 ) {
     if (content.isBlank()) return
     var expanded by remember { mutableStateOf(initiallyExpanded || isStreaming) }
+    LaunchedEffect(isStreaming) {
+        if (isStreaming) {
+            expanded = true
+        }
+    }
     val rotation by animateFloatAsState(if (expanded) 180f else 0f)
     val context = LocalContext.current
 
@@ -546,47 +561,72 @@ private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val textColor = Color(context.primaryTextColor).toArgb()
     val markwon = remember { MarkdownUtils.getMarkwon(context) }
-    val bookTitlePattern = remember { Regex("《([^》]+)》") }
 
-    AndroidView(
-        factory = { ctx ->
-            TextView(ctx).apply {
-                setTextColor(textColor)
-                movementMethod = LinkMovementMethod.getInstance()
-            }
-        },
-        update = { textView ->
-            textView.setTextColor(textColor)
-            markwon.setMarkdown(textView, text)
-            val spannable = textView.text as? Spannable ?: return@AndroidView
-            val matches = bookTitlePattern.findAll(spannable.toString())
-            matches.forEach { matchResult ->
-                val bookName = matchResult.groupValues[1]
-                val start = matchResult.range.first
-                val end = matchResult.range.last + 1
-                val existingSpans = spannable.getSpans(start, end, ClickableSpan::class.java)
-                if (existingSpans.isEmpty()) {
-                    val clickSpan = object : ClickableSpan() {
-                        override fun onClick(widget: android.view.View) {
-                            val intent = android.content.Intent(context, SearchActivity::class.java)
-                            intent.putExtra("key", bookName)
-                            context.startActivity(intent)
-                        }
-                        override fun updateDrawState(ds: android.text.TextPaint) {
-                            super.updateDrawState(ds)
-                            ds.isUnderlineText = true
-                        }
+    Box(modifier = modifier.animateContentSize()) {
+        AndroidView(
+            factory = { ctx ->
+                TextView(ctx).apply {
+                    setTextColor(textColor)
+                    movementMethod = LinkMovementMethod.getInstance()
+                }
+            },
+            update = { textView ->
+                textView.setTextColor(textColor)
+                val contentChanged = textView.text?.toString() != text
+                if (contentChanged) {
+                    markwon.setMarkdown(textView, text)
+                    applyBookTitleClickableSpans(textView, context)
+                    (textView.parent as? ViewGroup)?.let { root ->
+                        traverseAndApplyBookTitleSpans(root, context)
                     }
-                    spannable.setSpan(
-                        clickSpan,
-                        start,
-                        end,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+private fun traverseAndApplyBookTitleSpans(view: View, context: android.content.Context) {
+    if (view is ViewGroup) {
+        for (i in 0 until view.childCount) {
+            val child = view.getChildAt(i)
+            if (child is TextView) {
+                applyBookTitleClickableSpans(child, context)
+            }
+            traverseAndApplyBookTitleSpans(child, context)
+        }
+    }
+}
+
+private fun applyBookTitleClickableSpans(textView: TextView, context: android.content.Context) {
+    val spannable = textView.text as? Spannable ?: return
+    val bookTitlePattern = Regex("《([^》]+)》")
+    val matches = bookTitlePattern.findAll(spannable.toString())
+    matches.forEach { matchResult ->
+        val bookName = matchResult.groupValues[1]
+        val start = matchResult.range.first
+        val end = matchResult.range.last + 1
+        val existingSpans = spannable.getSpans(start, end, ClickableSpan::class.java)
+        if (existingSpans.isEmpty()) {
+            val clickSpan = object : ClickableSpan() {
+                override fun onClick(widget: View) {
+                    val intent = Intent(context, SearchActivity::class.java)
+                    intent.putExtra("key", bookName)
+                    context.startActivity(intent)
+                }
+                override fun updateDrawState(ds: TextPaint) {
+                    super.updateDrawState(ds)
+                    ds.isUnderlineText = true
                 }
             }
-            textView.text = spannable
-        },
-        modifier = modifier
-    )
+            spannable.setSpan(
+                clickSpan,
+                start,
+                end,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+    }
+    textView.text = spannable
+    textView.movementMethod = LinkMovementMethod.getInstance()
 }

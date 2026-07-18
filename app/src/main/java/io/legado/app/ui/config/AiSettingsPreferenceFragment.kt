@@ -445,11 +445,20 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
         val btnSave = dialogView.findViewById<io.legado.app.ui.widget.text.AccentTextView>(R.id.btn_save)
 
         val isEditing = prompt != null
-        val title = if (isEditing) "编辑提示词" else "添加提示词"
+        val isGlobalSystemPrompt = prompt?.id == PromptManager.GLOBAL_SYSTEM_PROMPT_ID
+        val title = when {
+            isGlobalSystemPrompt -> "编辑全局系统提示词"
+            isEditing -> "编辑提示词"
+            else -> "添加提示词"
+        }
 
         if (isEditing) {
             etName.setText(prompt!!.name)
             etContent.setText(prompt.content)
+            if (isGlobalSystemPrompt) {
+                etName.isEnabled = false
+                btnDelete.text = "恢复默认"
+            }
             btnDelete.visibility = View.VISIBLE
         }
 
@@ -468,24 +477,28 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
             }
 
             lifecycleScope.launch {
-                val updatedPrompt = if (isEditing) {
-                    prompt!!.copy(
-                        name = name,
-                        content = content,
-                        updatedAt = System.currentTimeMillis()
-                    )
+                if (isGlobalSystemPrompt) {
+                    promptManager.saveGlobalSystemPrompt(content)
                 } else {
-                    AiPromptEntity(
-                        id = "custom_${System.currentTimeMillis()}",
-                        name = name,
-                        content = content,
-                        showIn = "quick_bar",
-                        sortOrder = 100,
-                        isEnabled = true,
-                        isBuiltin = false
-                    )
+                    val updatedPrompt = if (isEditing) {
+                        prompt!!.copy(
+                            name = name,
+                            content = content,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                    } else {
+                        AiPromptEntity(
+                            id = "custom_${System.currentTimeMillis()}",
+                            name = name,
+                            content = content,
+                            showIn = "quick_bar",
+                            sortOrder = 100,
+                            isEnabled = true,
+                            isBuiltin = false
+                        )
+                    }
+                    promptManager.savePrompt(updatedPrompt)
                 }
-                promptManager.savePrompt(updatedPrompt)
                 Toast.makeText(requireContext(), "已保存", Toast.LENGTH_SHORT).show()
                 dialog.dismiss()
             }
@@ -496,18 +509,33 @@ class AiSettingsPreferenceFragment : PreferenceFragment(),
         }
 
         btnDelete.setOnClickListener {
-            AlertDialog(requireContext())
-                .setTitle("删除提示词")
-                .setMessage("确定要删除 \"${prompt!!.name}\" 吗？")
-                .setPositiveButton("删除") { _, _ ->
-                    lifecycleScope.launch {
-                        promptManager.deletePrompt(prompt.id)
-                        Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
-                        dialog.dismiss()
+            if (isGlobalSystemPrompt) {
+                AlertDialog(requireContext())
+                    .setTitle("恢复默认")
+                    .setMessage("确定要将全局系统提示词恢复为默认值吗？")
+                    .setPositiveButton("恢复") { _, _ ->
+                        lifecycleScope.launch {
+                            promptManager.restoreDefaultGlobalSystemPrompt()
+                            etContent.setText(PromptManager.DEFAULT_GLOBAL_SYSTEM_PROMPT)
+                            Toast.makeText(requireContext(), "已恢复默认", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }
-                .setNegativeButton("取消", null)
-                .show()
+                    .setNegativeButton("取消", null)
+                    .show()
+            } else {
+                AlertDialog(requireContext())
+                    .setTitle("删除提示词")
+                    .setMessage("确定要删除 \"${prompt!!.name}\" 吗？")
+                    .setPositiveButton("删除") { _, _ ->
+                        lifecycleScope.launch {
+                            promptManager.deletePrompt(prompt.id)
+                            Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
+                            dialog.dismiss()
+                        }
+                    }
+                    .setNegativeButton("取消", null)
+                    .show()
+            }
         }
 
         dialog.show()

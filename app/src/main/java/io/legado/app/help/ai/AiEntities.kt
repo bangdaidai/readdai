@@ -222,6 +222,7 @@ data class ChatMessage(
     val toolCallId: String? = null,  // 工具调用ID（用于tool类型的消息）
     val toolSteps: List<ToolStep> = emptyList(),  // 工具调用步骤列表
     val parts: List<AiMessagePart> = emptyList(),
+    val reasoningContent: String = "",
     val parentMessageId: String? = null,
     val branchIndex: Int = 0,
     val isSelected: Boolean = true
@@ -235,11 +236,16 @@ data class ChatMessage(
         } else {
             map
         }
-        // 添加工具步骤数据
-        if (toolSteps.isNotEmpty()) {
-            withToolCallId + ("toolSteps" to toolSteps.map { it.toMap() })
+        val withReasoning = if (reasoningContent.isNotBlank()) {
+            withToolCallId + ("reasoningContent" to reasoningContent)
         } else {
             withToolCallId
+        }
+        // 添加工具步骤数据
+        if (toolSteps.isNotEmpty()) {
+            withReasoning + ("toolSteps" to toolSteps.map { it.toMap() })
+        } else {
+            withReasoning
         }
     }
 
@@ -258,7 +264,8 @@ data class ChatMessage(
                 type = map["type"]?.toString() ?: "human",
                 content = map["content"]?.toString() ?: "",
                 toolCallId = map["toolCallId"]?.toString(),
-                toolSteps = toolSteps
+                toolSteps = toolSteps,
+                reasoningContent = map["reasoningContent"]?.toString() ?: ""
             )
         }
     }

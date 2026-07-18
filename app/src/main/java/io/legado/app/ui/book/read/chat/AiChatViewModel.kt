@@ -744,7 +744,7 @@ class AiChatViewModel(
                     ChatMessageItem(
                         role = if (msg.type == "human") "user" else "ai",
                         content = msg.content,
-                        reasoningContent = "",
+                        reasoningContent = msg.reasoningContent,
                         toolSteps = msg.toolSteps,
                         isExpanded = true,
                         isReasoningExpanded = false,
@@ -807,7 +807,8 @@ class AiChatViewModel(
                 io.legado.app.help.ai.ChatMessage(
                     type = if (item.role == "user") "human" else "ai",
                     content = item.content,
-                    toolSteps = item.toolSteps
+                    toolSteps = item.toolSteps,
+                    reasoningContent = item.reasoningContent ?: ""
                 )
             }
             val updatedSession = session.copy(
