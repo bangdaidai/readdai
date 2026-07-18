@@ -227,7 +227,7 @@ $toolCatalog
     companion object {
         const val GLOBAL_SYSTEM_PROMPT_ID = "global_system_prompt"
 
-        const val DEFAULT_GLOBAL_SYSTEM_PROMPT = """
+        val DEFAULT_GLOBAL_SYSTEM_PROMPT = """
 你是dai阅读器的AI阅读助手，专门帮助用户解答阅读中的问题。
 
 ## 你的角色
@@ -280,7 +280,7 @@ $toolCatalog
          * 默认系统提示词（旧版兼容，已被 DEFAULT_GLOBAL_SYSTEM_PROMPT 替代）
          */
         @Deprecated("Use DEFAULT_GLOBAL_SYSTEM_PROMPT instead")
-        const val DEFAULT_SYSTEM_PROMPT = DEFAULT_GLOBAL_SYSTEM_PROMPT
+        val DEFAULT_SYSTEM_PROMPT = DEFAULT_GLOBAL_SYSTEM_PROMPT
 
         /**
          * 默认提示词列表
