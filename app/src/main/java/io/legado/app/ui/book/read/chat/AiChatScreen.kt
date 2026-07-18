@@ -409,17 +409,19 @@ fun AiChatScreen(
                             ) {
                                 Surface(
                                     modifier = Modifier
+                                        .height(40.dp)
                                         .clickable { showModelPicker = true },
                                     shape = RoundedCornerShape(50),
                                     color = Color(context.backgroundCard)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                            .height(40.dp)
+                                            .padding(horizontal = 12.dp),
                                         contentAlignment = Alignment.CenterStart
                                     ) {
                                         Column(
-                                            verticalArrangement = Arrangement.spacedBy(1.dp)
+                                            verticalArrangement = Arrangement.spacedBy((-1).dp)
                                         ) {
                                             Text(
                                                 text = uiState.providerName.ifBlank { "AI" },
