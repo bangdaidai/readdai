@@ -231,6 +231,8 @@ class AiAnalysisDialog : DialogFragment() {
                     }
                     is ChatResult.ToolStart -> {
                     }
+                    is ChatResult.ToolTraceUpdate -> {
+                    }
                 }
             }
         }

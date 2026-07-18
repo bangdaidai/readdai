@@ -507,6 +507,8 @@ class ReadBookActivity : BaseReadBookActivity(),
                         }
                         is ChatResult.ToolStart -> {
                         }
+                        is ChatResult.ToolTraceUpdate -> {
+                        }
                         is ChatResult.Success -> {
                             tvLoading.visibility = View.GONE
                             tvContent.visibility = View.VISIBLE

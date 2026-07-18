@@ -163,7 +163,7 @@ private fun AssistantMessageBubble(
                         if (part !is AiMessagePart.Tool || isLast || nextIsNotTool) {
                             if (toolGroup.isNotEmpty()) {
                                 ToolStepsCard(steps = toolGroup.map {
-                                    ToolStep(id = it.id, name = it.name, input = it.input, output = it.output, status = it.status)
+                                    ToolStep(id = it.toolCallId, name = it.toolName, input = it.input, output = it.output, status = it.status)
                                 })
                                 toolGroup.clear()
                             }
@@ -184,7 +184,7 @@ private fun AssistantMessageBubble(
                             }
                             is AiMessagePart.BookResult -> {
                                 Text(
-                                    text = "📚 ${part.bookName}",
+                                    text = "📚 ${part.name}",
                                     fontSize = 14.sp,
                                     color = Color(context.primaryTextColor)
                                 )

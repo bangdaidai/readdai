@@ -252,12 +252,12 @@ class AiChatViewModel(
                 }
                 val toolId = if (result.id.isNotEmpty()) "tool_" + result.id else "tool_idx_" + result.index
                 val existingIdx = currentParts.indexOfLast {
-                    it is AiMessagePart.Tool && (it.index == result.index || (result.id.isNotEmpty() && it.id == toolId))
+                    it is AiMessagePart.Tool && it.toolCallId == toolId
                 }
                 if (existingIdx >= 0) {
                     val existing = currentParts[existingIdx] as AiMessagePart.Tool
                     val updatedSteps = current.toolSteps.toMutableList()
-                    val stepIdx = updatedSteps.indexOfLast { it.index == result.index || (result.id.isNotEmpty() && it.id == toolId) }
+                    val stepIdx = updatedSteps.indexOfLast { it.id == toolId }
                     if (stepIdx >= 0) {
                         updatedSteps[stepIdx] = updatedSteps[stepIdx].copy(
                             name = updatedSteps[stepIdx].name.ifBlank { result.name },
@@ -265,7 +265,7 @@ class AiChatViewModel(
                         )
                     }
                     currentParts[existingIdx] = existing.copy(
-                        name = existing.name.ifBlank { result.name },
+                        toolName = existing.toolName.ifBlank { result.name },
                         input = formattedArgs
                     )
                     _uiState.value = _uiState.value.copy(
@@ -287,9 +287,8 @@ class AiChatViewModel(
                     )
                     currentParts.add(
                         AiMessagePart.Tool(
-                            index = result.index,
-                            id = toolId,
-                            name = result.name,
+                            toolCallId = toolId,
+                            toolName = result.name,
                             input = formattedArgs,
                             status = ToolStepStatus.PENDING
                         )
@@ -308,7 +307,7 @@ class AiChatViewModel(
                 if (idx >= 0) {
                     updatedSteps[idx] = updatedSteps[idx].copy(status = ToolStepStatus.RUNNING)
                 }
-                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.name == result.name }
+                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.toolName == result.name }
                 if (toolIdx >= 0) {
                     val tool = currentParts[toolIdx] as AiMessagePart.Tool
                     currentParts[toolIdx] = tool.copy(status = ToolStepStatus.RUNNING)
@@ -329,7 +328,7 @@ class AiChatViewModel(
                         output = result.result
                     )
                 }
-                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.name == result.name }
+                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.toolName == result.name }
                 if (toolIdx >= 0) {
                     val tool = currentParts[toolIdx] as AiMessagePart.Tool
                     currentParts[toolIdx] = tool.copy(
@@ -352,22 +351,22 @@ class AiChatViewModel(
                 } else {
                     updatedSteps.add(result.step)
                 }
-                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.name == result.step.name }
+                val toolIdx = currentParts.indexOfLast { it is AiMessagePart.Tool && it.toolName == result.step.name }
                 if (toolIdx >= 0) {
                     currentParts[toolIdx] = AiMessagePart.Tool(
-                        id = (currentParts[toolIdx] as AiMessagePart.Tool).id,
-                        name = result.step.name,
+                        toolCallId = (currentParts[toolIdx] as AiMessagePart.Tool).toolCallId,
+                        toolName = result.step.name,
                         input = result.step.input ?: "",
-                        output = result.step.output,
+                        output = result.step.output ?: "",
                         status = result.step.status
                     )
                 } else {
                     currentParts.add(
                         AiMessagePart.Tool(
-                            id = result.step.name + "_" + System.currentTimeMillis(),
-                            name = result.step.name,
+                            toolCallId = result.step.name + "_" + System.currentTimeMillis(),
+                            toolName = result.step.name,
                             input = result.step.input ?: "",
-                            output = result.step.output,
+                            output = result.step.output ?: "",
                             status = result.step.status
                         )
                     )
