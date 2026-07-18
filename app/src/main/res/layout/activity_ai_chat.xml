@@ -11,6 +11,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:title="AI阅读助手"
+        app:displayHomeAsUp="false"
+        app:contentInsetStart="16dp"
+        app:contentInsetEnd="16dp"
+        app:contentInsetStartWithNavigation="16dp"
+        app:contentInsetEndWithActions="16dp"
         app:menu="@menu/ai_chat_menu">
 
     </io.legado.app.ui.widget.TitleBar>
