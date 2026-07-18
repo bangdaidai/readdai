@@ -288,6 +288,7 @@ sealed class ChatResult {
      * 工具调用开始
      */
     data class ToolCall(
+        val id: String = "",
         val name: String,
         val arguments: String
     ) : ChatResult()

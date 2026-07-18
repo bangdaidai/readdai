@@ -152,8 +152,22 @@ private fun AssistantMessageBubble(
         ) {
             val parts = message.parts
             if (parts.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    parts.forEach { part ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    var toolGroup = mutableListOf<AiMessagePart.Tool>()
+                    parts.forEachIndexed { index, part ->
+                        if (part is AiMessagePart.Tool) {
+                            toolGroup.add(part)
+                        }
+                        val isLast = index == parts.lastIndex
+                        val nextIsNotTool = !isLast && parts[index + 1] !is AiMessagePart.Tool
+                        if (part !is AiMessagePart.Tool || isLast || nextIsNotTool) {
+                            if (toolGroup.isNotEmpty()) {
+                                ToolStepsCard(steps = toolGroup.map {
+                                    ToolStep(id = it.id, name = it.name, input = it.input, output = it.output, status = it.status)
+                                })
+                                toolGroup.clear()
+                            }
+                        }
                         when (part) {
                             is AiMessagePart.Text -> {
                                 if (part.text.isNotBlank()) {
@@ -168,17 +182,6 @@ private fun AssistantMessageBubble(
                                     ReasoningCard(content = part.text, isStreaming = isStreaming)
                                 }
                             }
-                            is AiMessagePart.Tool -> {
-                                ToolStepRow(
-                                    step = ToolStep(
-                                        id = part.id,
-                                        name = part.name,
-                                        input = part.input,
-                                        output = part.output,
-                                        status = part.status
-                                    )
-                                )
-                            }
                             is AiMessagePart.BookResult -> {
                                 Text(
                                     text = "📚 ${part.bookName}",
@@ -186,6 +189,7 @@ private fun AssistantMessageBubble(
                                     color = Color(context.primaryTextColor)
                                 )
                             }
+                            is AiMessagePart.Tool -> { }
                         }
                     }
                 }
@@ -288,7 +292,7 @@ fun ReasoningCard(
             containerColor = Color.Transparent
         ),
         border = androidx.compose.foundation.BorderStroke(
-            2.dp,
+            1.dp,
             Color(context.dividerColor)
         )
     ) {
@@ -301,8 +305,9 @@ fun ReasoningCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded }
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Lightbulb,
@@ -310,7 +315,6 @@ fun ReasoningCard(
                     modifier = Modifier.size(18.dp),
                     tint = Color(context.secondaryTextColor)
                 )
-                Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = if (isStreaming) "深度思考中..." else "思考过程",
                     color = Color(context.primaryTextColor),
@@ -321,7 +325,7 @@ fun ReasoningCard(
                     imageVector = Icons.Default.ExpandMore,
                     contentDescription = null,
                     modifier = Modifier
-                        .size(24.dp)
+                        .size(16.dp)
                         .rotate(rotation),
                     tint = Color(context.secondaryTextColor)
                 )
@@ -440,7 +444,7 @@ private fun ToolStepRow(step: ToolStep) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 28.dp, end = 4.dp, bottom = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 step.input?.takeIf { it.isNotBlank() }?.let {
                     Text(

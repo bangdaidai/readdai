@@ -250,29 +250,49 @@ class AiChatViewModel(
                 } catch (e: Exception) {
                     result.arguments
                 }
-                val updatedSteps = current.toolSteps.toMutableList()
-                updatedSteps.add(
-                    ToolStep(
-                        name = result.name,
-                        status = ToolStepStatus.PENDING,
-                        input = formattedArgs
+                val toolId = "tool_" + result.id
+                val existingIdx = currentParts.indexOfLast {
+                    it is AiMessagePart.Tool && it.id == toolId
+                }
+                if (existingIdx >= 0) {
+                    val existing = currentParts[existingIdx] as AiMessagePart.Tool
+                    val updatedSteps = current.toolSteps.toMutableList()
+                    val stepIdx = updatedSteps.indexOfLast { it.id == toolId }
+                    if (stepIdx >= 0) {
+                        updatedSteps[stepIdx] = updatedSteps[stepIdx].copy(input = formattedArgs)
+                    }
+                    currentParts[existingIdx] = existing.copy(input = formattedArgs)
+                    _uiState.value = _uiState.value.copy(
+                        streamingMessage = current.copy(
+                            toolSteps = updatedSteps,
+                            parts = currentParts.toList()
+                        )
                     )
-                )
-                val toolId = result.name + "_" + System.currentTimeMillis()
-                currentParts.add(
-                    AiMessagePart.Tool(
-                        id = toolId,
-                        name = result.name,
-                        input = formattedArgs,
-                        status = ToolStepStatus.PENDING
+                } else {
+                    val updatedSteps = current.toolSteps.toMutableList()
+                    updatedSteps.add(
+                        ToolStep(
+                            id = toolId,
+                            name = result.name,
+                            status = ToolStepStatus.PENDING,
+                            input = formattedArgs
+                        )
                     )
-                )
-                _uiState.value = _uiState.value.copy(
-                    streamingMessage = current.copy(
-                        toolSteps = updatedSteps,
-                        parts = currentParts.toList()
+                    currentParts.add(
+                        AiMessagePart.Tool(
+                            id = toolId,
+                            name = result.name,
+                            input = formattedArgs,
+                            status = ToolStepStatus.PENDING
+                        )
                     )
-                )
+                    _uiState.value = _uiState.value.copy(
+                        streamingMessage = current.copy(
+                            toolSteps = updatedSteps,
+                            parts = currentParts.toList()
+                        )
+                    )
+                }
             }
             is ChatResult.ToolStart -> {
                 val updatedSteps = current.toolSteps.toMutableList()

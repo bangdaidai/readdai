@@ -255,22 +255,26 @@ class AiService private constructor(private val context: Context) {
                     }
                     is StreamChunk.ToolCallDelta -> {
                         val existing = pendingToolCalls.find { it.id == chunk.id && it.id.isNotEmpty() }
-                        if (existing != null) {
+                        val updated = if (existing != null) {
                             val idx = pendingToolCalls.indexOf(existing)
                             pendingToolCalls[idx] = existing.copy(
                                 name = existing.name.ifBlank { chunk.name },
                                 arguments = existing.arguments + chunk.arguments
                             )
+                            pendingToolCalls[idx]
                         } else {
-                            pendingToolCalls.add(ToolCallInfo(
+                            val new = ToolCallInfo(
                                 id = chunk.id,
                                 name = chunk.name,
                                 arguments = chunk.arguments
-                            ))
+                            )
+                            pendingToolCalls.add(new)
+                            new
                         }
                         trySend(ChatResult.ToolCall(
-                            name = chunk.name,
-                            arguments = chunk.arguments
+                            id = chunk.id,
+                            name = updated.name,
+                            arguments = updated.arguments
                         ))
                     }
                     is StreamChunk.Finish -> {}

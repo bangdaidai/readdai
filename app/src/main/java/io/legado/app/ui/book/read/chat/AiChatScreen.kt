@@ -367,16 +367,7 @@ fun AiChatScreen(
                     color = effectiveTitleBarColor,
                     shadowElevation = if (isTransparentNavBar || (isImmNavBar && hasBgImage)) 0.dp else 4.dp,
                 ) {
-                    Box {
-                        if (hasBgImage) {
-                            Image(
-                                bitmap = bgImageBitmap,
-                                contentDescription = null,
-                                modifier = Modifier.matchParentSize(),
-                                contentScale = ContentScale.FillBounds
-                            )
-                        }
-                        Column(
+                    Column(
                             modifier = Modifier.then(
                                 if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier
                             )
@@ -474,9 +465,10 @@ fun AiChatScreen(
                                     )
                                 }
                             }
-                        }
-                        }
+                                                }
                     }
+
+
                 }
 
                 if (showModelPicker) {
