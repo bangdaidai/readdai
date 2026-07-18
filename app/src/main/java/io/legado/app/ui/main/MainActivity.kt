@@ -523,6 +523,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Setup LiquidGlass - EXACT match with archive implementation
      */
     private fun setupLiquidGlass() {
+        if (isFinishing || isDestroyed) return
         // Only apply in floating mode
         if (AppConfig.bottomBarLayoutMode != "floating") return
 
@@ -886,6 +887,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         if (!liquidGlassView.isLaidOut || liquidGlassView.width == 0 || liquidGlassView.height == 0) {
             return
         }
+        if (!liquidGlassView.isAttachedToWindow) return
 
         try {
             if (boundLiquidGlassViewIds.add(liquidGlassView.id)) {
@@ -1106,6 +1108,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         super.onDestroy()
         // Cancel all pending LiquidGlass tasks to prevent NPE
         shouldCancelLiquidGlassTasks = true
+        binding.bottomNavigationGlass.removeCallbacks(null)
         bottomIndicatorAnimator.cancel()
 
         // Clear bound LiquidGlassView IDs to allow re-binding on recreate
