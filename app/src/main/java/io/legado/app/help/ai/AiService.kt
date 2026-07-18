@@ -222,14 +222,16 @@ class AiService private constructor(private val context: Context) {
         val maxConsecutiveFailures = 3
         var finalContent = ""
         var consecutiveFailures = 0
+        val toolTrace = ToolTraceBuilder()
+        val allToolParts = mutableListOf<AiMessagePart>()
+        val allBookResults = mutableListOf<AiMessagePart.BookResult>()
 
         // Agent循环
         while (iterations < maxIterations) {
             iterations++
             fullContent.clear()
             parser.reset()
-
-            val pendingToolCalls = mutableListOf<ToolCallInfo>()
+            toolTrace.beginResponse()
 
             // 发送请求并处理流式响应
             val result = client.chatWithTools(messages, chatTools) { chunk ->
@@ -254,27 +256,16 @@ class AiService private constructor(private val context: Context) {
                         trySend(ChatResult.ReasoningChunk(chunk.content))
                     }
                     is StreamChunk.ToolCallDelta -> {
-                        val existing = pendingToolCalls.find { it.id == chunk.id && it.id.isNotEmpty() }
-                        val updated = if (existing != null) {
-                            val idx = pendingToolCalls.indexOf(existing)
-                            pendingToolCalls[idx] = existing.copy(
-                                name = existing.name.ifBlank { chunk.name },
-                                arguments = existing.arguments + chunk.arguments
-                            )
-                            pendingToolCalls[idx]
-                        } else {
-                            val new = ToolCallInfo(
-                                id = chunk.id,
-                                name = chunk.name,
-                                arguments = chunk.arguments
-                            )
-                            pendingToolCalls.add(new)
-                            new
-                        }
-                        trySend(ChatResult.ToolCall(
+                        toolTrace.append(
+                            index = chunk.index,
                             id = chunk.id,
-                            name = updated.name,
-                            arguments = updated.arguments
+                            name = chunk.name,
+                            argumentsDelta = chunk.arguments
+                        )
+                        trySend(ChatResult.ToolTraceUpdate(
+                            toolParts = toolTrace.toParts(),
+                            bookResults = toolTrace.bookResults(),
+                            traceText = toolTrace.toString()
                         ))
                     }
                     is StreamChunk.Finish -> {}
@@ -297,7 +288,8 @@ class AiService private constructor(private val context: Context) {
             // 检查finish_reason是否为tool_calls
             val streamResult = result.getOrNull()
             val finishReason = streamResult?.finishReason
-            val hasToolCalls = finishReason == "tool_calls" || pendingToolCalls.isNotEmpty()
+            val pendingCalls = toolTrace.pendingToolCalls()
+            val hasToolCalls = finishReason == "tool_calls" || pendingCalls.isNotEmpty()
 
             if (!hasToolCalls) {
                 // 没有工具调用，这是一个普通回复
@@ -307,15 +299,28 @@ class AiService private constructor(private val context: Context) {
             }
 
             // 有工具调用，需要执行工具
-            messages.add(mapOf("role" to "assistant", "content" to contentStr))
+            val toolCallsList = pendingCalls.map { tc ->
+                mapOf(
+                    "id" to tc.id,
+                    "type" to "function",
+                    "name" to tc.name,
+                    "arguments" to tc.arguments
+                )
+            }
+            messages.add(mapOf(
+                "role" to "assistant",
+                "content" to contentStr,
+                "tool_calls" to toolCallsList
+            ))
 
             // 执行每个工具
             var roundSuccessCount = 0
             var roundFailureCount = 0
-            for (toolCall in pendingToolCalls) {
-                trySend(ChatResult.ToolStart(toolCall.name))
+            for (toolCall in pendingCalls) {
+                val toolName = toolCall.name.ifBlank { toolCall.id }
+                trySend(ChatResult.ToolStart(id = toolCall.id, name = toolName))
 
-                val tool = toolsMap[toolCall.name]
+                val tool = toolsMap[toolName] ?: toolsMap[toolCall.id]
                 if (tool != null) {
                     try {
                         val argsMap = parseJsonArguments(toolCall.arguments)
@@ -342,7 +347,14 @@ class AiService private constructor(private val context: Context) {
                             "content" to resultContent
                         ))
 
-                        trySend(ChatResult.ToolResult(toolCall.name, resultContent))
+                        toolTrace.appendResult(toolCall.id, resultContent)
+
+                        trySend(ChatResult.ToolResult(id = toolCall.id, name = toolName, result = resultContent))
+                        trySend(ChatResult.ToolTraceUpdate(
+                            toolParts = toolTrace.toParts(),
+                            bookResults = toolTrace.bookResults(),
+                            traceText = toolTrace.toString()
+                        ))
 
                         if (toolResult.status == "ok") {
                             roundSuccessCount++
@@ -361,13 +373,20 @@ class AiService private constructor(private val context: Context) {
                             "content" to errorResult
                         ))
 
-                        trySend(ChatResult.ToolResult(toolCall.name, errorResult))
+                        toolTrace.appendResult(toolCall.id, errorResult)
+
+                        trySend(ChatResult.ToolResult(id = toolCall.id, name = toolName, result = errorResult))
+                        trySend(ChatResult.ToolTraceUpdate(
+                            toolParts = toolTrace.toParts(),
+                            bookResults = toolTrace.bookResults(),
+                            traceText = toolTrace.toString()
+                        ))
                         roundFailureCount++
                     }
                 } else {
                     val errorResult = JSONObject().apply {
                         put("status", "error")
-                        put("message", "Tool not found: ${toolCall.name}")
+                        put("message", "Tool not found: $toolName")
                     }.toString()
 
                     messages.add(mapOf(
@@ -376,10 +395,20 @@ class AiService private constructor(private val context: Context) {
                         "content" to errorResult
                     ))
 
-                    trySend(ChatResult.ToolResult(toolCall.name, errorResult))
+                    toolTrace.appendResult(toolCall.id, errorResult)
+
+                    trySend(ChatResult.ToolResult(id = toolCall.id, name = toolName, result = errorResult))
+                    trySend(ChatResult.ToolTraceUpdate(
+                        toolParts = toolTrace.toParts(),
+                        bookResults = toolTrace.bookResults(),
+                        traceText = toolTrace.toString()
+                    ))
                     roundFailureCount++
                 }
             }
+
+            allToolParts.addAll(toolTrace.toParts())
+            allBookResults.addAll(toolTrace.bookResults())
 
             // 如果本轮全部工具调用失败，则连续失败计数+1，否则重置
             if (roundFailureCount > 0 && roundSuccessCount == 0) {
@@ -399,7 +428,9 @@ class AiService private constructor(private val context: Context) {
         val envelope = ReasoningEnvelope.split(finalContent)
         trySend(ChatResult.Success(
             content = envelope.answerContent,
-            reasoningContent = envelope.reasoningContent
+            reasoningContent = envelope.reasoningContent,
+            parts = allToolParts,
+            bookResults = allBookResults
         ))
 
         close()
@@ -476,6 +507,7 @@ class AiService private constructor(private val context: Context) {
      * 工具调用信息
      */
     data class ToolCallInfo(
+        val index: Int,
         val id: String,
         val name: String,
         val arguments: String

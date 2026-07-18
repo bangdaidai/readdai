@@ -288,20 +288,31 @@ sealed class ChatResult {
      * 工具调用开始
      */
     data class ToolCall(
+        val index: Int = 0,
         val id: String = "",
         val name: String,
         val arguments: String
     ) : ChatResult()
 
     /**
+     * 工具追踪更新（统一的工具状态变更事件）
+     */
+    data class ToolTraceUpdate(
+        val toolParts: List<AiMessagePart>,
+        val bookResults: List<AiMessagePart.BookResult> = emptyList(),
+        val traceText: String = ""
+    ) : ChatResult()
+
+    /**
      * 工具开始执行
      */
-    data class ToolStart(val name: String) : ChatResult()
+    data class ToolStart(val id: String = "", val name: String) : ChatResult()
 
     /**
      * 工具执行结果
      */
     data class ToolResult(
+        val id: String = "",
         val name: String,
         val result: String
     ) : ChatResult()
@@ -312,7 +323,9 @@ sealed class ChatResult {
     data class Success(
         val content: String,
         val reasoningContent: String = "",
-        val toolSteps: List<ToolStep> = emptyList()
+        val toolSteps: List<ToolStep> = emptyList(),
+        val parts: List<AiMessagePart> = emptyList(),
+        val bookResults: List<AiMessagePart.BookResult> = emptyList()
     ) : ChatResult()
 
     /**

@@ -105,6 +105,24 @@ class OpenAiChatHandler : BaseProtocolHandler() {
                 } else {
                     put("content", content ?: "")
                 }
+                @Suppress("UNCHECKED_CAST")
+                val toolCalls = msg["tool_calls"] as? List<Map<String, Any>>
+                if (toolCalls != null && toolCalls.isNotEmpty()) {
+                    val toolCallsArray = JSONArray()
+                    toolCalls.forEach { tc ->
+                        val tcObj = JSONObject().apply {
+                            put("id", tc["id"]?.toString() ?: "")
+                            put("type", tc["type"]?.toString() ?: "function")
+                            val functionObj = JSONObject().apply {
+                                put("name", tc["name"]?.toString() ?: "")
+                                put("arguments", tc["arguments"]?.toString() ?: "")
+                            }
+                            put("function", functionObj)
+                        }
+                        toolCallsArray.put(tcObj)
+                    }
+                    put("tool_calls", toolCallsArray)
+                }
             }
             msgs.put(msgObj)
         }
@@ -175,6 +193,7 @@ class OpenAiChatHandler : BaseProtocolHandler() {
                         )
                     } else {
                         currentToolStep = currentToolStep.copy(
+                            name = currentToolStep.name.ifBlank { name },
                             input = currentToolStep.input + args
                         )
                     }

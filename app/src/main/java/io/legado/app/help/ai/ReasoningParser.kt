@@ -196,6 +196,7 @@ class ThinkTagStreamParser {
  * 工具步骤数据类
  */
 data class ToolStep(
+    val index: Int = 0,
     val id: String = "",
     val name: String,
     val status: ToolStepStatus = ToolStepStatus.PENDING,

@@ -250,18 +250,24 @@ class AiChatViewModel(
                 } catch (e: Exception) {
                     result.arguments
                 }
-                val toolId = "tool_" + result.id
+                val toolId = if (result.id.isNotEmpty()) "tool_" + result.id else "tool_idx_" + result.index
                 val existingIdx = currentParts.indexOfLast {
-                    it is AiMessagePart.Tool && it.id == toolId
+                    it is AiMessagePart.Tool && (it.index == result.index || (result.id.isNotEmpty() && it.id == toolId))
                 }
                 if (existingIdx >= 0) {
                     val existing = currentParts[existingIdx] as AiMessagePart.Tool
                     val updatedSteps = current.toolSteps.toMutableList()
-                    val stepIdx = updatedSteps.indexOfLast { it.id == toolId }
+                    val stepIdx = updatedSteps.indexOfLast { it.index == result.index || (result.id.isNotEmpty() && it.id == toolId) }
                     if (stepIdx >= 0) {
-                        updatedSteps[stepIdx] = updatedSteps[stepIdx].copy(input = formattedArgs)
+                        updatedSteps[stepIdx] = updatedSteps[stepIdx].copy(
+                            name = updatedSteps[stepIdx].name.ifBlank { result.name },
+                            input = formattedArgs
+                        )
                     }
-                    currentParts[existingIdx] = existing.copy(input = formattedArgs)
+                    currentParts[existingIdx] = existing.copy(
+                        name = existing.name.ifBlank { result.name },
+                        input = formattedArgs
+                    )
                     _uiState.value = _uiState.value.copy(
                         streamingMessage = current.copy(
                             toolSteps = updatedSteps,
@@ -272,6 +278,7 @@ class AiChatViewModel(
                     val updatedSteps = current.toolSteps.toMutableList()
                     updatedSteps.add(
                         ToolStep(
+                            index = result.index,
                             id = toolId,
                             name = result.name,
                             status = ToolStepStatus.PENDING,
@@ -280,6 +287,7 @@ class AiChatViewModel(
                     )
                     currentParts.add(
                         AiMessagePart.Tool(
+                            index = result.index,
                             id = toolId,
                             name = result.name,
                             input = formattedArgs,
@@ -371,18 +379,54 @@ class AiChatViewModel(
                     )
                 )
             }
+            is ChatResult.ToolTraceUpdate -> {
+                val nonToolParts = currentParts.filter {
+                    it !is AiMessagePart.Tool && it !is AiMessagePart.BookResult
+                }
+                val newParts = mutableListOf<AiMessagePart>()
+                newParts.addAll(nonToolParts)
+                newParts.addAll(result.toolParts)
+                newParts.addAll(result.bookResults)
+
+                val newSteps = result.toolParts.filterIsInstance<AiMessagePart.Tool>().map { part ->
+                    ToolStep(
+                        id = part.toolCallId,
+                        name = part.toolName,
+                        input = part.input.ifBlank { null },
+                        output = part.output.ifBlank { null },
+                        status = part.status
+                    )
+                }
+
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        toolSteps = newSteps,
+                        parts = newParts.toList()
+                    )
+                )
+            }
             is ChatResult.Success -> {
+                if (result.parts.isNotEmpty() || result.bookResults.isNotEmpty()) {
+                    val nonToolParts = currentParts.filter {
+                        it !is AiMessagePart.Tool && it !is AiMessagePart.BookResult
+                    }
+                    currentParts.clear()
+                    currentParts.addAll(nonToolParts)
+                    currentParts.addAll(result.parts)
+                    currentParts.addAll(result.bookResults)
+                }
                 if (current.content.isEmpty() && result.content.isNotEmpty()) {
                     if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Text) {
                         currentParts.add(AiMessagePart.Text(result.content))
                     }
-                    _uiState.value = _uiState.value.copy(
-                        streamingMessage = current.copy(
-                            content = result.content,
-                            parts = currentParts.toList()
-                        )
-                    )
                 }
+                _uiState.value = _uiState.value.copy(
+                    streamingMessage = current.copy(
+                        content = if (current.content.isEmpty()) result.content else current.content,
+                        reasoningContent = result.reasoningContent.ifBlank { current.reasoningContent },
+                        parts = currentParts.toList()
+                    )
+                )
             }
             is ChatResult.Error -> {
                 val newContent = current.content.ifEmpty { "错误: ${result.message}" }
