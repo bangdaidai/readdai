@@ -360,10 +360,10 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
 
         // Handle window insets for floating mode - match archive implementation
         bottomNavigationGlass.setOnApplyWindowInsetsListenerCompat { view, windowInsets ->
-            val height = if (view.height > 0) view.height else windowInsets.navigationBarHeight
+            val navBarHeight = windowInsets.navigationBarHeight
             // Add system navigation bar height plus extra spacing like archive (14.dpToPx())
-            view.bottomPadding = height + 14f.dpToPx().toInt()
-            windowInsets.inset(0, 0, 0, height)
+            view.bottomPadding = navBarHeight + 14f.dpToPx().toInt()
+            windowInsets.inset(0, 0, 0, navBarHeight)
         }
     }
 
