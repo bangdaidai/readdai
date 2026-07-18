@@ -47,7 +47,7 @@ data class ChatMessageItem(
     }
 }
 
-private fun AiMessagePart.toMap(): Map<String, Any> = when (this) {
+internal fun AiMessagePart.toMap(): Map<String, Any> = when (this) {
     is AiMessagePart.Text -> mapOf(
         "type" to "text",
         "text" to text

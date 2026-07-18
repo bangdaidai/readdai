@@ -196,7 +196,7 @@ private fun AssistantMessageBubble(
                             }
                             is AiMessagePart.Reasoning -> {
                                 if (part.text.isNotBlank()) {
-                                    ReasoningCard(content = part.text, isStreaming = isStreaming)
+                                    ReasoningCard(content = part.text, isStreaming = isStreaming, initiallyExpanded = !isStreaming)
                                 }
                             }
                             is AiMessagePart.BookResult -> {
@@ -577,13 +577,17 @@ private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
                 if (contentChanged) {
                     markwon.setMarkdown(textView, text)
                     applyBookTitleClickableSpans(textView, context)
-                    textView.post {
-                        var root: ViewGroup? = textView.parent as? ViewGroup
-                        while (root?.parent is ViewGroup) {
-                            root = root.parent as ViewGroup
+                    textView.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
+                        override fun onPreDraw(): Boolean {
+                            textView.viewTreeObserver.removeOnPreDrawListener(this)
+                            var root: ViewGroup? = textView.parent as? ViewGroup
+                            while (root?.parent is ViewGroup) {
+                                root = root.parent as ViewGroup
+                            }
+                            root?.let { traverseAndApplyBookTitleSpans(it, context) }
+                            return true
                         }
-                        root?.let { traverseAndApplyBookTitleSpans(it, context) }
-                    }
+                    })
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -607,31 +611,32 @@ private fun applyBookTitleClickableSpans(textView: TextView, context: android.co
     val spannable = textView.text as? Spannable ?: return
     val bookTitlePattern = Regex("《([^》]+)》")
     val matches = bookTitlePattern.findAll(spannable.toString())
+    var changed = false
     matches.forEach { matchResult ->
         val bookName = matchResult.groupValues[1]
         val start = matchResult.range.first
         val end = matchResult.range.last + 1
-        val existingSpans = spannable.getSpans(start, end, ClickableSpan::class.java)
-        if (existingSpans.isEmpty()) {
-            val clickSpan = object : ClickableSpan() {
-                override fun onClick(widget: View) {
-                    val intent = Intent(context, SearchActivity::class.java)
-                    intent.putExtra("key", bookName)
-                    context.startActivity(intent)
-                }
-                override fun updateDrawState(ds: TextPaint) {
-                    super.updateDrawState(ds)
-                    ds.isUnderlineText = true
-                }
+        val clickSpan = object : ClickableSpan() {
+            override fun onClick(widget: View) {
+                val intent = Intent(context, SearchActivity::class.java)
+                intent.putExtra("key", bookName)
+                context.startActivity(intent)
             }
-            spannable.setSpan(
-                clickSpan,
-                start,
-                end,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+            override fun updateDrawState(ds: TextPaint) {
+                super.updateDrawState(ds)
+                ds.isUnderlineText = true
+            }
         }
+        spannable.setSpan(
+            clickSpan,
+            start,
+            end,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        changed = true
     }
-    textView.text = spannable
-    textView.movementMethod = LinkMovementMethod.getInstance()
+    if (changed) {
+        textView.text = spannable
+        textView.movementMethod = LinkMovementMethod.getInstance()
+    }
 }

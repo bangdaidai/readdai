@@ -618,13 +618,13 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
     var bookReviewLines: Int
         get() = appCtx.getPrefInt(PreferKey.bookReviewLines, 3)
         set(value) {
-            appCtx.putPrefInt(PreferKey.bookReviewLines, value.coerceIn(1, 10))
+            appCtx.putPrefInt(PreferKey.bookReviewLines, value.coerceIn(0, 10))
         }
 
     var bookIntroLines: Int
         get() = appCtx.getPrefInt(PreferKey.bookIntroLines, 3)
         set(value) {
-            appCtx.putPrefInt(PreferKey.bookIntroLines, value.coerceIn(1, 10))
+            appCtx.putPrefInt(PreferKey.bookIntroLines, value.coerceIn(0, 10))
         }
 
     var showReadingMemoryIntro: Boolean

@@ -425,7 +425,9 @@ class AiChatViewModel(
             }
             is ChatResult.Success -> {
                 if (result.parts.isNotEmpty()) {
+                    val reasoningParts = currentParts.filter { it is AiMessagePart.Reasoning }
                     currentParts.clear()
+                    currentParts.addAll(reasoningParts)
                     currentParts.addAll(result.parts)
                 }
                 _uiState.value = _uiState.value.copy(
@@ -746,6 +748,7 @@ class AiChatViewModel(
                         content = msg.content,
                         reasoningContent = msg.reasoningContent,
                         toolSteps = msg.toolSteps,
+                        parts = msg.parts,
                         isExpanded = true,
                         isReasoningExpanded = false,
                         assistantLabel = if (msg.type == "ai") "${provider?.title ?: "AI助手"} · ${provider?.model ?: "default"}" else null
@@ -808,6 +811,7 @@ class AiChatViewModel(
                     type = if (item.role == "user") "human" else "ai",
                     content = item.content,
                     toolSteps = item.toolSteps,
+                    parts = item.parts,
                     reasoningContent = item.reasoningContent ?: ""
                 )
             }

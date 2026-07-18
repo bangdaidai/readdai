@@ -241,12 +241,17 @@ data class ChatMessage(
         } else {
             withToolCallId
         }
-        // 添加工具步骤数据
-        if (toolSteps.isNotEmpty()) {
+        val withToolSteps = if (toolSteps.isNotEmpty()) {
             withReasoning + ("toolSteps" to toolSteps.map { it.toMap() })
         } else {
             withReasoning
         }
+        val withParts = if (parts.isNotEmpty()) {
+            withToolSteps + ("parts" to parts.map { it.toMap() })
+        } else {
+            withToolSteps
+        }
+        withParts
     }
 
     companion object {
@@ -260,11 +265,21 @@ data class ChatMessage(
                 emptyList()
             }
             
+            val parts = if (map.containsKey("parts")) {
+                @Suppress("UNCHECKED_CAST")
+                (map["parts"] as? List<*>)?.filterIsInstance<Map<String, Any>>()?.mapNotNull {
+                    AiMessagePart.fromMap(it)
+                } ?: emptyList()
+            } else {
+                emptyList()
+            }
+            
             return ChatMessage(
                 type = map["type"]?.toString() ?: "human",
                 content = map["content"]?.toString() ?: "",
                 toolCallId = map["toolCallId"]?.toString(),
                 toolSteps = toolSteps,
+                parts = parts,
                 reasoningContent = map["reasoningContent"]?.toString() ?: ""
             )
         }
