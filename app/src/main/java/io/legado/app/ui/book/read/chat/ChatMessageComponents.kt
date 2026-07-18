@@ -72,7 +72,9 @@ import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.utils.MarkdownUtils
 import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.data.appDb
 import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.utils.startActivityForBook
 
 @Composable
 fun ChatMessageBubble(
@@ -196,7 +198,7 @@ private fun AssistantMessageBubble(
                             }
                             is AiMessagePart.Reasoning -> {
                                 if (part.text.isNotBlank()) {
-                                    ReasoningCard(content = part.text, isStreaming = isStreaming, initiallyExpanded = !isStreaming)
+                                    ReasoningCard(content = part.text, isStreaming = isStreaming)
                                 }
                             }
                             is AiMessagePart.BookResult -> {
@@ -577,18 +579,17 @@ private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
                 if (contentChanged) {
                     markwon.setMarkdown(textView, text)
                     applyBookTitleClickableSpans(textView, context)
-                    textView.viewTreeObserver.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
-                        override fun onPreDraw(): Boolean {
-                            textView.viewTreeObserver.removeOnPreDrawListener(this)
-                            var root: ViewGroup? = textView.parent as? ViewGroup
-                            while (root?.parent is ViewGroup) {
-                                root = root.parent as ViewGroup
-                            }
-                            root?.let { traverseAndApplyBookTitleSpans(it, context) }
-                            return true
-                        }
-                    })
                 }
+                textView.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        textView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        var root: ViewGroup? = textView.parent as? ViewGroup
+                        while (root?.parent is ViewGroup) {
+                            root = root.parent as ViewGroup
+                        }
+                        root?.let { traverseAndApplyBookTitleSpans(it, context) }
+                    }
+                })
             },
             modifier = Modifier.fillMaxWidth()
         )
@@ -618,9 +619,14 @@ private fun applyBookTitleClickableSpans(textView: TextView, context: android.co
         val end = matchResult.range.last + 1
         val clickSpan = object : ClickableSpan() {
             override fun onClick(widget: View) {
-                val intent = Intent(context, SearchActivity::class.java)
-                intent.putExtra("key", bookName)
-                context.startActivity(intent)
+                val books = appDb.bookDao.findByName(bookName)
+                if (books.isNotEmpty()) {
+                    widget.context.startActivityForBook(books.first())
+                } else {
+                    val intent = Intent(widget.context, SearchActivity::class.java)
+                    intent.putExtra("key", bookName)
+                    widget.context.startActivity(intent)
+                }
             }
             override fun updateDrawState(ds: TextPaint) {
                 super.updateDrawState(ds)
