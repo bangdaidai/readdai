@@ -136,6 +136,13 @@ data class PendingToolRun(
     val round: Int
 )
 
+data class AiGenerateRequest(
+    val messages: List<Any> = emptyList(),
+    val tools: List<Any> = emptyList(),
+    val provider: String = "",
+    val model: String = ""
+)
+
 internal fun JsonObject.toBookResultPart(): AiMessagePart.BookResult? {
     val bookUrl = string("bookUrl")?.takeIf { it.isNotBlank() }
         ?: string("book_url")?.takeIf { it.isNotBlank() }
