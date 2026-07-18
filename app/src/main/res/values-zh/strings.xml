@@ -108,7 +108,7 @@
     <string name="ai_prompt_manager">提示词管理</string>
     <string name="ai_tool_settings">工具设置</string>
     <string name="ai_cache_manager">缓存管理</string>
-    <string name="side_nav_assistant">AI助手</string>
+    <string name="side_nav_assistant">AI</string>
     <string name="about">关于</string>
     <string name="donate">捐赠</string>
     <string name="exit">退出</string>
