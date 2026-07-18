@@ -409,32 +409,34 @@ fun AiChatScreen(
                             ) {
                                 Surface(
                                     modifier = Modifier
-                                        .height(40.dp)
                                         .clickable { showModelPicker = true },
                                     shape = RoundedCornerShape(50),
                                     color = Color(context.backgroundCard)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .height(40.dp)
-                                            .padding(horizontal = 12.dp),
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
                                         contentAlignment = Alignment.CenterStart
                                     ) {
-                                        Column {
+                                        Column(
+                                            verticalArrangement = Arrangement.spacedBy(1.dp)
+                                        ) {
                                             Text(
                                                 text = uiState.providerName.ifBlank { "AI" },
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Medium,
                                                 color = titleBarTextColor,
                                                 maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                overflow = TextOverflow.Ellipsis,
+                                                lineHeight = 14.sp
                                             )
                                             Text(
                                                 text = uiState.modelName.ifBlank { "default" },
                                                 fontSize = 11.sp,
                                                 color = Color(context.secondaryTextColor),
                                                 maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
+                                                overflow = TextOverflow.Ellipsis,
+                                                lineHeight = 13.sp
                                             )
                                         }
                                     }
