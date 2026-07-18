@@ -78,38 +78,3 @@ private fun AiMessagePart.toMap(): Map<String, Any> = when (this) {
         "intro" to (intro ?: "")
     )
 }
-
-private fun AiMessagePart.Companion.fromMap(map: Map<String, Any>): AiMessagePart? {
-    return when (map["type"]?.toString()) {
-        "text" -> AiMessagePart.Text(
-            text = map["text"]?.toString() ?: ""
-        )
-        "reasoning" -> AiMessagePart.Reasoning(
-            text = map["text"]?.toString() ?: ""
-        )
-        "tool" -> AiMessagePart.Tool(
-            toolCallId = map["toolCallId"]?.toString() ?: "",
-            toolName = map["toolName"]?.toString() ?: "",
-            input = map["input"]?.toString() ?: "",
-            output = map["output"]?.toString() ?: "",
-            rawType = map["rawType"]?.toString() ?: "tool_call",
-            approvalState = runCatching {
-                AiToolApprovalState.valueOf(map["approvalState"]?.toString() ?: "APPROVED")
-            }.getOrDefault(AiToolApprovalState.APPROVED),
-            status = runCatching {
-                ToolStepStatus.valueOf(map["status"]?.toString() ?: "PENDING")
-            }.getOrDefault(ToolStepStatus.PENDING)
-        )
-        "bookResult" -> AiMessagePart.BookResult(
-            bookUrl = map["bookUrl"]?.toString() ?: "",
-            name = map["name"]?.toString() ?: "",
-            author = map["author"]?.toString()?.takeIf { it.isNotBlank() },
-            origin = map["origin"]?.toString()?.takeIf { it.isNotBlank() },
-            coverPath = map["coverPath"]?.toString()?.takeIf { it.isNotBlank() },
-            latestChapterTitle = map["latestChapterTitle"]?.toString()?.takeIf { it.isNotBlank() },
-            currentChapterTitle = map["currentChapterTitle"]?.toString()?.takeIf { it.isNotBlank() },
-            intro = map["intro"]?.toString()?.takeIf { it.isNotBlank() }
-        )
-        else -> null
-    }
-}

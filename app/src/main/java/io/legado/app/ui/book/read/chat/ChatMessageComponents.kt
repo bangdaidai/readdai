@@ -53,6 +53,10 @@ import android.text.method.LinkMovementMethod
 import android.widget.TextView
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
+import android.content.Intent
+import android.text.Spannable
+import android.text.TextPaint
+import android.text.style.ClickableSpan
 import io.legado.app.help.ai.AiMessagePart
 import io.legado.app.help.ai.ChatMessageItem
 import io.legado.app.help.ai.ToolStep
@@ -225,7 +229,7 @@ private fun AssistantMessageBubble(
                                             color = Color(context.primaryTextColor),
                                             fontWeight = FontWeight.Medium
                                         )
-                                        if (part.author.isNotBlank()) {
+                                        if (!part.author.isNullOrBlank()) {
                                             Text(
                                                 text = part.author,
                                                 fontSize = 12.sp,
