@@ -477,8 +477,9 @@ fun AiChatScreen(
                         currentIdentifier = uiState.availableProviders.find { p ->
                             p.title == uiState.providerName && p.model == uiState.modelName
                         }?.identifier,
-                        onSelect = { identifier ->
-                            viewModel.onIntent(AiChatIntent.SelectProvider(identifier))
+                        currentModel = uiState.modelName,
+                        onSelect = { identifier, model ->
+                            viewModel.onIntent(AiChatIntent.SelectProvider(identifier, model))
                             showModelPicker = false
                         },
                         onDismiss = { showModelPicker = false }
@@ -493,7 +494,8 @@ fun AiChatScreen(
 private fun ModelPickerDialog(
     providers: List<ProviderModelUi>,
     currentIdentifier: String?,
-    onSelect: (String) -> Unit,
+    currentModel: String,
+    onSelect: (identifier: String, model: String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
@@ -503,48 +505,58 @@ private fun ModelPickerDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "选择模型",
+                text = "切换服务商 / 模型",
                 color = Color(context.primaryTextColor),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
         },
         text = {
-            Column {
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 400.dp)
+            ) {
                 providers.forEach { provider ->
-                    val isCurrent = provider.identifier == currentIdentifier
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (isCurrent) Color(context.accentColor).copy(alpha = 0.15f)
-                                else Color.Transparent
-                            )
-                            .clickable { onSelect(provider.identifier) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
+                    val isCurrentProvider = provider.identifier == currentIdentifier
+                    item(key = "${provider.identifier}_header") {
+                        Text(
+                            text = provider.title,
+                            color = Color(context.accentColor),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                    val models = provider.availableModels.ifEmpty { listOf(provider.model) }
+                    items(models.size) { index ->
+                        val modelId = models[index]
+                        val isCurrent = isCurrentProvider && modelId == currentModel
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    if (isCurrent) Color(context.accentColor).copy(alpha = 0.15f)
+                                    else Color.Transparent
+                                )
+                                .clickable { onSelect(provider.identifier, modelId) }
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                text = provider.title,
-                                fontSize = 14.sp,
+                                text = modelId,
+                                fontSize = 13.sp,
                                 fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isCurrent) Color(context.accentColor)
-                                else Color(context.primaryTextColor)
+                                else Color(context.primaryTextColor),
+                                modifier = Modifier.weight(1f)
                             )
-                            Text(
-                                text = provider.model,
-                                fontSize = 12.sp,
-                                color = Color(context.secondaryTextColor)
-                            )
-                        }
-                        if (isCurrent) {
-                            Text(
-                                text = "当前",
-                                fontSize = 11.sp,
-                                color = Color(context.accentColor)
-                            )
+                            if (isCurrent) {
+                                Text(
+                                    text = "当前",
+                                    fontSize = 11.sp,
+                                    color = Color(context.accentColor)
+                                )
+                            }
                         }
                     }
                 }
@@ -553,12 +565,12 @@ private fun ModelPickerDialog(
         confirmButton = {},
         dismissButton = {
             Text(
-                text = "取消",
-                color = Color(context.secondaryTextColor),
+                text = "关闭",
+                color = Color(context.accentColor),
+                fontSize = 14.sp,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onDismiss)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clickable { onDismiss() }
+                    .padding(8.dp)
             )
         }
     )

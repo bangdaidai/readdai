@@ -38,13 +38,16 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
     private var apiKeys: MutableList<AiApiKey> = mutableListOf()
     private lateinit var apiKeyAdapter: ApiKeyAdapter
 
+    private var fetchedModels: List<String> = emptyList()
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         aiDao = AiDatabase.getInstance(this).aiDao()
         isNewProvider = intent.getBooleanExtra("isNew", false)
         val isCustomProvider = intent.getBooleanExtra("isCustom", false)
 
-        providerIdentifier = if (isNewProvider && isCustomProvider) {
-            "custom_${System.currentTimeMillis()}"
+        providerIdentifier = if (isNewProvider) {
+            val baseIdentifier = intent.getStringExtra("identifier") ?: "custom"
+            "${baseIdentifier}_${System.currentTimeMillis()}"
         } else {
             intent.getStringExtra("identifier") ?: ""
         }
@@ -223,6 +226,9 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
                 if (models.isEmpty()) {
                     Toast.makeText(this@AiProviderDetailActivity, "未找到可用模型", Toast.LENGTH_SHORT).show()
                 } else {
+                    fetchedModels = models
+                    val updatedProvider = provider.setAvailableModels(models)
+                    aiDao.insertProvider(updatedProvider)
                     showModelSelectionDialog(models)
                 }
             }.onFailure { e ->
@@ -290,7 +296,7 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
 
         val isCustomProvider = intent.getBooleanExtra("isCustom", false)
 
-        return AiProviderEntity(
+        val provider = AiProviderEntity(
             identifier = providerIdentifier,
             title = binding.etName.text.toString(),
             apiUrl = binding.etApiUrl.text.toString(),
@@ -304,6 +310,14 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
             createdAt = currentProvider?.createdAt ?: System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis()
         ).setApiKeyList(apiKeys)
+
+        return if (fetchedModels.isNotEmpty()) {
+            provider.setAvailableModels(fetchedModels)
+        } else if (currentProvider != null) {
+            provider.copy(availableModels = currentProvider!!.availableModels)
+        } else {
+            provider
+        }
     }
 
     fun saveProvider() {
@@ -318,8 +332,29 @@ class AiProviderDetailActivity : BaseActivity<ActivityAiProviderDetailBinding>()
 
         lifecycleScope.launch {
             aiDao.insertProvider(provider)
+            saveModelsToTable(provider)
             withContext(Dispatchers.Main) {
                 Toast.makeText(this@AiProviderDetailActivity, "保存成功", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private suspend fun saveModelsToTable(provider: AiProviderEntity) {
+        val models = provider.parseAvailableModels()
+        if (models.isEmpty()) return
+        val existingModels = aiDao.getModelsByProvider(provider.identifier)
+        val existingModelIds = existingModels.map { it.modelId }.toSet()
+        models.forEach { modelId ->
+            if (modelId !in existingModelIds) {
+                aiDao.insertModel(
+                    io.legado.app.help.ai.AiModelConfig(
+                        id = "${provider.identifier}_model_${UUID.randomUUID().toString().take(8)}",
+                        providerId = provider.identifier,
+                        modelId = modelId,
+                        displayName = modelId,
+                        enabled = true
+                    )
+                )
             }
         }
     }

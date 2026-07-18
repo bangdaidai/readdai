@@ -74,7 +74,8 @@ data class BookInfoUi(
 data class ProviderModelUi(
     val identifier: String,
     val title: String,
-    val model: String
+    val model: String,
+    val availableModels: List<String> = emptyList()
 )
 
 sealed interface AiChatIntent {
@@ -97,7 +98,7 @@ sealed interface AiChatIntent {
     object ClearChat : AiChatIntent
     object ExportChat : AiChatIntent
     object OpenSettings : AiChatIntent
-    data class SelectProvider(val identifier: String) : AiChatIntent
+    data class SelectProvider(val identifier: String, val model: String? = null) : AiChatIntent
 }
 
 sealed interface AiChatEffect {

@@ -123,7 +123,7 @@ class AiChatViewModel(
             AiChatIntent.ClearChat -> clearChat()
             AiChatIntent.ExportChat -> exportChat()
             AiChatIntent.OpenSettings -> openSettings()
-            is AiChatIntent.SelectProvider -> selectProvider(intent.identifier)
+            is AiChatIntent.SelectProvider -> selectProvider(intent.identifier, intent.model)
         }
     }
 
@@ -825,7 +825,8 @@ class AiChatViewModel(
                         ProviderModelUi(
                             identifier = it.identifier,
                             title = it.title,
-                            model = it.model
+                            model = it.model,
+                            availableModels = it.parseAvailableModels()
                         )
                     }
                 )
@@ -833,18 +834,26 @@ class AiChatViewModel(
         }
     }
 
-    private fun selectProvider(identifier: String) {
+    private fun selectProvider(identifier: String, model: String? = null) {
         viewModelScope.launch {
             try {
                 val dao = io.legado.app.help.ai.AiDatabase.getInstance(context).aiDao()
                 val provider = dao.getAllProviders().find { it.identifier == identifier }
                 if (provider != null) {
-                    aiService.setProvider(provider)
+                    val selectedModel = model ?: provider.model
+                    val updatedProvider = if (model != null && model != provider.model) {
+                        val saved = provider.copy(model = model, updatedAt = System.currentTimeMillis())
+                        dao.insertProvider(saved)
+                        saved
+                    } else {
+                        provider
+                    }
+                    aiService.setProvider(updatedProvider)
                     _uiState.value = _uiState.value.copy(
-                        providerName = provider.title,
-                        modelName = provider.model
+                        providerName = updatedProvider.title,
+                        modelName = selectedModel
                     )
-                    _effects.tryEmit(AiChatEffect.ShowToast("已切换至 ${provider.title} · ${provider.model}"))
+                    _effects.tryEmit(AiChatEffect.ShowToast("已切换至 ${updatedProvider.title} · $selectedModel"))
                 }
             } catch (e: Exception) {
                 _effects.tryEmit(AiChatEffect.ShowToast("切换失败: ${e.message}"))
