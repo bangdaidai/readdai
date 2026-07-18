@@ -118,7 +118,7 @@ private fun UserMessageBubble(content: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth(0.8f)
-            .wrapContentWidth(Alignment.End)
+            .align(Alignment.End)
             .background(
                 color = Color(context.accentColor),
                 shape = RoundedCornerShape(16.dp)
@@ -458,103 +458,103 @@ private fun ToolStepRow(step: ToolStep) {
         ),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(context.dividerColor))
     ) {
-        Column(        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 0.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(if (hasContent) Modifier.clickable { expanded = !expanded } else Modifier)
-                .padding(vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(Color(context.backgroundCard)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Build,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = Color(context.accentColor)
-                )
-            }
-            Text(
-                text = step.name,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(context.primaryTextColor),
-                modifier = Modifier.weight(1f),
-                maxLines = 1
-            )
-            val statusText = when (step.status) {
-                ToolStepStatus.PENDING -> "等待中"
-                ToolStepStatus.RUNNING -> "运行中"
-                ToolStepStatus.SUCCESS -> "已完成"
-                ToolStepStatus.FAILED -> "失败"
-            }
-            Text(
-                text = statusText,
-                fontSize = 11.sp,
-                color = Color(context.secondaryTextColor)
-            )
-            if (hasContent) {
-                Icon(
-                    imageVector = Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(16.dp)
-                        .rotate(rotation),
-                    tint = Color(context.secondaryTextColor)
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = expanded,
-            enter = fadeIn() + expandVertically(),
-            exit = shrinkVertically() + fadeOut()
-        ) {
-            Column(
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 0.dp)) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 500.dp)
-                    .verticalScroll(rememberScrollState())
-                    .padding(start = 28.dp, end = 4.dp, bottom = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .then(if (hasContent) Modifier.clickable { expanded = !expanded } else Modifier)
+                    .padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                step.input?.takeIf { it.isNotBlank() }?.let {
-                    Text(
-                        text = "输入",
-                        fontSize = 11.sp,
-                        color = Color(context.secondaryTextColor),
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = it,
-                        fontSize = 11.sp,
-                        color = Color(context.secondaryTextColor)
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(Color(context.backgroundCard)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Build,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = Color(context.accentColor)
                     )
                 }
-                step.output?.takeIf { it.isNotBlank() }?.let {
-                    Spacer(modifier = Modifier.size(2.dp))
-                    Text(
-                        text = "输出",
-                        fontSize = 11.sp,
-                        color = Color(context.secondaryTextColor),
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = it,
-                        fontSize = 11.sp,
-                        color = Color(context.secondaryTextColor)
+                Text(
+                    text = step.name,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(context.primaryTextColor),
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1
+                )
+                val statusText = when (step.status) {
+                    ToolStepStatus.PENDING -> "等待中"
+                    ToolStepStatus.RUNNING -> "运行中"
+                    ToolStepStatus.SUCCESS -> "已完成"
+                    ToolStepStatus.FAILED -> "失败"
+                }
+                Text(
+                    text = statusText,
+                    fontSize = 11.sp,
+                    color = Color(context.secondaryTextColor)
+                )
+                if (hasContent) {
+                    Icon(
+                        imageVector = Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .rotate(rotation),
+                        tint = Color(context.secondaryTextColor)
                     )
                 }
             }
+
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn() + expandVertically(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 500.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(start = 28.dp, end = 4.dp, bottom = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    step.input?.takeIf { it.isNotBlank() }?.let {
+                        Text(
+                            text = "输入",
+                            fontSize = 11.sp,
+                            color = Color(context.secondaryTextColor),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = it,
+                            fontSize = 11.sp,
+                            color = Color(context.secondaryTextColor)
+                        )
+                    }
+                    step.output?.takeIf { it.isNotBlank() }?.let {
+                        Spacer(modifier = Modifier.size(2.dp))
+                        Text(
+                            text = "输出",
+                            fontSize = 11.sp,
+                            color = Color(context.secondaryTextColor),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = it,
+                            fontSize = 11.sp,
+                            color = Color(context.secondaryTextColor)
+                        )
+                    }
+                }
+            }
         }
-    }
     }
 }
 
