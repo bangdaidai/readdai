@@ -51,16 +51,26 @@ class ToolTraceBuilder {
         val parts = mutableListOf<AiMessagePart>()
         calls.values.forEach { call ->
             val name = call.name.takeIf { it.isNotBlank() } ?: return@forEach
+            val hasResult = call.result != null
+            val isSuccess = hasResult && runCatching {
+                val json = GSON.fromJson(call.result, JsonObject::class.java)
+                json.string("status") != "error"
+            }.getOrDefault(true)
             parts += AiMessagePart.Tool(
                 toolCallId = call.id,
                 toolName = name,
                 input = call.arguments.toString().ifBlank { "{}" },
                 output = call.result ?: "",
                 rawType = call.rawType.ifBlank { "tool_call" },
-                approvalState = if (call.result == null) {
-                    AiToolApprovalState.PENDING
-                } else {
+                approvalState = if (hasResult) {
                     AiToolApprovalState.AUTO
+                } else {
+                    AiToolApprovalState.PENDING
+                },
+                status = when {
+                    !hasResult -> ToolStepStatus.PENDING
+                    isSuccess -> ToolStepStatus.SUCCESS
+                    else -> ToolStepStatus.FAILED
                 }
             )
         }

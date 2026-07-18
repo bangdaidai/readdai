@@ -424,19 +424,9 @@ class AiChatViewModel(
                 )
             }
             is ChatResult.Success -> {
-                if (result.parts.isNotEmpty() || result.bookResults.isNotEmpty()) {
-                    val nonToolParts = currentParts.filter {
-                        it !is AiMessagePart.Tool && it !is AiMessagePart.BookResult
-                    }
+                if (result.parts.isNotEmpty()) {
                     currentParts.clear()
-                    currentParts.addAll(nonToolParts)
                     currentParts.addAll(result.parts)
-                    currentParts.addAll(result.bookResults)
-                }
-                if (current.content.isEmpty() && result.content.isNotEmpty()) {
-                    if (currentParts.isEmpty() || currentParts.last() !is AiMessagePart.Text) {
-                        currentParts.add(AiMessagePart.Text(result.content))
-                    }
                 }
                 _uiState.value = _uiState.value.copy(
                     streamingMessage = current.copy(

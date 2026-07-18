@@ -421,10 +421,20 @@ class AiService private constructor(private val context: Context) {
         currentApiClient = null
 
         val envelope = ReasoningEnvelope.split(finalContent)
+        val allParts = buildList {
+            if (envelope.reasoningContent.isNotBlank()) {
+                add(AiMessagePart.Reasoning(envelope.reasoningContent))
+            }
+            addAll(toolTrace.toParts())
+            if (envelope.answerContent.isNotBlank()) {
+                add(AiMessagePart.Text(envelope.answerContent))
+            }
+            addAll(toolTrace.bookResults())
+        }
         trySend(ChatResult.Success(
             content = envelope.answerContent,
             reasoningContent = envelope.reasoningContent,
-            parts = toolTrace.toParts(),
+            parts = allParts,
             bookResults = toolTrace.bookResults()
         ))
 

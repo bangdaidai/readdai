@@ -199,180 +199,14 @@ fun AiChatScreen(
                 titleBarBgColor
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(effectiveBgColor)
-            ) {
-                val systemBottomPadding = maxOf(
-                    WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
-                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                )
-                val topContentPadding = 88.dp
-                val bottomContentPadding = 140.dp + systemBottomPadding
-
-                val isNearBottom by remember {
-                    derivedStateOf {
-                        val info = listState.layoutInfo
-                        val lastVisible = info.visibleItemsInfo.lastOrNull()
-                        lastVisible == null || lastVisible.index >= info.totalItemsCount - 3
-                    }
-                }
-                val isAtBottom by remember {
-                    derivedStateOf {
-                        val info = listState.layoutInfo
-                        val lastVisible = info.visibleItemsInfo.lastOrNull()
-                        lastVisible == null || lastVisible.index >= info.totalItemsCount - 1
-                    }
-                }
-
-                var shouldStickToBottom by remember { mutableStateOf(true) }
-
-                LaunchedEffect(uiState.messages.size, uiState.isSending) {
-                    shouldStickToBottom = true
-                }
-
-                LaunchedEffect(listState) {
-                    snapshotFlow { listState.isScrollInProgress to isNearBottom }
-                        .collectLatest { (isScrolling, nearBottom) ->
-                            if (isScrolling) {
-                                shouldStickToBottom = nearBottom
-                        }
-                    }
-                }
-
-                LaunchedEffect(shouldStickToBottom, uiState.messages.size, uiState.isSending) {
-                    if (shouldStickToBottom && !listState.isScrollInProgress && uiState.messages.isNotEmpty()) {
-                        val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                        if (lastIndex >= 0) {
-                            listState.animateScrollToItem(lastIndex)
-                        }
-                    }
-                }
-
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = 8.dp,
-                        top = topContentPadding + 8.dp,
-                        end = 8.dp,
-                        bottom = bottomContentPadding + 8.dp
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    if (uiState.messages.isEmpty() && uiState.suggestions.isNotEmpty()) {
-                        item {
-                            EmptyChatHint(
-                                suggestions = uiState.suggestions,
-                                onExecute = { viewModel.onIntent(AiChatIntent.ExecuteSuggestion(it)) }
-                            )
-                        }
-                    }
-                    items(uiState.messages, key = { it.id }) { message ->
-                        ChatMessageBubble(
-                            message = message,
-                            isStreaming = false,
-                            onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
-                            onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
-                            onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(message)) },
-                            onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
-                        )
-                    }
-                    uiState.streamingMessage?.let { msg ->
-                        item(key = "streaming_message") {
-                            ChatMessageBubble(
-                                message = msg,
-                                isStreaming = true,
-                                onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
-                                onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
-                                onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(msg)) },
-                                onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
-                            )
-                        }
-                    }
-                    item(key = "bottom_anchor") {
-                        Spacer(modifier = Modifier.height(1.dp))
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .imePadding()
-                        .navigationBarsPadding()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(4.dp)
-                    ) {
-                        if (!isAtBottom && uiState.messages.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(RoundedCornerShape(18.dp))
-                                        .background(Color(context.backgroundCard))
-                                        .clickable {
-                                            scope.launch {
-                                                val lastIndex = listState.layoutInfo.totalItemsCount - 1
-                                                if (lastIndex >= 0) {
-                                                    listState.animateScrollToItem(lastIndex)
-                                                }
-                                                shouldStickToBottom = true
-                                            }
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.KeyboardArrowDown,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
-                                        tint = Color(context.primaryTextColor)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-
-                        ChatInputBar(
-                            value = draft,
-                            isSending = uiState.isSending,
-                            quote = uiState.selectedQuote,
-                            deepThinkingEnabled = uiState.deepThinkingEnabled,
-                            spoilerFreeEnabled = uiState.spoilerFreeEnabled,
-                            onValueChange = { draft = it },
-                            onSend = {
-                                val text = draft
-                                draft = ""
-                                viewModel.onIntent(AiChatIntent.SendMessage(text))
-                            },
-                            onStop = { viewModel.onIntent(AiChatIntent.StopGenerating) },
-                            onRemoveQuote = { viewModel.onIntent(AiChatIntent.SetQuote(null)) },
-                            onToggleDeepThinking = { viewModel.onIntent(AiChatIntent.ToggleDeepThinking(it)) },
-                            onToggleSpoilerFree = { viewModel.onIntent(AiChatIntent.ToggleSpoilerFree(it)) }
-                        )
-                    }
-                }
-
+            Column(modifier = Modifier.fillMaxSize().background(effectiveBgColor)) {
                 Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth(),
                     color = effectiveTitleBarColor,
+                    modifier = Modifier.fillMaxWidth(),
                     shadowElevation = if (isTransparentNavBar || (isImmNavBar && hasBgImage)) 0.dp else 4.dp,
                 ) {
-                    Column(
-                            modifier = Modifier.then(
-                                if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier
-                            )
-                        ) {
-                            Row(
+                    Column(modifier = Modifier.then(if (isTransparentStatusBar) Modifier.statusBarsPadding() else Modifier)) {
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp)
@@ -465,10 +299,165 @@ fun AiChatScreen(
                                     )
                                 }
                             }
-                                                }
+                        }
+                    }
+                }
+
+                Box(modifier = Modifier.fillMaxSize()) {
+                    val systemBottomPadding = maxOf(
+                        WindowInsets.ime.asPaddingValues().calculateBottomPadding(),
+                        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    )
+                    val bottomContentPadding = 140.dp + systemBottomPadding
+
+                    val isNearBottom by remember {
+                        derivedStateOf {
+                            val info = listState.layoutInfo
+                            val lastVisible = info.visibleItemsInfo.lastOrNull()
+                            lastVisible == null || lastVisible.index >= info.totalItemsCount - 3
+                        }
+                    }
+                    val isAtBottom by remember {
+                        derivedStateOf {
+                            val info = listState.layoutInfo
+                            val lastVisible = info.visibleItemsInfo.lastOrNull()
+                            lastVisible == null || lastVisible.index >= info.totalItemsCount - 1
+                        }
                     }
 
+                    var shouldStickToBottom by remember { mutableStateOf(true) }
 
+                    LaunchedEffect(uiState.messages.size, uiState.isSending) {
+                        shouldStickToBottom = true
+                    }
+
+                    LaunchedEffect(listState) {
+                        snapshotFlow { listState.isScrollInProgress to isNearBottom }
+                            .collectLatest { (isScrolling, nearBottom) ->
+                                if (isScrolling) {
+                                    shouldStickToBottom = nearBottom
+                            }
+                        }
+                    }
+
+                    LaunchedEffect(shouldStickToBottom, uiState.messages.size, uiState.isSending) {
+                        if (shouldStickToBottom && !listState.isScrollInProgress && uiState.messages.isNotEmpty()) {
+                            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                            if (lastIndex >= 0) {
+                                listState.animateScrollToItem(lastIndex)
+                            }
+                        }
+                    }
+
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = 8.dp,
+                            top = 8.dp,
+                            end = 8.dp,
+                            bottom = bottomContentPadding + 8.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (uiState.messages.isEmpty() && uiState.suggestions.isNotEmpty()) {
+                            item {
+                                EmptyChatHint(
+                                    suggestions = uiState.suggestions,
+                                    onExecute = { viewModel.onIntent(AiChatIntent.ExecuteSuggestion(it)) }
+                                )
+                            }
+                        }
+                        items(uiState.messages, key = { it.id }) { message ->
+                            ChatMessageBubble(
+                                message = message,
+                                isStreaming = false,
+                                onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
+                                onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
+                                onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(message)) },
+                                onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
+                            )
+                        }
+                        uiState.streamingMessage?.let { msg ->
+                            item(key = "streaming_message") {
+                                ChatMessageBubble(
+                                    message = msg,
+                                    isStreaming = true,
+                                    onCopy = { viewModel.onIntent(AiChatIntent.CopyMessage(it)) },
+                                    onShare = { viewModel.onIntent(AiChatIntent.ShareMessage(it)) },
+                                    onDelete = { viewModel.onIntent(AiChatIntent.DeleteMessage(msg)) },
+                                    onRegenerate = { viewModel.onIntent(AiChatIntent.RegenerateLastMessage) }
+                                )
+                            }
+                        }
+                        item(key = "bottom_anchor") {
+                            Spacer(modifier = Modifier.height(1.dp))
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .imePadding()
+                            .navigationBarsPadding()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(4.dp)
+                        ) {
+                            if (!isAtBottom && uiState.messages.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(18.dp))
+                                            .background(Color(context.backgroundCard))
+                                            .clickable {
+                                                scope.launch {
+                                                    val lastIndex = listState.layoutInfo.totalItemsCount - 1
+                                                    if (lastIndex >= 0) {
+                                                        listState.animateScrollToItem(lastIndex)
+                                                    }
+                                                    shouldStickToBottom = true
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp),
+                                            tint = Color(context.primaryTextColor)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            ChatInputBar(
+                                value = draft,
+                                isSending = uiState.isSending,
+                                quote = uiState.selectedQuote,
+                                deepThinkingEnabled = uiState.deepThinkingEnabled,
+                                spoilerFreeEnabled = uiState.spoilerFreeEnabled,
+                                onValueChange = { draft = it },
+                                onSend = {
+                                    val text = draft
+                                    draft = ""
+                                    viewModel.onIntent(AiChatIntent.SendMessage(text))
+                                },
+                                onStop = { viewModel.onIntent(AiChatIntent.StopGenerating) },
+                                onRemoveQuote = { viewModel.onIntent(AiChatIntent.SetQuote(null)) },
+                                onToggleDeepThinking = { viewModel.onIntent(AiChatIntent.ToggleDeepThinking(it)) },
+                                onToggleSpoilerFree = { viewModel.onIntent(AiChatIntent.ToggleSpoilerFree(it)) }
+                            )
+                        }
+                    }
                 }
 
                 if (showModelPicker) {

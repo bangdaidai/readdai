@@ -19,6 +19,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,6 +63,8 @@ import io.legado.app.lib.theme.dividerColor
 import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.lib.theme.secondaryTextColor
 import io.legado.app.utils.MarkdownUtils
+import io.legado.app.ui.book.info.BookInfoActivity
+import io.legado.app.ui.book.search.SearchActivity
 
 @Composable
 fun ChatMessageBubble(
@@ -171,10 +177,12 @@ private fun AssistantMessageBubble(
                         when (part) {
                             is AiMessagePart.Text -> {
                                 if (part.text.isNotBlank()) {
-                                    MarkdownText(
-                                        text = part.text,
-                                        modifier = Modifier.padding(vertical = 2.dp)
-                                    )
+                                    SelectionContainer {
+                                        MarkdownText(
+                                            text = part.text,
+                                            modifier = Modifier.padding(vertical = 2.dp)
+                                        )
+                                    }
                                 }
                             }
                             is AiMessagePart.Reasoning -> {
@@ -183,11 +191,57 @@ private fun AssistantMessageBubble(
                                 }
                             }
                             is AiMessagePart.BookResult -> {
-                                Text(
-                                    text = "📚 ${part.name}",
-                                    fontSize = 14.sp,
-                                    color = Color(context.primaryTextColor)
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(context.backgroundCard))
+                                        .clickable {
+                                            if (part.bookUrl.isNotBlank()) {
+                                                val intent = Intent(context, BookInfoActivity::class.java)
+                                                intent.putExtra("bookUrl", part.bookUrl)
+                                                intent.putExtra("name", part.name)
+                                                intent.putExtra("author", part.author)
+                                                intent.putExtra("origin", part.origin)
+                                                context.startActivity(intent)
+                                            } else {
+                                                val intent = Intent(context, SearchActivity::class.java)
+                                                intent.putExtra("key", part.name)
+                                                context.startActivity(intent)
+                                            }
+                                        }
+                                        .padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "📚",
+                                        fontSize = 20.sp
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = part.name,
+                                            fontSize = 14.sp,
+                                            color = Color(context.primaryTextColor),
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        if (part.author.isNotBlank()) {
+                                            Text(
+                                                text = part.author,
+                                                fontSize = 12.sp,
+                                                color = Color(context.secondaryTextColor)
+                                            )
+                                        }
+                                        if (!part.intro.isNullOrBlank()) {
+                                            Text(
+                                                text = part.intro,
+                                                fontSize = 11.sp,
+                                                color = Color(context.secondaryTextColor),
+                                                maxLines = 2
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             is AiMessagePart.Tool -> { }
                         }
@@ -205,7 +259,9 @@ private fun AssistantMessageBubble(
                         Text(text = "思考中...", color = Color(context.secondaryTextColor), fontSize = 14.sp)
                     }
                 } else {
-                    MarkdownText(text = content, modifier = Modifier.padding(vertical = 2.dp))
+                    SelectionContainer {
+                        MarkdownText(text = content, modifier = Modifier.padding(vertical = 2.dp))
+                    }
                 }
             }
         }
@@ -443,8 +499,10 @@ private fun ToolStepRow(step: ToolStep) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = 500.dp)
+                    .verticalScroll(rememberScrollState())
                     .padding(start = 28.dp, end = 4.dp, bottom = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 step.input?.takeIf { it.isNotBlank() }?.let {
                     Text(
@@ -454,10 +512,9 @@ private fun ToolStepRow(step: ToolStep) {
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = it.take(300),
+                        text = it,
                         fontSize = 11.sp,
-                        color = Color(context.secondaryTextColor),
-                        maxLines = 6
+                        color = Color(context.secondaryTextColor)
                     )
                 }
                 step.output?.takeIf { it.isNotBlank() }?.let {
@@ -469,10 +526,9 @@ private fun ToolStepRow(step: ToolStep) {
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = it.take(400),
+                        text = it,
                         fontSize = 11.sp,
-                        color = Color(context.secondaryTextColor),
-                        maxLines = 8
+                        color = Color(context.secondaryTextColor)
                     )
                 }
             }
@@ -486,6 +542,7 @@ private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val textColor = Color(context.primaryTextColor).toArgb()
     val markwon = remember { MarkdownUtils.getMarkwon(context) }
+    val bookTitlePattern = remember { Regex("《([^》]+)》") }
 
     AndroidView(
         factory = { ctx ->
@@ -497,6 +554,34 @@ private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
         update = { textView ->
             textView.setTextColor(textColor)
             markwon.setMarkdown(textView, text)
+            val spannable = textView.text as? Spannable ?: return@AndroidView
+            val matches = bookTitlePattern.findAll(spannable.toString())
+            matches.forEach { matchResult ->
+                val bookName = matchResult.groupValues[1]
+                val start = matchResult.range.first
+                val end = matchResult.range.last + 1
+                val existingSpans = spannable.getSpans(start, end, ClickableSpan::class.java)
+                if (existingSpans.isEmpty()) {
+                    val clickSpan = object : ClickableSpan() {
+                        override fun onClick(widget: android.view.View) {
+                            val intent = android.content.Intent(context, SearchActivity::class.java)
+                            intent.putExtra("key", bookName)
+                            context.startActivity(intent)
+                        }
+                        override fun updateDrawState(ds: android.text.TextPaint) {
+                            super.updateDrawState(ds)
+                            ds.isUnderlineText = true
+                        }
+                    }
+                    spannable.setSpan(
+                        clickSpan,
+                        start,
+                        end,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                }
+            }
+            textView.text = spannable
         },
         modifier = modifier
     )
