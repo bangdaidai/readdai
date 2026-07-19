@@ -1,7 +1,10 @@
+@file:OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class, ExperimentalCoroutinesApi::class)
+
 package io.legado.app.ui.widget.components.text
 
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,6 +12,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -343,10 +348,12 @@ private fun TextWithBookTitles(text: String, modifier: Modifier = Modifier) {
         }
     }
 
-    Text(
+    ClickableText(
         text = annotatedString,
-        modifier = modifier.clickable {
-            val annotations = annotatedString.getStringAnnotations("book_title", 0, annotatedString.length)
+        style = LocalTextStyle.current,
+        modifier = modifier,
+        onClick = { offset ->
+            val annotations = annotatedString.getStringAnnotations("book_title", offset, offset)
             if (annotations.isNotEmpty()) {
                 val bookName = annotations.first().item
                 scope.launch { handleBookClick(context, bookName) }
@@ -355,6 +362,7 @@ private fun TextWithBookTitles(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun MarkdownParagraph(
     node: ASTNode,
@@ -384,40 +392,37 @@ private fun MarkdownParagraph(
                 }
             }
         }
-        Text(
+        ClickableText(
             text = annotatedString,
             style = textStyle,
             overflow = TextOverflow.Visible,
-            modifier = Modifier.clickable {
-                val layout = it.layout
-                if (layout != null) {
-                    val pos = layout.getOffsetForPosition(it.positionChange!!.position)
-                    val linkAnns = annotatedString.getStringAnnotations(
-                        tag = LinkAnnotation.Url::class.qualifiedName!!,
-                        start = pos,
-                        end = pos,
-                    )
-                    if (linkAnns.isNotEmpty()) {
-                        val url = linkAnns.first().item
-                        if (onClickLink != null) {
-                            onClickLink(url)
-                        } else {
-                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                            context.startActivity(intent)
-                        }
-                        return@clickable
+            onClick = { offset ->
+                val linkAnns = annotatedString.getStringAnnotations(
+                    tag = LinkAnnotation.Url::class.qualifiedName!!,
+                    start = offset,
+                    end = offset,
+                )
+                if (linkAnns.isNotEmpty()) {
+                    val url = linkAnns.first().item
+                    if (onClickLink != null) {
+                        onClickLink(url)
+                    } else {
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                        context.startActivity(intent)
                     }
-                    val bookAnns = annotatedString.getStringAnnotations("book_title", pos, pos)
-                    if (bookAnns.isNotEmpty()) {
-                        val bookName = bookAnns.first().item
-                        scope.launch { handleBookClick(context, bookName) }
-                    }
+                    return@ClickableText
+                }
+                val bookAnns = annotatedString.getStringAnnotations("book_title", offset, offset)
+                if (bookAnns.isNotEmpty()) {
+                    val bookName = bookAnns.first().item
+                    scope.launch { handleBookClick(context, bookName) }
                 }
             },
         )
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MarkdownHeading(
     node: ASTNode,
@@ -514,6 +519,7 @@ private fun MarkdownOrderedList(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MarkdownListItem(
     node: ASTNode,
@@ -533,7 +539,7 @@ private fun MarkdownListItem(
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    itemVerticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     directContent.fastForEach { contentChild ->
                         MarkdownNode(
@@ -808,33 +814,30 @@ private fun MarkdownInlineText(
         }
     }
 
-    Text(
+    ClickableText(
         text = annotatedString,
         style = textStyle,
-        modifier = modifier.clickable {
-            val layout = it.layout
-            if (layout != null) {
-                val pos = layout.getOffsetForPosition(it.positionChange!!.position)
-                val linkAnns = annotatedString.getStringAnnotations(
-                    tag = LinkAnnotation.Url::class.qualifiedName!!,
-                    start = pos,
-                    end = pos,
-                )
-                if (linkAnns.isNotEmpty()) {
-                    val url = linkAnns.first().item
-                    if (onClickLink != null) {
-                        onClickLink(url)
-                    } else {
-                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                        context.startActivity(intent)
-                    }
-                    return@clickable
+        modifier = modifier,
+        onClick = { offset ->
+            val linkAnns = annotatedString.getStringAnnotations(
+                tag = LinkAnnotation.Url::class.qualifiedName!!,
+                start = offset,
+                end = offset,
+            )
+            if (linkAnns.isNotEmpty()) {
+                val url = linkAnns.first().item
+                if (onClickLink != null) {
+                    onClickLink(url)
+                } else {
+                    val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                    context.startActivity(intent)
                 }
-                val bookAnns = annotatedString.getStringAnnotations("book_title", pos, pos)
-                if (bookAnns.isNotEmpty()) {
-                    val bookName = bookAnns.first().item
-                    scope.launch { handleBookClick(context, bookName) }
-                }
+                return@ClickableText
+            }
+            val bookAnns = annotatedString.getStringAnnotations("book_title", offset, offset)
+            if (bookAnns.isNotEmpty()) {
+                val bookName = bookAnns.first().item
+                scope.launch { handleBookClick(context, bookName) }
             }
         },
     )
@@ -950,16 +953,15 @@ private fun AnnotatedString.Builder.appendWithBookTitles(
             append(text.substring(lastIndex, match.range.first))
         }
         val bookName = match.groupValues[1]
-        val start = length
-        append(match.value)
-        val end = length
         pushStringAnnotation(tag = "book_title", annotation = bookName)
         withStyle(
             style = SpanStyle(
                 color = colorScheme.primary,
                 textDecoration = TextDecoration.Underline,
             )
-        ) { }
+        ) {
+            append(match.value)
+        }
         pop()
         lastIndex = match.range.last + 1
     }

@@ -121,26 +121,28 @@ fun ChatMessageBubble(
 @Composable
 private fun UserMessageBubble(content: String) {
     val context = LocalContext.current
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End
     ) {
-        val maxBubbleWidth = maxWidth * 0.8f
-        Box(
-            modifier = Modifier
-                .widthIn(max = maxBubbleWidth)
-                .align(Alignment.End)
-                .background(
-                    color = Color(context.accentColor),
-                    shape = RoundedCornerShape(16.dp)
+        BoxWithConstraints {
+            val maxBubbleWidth = maxWidth * 0.8f
+            Box(
+                modifier = Modifier
+                    .widthIn(max = maxBubbleWidth)
+                    .background(
+                        color = Color(context.accentColor),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    text = content,
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp
                 )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            Text(
-                text = content,
-                color = Color.White,
-                fontSize = 15.sp,
-                lineHeight = 22.sp
-            )
+            }
         }
     }
 }
