@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalLayoutApi::class)
+
 package io.legado.app.ui.widget.components.text
 
 import android.content.Intent
@@ -9,6 +11,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -284,12 +287,13 @@ private fun MarkdownNode(
 @Composable
 private fun TextWithBookTitles(text: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val primaryColor = MaterialTheme.colorScheme.primary
     if (!bookTitleRegex.containsMatchIn(text)) {
         Text(text = text, modifier = modifier)
         return
     }
 
-    val annotatedString = remember(text) {
+    val annotatedString = remember(text, primaryColor) {
         buildAnnotatedString {
             var lastIndex = 0
             bookTitleRegex.findAll(text).forEach { match ->
@@ -308,7 +312,7 @@ private fun TextWithBookTitles(text: String, modifier: Modifier = Modifier) {
                 )
                 addStyle(
                     style = SpanStyle(
-                        color = MaterialTheme.colorScheme.primary,
+                        color = primaryColor,
                         textDecoration = TextDecoration.Underline,
                     ),
                     start = start,
@@ -487,7 +491,7 @@ private fun MarkdownListItem(
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    itemVerticalAlignment = Alignment.CenterVertically,
+                    verticalArrangement = Arrangement.Center,
                 ) {
                     directContent.fastForEach { contentChild ->
                         MarkdownNode(
