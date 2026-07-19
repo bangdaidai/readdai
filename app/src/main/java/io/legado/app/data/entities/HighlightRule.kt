@@ -33,7 +33,7 @@ data class HighlightRule(
     var nineTopY: Float = 1f / 3f,
     var nineBottomY: Float = 2f / 3f,
     var nineStretchMode: Int = 0,
-    var scope: String? = null,","explanation":"将九宫格字段改为可拖动的线位置 + 拉伸模式"}
+    var scope: String? = null,}
     var excludeScope: String? = null,
     var useProtagonist: Boolean = false,
 ) {
