@@ -20,6 +20,11 @@ interface TextBaseColumn : BaseColumn {
     val bgPaddingEnd: Float
     val bgPaddingTop: Float
     val bgPaddingBottom: Float
+    val nineLeftX: Float
+    val nineRightX: Float
+    val nineTopY: Float
+    val nineBottomY: Float
+    val nineStretchMode: Int
     val bgColor: Int?
     val isBold: Boolean
     var selected: Boolean

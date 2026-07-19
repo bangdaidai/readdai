@@ -20,6 +20,11 @@ class HighlightStyleSpan(
     val bgPaddingEnd: Float = 0f,
     val bgPaddingTop: Float = 0f,
     val bgPaddingBottom: Float = 0f,
+    val nineLeftX: Float = 1f / 3f,
+    val nineRightX: Float = 2f / 3f,
+    val nineTopY: Float = 1f / 3f,
+    val nineBottomY: Float = 2f / 3f,
+    val nineStretchMode: Int = 0,
 ) : CharacterStyle(), UpdateAppearance {
 
     override fun updateDrawState(tp: TextPaint) = Unit

@@ -1,7 +1,7 @@
 package io.legado.app.ui.book.toc.rule.preview
 
 import android.app.Application
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.legado.app.R
 import io.legado.app.data.appDb
@@ -30,8 +30,10 @@ import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
 class TocRulePreviewViewModel(
-    private val app: Application,
-) : ViewModel() {
+    application: Application,
+) : AndroidViewModel(application) {
+
+    private val app get() = application
 
     private val context get() = app.applicationContext
 

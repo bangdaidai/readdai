@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import android.text.style.ReplacementSpan
+import io.legado.app.ui.book.read.page.entities.NinePatchHelper
 import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.utils.dpToPx
 
@@ -25,6 +26,11 @@ class BgImageSpan(
     private val bgPaddingEnd: Float = 0f,
     private val bgPaddingTop: Float = 0f,
     private val bgPaddingBottom: Float = 0f,
+    private val nineLeftX: Float = 1f / 3f,
+    private val nineRightX: Float = 2f / 3f,
+    private val nineTopY: Float = 1f / 3f,
+    private val nineBottomY: Float = 2f / 3f,
+    private val nineStretchMode: Int = 0,
 ) : ReplacementSpan() {
 
     private val offsetPx = underlineOffset.toInt().dpToPx()
@@ -104,7 +110,7 @@ class BgImageSpan(
                     canvas.restore()
                 }
                 3 -> {
-                    drawNinePatch(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, bgPaint)
+                    NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, bgPaint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
                 }
                 else -> {
                     val tileBitmap = if (scale != 1f) {
@@ -196,50 +202,4 @@ class BgImageSpan(
         }
     }
 
-    private fun drawNinePatch(
-        canvas: Canvas,
-        bitmap: Bitmap,
-        left: Float,
-        top: Float,
-        right: Float,
-        bottom: Float,
-        scale: Float,
-        paint: Paint
-    ) {
-        val bw = bitmap.width
-        val bh = bitmap.height
-
-        val padX = (bw / 3f * scale).toInt().coerceAtLeast(1)
-        val padY = (bh / 3f * scale).toInt().coerceAtLeast(1)
-        val srcPadX = (bw / 3f).toInt().coerceAtLeast(1)
-        val srcPadY = (bh / 3f).toInt().coerceAtLeast(1)
-
-        val srcRects = arrayOf(
-            android.graphics.Rect(0, 0, srcPadX, srcPadY),
-            android.graphics.Rect(srcPadX, 0, bw - srcPadX, srcPadY),
-            android.graphics.Rect(bw - srcPadX, 0, bw, srcPadY),
-            android.graphics.Rect(0, srcPadY, srcPadX, bh - srcPadY),
-            android.graphics.Rect(srcPadX, srcPadY, bw - srcPadX, bh - srcPadY),
-            android.graphics.Rect(bw - srcPadX, srcPadY, bw, bh - srcPadY),
-            android.graphics.Rect(0, bh - srcPadY, srcPadX, bh),
-            android.graphics.Rect(srcPadX, bh - srcPadY, bw - srcPadX, bh),
-            android.graphics.Rect(bw - srcPadX, bh - srcPadY, bw, bh)
-        )
-
-        val dstRects = arrayOf(
-            RectF(left, top, left + padX, top + padY),
-            RectF(left + padX, top, right - padX, top + padY),
-            RectF(right - padX, top, right, top + padY),
-            RectF(left, top + padY, left + padX, bottom - padY),
-            RectF(left + padX, top + padY, right - padX, bottom - padY),
-            RectF(right - padX, top + padY, right, bottom - padY),
-            RectF(left, bottom - padY, left + padX, bottom),
-            RectF(left + padX, bottom - padY, right - padX, bottom),
-            RectF(right - padX, bottom - padY, right, bottom)
-        )
-
-        for (i in 0 until 9) {
-            canvas.drawBitmap(bitmap, srcRects[i], dstRects[i], paint)
-        }
-    }
 }

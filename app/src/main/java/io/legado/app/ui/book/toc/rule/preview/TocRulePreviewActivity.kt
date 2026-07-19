@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.compose.androidViewModel
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.ThemeConfig
 import io.legado.app.lib.theme.ThemeStore
@@ -23,7 +23,7 @@ class TocRulePreviewActivity : AppCompatActivity() {
         val bookUrl = intent.getStringExtra("bookUrl") ?: ""
 
         setContent {
-            val viewModel: TocRulePreviewViewModel = viewModel()
+            val viewModel: TocRulePreviewViewModel = androidViewModel()
             TocRulePreviewRouteScreen(
                 bookUrl = bookUrl,
                 viewModel = viewModel,

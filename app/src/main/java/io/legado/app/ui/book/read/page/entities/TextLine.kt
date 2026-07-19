@@ -395,6 +395,11 @@ data class TextLine(
         var currentPadEnd = 0f
         var currentPadTop = 0f
         var currentPadBottom = 0f
+        var currentNineLeftX = 1f / 3f
+        var currentNineRightX = 2f / 3f
+        var currentNineTopY = 1f / 3f
+        var currentNineBottomY = 2f / 3f
+        var currentNineStretchMode = 0
         var active = false
         columns.forEachIndexed { index, column ->
             val textColumn = column as? TextBaseColumn
@@ -405,6 +410,11 @@ data class TextLine(
             val padEnd = textColumn?.bgPaddingEnd ?: 0f
             val padTop = textColumn?.bgPaddingTop ?: 0f
             val padBottom = textColumn?.bgPaddingBottom ?: 0f
+            val nineLeftX = textColumn?.nineLeftX ?: (1f / 3f)
+            val nineRightX = textColumn?.nineRightX ?: (2f / 3f)
+            val nineTopY = textColumn?.nineTopY ?: (1f / 3f)
+            val nineBottomY = textColumn?.nineBottomY ?: (2f / 3f)
+            val nineStretchMode = textColumn?.nineStretchMode ?: 0
             val sameRange = bgImage == currentBgImage
                     && bgImageFit == currentBgImageFit
                     && bgImageScale == currentBgImageScale
@@ -412,9 +422,14 @@ data class TextLine(
                     && padEnd == currentPadEnd
                     && padTop == currentPadTop
                     && padBottom == currentPadBottom
+                    && nineLeftX == currentNineLeftX
+                    && nineRightX == currentNineRightX
+                    && nineTopY == currentNineTopY
+                    && nineBottomY == currentNineBottomY
+                    && nineStretchMode == currentNineStretchMode
             when {
                 bgImage.isEmpty() && active -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
                     active = false
                 }
                 bgImage.isNotEmpty() && !active -> {
@@ -427,13 +442,18 @@ data class TextLine(
                     currentPadEnd = padEnd
                     currentPadTop = padTop
                     currentPadBottom = padBottom
+                    currentNineLeftX = nineLeftX
+                    currentNineRightX = nineRightX
+                    currentNineTopY = nineTopY
+                    currentNineBottomY = nineBottomY
+                    currentNineStretchMode = nineStretchMode
                     active = true
                 }
                 bgImage.isNotEmpty() && sameRange -> {
                     rangeEnd = textColumn!!.end
                 }
                 bgImage.isNotEmpty() -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
                     rangeStart = textColumn!!.start
                     rangeEnd = textColumn.end
                     currentBgImage = bgImage
@@ -443,10 +463,15 @@ data class TextLine(
                     currentPadEnd = padEnd
                     currentPadTop = padTop
                     currentPadBottom = padBottom
+                    currentNineLeftX = nineLeftX
+                    currentNineRightX = nineRightX
+                    currentNineTopY = nineTopY
+                    currentNineBottomY = nineBottomY
+                    currentNineStretchMode = nineStretchMode
                 }
             }
             if (active && index == columns.lastIndex) {
-                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom)
+                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
             }
         }
     }
@@ -688,6 +713,11 @@ data class TextLine(
         padEndDp: Float = 0f,
         padTopDp: Float = 0f,
         padBottomDp: Float = 0f,
+        nineLeftX: Float = 1f / 3f,
+        nineRightX: Float = 2f / 3f,
+        nineTopY: Float = 1f / 3f,
+        nineBottomY: Float = 2f / 3f,
+        nineStretchMode: Int = 0,
     ) {
         val bitmap = getBgBitmap(bgImage) ?: return
         val paint = PaintPool.obtain()
@@ -738,7 +768,7 @@ data class TextLine(
                 canvas.restore()
             }
             3 -> {
-                drawNinePatch(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, paint)
+                NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, paint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
             }
             else -> {
                 val tileBitmap = if (scale != 1f) {
@@ -758,72 +788,6 @@ data class TextLine(
             }
         }
         PaintPool.recycle(paint)
-    }
-
-    private fun drawNinePatch(
-        canvas: Canvas,
-        bitmap: Bitmap,
-        left: Float,
-        top: Float,
-        right: Float,
-        bottom: Float,
-        scale: Float,
-        paint: android.graphics.Paint
-    ) {
-        val rectW = right - left
-        val rectH = bottom - top
-        if (rectW <= 0f || rectH <= 0f) return
-
-        val bw = bitmap.width.toFloat()
-        val bh = bitmap.height.toFloat()
-
-        // 以文字带高度为准缩放图片，使背景贴合行高；scale 为用户额外缩放
-        val baseScale = (rectH / bh) * scale.coerceIn(0.1f, 5f)
-
-        // 源图“不拉伸”区域固定为图片的 1/3
-        val srcX = bw / 3f
-        val srcY = bh / 3f
-
-        // 目标“不拉伸”区域 = 源区 × baseScale，但不超过矩形对应边的 1/3，
-        // 避免窄/矮高亮时左右或上下边框重叠导致中间拉伸区为负（之前“很怪”的根因）
-        val maxX = rectW / 3f
-        val maxY = rectH / 3f
-        val k = min(1f, min(maxX / (srcX * baseScale), maxY / (srcY * baseScale)))
-        val sx = (srcX * baseScale * k).coerceAtLeast(1f)
-        val sy = (srcY * baseScale * k).coerceAtLeast(1f)
-
-        val sxi = srcX.toInt().coerceAtLeast(1)
-        val syi = srcY.toInt().coerceAtLeast(1)
-        val bx = bw.toInt()
-        val by = bh.toInt()
-
-        val srcRects = arrayOf(
-            android.graphics.Rect(0, 0, sxi, syi),
-            android.graphics.Rect(sxi, 0, bx - sxi, syi),
-            android.graphics.Rect(bx - sxi, 0, bx, syi),
-            android.graphics.Rect(0, syi, sxi, by - syi),
-            android.graphics.Rect(sxi, syi, bx - sxi, by - syi),
-            android.graphics.Rect(bx - sxi, syi, bx, by - syi),
-            android.graphics.Rect(0, by - syi, sxi, by),
-            android.graphics.Rect(sxi, by - syi, bx - sxi, by),
-            android.graphics.Rect(bx - sxi, by - syi, bx, by)
-        )
-
-        val dstRects = arrayOf(
-            android.graphics.RectF(left, top, left + sx, top + sy),
-            android.graphics.RectF(left + sx, top, right - sx, top + sy),
-            android.graphics.RectF(right - sx, top, right, top + sy),
-            android.graphics.RectF(left, top + sy, left + sx, bottom - sy),
-            android.graphics.RectF(left + sx, top + sy, right - sx, bottom - sy),
-            android.graphics.RectF(right - sx, top + sy, right, bottom - sy),
-            android.graphics.RectF(left, bottom - sy, left + sx, bottom),
-            android.graphics.RectF(left + sx, bottom - sy, right - sx, bottom),
-            android.graphics.RectF(right - sx, bottom - sy, right, bottom)
-        )
-
-        for (i in 0 until 9) {
-            canvas.drawBitmap(bitmap, srcRects[i], dstRects[i], paint)
-        }
     }
 
     /**

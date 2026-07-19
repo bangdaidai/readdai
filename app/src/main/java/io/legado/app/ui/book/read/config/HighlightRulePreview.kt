@@ -52,7 +52,12 @@ object HighlightRulePreview {
                         rule.bgPaddingStart,
                         rule.bgPaddingEnd,
                         rule.bgPaddingTop,
-                        rule.bgPaddingBottom
+                        rule.bgPaddingBottom,
+                        rule.nineLeftX,
+                        rule.nineRightX,
+                        rule.nineTopY,
+                        rule.nineBottomY,
+                        rule.nineStretchMode
                     ),
                     start,
                     end,

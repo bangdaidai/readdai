@@ -56,6 +56,12 @@ data class TextColumn(
 
     override val bgPaddingBottom: Float get() = highlightStyle?.bgPaddingBottom ?: 0f
 
+    override val nineLeftX: Float get() = highlightStyle?.nineLeftX ?: (1f / 3f)
+    override val nineRightX: Float get() = highlightStyle?.nineRightX ?: (2f / 3f)
+    override val nineTopY: Float get() = highlightStyle?.nineTopY ?: (1f / 3f)
+    override val nineBottomY: Float get() = highlightStyle?.nineBottomY ?: (2f / 3f)
+    override val nineStretchMode: Int get() = highlightStyle?.nineStretchMode ?: 0
+
     override val isBold: Boolean get() = columnBold
 
     override var selected: Boolean = false

@@ -24,7 +24,16 @@ data class HighlightRule(
     var bgPaddingEnd: Float = 0f,
     var bgPaddingTop: Float = 0f,
     var bgPaddingBottom: Float = 0f,
-    var scope: String? = null,
+    // 九宫格（bgImageFit=3）：用户用 4 条线自定义「允许拉伸的区域」。
+    // 两条竖线 nineLeftX/nineRightX（/图片宽，0~1）、两条横线 nineTopY/nineBottomY（/图片高，0~1），
+    // 中间矩形即为可拉伸区；四角与四条边其余部分保持原比例不拉伸。
+    // nineStretchMode: 0=全方向拉伸、1=仅水平拉伸、2=仅垂直拉伸
+    var nineLeftX: Float = 1f / 3f,
+    var nineRightX: Float = 2f / 3f,
+    var nineTopY: Float = 1f / 3f,
+    var nineBottomY: Float = 2f / 3f,
+    var nineStretchMode: Int = 0,
+    var scope: String? = null,","explanation":"将九宫格字段改为可拖动的线位置 + 拉伸模式"}
     var excludeScope: String? = null,
     var useProtagonist: Boolean = false,
 ) {

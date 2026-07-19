@@ -1430,7 +1430,12 @@ class TextChapterLayout(
                         bgPaddingStart = rule.bgPaddingStart,
                         bgPaddingEnd = rule.bgPaddingEnd,
                         bgPaddingTop = rule.bgPaddingTop,
-                        bgPaddingBottom = rule.bgPaddingBottom
+                        bgPaddingBottom = rule.bgPaddingBottom,
+                        nineLeftX = rule.nineLeftX,
+                        nineRightX = rule.nineRightX,
+                        nineTopY = rule.nineTopY,
+                        nineBottomY = rule.nineBottomY,
+                        nineStretchMode = rule.nineStretchMode
                     ),
                     start,
                     end,
@@ -1459,6 +1464,11 @@ class TextChapterLayout(
         var bgPaddingEnd = 0f
         var bgPaddingTop = 0f
         var bgPaddingBottom = 0f
+        var nineLeftX = 1f / 3f
+        var nineRightX = 2f / 3f
+        var nineTopY = 1f / 3f
+        var nineBottomY = 2f / 3f
+        var nineStretchMode = 0
         var hasUnderline = false
         var hasBgImage = false
         spans.forEach { span ->
@@ -1478,6 +1488,11 @@ class TextChapterLayout(
                 bgPaddingEnd = span.bgPaddingEnd
                 bgPaddingTop = span.bgPaddingTop
                 bgPaddingBottom = span.bgPaddingBottom
+                nineLeftX = span.nineLeftX
+                nineRightX = span.nineRightX
+                nineTopY = span.nineTopY
+                nineBottomY = span.nineBottomY
+                nineStretchMode = span.nineStretchMode
                 hasBgImage = true
             }
         }
@@ -1495,6 +1510,11 @@ class TextChapterLayout(
             bgPaddingEnd = if (hasBgImage) bgPaddingEnd else 0f,
             bgPaddingTop = if (hasBgImage) bgPaddingTop else 0f,
             bgPaddingBottom = if (hasBgImage) bgPaddingBottom else 0f,
+            nineLeftX = if (hasBgImage) nineLeftX else 1f / 3f,
+            nineRightX = if (hasBgImage) nineRightX else 2f / 3f,
+            nineTopY = if (hasBgImage) nineTopY else 1f / 3f,
+            nineBottomY = if (hasBgImage) nineBottomY else 2f / 3f,
+            nineStretchMode = if (hasBgImage) nineStretchMode else 0,
         )
     }
 
