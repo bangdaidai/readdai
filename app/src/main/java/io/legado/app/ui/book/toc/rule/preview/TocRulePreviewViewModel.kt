@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlin.coroutines.coroutineContext
 import java.util.regex.Pattern
 import java.util.regex.PatternSyntaxException
 
@@ -269,12 +270,14 @@ class TocRulePreviewViewModel(
         _uiState.update { it.copy(editingRule = null) }
         val book = this.book
         if (book != null) {
-            val refreshed = computeTxtRulePreview(book, updatedRule)
-            _uiState.update { state ->
-                val newRules = state.txtRules.map { existingItem ->
-                    if (existingItem.rule.id == updatedRule.id) refreshed else existingItem
-                }.toImmutableList()
-                state.copy(txtRules = newRules)
+            viewModelScope.launch(Dispatchers.IO) {
+                val refreshed = computeTxtRulePreview(book, updatedRule)
+                _uiState.update { state ->
+                    val newRules = state.txtRules.map { existingItem ->
+                        if (existingItem.rule.id == updatedRule.id) refreshed else existingItem
+                    }.toImmutableList()
+                    state.copy(txtRules = newRules)
+                }
             }
         }
     }

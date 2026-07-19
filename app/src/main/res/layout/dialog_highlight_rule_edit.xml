@@ -626,6 +626,138 @@
                             android:textColor="@color/primaryText"
                             android:textSize="13sp" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="左外扩"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+
+                        <SeekBar
+                            android:id="@+id/sb_bg_pad_start"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:max="50"
+                            android:progress="0" />
+
+                        <TextView
+                            android:id="@+id/tv_bg_pad_start"
+                            android:layout_width="42dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="0dp"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="右外扩"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+
+                        <SeekBar
+                            android:id="@+id/sb_bg_pad_end"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:max="50"
+                            android:progress="0" />
+
+                        <TextView
+                            android:id="@+id/tv_bg_pad_end"
+                            android:layout_width="42dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="0dp"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="上外扩"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+
+                        <SeekBar
+                            android:id="@+id/sb_bg_pad_top"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:max="50"
+                            android:progress="0" />
+
+                        <TextView
+                            android:id="@+id/tv_bg_pad_top"
+                            android:layout_width="42dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="0dp"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="下外扩"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+
+                        <SeekBar
+                            android:id="@+id/sb_bg_pad_bottom"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:max="50"
+                            android:progress="0" />
+
+                        <TextView
+                            android:id="@+id/tv_bg_pad_bottom"
+                            android:layout_width="42dp"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="0dp"
+                            android:textColor="@color/primaryText"
+                            android:textSize="13sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
                 <LinearLayout

@@ -19,6 +19,11 @@ data class HighlightRule(
     var bgImage: String? = null,
     var bgImageFit: Int = 0,
     var bgImageScale: Float = 1f,
+    // 高亮背景与文字的边距（单位 dp）：负=向内收缩，正=向外扩展
+    var bgPaddingStart: Float = 0f,
+    var bgPaddingEnd: Float = 0f,
+    var bgPaddingTop: Float = 0f,
+    var bgPaddingBottom: Float = 0f,
     var scope: String? = null,
     var excludeScope: String? = null,
     var useProtagonist: Boolean = false,

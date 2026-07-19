@@ -21,9 +21,17 @@ class BgImageSpan(
     private val underlineWidth: Float = 1f,
     private val underlineSvgPath: String = "",
     private val underlineOffset: Float = 6f,
+    private val bgPaddingStart: Float = 0f,
+    private val bgPaddingEnd: Float = 0f,
+    private val bgPaddingTop: Float = 0f,
+    private val bgPaddingBottom: Float = 0f,
 ) : ReplacementSpan() {
 
     private val offsetPx = underlineOffset.toInt().dpToPx()
+    private val padStartPx = bgPaddingStart.dpToPx()
+    private val padEndPx = bgPaddingEnd.dpToPx()
+    private val padTopPx = bgPaddingTop.dpToPx()
+    private val padBottomPx = bgPaddingBottom.dpToPx()
 
     override fun getSize(
         paint: Paint,
@@ -34,13 +42,14 @@ class BgImageSpan(
     ): Int {
         if (fm != null) {
             val metrics = paint.fontMetricsInt
-            fm.top = metrics.top
-            fm.ascent = metrics.ascent
+            fm.top = metrics.top - padTopPx
+            fm.ascent = metrics.ascent - padTopPx
             val needsOffset = underlineMode in 1..5
-            fm.descent = metrics.descent + if (needsOffset) offsetPx else 0
-            fm.bottom = metrics.bottom + if (needsOffset) offsetPx else 0
+            val underlinePad = if (needsOffset) offsetPx else 0
+            fm.descent = metrics.descent + underlinePad + padBottomPx
+            fm.bottom = metrics.bottom + underlinePad + padBottomPx
         }
-        return paint.measureText(text, start, end).toInt()
+        return (paint.measureText(text, start, end) + padStartPx + padEndPx).toInt()
     }
 
     override fun draw(
@@ -55,8 +64,12 @@ class BgImageSpan(
         paint: Paint
     ) {
         val width = paint.measureText(text, start, end)
-        val rectWidth = width
-        val rectHeight = (bottom - top).toFloat()
+        val drawLeft = x - padStartPx
+        val drawRight = x + width + padEndPx
+        val drawTop = top - padTopPx
+        val drawBottom = bottom + padBottomPx
+        val rectWidth = drawRight - drawLeft
+        val rectHeight = (drawBottom - drawTop).toFloat()
         val scale = bgImageScale.coerceIn(0.1f, 5f)
 
         val bitmap = TextLine.getBgBitmap(bgImagePath)
@@ -70,10 +83,10 @@ class BgImageSpan(
                 1 -> {
                     val sw = rectWidth * scale
                     val sh = rectHeight * scale
-                    val dx = x + (rectWidth - sw) / 2f
-                    val dy = top + (rectHeight - sh) / 2f
+                    val dx = drawLeft + (rectWidth - sw) / 2f
+                    val dy = drawTop + (rectHeight - sh) / 2f
                     canvas.save()
-                    canvas.clipRect(x, top.toFloat(), x + width, bottom.toFloat())
+                    canvas.clipRect(drawLeft, drawTop, drawRight, drawBottom)
                     canvas.drawBitmap(bitmap, null, RectF(dx, dy, dx + sw, dy + sh), bgPaint)
                     canvas.restore()
                 }
@@ -83,15 +96,15 @@ class BgImageSpan(
                     val fitScale = (rectWidth / bw).coerceAtLeast(rectHeight / bh) * scale
                     val scaledW = bw * fitScale
                     val scaledH = bh * fitScale
-                    val dx = x + (rectWidth - scaledW) / 2f
-                    val dy = top + (rectHeight - scaledH) / 2f
+                    val dx = drawLeft + (rectWidth - scaledW) / 2f
+                    val dy = drawTop + (rectHeight - scaledH) / 2f
                     canvas.save()
-                    canvas.clipRect(x, top.toFloat(), x + width, bottom.toFloat())
+                    canvas.clipRect(drawLeft, drawTop, drawRight, drawBottom)
                     canvas.drawBitmap(bitmap, null, RectF(dx, dy, dx + scaledW, dy + scaledH), bgPaint)
                     canvas.restore()
                 }
                 3 -> {
-                    drawNinePatch(canvas, bitmap, x, top.toFloat(), x + width, bottom.toFloat(), scale, bgPaint)
+                    drawNinePatch(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, bgPaint)
                 }
                 else -> {
                     val tileBitmap = if (scale != 1f) {
@@ -103,10 +116,10 @@ class BgImageSpan(
                     }
                     val shader = BitmapShader(tileBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
                     val matrix = Matrix()
-                    matrix.setTranslate(x, top.toFloat())
+                    matrix.setTranslate(drawLeft, drawTop)
                     shader.setLocalMatrix(matrix)
                     bgPaint.shader = shader
-                    canvas.drawRect(x, top.toFloat(), x + width, bottom.toFloat(), bgPaint)
+                    canvas.drawRect(drawLeft, drawTop, drawRight, drawBottom, bgPaint)
                 }
             }
         }

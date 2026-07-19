@@ -295,6 +295,9 @@ dependencies {
     implementation('io.coil-kt:coil-compose:2.7.0')
     implementation('sh.calvin.reorderable:reorderable:3.1.0')
 
+    // Kotlin 不可变集合（ImmutableList / persistentListOf / toImmutableList）
+    implementation(libs.kotlinx.collections.immutable)
+
     // Google
     implementation(libs.material)
     implementation(libs.flexbox)

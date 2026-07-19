@@ -1426,7 +1426,11 @@ class TextChapterLayout(
                         underlineSvgPath = rule.underlineSvgPath.orEmpty(),
                         bgImage = rule.bgImage.orEmpty(),
                         bgImageFit = rule.bgImageFit,
-                        bgImageScale = rule.bgImageScale
+                        bgImageScale = rule.bgImageScale,
+                        bgPaddingStart = rule.bgPaddingStart,
+                        bgPaddingEnd = rule.bgPaddingEnd,
+                        bgPaddingTop = rule.bgPaddingTop,
+                        bgPaddingBottom = rule.bgPaddingBottom
                     ),
                     start,
                     end,
@@ -1451,6 +1455,10 @@ class TextChapterLayout(
         var bgImage = ""
         var bgImageFit = 0
         var bgImageScale = 1f
+        var bgPaddingStart = 0f
+        var bgPaddingEnd = 0f
+        var bgPaddingTop = 0f
+        var bgPaddingBottom = 0f
         var hasUnderline = false
         var hasBgImage = false
         spans.forEach { span ->
@@ -1466,6 +1474,10 @@ class TextChapterLayout(
                 bgImage = span.bgImage
                 bgImageFit = span.bgImageFit
                 bgImageScale = span.bgImageScale
+                bgPaddingStart = span.bgPaddingStart
+                bgPaddingEnd = span.bgPaddingEnd
+                bgPaddingTop = span.bgPaddingTop
+                bgPaddingBottom = span.bgPaddingBottom
                 hasBgImage = true
             }
         }
@@ -1479,6 +1491,10 @@ class TextChapterLayout(
             bgImage = if (hasBgImage) bgImage else "",
             bgImageFit = if (hasBgImage) bgImageFit else 0,
             bgImageScale = if (hasBgImage) bgImageScale else 1f,
+            bgPaddingStart = if (hasBgImage) bgPaddingStart else 0f,
+            bgPaddingEnd = if (hasBgImage) bgPaddingEnd else 0f,
+            bgPaddingTop = if (hasBgImage) bgPaddingTop else 0f,
+            bgPaddingBottom = if (hasBgImage) bgPaddingBottom else 0f,
         )
     }
 

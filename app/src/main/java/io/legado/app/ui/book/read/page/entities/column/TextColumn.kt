@@ -48,6 +48,14 @@ data class TextColumn(
 
     override val bgImageScale: Float get() = highlightStyle?.bgImageScale ?: 1f
 
+    override val bgPaddingStart: Float get() = highlightStyle?.bgPaddingStart ?: 0f
+
+    override val bgPaddingEnd: Float get() = highlightStyle?.bgPaddingEnd ?: 0f
+
+    override val bgPaddingTop: Float get() = highlightStyle?.bgPaddingTop ?: 0f
+
+    override val bgPaddingBottom: Float get() = highlightStyle?.bgPaddingBottom ?: 0f
+
     override val isBold: Boolean get() = columnBold
 
     override var selected: Boolean = false

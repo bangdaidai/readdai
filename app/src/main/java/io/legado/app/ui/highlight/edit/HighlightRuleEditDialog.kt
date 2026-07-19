@@ -204,6 +204,10 @@ class HighlightRuleEditDialog(
         binding.spBgImageFit.setSelection(editingRule.bgImageFit.coerceIn(0, 3))
         binding.sbBgImageScale.progress = (editingRule.bgImageScale.coerceIn(0.1f, 5f) * 10).toInt()
         binding.tvBgImageScale.text = "${editingRule.bgImageScale.coerceIn(0.1f, 5f).formatScale()}x"
+        initPaddingSeekBar(binding.sbBgPadStart, binding.tvBgPadStart, editingRule.bgPaddingStart)
+        initPaddingSeekBar(binding.sbBgPadEnd, binding.tvBgPadEnd, editingRule.bgPaddingEnd)
+        initPaddingSeekBar(binding.sbBgPadTop, binding.tvBgPadTop, editingRule.bgPaddingTop)
+        initPaddingSeekBar(binding.sbBgPadBottom, binding.tvBgPadBottom, editingRule.bgPaddingBottom)
         if (!editingRule.bgImage.isNullOrBlank()) {
             binding.etBgImage.setText(editingRule.bgImage)
         } else if (editingRule.bgColor != null) {
@@ -318,6 +322,18 @@ class HighlightRuleEditDialog(
                 override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
             }
         )
+        setupPaddingSeekBar(binding.sbBgPadStart, binding.tvBgPadStart) { v ->
+            editingRule.bgPaddingStart = v
+        }
+        setupPaddingSeekBar(binding.sbBgPadEnd, binding.tvBgPadEnd) { v ->
+            editingRule.bgPaddingEnd = v
+        }
+        setupPaddingSeekBar(binding.sbBgPadTop, binding.tvBgPadTop) { v ->
+            editingRule.bgPaddingTop = v
+        }
+        setupPaddingSeekBar(binding.sbBgPadBottom, binding.tvBgPadBottom) { v ->
+            editingRule.bgPaddingBottom = v
+        }
         binding.etBgImage.doAfterTextChanged {
             val text = it?.toString().orEmpty()
             val color = parseColorOrNull(text)
@@ -479,11 +495,40 @@ class HighlightRuleEditDialog(
             bgImage = binding.etBgImage.text?.toString().orEmpty().takeIf { it.isNotBlank() && parseColorOrNull(it) == null },
             bgImageFit = binding.spBgImageFit.selectedItemPosition,
             bgImageScale = (binding.sbBgImageScale.progress.coerceAtLeast(1) / 10f).coerceIn(0.1f, 5f),
+            bgPaddingStart = (binding.sbBgPadStart.progress - 20).toFloat(),
+            bgPaddingEnd = (binding.sbBgPadEnd.progress - 20).toFloat(),
+            bgPaddingTop = (binding.sbBgPadTop.progress - 20).toFloat(),
+            bgPaddingBottom = (binding.sbBgPadBottom.progress - 20).toFloat(),
             scope = binding.etScope.text?.toString()?.takeIf { it.isNotBlank() },
             excludeScope = binding.etExcludeScope.text?.toString()?.takeIf { it.isNotBlank() }
         )
         onSave(editingRule)
         dismissAllowingStateLoss()
+    }
+
+    private fun setupPaddingSeekBar(
+        seekBar: SeekBar,
+        tv: TextView,
+        onChanged: (Float) -> Unit
+    ) {
+        seekBar.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val dp = (progress - 20).toFloat()
+                    onChanged(dp)
+                    tv.text = "${dp.toInt()}dp"
+                    if (fromUser) updatePreview()
+                }
+                override fun onStartTrackingTouch(s: SeekBar?) = Unit
+                override fun onStopTrackingTouch(s: SeekBar?) = Unit
+            }
+        )
+    }
+
+    private fun initPaddingSeekBar(seekBar: SeekBar, tv: TextView, valueDp: Float) {
+        val progress = (valueDp + 20f).toInt().coerceIn(0, 50)
+        seekBar.progress = progress
+        tv.text = "${valueDp.toInt()}dp"
     }
 
     private fun updatePreview() {

@@ -16,6 +16,10 @@ interface TextBaseColumn : BaseColumn {
     val bgImage: String
     val bgImageFit: Int
     val bgImageScale: Float
+    val bgPaddingStart: Float
+    val bgPaddingEnd: Float
+    val bgPaddingTop: Float
+    val bgPaddingBottom: Float
     val bgColor: Int?
     val isBold: Boolean
     var selected: Boolean

@@ -48,7 +48,11 @@ object HighlightRulePreview {
                         accentColor,
                         underlineWidth,
                         rule.underlineSvgPath.orEmpty(),
-                        underlineOffset
+                        underlineOffset,
+                        rule.bgPaddingStart,
+                        rule.bgPaddingEnd,
+                        rule.bgPaddingTop,
+                        rule.bgPaddingBottom
                     ),
                     start,
                     end,

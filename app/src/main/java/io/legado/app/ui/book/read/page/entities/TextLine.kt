@@ -391,15 +391,30 @@ data class TextLine(
         var currentBgImage = ""
         var currentBgImageFit = 0
         var currentBgImageScale = 1f
+        var currentPadStart = 0f
+        var currentPadEnd = 0f
+        var currentPadTop = 0f
+        var currentPadBottom = 0f
         var active = false
         columns.forEachIndexed { index, column ->
             val textColumn = column as? TextBaseColumn
             val bgImage = textColumn?.bgImage ?: ""
             val bgImageFit = textColumn?.bgImageFit ?: 0
             val bgImageScale = textColumn?.bgImageScale ?: 1f
+            val padStart = textColumn?.bgPaddingStart ?: 0f
+            val padEnd = textColumn?.bgPaddingEnd ?: 0f
+            val padTop = textColumn?.bgPaddingTop ?: 0f
+            val padBottom = textColumn?.bgPaddingBottom ?: 0f
+            val sameRange = bgImage == currentBgImage
+                    && bgImageFit == currentBgImageFit
+                    && bgImageScale == currentBgImageScale
+                    && padStart == currentPadStart
+                    && padEnd == currentPadEnd
+                    && padTop == currentPadTop
+                    && padBottom == currentPadBottom
             when {
                 bgImage.isEmpty() && active -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom)
                     active = false
                 }
                 bgImage.isNotEmpty() && !active -> {
@@ -408,22 +423,30 @@ data class TextLine(
                     currentBgImage = bgImage
                     currentBgImageFit = bgImageFit
                     currentBgImageScale = bgImageScale
+                    currentPadStart = padStart
+                    currentPadEnd = padEnd
+                    currentPadTop = padTop
+                    currentPadBottom = padBottom
                     active = true
                 }
-                bgImage.isNotEmpty() && bgImage == currentBgImage && bgImageFit == currentBgImageFit && bgImageScale == currentBgImageScale -> {
+                bgImage.isNotEmpty() && sameRange -> {
                     rangeEnd = textColumn!!.end
                 }
                 bgImage.isNotEmpty() -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom)
                     rangeStart = textColumn!!.start
                     rangeEnd = textColumn.end
                     currentBgImage = bgImage
                     currentBgImageFit = bgImageFit
                     currentBgImageScale = bgImageScale
+                    currentPadStart = padStart
+                    currentPadEnd = padEnd
+                    currentPadTop = padTop
+                    currentPadBottom = padBottom
                 }
             }
             if (active && index == columns.lastIndex) {
-                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale)
+                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom)
             }
         }
     }
@@ -661,6 +684,10 @@ data class TextLine(
         bgImage: String,
         bgImageFit: Int,
         bgImageScale: Float,
+        padStartDp: Float = 0f,
+        padEndDp: Float = 0f,
+        padTopDp: Float = 0f,
+        padBottomDp: Float = 0f,
     ) {
         val bitmap = getBgBitmap(bgImage) ?: return
         val paint = PaintPool.obtain()
@@ -669,17 +696,31 @@ data class TextLine(
         paint.isFilterBitmap = true
         val top = bgPaddingTop
         val bottom = height - bgPaddingBottom
-        val rectWidth = endX - startX
-        val rectHeight = bottom - top
+
+        // 高亮背景与文字的边距（用户自定义，单位 dp）：
+        //   左右为正=外扩（包住文字），为负=内缩；
+        //   上下为正=外扩（向外盖过行），为负=内缩。行画布 y<0 区域不会被裁切，
+        //   外扩会自然包住整行，但过长高亮时请留意是否与上下行叠加。
+        val padStart = padStartDp.dpToPx()
+        val padEnd = padEndDp.dpToPx()
+        val padTop = padTopDp.dpToPx()
+        val padBottom = padBottomDp.dpToPx()
+        val drawLeft = startX - padStart
+        val drawRight = endX + padEnd
+        val drawTop = top - padTop
+        val drawBottom = bottom + padBottom
+
+        val rectWidth = drawRight - drawLeft
+        val rectHeight = drawBottom - drawTop
         val scale = bgImageScale.coerceIn(0.1f, 5f)
         when (bgImageFit) {
             1 -> {
                 val sw = rectWidth * scale
                 val sh = rectHeight * scale
-                val dx = startX + (rectWidth - sw) / 2f
-                val dy = top + (rectHeight - sh) / 2f
+                val dx = drawLeft + (rectWidth - sw) / 2f
+                val dy = drawTop + (rectHeight - sh) / 2f
                 canvas.save()
-                canvas.clipRect(startX, top, endX, bottom)
+                canvas.clipRect(drawLeft, drawTop, drawRight, drawBottom)
                 canvas.drawBitmap(bitmap, null, android.graphics.RectF(dx, dy, dx + sw, dy + sh), paint)
                 canvas.restore()
             }
@@ -689,15 +730,15 @@ data class TextLine(
                 val fitScale = (rectWidth / bw).coerceAtLeast(rectHeight / bh) * scale
                 val scaledW = bw * fitScale
                 val scaledH = bh * fitScale
-                val dx = startX + (rectWidth - scaledW) / 2f
-                val dy = top + (rectHeight - scaledH) / 2f
+                val dx = drawLeft + (rectWidth - scaledW) / 2f
+                val dy = drawTop + (rectHeight - scaledH) / 2f
                 canvas.save()
-                canvas.clipRect(startX, top, endX, bottom)
+                canvas.clipRect(drawLeft, drawTop, drawRight, drawBottom)
                 canvas.drawBitmap(bitmap, null, android.graphics.RectF(dx, dy, dx + scaledW, dy + scaledH), paint)
                 canvas.restore()
             }
             3 -> {
-                drawNinePatch(canvas, bitmap, startX, top.toFloat(), endX, bottom.toFloat(), scale, paint)
+                drawNinePatch(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, paint)
             }
             else -> {
                 val tileBitmap = if (scale != 1f) {
@@ -709,10 +750,10 @@ data class TextLine(
                 }
                 val shader = BitmapShader(tileBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
                 val matrix = android.graphics.Matrix()
-                matrix.setTranslate(startX, top)
+                matrix.setTranslate(drawLeft, drawTop)
                 shader.setLocalMatrix(matrix)
                 paint.shader = shader
-                canvas.drawRect(startX, top, endX, bottom, paint)
+                canvas.drawRect(drawLeft, drawTop, drawRight, drawBottom, paint)
                 paint.shader = null
             }
         }
