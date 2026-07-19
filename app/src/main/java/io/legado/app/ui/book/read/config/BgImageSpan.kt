@@ -42,12 +42,12 @@ class BgImageSpan(
     ): Int {
         if (fm != null) {
             val metrics = paint.fontMetricsInt
-            fm.top = metrics.top - padTopPx
-            fm.ascent = metrics.ascent - padTopPx
+            fm.top = (metrics.top - padTopPx).toInt()
+            fm.ascent = (metrics.ascent - padTopPx).toInt()
             val needsOffset = underlineMode in 1..5
             val underlinePad = if (needsOffset) offsetPx else 0
-            fm.descent = metrics.descent + underlinePad + padBottomPx
-            fm.bottom = metrics.bottom + underlinePad + padBottomPx
+            fm.descent = (metrics.descent + underlinePad + padBottomPx).toInt()
+            fm.bottom = (metrics.bottom + underlinePad + padBottomPx).toInt()
         }
         return (paint.measureText(text, start, end) + padStartPx + padEndPx).toInt()
     }

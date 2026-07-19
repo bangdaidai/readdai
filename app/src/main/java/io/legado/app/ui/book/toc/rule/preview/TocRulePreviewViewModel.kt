@@ -11,6 +11,7 @@ import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.help.DefaultData
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.book.isLocalTxt
+import io.legado.app.help.book.toReplaceBook
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.localBook.TextFile
 import io.legado.app.utils.Utf8BomUtils
