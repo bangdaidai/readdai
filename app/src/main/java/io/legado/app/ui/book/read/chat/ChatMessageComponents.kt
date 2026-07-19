@@ -1,5 +1,6 @@
 package io.legado.app.ui.book.read.chat
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,6 +13,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.height
@@ -74,6 +77,7 @@ import io.legado.app.utils.MarkdownUtils
 import io.legado.app.ui.book.info.BookInfoActivity
 import io.legado.app.data.appDb
 import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.ui.widget.components.text.MarkdownBlock
 import io.legado.app.utils.startActivityForBook
 
 @Composable
@@ -117,21 +121,26 @@ fun ChatMessageBubble(
 @Composable
 private fun UserMessageBubble(content: String) {
     val context = LocalContext.current
-    Box(
-        modifier = Modifier
-            .fillMaxWidth(0.8f)
-            .background(
-                color = Color(context.accentColor),
-                shape = RoundedCornerShape(16.dp)
-            )
-            .padding(horizontal = 14.dp, vertical = 10.dp)
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = content,
-            color = Color.White,
-            fontSize = 15.sp,
-            lineHeight = 22.sp
-        )
+        val maxBubbleWidth = maxWidth * 0.8f
+        Box(
+            modifier = Modifier
+                .widthIn(max = maxBubbleWidth)
+                .background(
+                    color = Color(context.accentColor),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            Text(
+                text = content,
+                color = Color.White,
+                fontSize = 15.sp,
+                lineHeight = 22.sp
+            )
+        }
     }
 }
 
@@ -189,8 +198,8 @@ private fun AssistantMessageBubble(
                             is AiMessagePart.Text -> {
                                 if (part.text.isNotBlank()) {
                                     SelectionContainer {
-                                        MarkdownText(
-                                            text = part.text,
+                                        MarkdownBlock(
+                                            content = part.text,
                                             modifier = Modifier.padding(vertical = 2.dp)
                                         )
                                     }
@@ -277,7 +286,7 @@ private fun AssistantMessageBubble(
                 } else {
                     if (hasContentAbove) Spacer(modifier = Modifier.height(8.dp))
                     SelectionContainer {
-                        MarkdownText(text = content, modifier = Modifier.padding(vertical = 2.dp))
+                        MarkdownBlock(content = content, modifier = Modifier.padding(vertical = 2.dp))
                     }
                 }
             }
@@ -556,93 +565,5 @@ private fun ToolStepRow(step: ToolStep) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val textColor = Color(context.primaryTextColor).toArgb()
-    val markwon = remember { MarkdownUtils.getMarkwon(context) }
-
-    Box(modifier = modifier.animateContentSize()) {
-        AndroidView(
-            factory = { ctx ->
-                TextView(ctx).apply {
-                    setTextColor(textColor)
-                    movementMethod = LinkMovementMethod.getInstance()
-                }
-            },
-            update = { textView ->
-                textView.setTextColor(textColor)
-                val contentChanged = textView.text?.toString() != text
-                if (contentChanged) {
-                    markwon.setMarkdown(textView, text)
-                    applyBookTitleClickableSpans(textView, context)
-                }
-                textView.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
-                    override fun onGlobalLayout() {
-                        textView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                        var root: ViewGroup? = textView.parent as? ViewGroup
-                        while (root?.parent is ViewGroup) {
-                            root = root.parent as ViewGroup
-                        }
-                        root?.let { traverseAndApplyBookTitleSpans(it, context) }
-                    }
-                })
-            },
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-private fun traverseAndApplyBookTitleSpans(view: View, context: android.content.Context) {
-    if (view is ViewGroup) {
-        for (i in 0 until view.childCount) {
-            val child = view.getChildAt(i)
-            if (child is TextView) {
-                applyBookTitleClickableSpans(child, context)
-            }
-            traverseAndApplyBookTitleSpans(child, context)
-        }
-    }
-}
-
-private fun applyBookTitleClickableSpans(textView: TextView, context: android.content.Context) {
-    val spannable = textView.text as? Spannable ?: return
-    val bookTitlePattern = Regex("《([^》]+)》")
-    val matches = bookTitlePattern.findAll(spannable.toString())
-    var changed = false
-    matches.forEach { matchResult ->
-        val bookName = matchResult.groupValues[1]
-        val start = matchResult.range.first
-        val end = matchResult.range.last + 1
-        val clickSpan = object : ClickableSpan() {
-            override fun onClick(widget: View) {
-                val books = appDb.bookDao.findByName(bookName)
-                if (books.isNotEmpty()) {
-                    widget.context.startActivityForBook(books.first())
-                } else {
-                    val intent = Intent(widget.context, SearchActivity::class.java)
-                    intent.putExtra("key", bookName)
-                    widget.context.startActivity(intent)
-                }
-            }
-            override fun updateDrawState(ds: TextPaint) {
-                super.updateDrawState(ds)
-                ds.isUnderlineText = true
-            }
-        }
-        spannable.setSpan(
-            clickSpan,
-            start,
-            end,
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
-        changed = true
-    }
-    if (changed) {
-        textView.text = spannable
-        textView.movementMethod = LinkMovementMethod.getInstance()
     }
 }

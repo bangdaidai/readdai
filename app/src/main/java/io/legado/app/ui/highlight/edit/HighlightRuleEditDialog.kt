@@ -1,8 +1,6 @@
 package io.legado.app.ui.highlight.edit
 
 import android.graphics.Color
-import android.graphics.PorterDuff
-import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.TypedValue
@@ -14,7 +12,6 @@ import android.widget.ArrayAdapter
 import android.widget.SeekBar
 import androidx.annotation.ColorInt
 import androidx.core.widget.doAfterTextChanged
-import com.bumptech.glide.Glide
 import com.jaredrummler.android.colorpicker.ColorPickerDialog
 import com.jaredrummler.android.colorpicker.ColorPickerDialogListener
 import io.legado.app.R
@@ -28,7 +25,9 @@ import io.legado.app.lib.theme.bottomBackground
 import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.lib.theme.getSecondaryTextColor
 import io.legado.app.ui.file.HandleFileContract
+import io.legado.app.help.highlight.HighlightRuleBackgroundManager
 import io.legado.app.utils.ColorUtils
+import io.legado.app.utils.RealPathUtil
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.observeEvent
 import io.legado.app.utils.setLayout
@@ -55,10 +54,12 @@ class HighlightRuleEditDialog(
 
     private val selectBgImage = registerForActivityResult(HandleFileContract()) { result ->
         result.uri?.let { uri ->
-            val path = if (uri.scheme == "file") uri.path ?: uri.toString() else uri.toString()
-            binding.etBgImage.setText(path)
-            updateBgImagePreview(path)
-            editingRule.bgImage = path
+            editingRule.bgColor = null
+            val rawPath = RealPathUtil.getPath(requireContext(), uri) ?: uri.toString()
+            val savedPath = HighlightRuleBackgroundManager.copyToInternal(requireContext(), rawPath)
+            editingRule.bgImage = savedPath ?: rawPath
+            binding.etBgImage.setText(savedPath ?: rawPath)
+            updateBgPreview()
             updatePreview()
         }
     }
@@ -134,8 +135,6 @@ class HighlightRuleEditDialog(
         binding.etName.setHintTextColor(secondaryTextColor)
         binding.etTextColor.setTextColor(primaryTextColor)
         binding.etTextColor.setHintTextColor(secondaryTextColor)
-        binding.etBgColor.setTextColor(primaryTextColor)
-        binding.etBgColor.setHintTextColor(secondaryTextColor)
         binding.etUnderlineColor.setTextColor(primaryTextColor)
         binding.etUnderlineColor.setHintTextColor(secondaryTextColor)
         binding.etUnderlineWidth.setTextColor(primaryTextColor)
@@ -150,6 +149,7 @@ class HighlightRuleEditDialog(
         binding.etSampleText.setHintTextColor(secondaryTextColor)
         binding.etSampleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, ReadBookConfig.textSize.toFloat())
         binding.tvPreview.setTextSize(TypedValue.COMPLEX_UNIT_SP, ReadBookConfig.textSize.toFloat())
+        binding.tvBgImagePick.setTextColor(primaryTextColor)
 
         binding.tvRegexToggle.setTextColor(primaryTextColor)
         binding.tvWidthMinus.setTextColor(primaryTextColor)
@@ -195,7 +195,6 @@ class HighlightRuleEditDialog(
         binding.etName.setText(editingRule.name)
         binding.etPattern.setText(editingRule.pattern)
         binding.etTextColor.setText(editingRule.textColor?.toHexColor().orEmpty())
-        binding.etBgColor.setText(editingRule.bgColor?.toHexColor().orEmpty())
         binding.etUnderlineColor.setText(editingRule.underlineColor?.toHexColor().orEmpty())
         binding.etUnderlineWidth.setText(editingRule.underlineWidth.toString())
         binding.etUnderlineOffset.setText(editingRule.underlineOffset.formatDistance())
@@ -206,15 +205,20 @@ class HighlightRuleEditDialog(
         binding.spBgImageFit.setSelection(editingRule.bgImageFit.coerceIn(0, 2))
         binding.sbBgImageScale.progress = (editingRule.bgImageScale.coerceIn(0.1f, 5f) * 10).toInt()
         binding.tvBgImageScale.text = "${editingRule.bgImageScale.coerceIn(0.1f, 5f).formatScale()}x"
-        binding.etBgImage.setText(editingRule.bgImage.orEmpty())
-        updateBgImagePreview(editingRule.bgImage.orEmpty())
+        if (!editingRule.bgImage.isNullOrBlank()) {
+            binding.etBgImage.setText(editingRule.bgImage)
+        } else if (editingRule.bgColor != null) {
+            binding.etBgImage.setText(editingRule.bgColor!!.toHexColor())
+        } else {
+            binding.etBgImage.setText("")
+        }
+        updateBgPreview()
         binding.spUnderlineMode.setSelection(editingRule.underlineMode.coerceIn(0, 5))
         val groupIndex = groupItems.indexOf(editingRule.group).takeIf { it >= 0 } ?: 0
         binding.spGroup.setSelection(groupIndex)
         binding.spTarget.setSelection(editingRule.targetScope.coerceIn(0, 2))
         
         updateColorPreview(binding.viewTextColorPreview, editingRule.textColor)
-        updateColorPreview(binding.viewBgColorPreview, editingRule.bgColor)
         updateColorPreview(binding.viewUnderlineColorPreview, editingRule.underlineColor)
         
         updateSvgPathVisibility(editingRule.underlineMode)
@@ -229,9 +233,6 @@ class HighlightRuleEditDialog(
         }
         binding.llTextColor.setOnClickListener {
             showColorPicker(1, editingRule.textColor ?: Color.BLACK)
-        }
-        binding.llBgColor.setOnClickListener {
-            showColorPicker(3, editingRule.bgColor ?: Color.BLACK)
         }
         binding.llUnderlineColor.setOnClickListener {
             showColorPicker(2, editingRule.underlineColor ?: Color.BLACK)
@@ -269,11 +270,6 @@ class HighlightRuleEditDialog(
         binding.etTextColor.doAfterTextChanged {
             editingRule.textColor = parseColorOrNull(it?.toString().orEmpty())
             updateColorPreview(binding.viewTextColorPreview, editingRule.textColor)
-            updatePreview()
-        }
-        binding.etBgColor.doAfterTextChanged {
-            editingRule.bgColor = parseColorOrNull(it?.toString().orEmpty())
-            updateColorPreview(binding.viewBgColorPreview, editingRule.bgColor)
             updatePreview()
         }
         binding.etUnderlineColor.doAfterTextChanged {
@@ -324,13 +320,30 @@ class HighlightRuleEditDialog(
             }
         )
         binding.etBgImage.doAfterTextChanged {
-            val path = it?.toString().orEmpty()
-            editingRule.bgImage = path
-            updateBgImagePreview(path)
+            val text = it?.toString().orEmpty()
+            val color = parseColorOrNull(text)
+            if (color != null) {
+                editingRule.bgColor = color
+                editingRule.bgImage = null
+            } else if (text.isNotBlank()) {
+                editingRule.bgImage = text
+                editingRule.bgColor = null
+            } else {
+                editingRule.bgImage = null
+                editingRule.bgColor = null
+            }
+            updateBgPreview()
             updatePreview()
         }
         binding.viewBgImagePreview.setOnClickListener {
-            selectBgImage.launch { mode = HandleFileContract.IMAGE }
+            showColorPicker(3, editingRule.bgColor ?: Color.BLACK)
+        }
+        binding.tvBgImagePick.setOnClickListener {
+            editingRule.bgColor = null
+            selectBgImage.launch {
+                mode = HandleFileContract.IMAGE
+                title = "选择背景图片"
+            }
         }
         binding.spUnderlineMode.onItemSelectedListener =
             object : android.widget.AdapterView.OnItemSelectedListener {
@@ -410,20 +423,24 @@ class HighlightRuleEditDialog(
         binding.llSvgPath.visibility = if (mode == 5) View.VISIBLE else View.GONE
     }
 
-    private fun updateBgImagePreview(path: String) {
-        if (path.isBlank()) {
-            binding.viewBgImagePreview.setBackgroundResource(R.drawable.shape_edit_text)
+    private fun updateBgPreview() {
+        val bgImage = editingRule.bgImage.orEmpty()
+        if (bgImage.isNotBlank()) {
+            val bitmap = HighlightRuleBackgroundManager.getBitmap(bgImage)
+            if (bitmap != null) {
+                val drawable = android.graphics.drawable.BitmapDrawable(resources, bitmap)
+                binding.viewBgImagePreview.background = drawable
+            } else {
+                updateColorPreview(binding.viewBgImagePreview, null)
+            }
             return
         }
-        val file = if (path.startsWith("assets://")) null else File(path)
-        if (file?.exists() == true) {
-            Glide.with(this).load(file).into(object : com.bumptech.glide.request.target.CustomTarget<Drawable>() {
-                override fun onResourceReady(resource: Drawable, transition: com.bumptech.glide.request.transition.Transition<in Drawable>?) {
-                    binding.viewBgImagePreview.background = resource
-                }
-                override fun onLoadCleared(placeholder: Drawable?) {}
-            })
+        val bgColor = editingRule.bgColor
+        if (bgColor != null) {
+            updateColorPreview(binding.viewBgImagePreview, bgColor)
+            return
         }
+        updateColorPreview(binding.viewBgImagePreview, null)
     }
 
     private fun saveRule() {
@@ -454,13 +471,13 @@ class HighlightRuleEditDialog(
             enabled = binding.switchEnable.isChecked,
             bold = binding.switchBold.isChecked,
             textColor = parseColorOrNull(binding.etTextColor.text?.toString().orEmpty()),
-            bgColor = parseColorOrNull(binding.etBgColor.text?.toString().orEmpty()),
             underlineMode = binding.spUnderlineMode.selectedItemPosition,
             underlineColor = parseColorOrNull(binding.etUnderlineColor.text?.toString().orEmpty()),
             underlineWidth = binding.etUnderlineWidth.text?.toString()?.toFloatOrNull()?.coerceIn(0.1f, 10f) ?: 1f,
             underlineOffset = binding.etUnderlineOffset.text?.toString()?.toFloatOrNull()?.coerceIn(0f, 20f) ?: 2f,
             underlineSvgPath = binding.etSvgPath.text?.toString().orEmpty().takeIf { binding.spUnderlineMode.selectedItemPosition == 5 }.orEmpty(),
-            bgImage = binding.etBgImage.text?.toString().orEmpty().takeIf { it.isNotBlank() },
+            bgColor = parseColorOrNull(binding.etBgImage.text?.toString().orEmpty()),
+            bgImage = binding.etBgImage.text?.toString().orEmpty().takeIf { it.isNotBlank() && parseColorOrNull(it) == null },
             bgImageFit = binding.spBgImageFit.selectedItemPosition,
             bgImageScale = (binding.sbBgImageScale.progress.coerceAtLeast(1) / 10f).coerceIn(0.1f, 5f),
             scope = binding.etScope.text?.toString()?.takeIf { it.isNotBlank() },
@@ -550,8 +567,9 @@ class HighlightRuleEditDialog(
             }
             3 -> {
                 editingRule.bgColor = color
-                binding.etBgColor.setText(color.toHexColor())
-                updateColorPreview(binding.viewBgColorPreview, color)
+                editingRule.bgImage = null
+                binding.etBgImage.setText(color.toHexColor())
+                updateBgPreview()
                 updatePreview()
             }
         }

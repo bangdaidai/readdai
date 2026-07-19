@@ -13,6 +13,7 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.databinding.ItemHighlightRuleBinding
+import io.legado.app.help.highlight.HighlightRuleBackgroundManager
 import io.legado.app.ui.widget.recycler.DragSelectTouchHelper
 import io.legado.app.ui.widget.recycler.ItemTouchCallback
 
@@ -45,6 +46,15 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
             if (oldItem.enabled != newItem.enabled) {
                 return false
             }
+            if (oldItem.bgImage != newItem.bgImage) {
+                return false
+            }
+            if (oldItem.bgColor != newItem.bgColor) {
+                return false
+            }
+            if (oldItem.textColor != newItem.textColor) {
+                return false
+            }
             return true
         }
 
@@ -57,6 +67,12 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
             }
             if (oldItem.enabled != newItem.enabled) {
                 payload.putBoolean("enabled", newItem.enabled)
+            }
+            if (oldItem.bgImage != newItem.bgImage
+                || oldItem.bgColor != newItem.bgColor
+                || oldItem.textColor != newItem.textColor
+            ) {
+                payload.putBoolean("upStyle", true)
             }
             if (payload.isEmpty) {
                 return null
@@ -104,6 +120,7 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
                 cbName.text = item.name.ifBlank { item.pattern.ifBlank { "未命名规则" } }
                 swtEnabled.isChecked = item.enabled
                 cbName.isChecked = selected.contains(item)
+                updateStylePreview(binding, item)
             } else {
                 for (i in payloads.indices) {
                     val bundle = payloads[i] as Bundle
@@ -112,11 +129,53 @@ class HighlightRuleAdapter(context: Context, var callBack: CallBack) :
                             "selected" -> cbName.isChecked = selected.contains(item)
                             "upName" -> cbName.text = item.name.ifBlank { item.pattern.ifBlank { "未命名规则" } }
                             "enabled" -> swtEnabled.isChecked = item.enabled
+                            "upStyle" -> updateStylePreview(binding, item)
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun updateStylePreview(binding: ItemHighlightRuleBinding, item: HighlightRule) {
+        val bgImage = item.bgImage
+        if (!bgImage.isNullOrBlank()) {
+            val bitmap = HighlightRuleBackgroundManager.getBitmap(bgImage)
+            if (bitmap != null) {
+                val drawable = android.graphics.drawable.BitmapDrawable(context.resources, bitmap)
+                binding.viewStylePreview.background = drawable
+                return
+            }
+        }
+        val bgColor = item.bgColor
+        if (bgColor != null) {
+            val drawable = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 4f * context.resources.displayMetrics.density
+                setColor(bgColor)
+                setStroke((1f * context.resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFFBBBBBB.toInt())
+            }
+            binding.viewStylePreview.background = drawable
+            return
+        }
+        val textColor = item.textColor
+        if (textColor != null) {
+            val drawable = android.graphics.drawable.GradientDrawable().apply {
+                shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                cornerRadius = 4f * context.resources.displayMetrics.density
+                setColor(textColor)
+                setStroke((1f * context.resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFFBBBBBB.toInt())
+            }
+            binding.viewStylePreview.background = drawable
+            return
+        }
+        val drawable = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+            cornerRadius = 4f * context.resources.displayMetrics.density
+            setColor(0xFFDDDDDD.toInt())
+            setStroke((1f * context.resources.displayMetrics.density).toInt().coerceAtLeast(1), 0xFFBBBBBB.toInt())
+        }
+        binding.viewStylePreview.background = drawable
     }
 
     override fun registerListener(holder: ItemViewHolder, binding: ItemHighlightRuleBinding) {

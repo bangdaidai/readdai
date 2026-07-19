@@ -23,6 +23,7 @@ jsoupxpath = "2.5.3"
 coroutines = "1.10.2"
 liveeventbus = "1.8.14"
 markwon = "4.6.2"
+intellijMarkdown = "0.7.3"
 material = "1.13.0"
 media = "1.7.1"
 danmaku = "0.9.25"
@@ -191,6 +192,7 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 json-path = { module = "com.jayway.jsonpath:json-path", version.ref = "jsonPath" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
 jsoupxpath = { module = "cn.wanghaomiao:JsoupXpath", version.ref = "jsoupxpath" }
+intellij-markdown = { module = "org.jetbrains:markdown-jvm", version.ref = "intellijMarkdown" }
 junit = { module = "junit:junit", version = "4.13.2" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
