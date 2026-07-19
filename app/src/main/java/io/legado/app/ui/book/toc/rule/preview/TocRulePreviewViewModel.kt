@@ -33,7 +33,7 @@ class TocRulePreviewViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
 
-    private val app get() = application
+    private val app get() = getApplication()
 
     private val context get() = app.applicationContext
 
