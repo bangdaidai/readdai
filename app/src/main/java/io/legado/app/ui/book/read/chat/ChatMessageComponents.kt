@@ -128,6 +128,7 @@ private fun UserMessageBubble(content: String) {
         Box(
             modifier = Modifier
                 .widthIn(max = maxBubbleWidth)
+                .align(Alignment.End)
                 .background(
                     color = Color(context.accentColor),
                     shape = RoundedCornerShape(16.dp)

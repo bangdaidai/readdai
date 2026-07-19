@@ -1,21 +1,13 @@
 package io.legado.app.ui.book.read.config
 
-import android.graphics.Bitmap
-import android.graphics.BitmapShader
 import android.graphics.Canvas
-import android.graphics.Matrix
 import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.Shader
 import android.text.style.ReplacementSpan
-import io.legado.app.ui.book.read.page.entities.TextLine
 import io.legado.app.utils.dpToPx
 
-class BgImageSpan(
+class BgColorSpan(
     private val textColor: Int,
-    private val bgImagePath: String,
-    private val bgImageFit: Int = 0,
-    private val bgImageScale: Float = 1f,
+    private val bgColor: Int,
     private val underlineMode: Int = 0,
     private val underlineColor: Int = 0,
     private val underlineWidth: Float = 1f,
@@ -55,58 +47,13 @@ class BgImageSpan(
         paint: Paint
     ) {
         val width = paint.measureText(text, start, end)
-        val rectWidth = width
-        val rectHeight = (bottom - top).toFloat()
-        val scale = bgImageScale.coerceIn(0.1f, 5f)
 
-        val bitmap = TextLine.getBgBitmap(bgImagePath)
-        if (bitmap != null) {
-            val bgPaint = Paint().apply {
-                style = Paint.Style.FILL
-                isAntiAlias = true
-                isFilterBitmap = true
-            }
-            when (bgImageFit) {
-                1 -> {
-                    val sw = rectWidth * scale
-                    val sh = rectHeight * scale
-                    val dx = x + (rectWidth - sw) / 2f
-                    val dy = top + (rectHeight - sh) / 2f
-                    canvas.save()
-                    canvas.clipRect(x, top.toFloat(), x + width, bottom.toFloat())
-                    canvas.drawBitmap(bitmap, null, RectF(dx, dy, dx + sw, dy + sh), bgPaint)
-                    canvas.restore()
-                }
-                2 -> {
-                    val bw = bitmap.width.toFloat()
-                    val bh = bitmap.height.toFloat()
-                    val fitScale = (rectWidth / bw).coerceAtLeast(rectHeight / bh) * scale
-                    val scaledW = bw * fitScale
-                    val scaledH = bh * fitScale
-                    val dx = x + (rectWidth - scaledW) / 2f
-                    val dy = top + (rectHeight - scaledH) / 2f
-                    canvas.save()
-                    canvas.clipRect(x, top.toFloat(), x + width, bottom.toFloat())
-                    canvas.drawBitmap(bitmap, null, RectF(dx, dy, dx + scaledW, dy + scaledH), bgPaint)
-                    canvas.restore()
-                }
-                else -> {
-                    val tileBitmap = if (scale != 1f) {
-                        val sw = (bitmap.width * scale).toInt().coerceAtLeast(1)
-                        val sh = (bitmap.height * scale).toInt().coerceAtLeast(1)
-                        Bitmap.createScaledBitmap(bitmap, sw, sh, true)
-                    } else {
-                        bitmap
-                    }
-                    val shader = BitmapShader(tileBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
-                    val matrix = Matrix()
-                    matrix.setTranslate(x, top.toFloat())
-                    shader.setLocalMatrix(matrix)
-                    bgPaint.shader = shader
-                    canvas.drawRect(x, top.toFloat(), x + width, bottom.toFloat(), bgPaint)
-                }
-            }
+        val bgPaint = Paint().apply {
+            style = Paint.Style.FILL
+            color = bgColor
+            isAntiAlias = true
         }
+        canvas.drawRect(x, top.toFloat(), x + width, bottom.toFloat(), bgPaint)
 
         paint.color = textColor
         paint.shader = null

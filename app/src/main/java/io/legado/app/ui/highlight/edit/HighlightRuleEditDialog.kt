@@ -18,7 +18,6 @@ import io.legado.app.R
 import io.legado.app.base.BaseDialogFragment
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.databinding.DialogHighlightRuleEditBinding
-import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.highlight.HighlightRuleGroupStore
 import io.legado.app.lib.theme.accentColor
 import io.legado.app.lib.theme.bottomBackground
@@ -147,8 +146,8 @@ class HighlightRuleEditDialog(
         binding.etExcludeScope.setHintTextColor(secondaryTextColor)
         binding.etSampleText.setTextColor(primaryTextColor)
         binding.etSampleText.setHintTextColor(secondaryTextColor)
-        binding.etSampleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, ReadBookConfig.textSize.toFloat())
-        binding.tvPreview.setTextSize(TypedValue.COMPLEX_UNIT_SP, ReadBookConfig.textSize.toFloat())
+        binding.etSampleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
+        binding.tvPreview.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
         binding.tvBgImagePick.setTextColor(primaryTextColor)
 
         binding.tvRegexToggle.setTextColor(primaryTextColor)

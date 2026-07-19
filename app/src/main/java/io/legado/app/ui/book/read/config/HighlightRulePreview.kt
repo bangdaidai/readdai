@@ -3,7 +3,6 @@ package io.legado.app.ui.book.read.config
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
 import android.text.Spanned
-import android.text.style.BackgroundColorSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import io.legado.app.data.entities.HighlightRule
@@ -27,6 +26,7 @@ object HighlightRulePreview {
             val underlineWidth = rule.underlineWidth
             val underlineOffset = rule.underlineOffset
             val hasBgImage = !rule.bgImage.isNullOrBlank()
+            val bgColor = rule.bgColor
 
             if (rule.bold) {
                 spannable.setSpan(
@@ -54,20 +54,17 @@ object HighlightRulePreview {
                     end,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
-            }
-
-            if (rule.bgColor != null) {
+            } else if (bgColor != null) {
                 spannable.setSpan(
-                    BackgroundColorSpan(rule.bgColor!!),
-                    start,
-                    end,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
-
-            if (rule.underlineMode == 0 && !hasBgImage) {
-                spannable.setSpan(
-                    ForegroundColorSpan(textColor),
+                    BgColorSpan(
+                        textColor,
+                        bgColor,
+                        rule.underlineMode,
+                        accentColor,
+                        underlineWidth,
+                        rule.underlineSvgPath.orEmpty(),
+                        underlineOffset
+                    ),
                     start,
                     end,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -115,7 +112,46 @@ object HighlightRulePreview {
                                 end,
                                 Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                             )
+                        } else {
+                            spannable.setSpan(
+                                ForegroundColorSpan(textColor),
+                                start,
+                                end,
+                                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                            )
                         }
+                    }
+                    6 -> {
+                        spannable.setSpan(
+                            StrikeThroughSpan(textColor, accentColor, underlineWidth),
+                            start,
+                            end,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                    7 -> {
+                        spannable.setSpan(
+                            ItalicTextSpan(textColor),
+                            start,
+                            end,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                    8 -> {
+                        spannable.setSpan(
+                            BoxTextSpan(textColor, accentColor, underlineWidth),
+                            start,
+                            end,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                    else -> {
+                        spannable.setSpan(
+                            ForegroundColorSpan(textColor),
+                            start,
+                            end,
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
                     }
                 }
             }

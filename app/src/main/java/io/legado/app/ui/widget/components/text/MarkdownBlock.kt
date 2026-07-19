@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalLayoutApi::class)
-
 package io.legado.app.ui.widget.components.text
 
 import android.content.Intent
@@ -11,7 +9,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -42,6 +40,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -57,13 +56,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import io.legado.app.R
+import io.legado.app.data.appDb
 import io.legado.app.ui.book.search.SearchActivity
+import io.legado.app.utils.startActivityForBook
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import splitties.systemservices.clipboardManager
 import org.intellij.markdown.IElementType
 import org.intellij.markdown.MarkdownElementTypes
@@ -93,6 +96,19 @@ private fun parseMarkdown(content: String): MarkdownParseResult {
 }
 
 private val bookTitleRegex = Regex("《([^》]+)》")
+
+private suspend fun handleBookClick(context: android.content.Context, bookName: String) {
+    val book = withContext(Dispatchers.IO) {
+        appDb.bookDao.findByName(bookName).firstOrNull()
+    }
+    if (book != null) {
+        context.startActivityForBook(book)
+    } else {
+        val intent = Intent(context, SearchActivity::class.java)
+        intent.putExtra("key", bookName)
+        context.startActivity(intent)
+    }
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Composable
@@ -200,7 +216,7 @@ private fun MarkdownNode(
         }
 
         GFMElementTypes.TABLE -> {
-            MarkdownTable(node = node, content = content, modifier = modifier)
+            MarkdownTable(node = node, content = content, modifier = modifier, onClickLink = onClickLink)
         }
 
         MarkdownTokenTypes.HORIZONTAL_RULE -> {
@@ -287,6 +303,7 @@ private fun MarkdownNode(
 @Composable
 private fun TextWithBookTitles(text: String, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val primaryColor = MaterialTheme.colorScheme.primary
     if (!bookTitleRegex.containsMatchIn(text)) {
         Text(text = text, modifier = modifier)
@@ -332,9 +349,7 @@ private fun TextWithBookTitles(text: String, modifier: Modifier = Modifier) {
             val annotations = annotatedString.getStringAnnotations("book_title", 0, annotatedString.length)
             if (annotations.isNotEmpty()) {
                 val bookName = annotations.first().item
-                val intent = Intent(context, SearchActivity::class.java)
-                intent.putExtra("key", bookName)
-                context.startActivity(intent)
+                scope.launch { handleBookClick(context, bookName) }
             }
         },
     )
@@ -349,6 +364,8 @@ private fun MarkdownParagraph(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val textStyle = LocalTextStyle.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     FlowRow(
         modifier = modifier.then(
@@ -363,7 +380,6 @@ private fun MarkdownParagraph(
                         node = child,
                         content = content,
                         colorScheme = colorScheme,
-                        onClickLink = onClickLink,
                     )
                 }
             }
@@ -372,6 +388,32 @@ private fun MarkdownParagraph(
             text = annotatedString,
             style = textStyle,
             overflow = TextOverflow.Visible,
+            modifier = Modifier.clickable {
+                val layout = it.layout
+                if (layout != null) {
+                    val pos = layout.getOffsetForPosition(it.positionChange!!.position)
+                    val linkAnns = annotatedString.getStringAnnotations(
+                        tag = LinkAnnotation.Url::class.qualifiedName!!,
+                        start = pos,
+                        end = pos,
+                    )
+                    if (linkAnns.isNotEmpty()) {
+                        val url = linkAnns.first().item
+                        if (onClickLink != null) {
+                            onClickLink(url)
+                        } else {
+                            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                            context.startActivity(intent)
+                        }
+                        return@clickable
+                    }
+                    val bookAnns = annotatedString.getStringAnnotations("book_title", pos, pos)
+                    if (bookAnns.isNotEmpty()) {
+                        val bookName = bookAnns.first().item
+                        scope.launch { handleBookClick(context, bookName) }
+                    }
+                }
+            },
         )
     }
 }
@@ -491,7 +533,7 @@ private fun MarkdownListItem(
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.Center,
+                    itemVerticalAlignment = Alignment.CenterVertically,
                 ) {
                     directContent.fastForEach { contentChild ->
                         MarkdownNode(
@@ -684,6 +726,7 @@ private fun MarkdownTable(
     node: ASTNode,
     content: String,
     modifier: Modifier = Modifier,
+    onClickLink: ((String) -> Unit)? = null,
 ) {
     val headerNode = node.children.find { it.type == GFMElementTypes.HEADER }
     val rowNodes = node.children.filter { it.type == GFMElementTypes.ROW }
@@ -711,9 +754,10 @@ private fun MarkdownTable(
                 .padding(horizontal = 8.dp, vertical = 6.dp),
         ) {
             headerCells.forEach { cell ->
-                TextWithBookTitles(
+                MarkdownInlineText(
                     text = cell,
                     modifier = Modifier.weight(1f),
+                    onClickLink = onClickLink,
                 )
             }
         }
@@ -728,9 +772,10 @@ private fun MarkdownTable(
                     .padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
                 row.forEach { cell ->
-                    TextWithBookTitles(
+                    MarkdownInlineText(
                         text = cell,
                         modifier = Modifier.weight(1f),
+                        onClickLink = onClickLink,
                     )
                 }
             }
@@ -738,11 +783,67 @@ private fun MarkdownTable(
     }
 }
 
-private fun androidx.compose.ui.text.AnnotatedString.Builder.appendMarkdownInline(
+@Composable
+private fun MarkdownInlineText(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClickLink: ((String) -> Unit)? = null,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val textStyle = LocalTextStyle.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val annotatedString = remember(text) {
+        val node = parseMarkdown(text).astTree
+        val paragraphNode = node.findChildOfTypeRecursive(MarkdownElementTypes.PARAGRAPH)
+        buildAnnotatedString {
+            (paragraphNode?.children ?: node.children).fastForEach { child ->
+                appendMarkdownInline(
+                    node = child,
+                    content = text,
+                    colorScheme = colorScheme,
+                )
+            }
+        }
+    }
+
+    Text(
+        text = annotatedString,
+        style = textStyle,
+        modifier = modifier.clickable {
+            val layout = it.layout
+            if (layout != null) {
+                val pos = layout.getOffsetForPosition(it.positionChange!!.position)
+                val linkAnns = annotatedString.getStringAnnotations(
+                    tag = LinkAnnotation.Url::class.qualifiedName!!,
+                    start = pos,
+                    end = pos,
+                )
+                if (linkAnns.isNotEmpty()) {
+                    val url = linkAnns.first().item
+                    if (onClickLink != null) {
+                        onClickLink(url)
+                    } else {
+                        val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                        context.startActivity(intent)
+                    }
+                    return@clickable
+                }
+                val bookAnns = annotatedString.getStringAnnotations("book_title", pos, pos)
+                if (bookAnns.isNotEmpty()) {
+                    val bookName = bookAnns.first().item
+                    scope.launch { handleBookClick(context, bookName) }
+                }
+            }
+        },
+    )
+}
+
+private fun AnnotatedString.Builder.appendMarkdownInline(
     node: ASTNode,
     content: String,
     colorScheme: androidx.compose.material3.ColorScheme,
-    onClickLink: ((String) -> Unit)? = null,
 ) {
     when {
         node is LeafASTNode -> {
@@ -753,7 +854,7 @@ private fun androidx.compose.ui.text.AnnotatedString.Builder.appendMarkdownInlin
         node.type == MarkdownElementTypes.EMPH -> {
             withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
                 node.children.trimSurrounding(MarkdownTokenTypes.EMPH, 1).fastForEach {
-                    appendMarkdownInline(it, content, colorScheme, onClickLink)
+                    appendMarkdownInline(it, content, colorScheme)
                 }
             }
         }
@@ -761,7 +862,7 @@ private fun androidx.compose.ui.text.AnnotatedString.Builder.appendMarkdownInlin
         node.type == MarkdownElementTypes.STRONG -> {
             withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) {
                 node.children.trimSurrounding(MarkdownTokenTypes.EMPH, 2).fastForEach {
-                    appendMarkdownInline(it, content, colorScheme, onClickLink)
+                    appendMarkdownInline(it, content, colorScheme)
                 }
             }
         }
@@ -769,7 +870,7 @@ private fun androidx.compose.ui.text.AnnotatedString.Builder.appendMarkdownInlin
         node.type == GFMElementTypes.STRIKETHROUGH -> {
             withStyle(SpanStyle(textDecoration = TextDecoration.LineThrough)) {
                 node.children.trimSurrounding(GFMTokenTypes.TILDE, 2).fastForEach {
-                    appendMarkdownInline(it, content, colorScheme, onClickLink)
+                    appendMarkdownInline(it, content, colorScheme)
                 }
             }
         }
@@ -829,13 +930,13 @@ private fun androidx.compose.ui.text.AnnotatedString.Builder.appendMarkdownInlin
 
         else -> {
             node.children.fastForEach { child ->
-                appendMarkdownInline(child, content, colorScheme, onClickLink)
+                appendMarkdownInline(child, content, colorScheme)
             }
         }
     }
 }
 
-private fun androidx.compose.ui.text.AnnotatedString.Builder.appendWithBookTitles(
+private fun AnnotatedString.Builder.appendWithBookTitles(
     text: String,
     colorScheme: androidx.compose.material3.ColorScheme,
 ) {
@@ -852,10 +953,7 @@ private fun androidx.compose.ui.text.AnnotatedString.Builder.appendWithBookTitle
         val start = length
         append(match.value)
         val end = length
-        pushStringAnnotation(
-            tag = "book_title",
-            annotation = bookName,
-        )
+        pushStringAnnotation(tag = "book_title", annotation = bookName)
         withStyle(
             style = SpanStyle(
                 color = colorScheme.primary,
