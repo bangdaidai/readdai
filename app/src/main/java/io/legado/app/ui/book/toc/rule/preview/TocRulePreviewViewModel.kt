@@ -5,13 +5,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.legado.app.R
 import io.legado.app.data.appDb
+import io.legado.app.constant.AppPattern
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.help.DefaultData
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.book.isLocalTxt
-import io.legado.app.help.book.toReplaceBook
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.localBook.TextFile
 import io.legado.app.utils.Utf8BomUtils
@@ -45,6 +46,7 @@ class TocRulePreviewViewModel(
 
     private var book: Book? = null
     private var lazyJob: Job? = null
+    private var networkCountJob: Job? = null
 
     fun init(bookUrl: String) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -111,6 +113,23 @@ class TocRulePreviewViewModel(
             is TocRulePreviewIntent.OpenManagePage -> {
                 _effects.tryEmit(TocRulePreviewEffect.OpenManagePage)
             }
+            is TocRulePreviewIntent.EditNetworkRule -> {
+                _effects.tryEmit(TocRulePreviewEffect.OpenReplaceRuleEditor(intent.ruleId))
+            }
+            is TocRulePreviewIntent.Refresh -> {
+                val currentBook = book
+                if (currentBook != null) {
+                    if (currentBook.isLocalTxt) {
+                        loadTxtPreview(currentBook)
+                    } else {
+                        // 编辑替换规则后，ContentProcessor 可能仍是旧缓存，先刷新再重新统计
+                        viewModelScope.launch(Dispatchers.IO) {
+                            runCatching { ContentProcessor.upReplaceRules() }
+                            loadNetworkPreview(currentBook)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -134,51 +153,126 @@ class TocRulePreviewViewModel(
         val titleRules: List<ReplaceRule> = processor.getTitleReplaceRules()
             .filter { it.isEnabled && it.scopeTitle }
 
-        val replaceBook = book.toReplaceBook()
-        // 按实际阅读时的顺序链式应用：统计每条规则在「前序规则结果」上的增量命中，
-        // 与 getDisplayTitle(titleRules) 的真实行为一致（后一条作用于前一条的输出）
-        val items = titleRules.mapIndexed { index, rule ->
-            var matchCount = 0
-            val samples = mutableListOf<Pair<String, String>>()
-            for (ch in chapters) {
-                val before = ch.getDisplayTitle(
-                    titleRules.subList(0, index),
-                    useReplace = true,
-                    chineseConvert = false,
-                    replaceBook = replaceBook,
-                )
-                val after = ch.getDisplayTitle(
-                    titleRules.subList(0, index + 1),
-                    useReplace = true,
-                    chineseConvert = false,
-                    replaceBook = replaceBook,
-                )
-                if (after != before) {
-                    matchCount++
-                    if (samples.size < 200) {
-                        samples.add(before to after)
-                    }
-                }
-            }
-            val exampleText = samples.firstOrNull()?.let { (before, after) -> "$before → $after" }
+        // 先立即展示界面（卡片显示“统计中”），命中数在后台逐步计算，
+        // 避免像之前那样把所有 getDisplayTitle 同步算完才肯打开页面。
+        val initialItems = titleRules.map { rule ->
             NetworkRulePreviewItem(
                 rule = rule,
-                matchCount = matchCount,
+                matchCount = 0,
                 totalChapter = chapters.size,
-                chapters = samples.toImmutableList(),
-                example = exampleText,
+                computed = false,
             )
         }
-
         _uiState.update {
             it.copy(
                 loading = false,
                 useReplace = useReplace,
                 chapterTotal = chapters.size,
                 titleReplaceRules = titleRules.toImmutableList(),
-                networkRuleItems = items.toImmutableList(),
+                networkRuleItems = initialItems.toImmutableList(),
             )
         }
+        computeNetworkCounts(chapters, titleRules)
+    }
+
+    /**
+     * 后台统计每条标题替换规则的命中情况。
+     *
+     * 旧实现：对每条规则都调用 getDisplayTitle 前缀子列表，时间复杂度约 O(N²·M)，
+     * 且 getDisplayTitle 内部走带超时的正则替换（runBlocking + 协程），章节多时极慢。
+     *
+     * 新实现：每条章节只顺序应用一次规则链（O(N·M)），并直接复用已编译的 java 正则，
+     * 不再走 getDisplayTitle，避免 runBlocking 与“超时重启 App”的风险。
+     * 同时逐条规则回写状态，界面上能看到卡片一张张从“统计中”变为命中数。
+     */
+    private fun computeNetworkCounts(
+        chapters: List<BookChapter>,
+        titleRules: List<ReplaceRule>,
+    ) {
+        networkCountJob?.cancel()
+        networkCountJob = viewModelScope.launch(Dispatchers.IO) {
+            if (titleRules.isEmpty()) return@launch
+            // 预编译每条规则的正则（仅正则模式）
+            val compiled = titleRules.map { rule ->
+                if (rule.isRegex && rule.pattern.isNotEmpty()) {
+                    runCatching { Pattern.compile(rule.pattern) }.getOrNull()
+                } else {
+                    null
+                }
+            }
+            // 每条章节的“当前标题”，随规则链推进而更新
+            val current = Array(chapters.size) { i ->
+                chapters[i].title.replace(AppPattern.rnRegex, "")
+            }
+            val matchCounts = IntArray(titleRules.size)
+            val samples = Array(titleRules.size) { mutableListOf<Pair<String, String>>() }
+
+            titleRules.forEachIndexed { index, rule ->
+                ensureActive()
+                val pattern = compiled[index]
+                for (i in chapters.indices) {
+                    val before = current[i]
+                    val after = applyRuleToTitle(rule, pattern, before)
+                    if (after != before) {
+                        matchCounts[index]++
+                        if (samples[index].size < 200) {
+                            samples[index].add(before to after)
+                        }
+                    }
+                    current[i] = after
+                }
+                val example = samples[index].firstOrNull()?.let { (b, a) -> "$b → $a" }
+                val itemIndex = index
+                _uiState.update { state ->
+                    val newItems = state.networkRuleItems.mapIndexed { i, item ->
+                        if (i == itemIndex) {
+                            item.copy(
+                                matchCount = matchCounts[itemIndex],
+                                chapters = samples[itemIndex].toImmutableList(),
+                                example = example,
+                                computed = true,
+                            )
+                        } else {
+                            item
+                        }
+                    }.toImmutableList()
+                    state.copy(networkRuleItems = newItems)
+                }
+            }
+        }
+    }
+
+    /**
+     * 把单条替换规则应用到标题上。等价于 getDisplayTitle 中“叠加该条规则”的效果，
+     * 但使用已编译的 java.util.regex.Pattern，避免 getDisplayTitle 内带超时的替换扩展
+     * （其内部 runBlocking 且超时可能重启 App），从而让预览统计既快又安全。
+     */
+    private fun applyRuleToTitle(
+        rule: ReplaceRule,
+        pattern: Pattern?,
+        input: String,
+    ): String {
+        if (rule.pattern.isEmpty()) return input
+        // @js: 形式的替换依赖 Rhino 引擎，预览统计里不执行，按“未变化”处理，避免产生错误计数
+        if (rule.replacement.startsWith("@js:")) return input
+        val result = if (rule.isRegex && pattern != null) {
+            try {
+                val matcher = pattern.matcher(input)
+                val sb = StringBuffer()
+                while (matcher.find()) {
+                    matcher.appendReplacement(sb, rule.replacement)
+                }
+                matcher.appendTail(sb)
+                sb.toString()
+            } catch (_: Exception) {
+                input
+            }
+        } else {
+            // 非正则：与 getDisplayTitle 一致，按字面量整体替换
+            input.replace(rule.pattern, rule.replacement)
+        }
+        // 与 getDisplayTitle 一致：替换后为空则保留原标题
+        return if (result.isBlank()) input else result
     }
 
     // ===================== TXT 目录规则预览 =====================

@@ -73,10 +73,10 @@ class NineSliceEditorDialog(
             }
 
         binding.btnReset.setOnClickListener {
-            currentLeftX = 1f / 3f
-            currentRightX = 2f / 3f
-            currentTopY = 1f / 3f
-            currentBottomY = 2f / 3f
+            currentLeftX = 0.5f
+            currentRightX = 0.5f
+            currentTopY = 0.5f
+            currentBottomY = 0.5f
             binding.nineSliceView.setData(
                 bitmap,
                 currentLeftX,

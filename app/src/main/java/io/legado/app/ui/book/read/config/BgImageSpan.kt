@@ -26,10 +26,10 @@ class BgImageSpan(
     private val bgPaddingEnd: Float = 0f,
     private val bgPaddingTop: Float = 0f,
     private val bgPaddingBottom: Float = 0f,
-    private val nineLeftX: Float = 1f / 3f,
-    private val nineRightX: Float = 2f / 3f,
-    private val nineTopY: Float = 1f / 3f,
-    private val nineBottomY: Float = 2f / 3f,
+    private val nineLeftX: Float = 0.5f,
+    private val nineRightX: Float = 0.5f,
+    private val nineTopY: Float = 0.5f,
+    private val nineBottomY: Float = 0.5f,
     private val nineStretchMode: Int = 0,
 ) : ReplacementSpan() {
 

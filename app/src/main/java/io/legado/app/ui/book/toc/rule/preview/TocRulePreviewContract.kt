@@ -80,6 +80,8 @@ data class NetworkRulePreviewItem(
     val chapters: ImmutableList<Pair<String, String>> = persistentListOf(),
     // 替换示例（原标题 → 替换后标题），纯展示字段，由 ViewModel 计算填充
     val example: String? = null,
+    // 是否已完成命中统计（未完成时卡片展示加载中）
+    val computed: Boolean = true,
 )
 
 sealed interface TocRulePreviewSheet {
@@ -105,6 +107,10 @@ sealed interface TocRulePreviewIntent {
     data object OpenManagePage : TocRulePreviewIntent
     data object ToggleSearch : TocRulePreviewIntent
     data class UpdateSearchQuery(val query: String) : TocRulePreviewIntent
+    // 网络书籍：打开某条标题替换规则的编辑页面
+    data class EditNetworkRule(val ruleId: Long) : TocRulePreviewIntent
+    // 规则被编辑后，重新统计（网络/TXT 通用）
+    data object Refresh : TocRulePreviewIntent
 }
 
 sealed interface TocRulePreviewEffect {
@@ -112,4 +118,6 @@ sealed interface TocRulePreviewEffect {
     // 应用规则到书籍，附带完整 tocRegex（rule + spaceChars + replacement）
     data class ApplyRule(val tocRegex: String) : TocRulePreviewEffect
     data object OpenManagePage : TocRulePreviewEffect
+    // 打开替换规则编辑页（网络书籍规则预览用）
+    data class OpenReplaceRuleEditor(val ruleId: Long) : TocRulePreviewEffect
 }

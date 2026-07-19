@@ -49,6 +49,15 @@ fun TocRulePreviewRouteScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
 
+    // 编辑替换规则（网络书籍目录规则预览用），编辑返回后重新统计命中数
+    val editReplaceLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            viewModel.onIntent(TocRulePreviewIntent.Refresh)
+        }
+    }
+
     LaunchedEffect(bookUrl) {
         viewModel.init(bookUrl)
     }
@@ -59,6 +68,11 @@ fun TocRulePreviewRouteScreen(
                 is TocRulePreviewEffect.ShowToast -> context.toastOnUi(effect.message)
                 is TocRulePreviewEffect.ApplyRule -> onApplyRule(effect.tocRegex)
                 is TocRulePreviewEffect.OpenManagePage -> onOpenManagePage()
+                is TocRulePreviewEffect.OpenReplaceRuleEditor -> {
+                    editReplaceLauncher.launch(
+                        io.legado.app.ui.replace.edit.ReplaceEditActivity.startIntent(context, effect.ruleId)
+                    )
+                }
             }
         }
     }
@@ -107,7 +121,11 @@ private fun TocRulePreviewScreen(
         },
         floatingActionButton = {
             if (state.isTxt && state.hasSelection) {
-                FloatingActionButton(onClick = { onIntent(TocRulePreviewIntent.ApplyRule) }) {
+                FloatingActionButton(
+                    onClick = { onIntent(TocRulePreviewIntent.ApplyRule) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White,
+                ) {
                     Icon(Icons.Default.Check, contentDescription = stringResource(R.string.ok))
                 }
             }
@@ -142,6 +160,7 @@ private fun TocRulePreviewScreen(
                 NetworkRuleChapterSheet(
                     item = sheet.item,
                     onDismiss = { onIntent(TocRulePreviewIntent.DismissSheet) },
+                    onEditRule = { onIntent(TocRulePreviewIntent.EditNetworkRule(sheet.item.rule.id)) },
                 )
             }
             null -> { /* no sheet */ }
@@ -231,6 +250,7 @@ private fun NetworkRulePreviewList(
                         item = item,
                         onClick = { onIntent(TocRulePreviewIntent.ShowNetworkRuleChapters(item)) },
                         onLongClick = { onIntent(TocRulePreviewIntent.ShowNetworkRuleChapters(item)) },
+                        onEdit = { onIntent(TocRulePreviewIntent.EditNetworkRule(item.rule.id)) },
                     )
                 }
             }
@@ -244,6 +264,7 @@ private fun NetworkRuleCard(
     item: NetworkRulePreviewItem,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    onEdit: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -276,25 +297,39 @@ private fun NetworkRuleCard(
                     )
                 }
             }
-            Spacer(Modifier.width(12.dp))
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = if (item.matchCount > 0)
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
-                else
-                    MaterialTheme.colorScheme.surfaceVariant,
-            ) {
-                Text(
-                    if (item.matchCount > 0)
-                        stringResource(R.string.rule_matched_count, item.matchCount)
-                    else
-                        stringResource(R.string.rule_no_match),
-                    style = MaterialTheme.typography.labelSmall,
+            Spacer(Modifier.width(8.dp))
+            if (!item.computed) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
                     color = if (item.matchCount > 0)
-                        Color.White
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
                     else
-                        MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Text(
+                        if (item.matchCount > 0)
+                            stringResource(R.string.rule_matched_count, item.matchCount)
+                        else
+                            stringResource(R.string.rule_no_match),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (item.matchCount > 0)
+                            Color.White
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onEdit) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = stringResource(R.string.edit),
                 )
             }
         }
@@ -306,6 +341,7 @@ private fun NetworkRuleCard(
 private fun NetworkRuleChapterSheet(
     item: NetworkRulePreviewItem,
     onDismiss: () -> Unit,
+    onEditRule: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -314,13 +350,22 @@ private fun NetworkRuleChapterSheet(
                 .padding(16.dp)
                 .navigationBarsPadding(),
         ) {
-            Text(
-                item.rule.name,
-                style = MaterialTheme.typography.titleMedium,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    item.rule.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.width(8.dp))
+                IconButton(onClick = onEditRule) {
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.edit))
+                }
+            }
             Spacer(Modifier.height(4.dp))
             Text(
                 stringResource(R.string.rule_matched_count, item.matchCount),
@@ -590,15 +635,21 @@ private fun RuleEditSheet(
                     Text(stringResource(R.string.cancel))
                 }
                 Spacer(Modifier.width(8.dp))
-                Button(onClick = {
-                    onSave(
-                        rule.copy(
-                            name = name,
-                            rule = regex,
-                            example = example.ifBlank { null },
+                Button(
+                    onClick = {
+                        onSave(
+                            rule.copy(
+                                name = name,
+                                rule = regex,
+                                example = example.ifBlank { null },
+                            )
                         )
-                    )
-                }) {
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White,
+                    ),
+                ) {
                     Text(stringResource(R.string.ok))
                 }
             }

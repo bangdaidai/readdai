@@ -12,8 +12,10 @@ import kotlin.math.abs
 
 /**
  * 九宫格（9-slice）可视化编辑器：在原图上叠加 4 条可拖拽的线
- * （two 竖线 nineLeftX/nineRightX，two 横线 nineTopY/nineBottomY，均为 0~1 归一化），
+ * （两根竖线 nineLeftX/nineRightX，两根横线 nineTopY/nineBottomY，均为 0~1 归一化），
  * 中间矩形即为「可拉伸区域」。拖动实时回调 onLineChanged。
+ *
+ * 默认四线重合于中点（0.5），且允许两根线重合（即某方向无可拉伸区）。
  */
 class NineSliceEditorView @JvmOverloads constructor(
     context: Context,
@@ -22,10 +24,10 @@ class NineSliceEditorView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private var bitmap: Bitmap? = null
-    private var leftX = 1f / 3f
-    private var rightX = 2f / 3f
-    private var topY = 1f / 3f
-    private var bottomY = 2f / 3f
+    private var leftX = 0.5f
+    private var rightX = 0.5f
+    private var topY = 0.5f
+    private var bottomY = 0.5f
     var stretchMode: Int = 0
 
     var onLineChanged: ((Float, Float, Float, Float, Int) -> Unit)? = null
@@ -73,16 +75,6 @@ class NineSliceEditorView @JvmOverloads constructor(
         this.rightX = rightX.coerceIn(0.02f, 0.98f)
         this.topY = topY.coerceIn(0.02f, 0.98f)
         this.bottomY = bottomY.coerceIn(0.02f, 0.98f)
-        if (this.leftX > this.rightX) {
-            val t = this.leftX
-            this.leftX = this.rightX
-            this.rightX = t
-        }
-        if (this.topY > this.bottomY) {
-            val t = this.topY
-            this.topY = this.bottomY
-            this.bottomY = t
-        }
         this.stretchMode = stretchMode
         computeContentRect()
         invalidate()
@@ -118,10 +110,11 @@ class NineSliceEditorView @JvmOverloads constructor(
         // 原图
         canvas.drawBitmap(bm, null, android.graphics.RectF(contentLeft, contentTop, contentLeft + contentW, contentTop + contentH), bitmapPaint)
 
-        val lx = nxToPx(leftX)
-        val rx = nxToPx(rightX)
-        val ty = nyToPx(topY)
-        val by = nyToPx(bottomY)
+        // 取两根线中较小/较大者，保证绘制顺序无关（允许重合、允许交叉）
+        val lx = nxToPx(leftX.coerceAtMost(rightX))
+        val rx = nxToPx(leftX.coerceAtLeast(rightX))
+        val ty = nyToPx(topY.coerceAtMost(bottomY))
+        val by = nyToPx(topY.coerceAtLeast(bottomY))
 
         // 可拉伸区（中间矩形）描绿边，提示拉伸范围
         canvas.drawRect(lx, ty, rx, by, borderPaint)
@@ -153,10 +146,10 @@ class NineSliceEditorView @JvmOverloads constructor(
             MotionEvent.ACTION_MOVE -> {
                 if (dragTarget == -1) return true
                 when (dragTarget) {
-                    0 -> leftX = pxToNx(event.x).coerceAtMost(rightX - 0.02f)
-                    1 -> rightX = pxToNx(event.x).coerceAtLeast(leftX + 0.02f)
-                    2 -> topY = pxToNy(event.y).coerceAtMost(bottomY - 0.02f)
-                    3 -> bottomY = pxToNy(event.y).coerceAtLeast(topY + 0.02f)
+                    0 -> leftX = pxToNx(event.x)
+                    1 -> rightX = pxToNx(event.x)
+                    2 -> topY = pxToNy(event.y)
+                    3 -> bottomY = pxToNy(event.y)
                 }
                 onLineChanged?.invoke(leftX, rightX, topY, bottomY, stretchMode)
                 invalidate()
@@ -171,10 +164,10 @@ class NineSliceEditorView @JvmOverloads constructor(
     }
 
     private fun pickTarget(x: Float, y: Float): Int {
-        val lx = nxToPx(leftX)
-        val rx = nxToPx(rightX)
-        val ty = nyToPx(topY)
-        val by = nyToPx(bottomY)
+        val lx = nxToPx(leftX.coerceAtMost(rightX))
+        val rx = nxToPx(leftX.coerceAtLeast(rightX))
+        val ty = nyToPx(topY.coerceAtMost(bottomY))
+        val by = nyToPx(topY.coerceAtLeast(bottomY))
         // 横向线（竖线）看 x 距离；纵向线（横线）看 y 距离
         val dxL = abs(x - lx)
         val dxR = abs(x - rx)

@@ -395,10 +395,10 @@ data class TextLine(
         var currentPadEnd = 0f
         var currentPadTop = 0f
         var currentPadBottom = 0f
-        var currentNineLeftX = 1f / 3f
-        var currentNineRightX = 2f / 3f
-        var currentNineTopY = 1f / 3f
-        var currentNineBottomY = 2f / 3f
+        var currentNineLeftX = 0.5f
+        var currentNineRightX = 0.5f
+        var currentNineTopY = 0.5f
+        var currentNineBottomY = 0.5f
         var currentNineStretchMode = 0
         var active = false
         columns.forEachIndexed { index, column ->
@@ -410,10 +410,10 @@ data class TextLine(
             val padEnd = textColumn?.bgPaddingEnd ?: 0f
             val padTop = textColumn?.bgPaddingTop ?: 0f
             val padBottom = textColumn?.bgPaddingBottom ?: 0f
-            val nineLeftX = textColumn?.nineLeftX ?: (1f / 3f)
-            val nineRightX = textColumn?.nineRightX ?: (2f / 3f)
-            val nineTopY = textColumn?.nineTopY ?: (1f / 3f)
-            val nineBottomY = textColumn?.nineBottomY ?: (2f / 3f)
+            val nineLeftX = textColumn?.nineLeftX ?: 0.5f
+            val nineRightX = textColumn?.nineRightX ?: 0.5f
+            val nineTopY = textColumn?.nineTopY ?: 0.5f
+            val nineBottomY = textColumn?.nineBottomY ?: 0.5f
             val nineStretchMode = textColumn?.nineStretchMode ?: 0
             val sameRange = bgImage == currentBgImage
                     && bgImageFit == currentBgImageFit
@@ -713,10 +713,10 @@ data class TextLine(
         padEndDp: Float = 0f,
         padTopDp: Float = 0f,
         padBottomDp: Float = 0f,
-        nineLeftX: Float = 1f / 3f,
-        nineRightX: Float = 2f / 3f,
-        nineTopY: Float = 1f / 3f,
-        nineBottomY: Float = 2f / 3f,
+        nineLeftX: Float = 0.5f,
+        nineRightX: Float = 0.5f,
+        nineTopY: Float = 0.5f,
+        nineBottomY: Float = 0.5f,
         nineStretchMode: Int = 0,
     ) {
         val bitmap = getBgBitmap(bgImage) ?: return

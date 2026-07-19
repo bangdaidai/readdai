@@ -9,11 +9,20 @@ import android.graphics.RectF
 /**
  * 真正的 9-slice 绘制：用 4 条线（leftX/rightX 两条竖线，topY/bottomY 两条横线，
  * 均为图片宽/高的归一化比例 0~1）把原图切成 3×3 共 9 块。
- * - 四角：固定大小（按用户缩放 s），绝不变形；
- * - 上/下中间、左/右中间：按 stretchMode 在允许方向上拉伸；
- * - 中心：按允许方向拉伸填充。
  *
- * nineStretchMode: 0=全方向拉伸、1=仅水平拉伸、2=仅垂直拉伸。
+ * - 四角：固定大小（统一缩放，绝不变形）；
+ * - 可拉伸块（上/下中、左/右中、中心）：按 nineStretchMode 在「允许且确实画了可拉伸区」的方向拉伸；
+ *   不允许该方向、或该方向两条线重合（无可拉伸区）时，整图按「铺满目标」比例绘制，无空白。
+ *
+ * 退化处理（某方向两条线重合 → 该方向无可拉伸区）：
+ *   该方向整图按 fitScale（rect/bmp）铺满目标，角块按比例展开铺满整行/列，既无空白也不变形。
+ *
+ * nineStretchMode（均为用户在编辑器里自定义选择）：
+ *   0 = 全方向拉伸（中段在水平/垂直都拉伸填满目标矩形）
+ *   1 = 仅水平拉伸（垂直方向整图铺满目标高，水平方向中段拉伸填满）
+ *   2 = 仅垂直拉伸（水平方向整图铺满目标宽，垂直方向中段拉伸填满）
+ *
+ * scale：用户在规则里设置的背景图整体缩放系数。
  */
 object NinePatchHelper {
 
@@ -38,38 +47,56 @@ object NinePatchHelper {
 
         val bw = bitmap.width.toFloat()
         val bh = bitmap.height.toFloat()
+        if (bw <= 0f || bh <= 0f) return
 
-        // 归一化线位置，各自限制在安全范围，并保证 leftX<rightX、topY<bottomY
+        // 归一化线位置，各自夹紧范围；并保证 leftX<=rightX、topY<=bottomY（允许重合）
         val lx0 = leftX.coerceIn(0.02f, 0.98f)
         val rx0 = rightX.coerceIn(0.02f, 0.98f)
         val ty0 = topY.coerceIn(0.02f, 0.98f)
         val by0 = bottomY.coerceIn(0.02f, 0.98f)
-        val (lxN, rxN) = if (lx0 > rx0) rx0 to lx0 else lx0 to rx0
-        val (tyN, byN) = if (ty0 > by0) by0 to ty0 else ty0 to by0
-
-        // 源（原图像素）边界
-        val sxL = lxN * bw
-        val sxR = rxN * bw
-        val sxT = tyN * bh
-        val sxB = byN * bh
+        val lxN = lx0.coerceAtMost(rx0)
+        val rxN = lx0.coerceAtLeast(rx0)
+        val tyN = ty0.coerceAtMost(by0)
+        val byN = ty0.coerceAtLeast(by0)
 
         val s = scale.coerceIn(0.1f, 5f)
         val stretchX = stretchMode != 2
         val stretchY = stretchMode != 1
 
-        // 拉伸轴：角块随用户缩放 s 放大/缩小；非拉伸轴：整体等比 fit（不带 s，避免溢出）
-        // 角块固定尺寸（按用户缩放 s 放大/缩小），中段为中间列/行的源尺寸。
-        // 注意：右角宽 = 图宽 - 右线位置，下角高 = 图高 - 底线位置，
-        // 中段宽 = 右线 - 左线，中段高 = 底线 - 顶线，不能写成 bw-sxL-sxR。
-        val wLsrc = if (stretchX) sxL * s else sxL
-        val wRsrc = (bw - sxR) * if (stretchX) s else 1f
-        val wMsrc = (sxR - sxL) * if (stretchX) s else 1f
-        val hTsrc = if (stretchY) sxT * s else sxT
-        val hBsrc = (bh - sxB) * if (stretchY) s else 1f
-        val hMsrc = (sxB - sxT) * if (stretchY) s else 1f
+        // 整图铺满目标的比例（退化时用于无可拉伸区的方向）
+        val fitScaleX = rectW / bw
+        val fitScaleY = rectH / bh
 
-        val (wL, wM, wR) = layoutAxis(wLsrc, wRsrc, wMsrc, rectW, stretchX)
-        val (hT, hM, hB) = layoutAxis(hTsrc, hBsrc, hMsrc, rectH, stretchY)
+        // 源各列/行宽度（原图像素）
+        val wLsrc = lxN * bw                      // 左角宽
+        val wRsrc = (1f - rxN) * bw               // 右角宽
+        val wMsrc = (rxN - lxN) * bw              // 中间列宽（可拉伸区）
+        val hTsrc = tyN * bh                      // 上角高
+        val hBsrc = (1f - byN) * bh               // 下角高
+        val hMsrc = (byN - tyN) * bh              // 中间行高（可拉伸区）
+
+        // 某方向是否真正可拉伸：模式允许 且 该方向确实画了可拉伸区（src 宽 > 1px）
+        val horizStretch = stretchX && wMsrc > 1f
+        val vertStretch = stretchY && hMsrc > 1f
+
+        // 角块统一缩放：可拉伸方向用用户 scale s（固定角块不变形），
+        // 不可拉伸方向用 fitScale 铺满目标（整图等比适配该方向，无空白）。
+        val wScale = if (horizStretch) s else fitScaleX
+        val hScale = if (vertStretch) s else fitScaleY
+
+        val wL = wLsrc * wScale
+        val wR = wRsrc * wScale
+        val hT = hTsrc * hScale
+        val hB = hBsrc * hScale
+        // 可拉伸方向：中段填满剩余（放下则裁切，保持角块不变形）；不可拉伸方向：中段为 0（已被 fitScale 铺满）
+        val wM = if (horizStretch) {
+            val v = rectW - wL - wR
+            if (v > 0f) v else 0f
+        } else 0f
+        val hM = if (vertStretch) {
+            val v = rectH - hT - hB
+            if (v > 0f) v else 0f
+        } else 0f
 
         val x0 = left
         val x1 = left + wL
@@ -80,12 +107,14 @@ object NinePatchHelper {
         val y2 = top + hT + hM
         val y3 = bottom
 
-        val sxLi = sxL.toInt().coerceAtLeast(0)
-        val sxRi = sxR.toInt().coerceAtLeast(0)
-        val sxTi = sxT.toInt().coerceAtLeast(0)
-        val sxBii = sxB.toInt().coerceAtLeast(0)
+        val sxLi = wLsrc.toInt().coerceAtLeast(0)
+        val sxR = rxN * bw
+        val sxTi = hTsrc.toInt().coerceAtLeast(0)
+        val sxB = byN * bh
         val bwI = bw.toInt()
         val bhI = bh.toInt()
+        val sxRi = sxR.toInt().coerceAtLeast(0)
+        val sxBii = sxB.toInt().coerceAtLeast(0)
 
         val srcRects = arrayOf(
             Rect(0, 0, sxLi, sxTi),
@@ -111,46 +140,14 @@ object NinePatchHelper {
             RectF(x2, y2, x3, y3)
         )
 
-        // 裁切到目标矩形：避免极小高亮时角块溢出相互覆盖
+        // 裁切到目标矩形：避免极小高亮框里角块相互覆盖
         canvas.save()
         canvas.clipRect(left, top, right, bottom)
         for (i in 0 until 9) {
-            canvas.drawBitmap(bitmap, srcRects[i], dstRects[i], paint)
+            val src = srcRects[i]
+            if (src.width() <= 0 || src.height() <= 0) continue // 退化方向的中段块无需绘制
+            canvas.drawBitmap(bitmap, src, dstRects[i], paint)
         }
         canvas.restore()
-    }
-
-    /**
-     * 计算某一轴（水平或垂直）三段目标尺寸 [边0, 中段, 边1]。
-     * - stretchAllowed=true：中段吸收 (target - 两边和)；若 target 放不下两边则等比缩小两边。
-     * - stretchAllowed=false：整体等比 fit 到 target（不拉伸，仅缩放）。
-     */
-    private fun layoutAxis(
-        srcFixed0: Float,
-        srcFixed1: Float,
-        srcStretch: Float,
-        target: Float,
-        stretchAllowed: Boolean
-    ): FloatArray {
-        return if (stretchAllowed) {
-            val fixedSum = srcFixed0 + srcFixed1
-            if (target >= fixedSum) {
-                floatArrayOf(srcFixed0, target - fixedSum, srcFixed1)
-            } else if (fixedSum <= 0f) {
-                floatArrayOf(0f, target, 0f)
-            } else {
-                // 目标放不下两侧角块：保持角块固定尺寸，中段收缩为负（重叠），
-                // 由外部 clipRect 裁切，避免角块被压缩变形（标准 9-patch 行为）。
-                floatArrayOf(srcFixed0, target - fixedSum, srcFixed1)
-            }
-        } else {
-            val total = srcFixed0 + srcStretch + srcFixed1
-            if (total <= 0f) {
-                floatArrayOf(0f, target, 0f)
-            } else {
-                val k = target / total
-                floatArrayOf(srcFixed0 * k, srcStretch * k, srcFixed1 * k)
-            }
-        }
     }
 }

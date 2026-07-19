@@ -20,10 +20,10 @@ class HighlightStyleSpan(
     val bgPaddingEnd: Float = 0f,
     val bgPaddingTop: Float = 0f,
     val bgPaddingBottom: Float = 0f,
-    val nineLeftX: Float = 1f / 3f,
-    val nineRightX: Float = 2f / 3f,
-    val nineTopY: Float = 1f / 3f,
-    val nineBottomY: Float = 2f / 3f,
+    val nineLeftX: Float = 0.5f,
+    val nineRightX: Float = 0.5f,
+    val nineTopY: Float = 0.5f,
+    val nineBottomY: Float = 0.5f,
     val nineStretchMode: Int = 0,
 ) : CharacterStyle(), UpdateAppearance {
 

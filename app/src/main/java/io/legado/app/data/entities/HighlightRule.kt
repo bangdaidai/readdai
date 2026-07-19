@@ -28,10 +28,10 @@ data class HighlightRule(
     // 两条竖线 nineLeftX/nineRightX（/图片宽，0~1）、两条横线 nineTopY/nineBottomY（/图片高，0~1），
     // 中间矩形即为可拉伸区；四角与四条边其余部分保持原比例不拉伸。
     // nineStretchMode: 0=全方向拉伸、1=仅水平拉伸、2=仅垂直拉伸
-    var nineLeftX: Float = 1f / 3f,
-    var nineRightX: Float = 2f / 3f,
-    var nineTopY: Float = 1f / 3f,
-    var nineBottomY: Float = 2f / 3f,
+    var nineLeftX: Float = 0.5f,
+    var nineRightX: Float = 0.5f,
+    var nineTopY: Float = 0.5f,
+    var nineBottomY: Float = 0.5f,
     var nineStretchMode: Int = 0,
     var scope: String? = null,
     var excludeScope: String? = null,

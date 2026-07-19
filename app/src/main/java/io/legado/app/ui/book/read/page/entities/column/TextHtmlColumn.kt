@@ -41,10 +41,10 @@ data class TextHtmlColumn(
     override val bgPaddingEnd: Float get() = 0f
     override val bgPaddingTop: Float get() = 0f
     override val bgPaddingBottom: Float get() = 0f
-    override val nineLeftX: Float get() = 1f / 3f
-    override val nineRightX: Float get() = 2f / 3f
-    override val nineTopY: Float get() = 1f / 3f
-    override val nineBottomY: Float get() = 2f / 3f
+    override val nineLeftX: Float get() = 0.5f
+    override val nineRightX: Float get() = 0.5f
+    override val nineTopY: Float get() = 0.5f
+    override val nineBottomY: Float get() = 0.5f
     override val nineStretchMode: Int get() = 0
     override val isBold: Boolean get() = false
 
