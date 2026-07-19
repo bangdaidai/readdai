@@ -53,7 +53,7 @@ data class TocRulePreviewUiState(
         else networkRuleItems.filter {
             it.rule.name.contains(searchQuery, ignoreCase = true) ||
                     it.rule.pattern.contains(searchQuery, ignoreCase = true) ||
-                    it.rule.example?.contains(searchQuery, ignoreCase = true) == true
+                    it.example?.contains(searchQuery, ignoreCase = true) == true
         }.toImmutableList()
 }
 
@@ -78,6 +78,8 @@ data class NetworkRulePreviewItem(
     val totalChapter: Int = 0,
     // 命中的章节样本（原标题 to 替换后标题），最多 200 条
     val chapters: ImmutableList<Pair<String, String>> = persistentListOf(),
+    // 替换示例（原标题 → 替换后标题），纯展示字段，由 ViewModel 计算填充
+    val example: String? = null,
 )
 
 sealed interface TocRulePreviewSheet {

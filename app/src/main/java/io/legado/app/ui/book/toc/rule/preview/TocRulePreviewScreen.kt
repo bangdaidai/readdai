@@ -8,6 +8,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -237,6 +238,7 @@ private fun NetworkRulePreviewList(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun NetworkRuleCard(
     item: NetworkRulePreviewItem,
@@ -263,7 +265,7 @@ private fun NetworkRuleCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                item.rule.example?.let { example ->
+                item.example?.let { example ->
                     Spacer(Modifier.height(2.dp))
                     Text(
                         example,

@@ -160,11 +160,13 @@ class TocRulePreviewViewModel(
                     }
                 }
             }
+            val exampleText = samples.firstOrNull()?.let { (before, after) -> "$before → $after" }
             NetworkRulePreviewItem(
                 rule = rule,
                 matchCount = matchCount,
                 totalChapter = chapters.size,
                 chapters = samples.toImmutableList(),
+                example = exampleText,
             )
         }
 
