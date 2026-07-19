@@ -182,7 +182,7 @@ class HighlightRuleEditDialog(
         binding.spBgImageFit.adapter = ArrayAdapter(
             requireContext(),
             R.layout.item_text_common,
-            listOf("平铺", "拉伸填充", "居中裁剪")
+            listOf("平铺", "拉伸填充", "居中裁剪", "九宫格")
         ).apply {
             setDropDownViewResource(R.layout.item_spinner_dropdown)
         }
@@ -201,7 +201,7 @@ class HighlightRuleEditDialog(
         binding.etScope.setText(editingRule.scope.orEmpty())
         binding.etExcludeScope.setText(editingRule.excludeScope.orEmpty())
         binding.etSampleText.setText(editingRule.sampleText.ifBlank { editingRule.normalizedSampleText() })
-        binding.spBgImageFit.setSelection(editingRule.bgImageFit.coerceIn(0, 2))
+        binding.spBgImageFit.setSelection(editingRule.bgImageFit.coerceIn(0, 3))
         binding.sbBgImageScale.progress = (editingRule.bgImageScale.coerceIn(0.1f, 5f) * 10).toInt()
         binding.tvBgImageScale.text = "${editingRule.bgImageScale.coerceIn(0.1f, 5f).formatScale()}x"
         if (!editingRule.bgImage.isNullOrBlank()) {

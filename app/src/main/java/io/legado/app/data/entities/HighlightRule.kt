@@ -53,6 +53,7 @@ data class HighlightRule(
                 when (bgImageFit) {
                     1 -> "背景图(拉伸)"
                     2 -> "背景图(裁剪)"
+                    3 -> "背景图(九宫格)"
                     else -> "背景图(平铺)"
                 }
             )

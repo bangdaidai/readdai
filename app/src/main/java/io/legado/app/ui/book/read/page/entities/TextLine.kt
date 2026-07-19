@@ -695,6 +695,9 @@ data class TextLine(
                 canvas.drawBitmap(bitmap, null, android.graphics.RectF(dx, dy, dx + scaledW, dy + scaledH), paint)
                 canvas.restore()
             }
+            3 -> {
+                drawNinePatch(canvas, bitmap, startX, top.toFloat(), endX, bottom.toFloat(), scale, paint)
+            }
             else -> {
                 val tileBitmap = if (scale != 1f) {
                     val sw = (bitmap.width * scale).toInt().coerceAtLeast(1)
@@ -713,6 +716,53 @@ data class TextLine(
             }
         }
         PaintPool.recycle(paint)
+    }
+
+    private fun drawNinePatch(
+        canvas: Canvas,
+        bitmap: Bitmap,
+        left: Float,
+        top: Float,
+        right: Float,
+        bottom: Float,
+        scale: Float,
+        paint: android.graphics.Paint
+    ) {
+        val bw = bitmap.width
+        val bh = bitmap.height
+
+        val padX = (bw / 3f * scale).toInt().coerceAtLeast(1)
+        val padY = (bh / 3f * scale).toInt().coerceAtLeast(1)
+        val srcPadX = (bw / 3f).toInt().coerceAtLeast(1)
+        val srcPadY = (bh / 3f).toInt().coerceAtLeast(1)
+
+        val srcRects = arrayOf(
+            android.graphics.Rect(0, 0, srcPadX, srcPadY),
+            android.graphics.Rect(srcPadX, 0, bw - srcPadX, srcPadY),
+            android.graphics.Rect(bw - srcPadX, 0, bw, srcPadY),
+            android.graphics.Rect(0, srcPadY, srcPadX, bh - srcPadY),
+            android.graphics.Rect(srcPadX, srcPadY, bw - srcPadX, bh - srcPadY),
+            android.graphics.Rect(bw - srcPadX, srcPadY, bw, bh - srcPadY),
+            android.graphics.Rect(0, bh - srcPadY, srcPadX, bh),
+            android.graphics.Rect(srcPadX, bh - srcPadY, bw - srcPadX, bh),
+            android.graphics.Rect(bw - srcPadX, bh - srcPadY, bw, bh)
+        )
+
+        val dstRects = arrayOf(
+            android.graphics.RectF(left, top, left + padX, top + padY),
+            android.graphics.RectF(left + padX, top, right - padX, top + padY),
+            android.graphics.RectF(right - padX, top, right, top + padY),
+            android.graphics.RectF(left, top + padY, left + padX, bottom - padY),
+            android.graphics.RectF(left + padX, top + padY, right - padX, bottom - padY),
+            android.graphics.RectF(right - padX, top + padY, right, bottom - padY),
+            android.graphics.RectF(left, bottom - padY, left + padX, bottom),
+            android.graphics.RectF(left + padX, bottom - padY, right - padX, bottom),
+            android.graphics.RectF(right - padX, bottom - padY, right, bottom)
+        )
+
+        for (i in 0 until 9) {
+            canvas.drawBitmap(bitmap, srcRects[i], dstRects[i], paint)
+        }
     }
 
     /**

@@ -322,7 +322,7 @@ object HighlightRuleStore {
             underlineOffset = runCatching { rule.underlineOffset }.getOrDefault(2f).coerceIn(0f, 20f),
             underlineSvgPath = underlineSvgPath,
             bgImage = bgImage,
-            bgImageFit = runCatching { rule.bgImageFit }.getOrDefault(0).coerceIn(0, 2),
+            bgImageFit = runCatching { rule.bgImageFit }.getOrDefault(0).coerceIn(0, 3),
             bgImageScale = runCatching { rule.bgImageScale }.getOrDefault(1f).coerceIn(0.1f, 5f),
             scope = scope,
             excludeScope = excludeScope,
