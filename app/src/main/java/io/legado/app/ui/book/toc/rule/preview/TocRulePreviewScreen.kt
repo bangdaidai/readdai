@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -124,7 +125,7 @@ private fun TocRulePreviewScreen(
                     }
                 }
                 state.isTxt -> TxtRulePreviewList(state, onIntent)
-                else -> NetworkTocPreviewList(state, onIntent)
+                else -> NetworkRulePreviewList(state, onIntent)
             }
         }
 
@@ -134,6 +135,12 @@ private fun TocRulePreviewScreen(
                     item = sheet.item,
                     onDismiss = { onIntent(TocRulePreviewIntent.DismissSheet) },
                     onEditRule = { onIntent(TocRulePreviewIntent.EditRule(it)) },
+                )
+            }
+            is TocRulePreviewSheet.NetworkRuleChapters -> {
+                NetworkRuleChapterSheet(
+                    item = sheet.item,
+                    onDismiss = { onIntent(TocRulePreviewIntent.DismissSheet) },
                 )
             }
             null -> { /* no sheet */ }
@@ -149,10 +156,10 @@ private fun TocRulePreviewScreen(
     }
 }
 
-// ===================== 网络书籍目录替换预览 =====================
+// ===================== 网络书籍目录规则预览 =====================
 
 @Composable
-private fun NetworkTocPreviewList(
+private fun NetworkRulePreviewList(
     state: TocRulePreviewUiState,
     onIntent: (TocRulePreviewIntent) -> Unit,
 ) {
@@ -163,7 +170,7 @@ private fun NetworkTocPreviewList(
         ) {
             Column(Modifier.padding(12.dp)) {
                 Text(
-                    stringResource(R.string.preview_chapter_count, state.originalChapters.size),
+                    stringResource(R.string.preview_chapter_count, state.chapterTotal),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Spacer(Modifier.height(4.dp))
@@ -173,6 +180,12 @@ private fun NetworkTocPreviewList(
                     } else {
                         stringResource(R.string.replace_rule_disabled)
                     },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.network_rule_preview_tip),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -195,20 +208,141 @@ private fun NetworkTocPreviewList(
             )
         }
 
-        val query = state.searchQuery
-        val pairs = state.originalChapters.mapIndexed { i, o ->
-            o to state.displayChapters.getOrElse(i) { o }
-        }.filter { (o, d) ->
-            query.isBlank() || o.contains(query, true) || d.contains(query, true)
+        val rules = state.filteredNetworkRules
+        if (rules.isEmpty()) {
+            Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    if (state.titleReplaceRules.isEmpty())
+                        stringResource(R.string.no_title_replace_rule)
+                    else
+                        stringResource(R.string.no_match),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                itemsIndexed(rules) { _, item ->
+                    NetworkRuleCard(
+                        item = item,
+                        onClick = { onIntent(TocRulePreviewIntent.ShowNetworkRuleChapters(item)) },
+                        onLongClick = { onIntent(TocRulePreviewIntent.ShowNetworkRuleChapters(item)) },
+                    )
+                }
+            }
         }
+    }
+}
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+@Composable
+private fun NetworkRuleCard(
+    item: NetworkRulePreviewItem,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            itemsIndexed(pairs) { _, (origin, display) ->
-                NetworkChapterRow(origin = origin, display = display, changed = origin != display)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    item.rule.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                item.rule.example?.let { example ->
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        example,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (item.matchCount > 0)
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
+                else
+                    MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Text(
+                    if (item.matchCount > 0)
+                        stringResource(R.string.rule_matched_count, item.matchCount)
+                    else
+                        stringResource(R.string.rule_no_match),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (item.matchCount > 0)
+                        Color.White
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NetworkRuleChapterSheet(
+    item: NetworkRulePreviewItem,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .navigationBarsPadding(),
+        ) {
+            Text(
+                item.rule.name,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.rule_matched_count, item.matchCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            if (item.chapters.isEmpty()) {
+                Text(
+                    stringResource(R.string.toc_preview_no_match),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(8.dp),
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp),
+                ) {
+                    itemsIndexed(item.chapters.toList()) { _, (origin, display) ->
+                        NetworkChapterRow(origin = origin, display = display, changed = true)
+                    }
+                }
             }
         }
     }
@@ -322,7 +456,7 @@ private fun TxtRuleCard(item: TxtRulePreviewItem, isSelected: Boolean, onClick: 
                     Text(
                         stringResource(R.string.preview_chapter_count, item.matchCountResolved),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = Color.White,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     )
                 }

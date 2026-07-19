@@ -69,6 +69,9 @@ class TocRulePreviewViewModel(
             is TocRulePreviewIntent.ShowChapterList -> {
                 _uiState.update { it.copy(activeSheet = TocRulePreviewSheet.ChapterList(intent.item)) }
             }
+            is TocRulePreviewIntent.ShowNetworkRuleChapters -> {
+                _uiState.update { it.copy(activeSheet = TocRulePreviewSheet.NetworkRuleChapters(intent.item)) }
+            }
             is TocRulePreviewIntent.DismissSheet -> {
                 _uiState.update { it.copy(activeSheet = null) }
             }
@@ -132,26 +135,46 @@ class TocRulePreviewViewModel(
             .filter { it.isEnabled && it.scopeTitle }
 
         val replaceBook = book.toReplaceBook()
-        val originals = chapters.map { it.title }
-        val displays = if (useReplace) {
-            chapters.map { ch ->
-                ch.getDisplayTitle(
-                    titleRules,
+        // 按实际阅读时的顺序链式应用：统计每条规则在「前序规则结果」上的增量命中，
+        // 与 getDisplayTitle(titleRules) 的真实行为一致（后一条作用于前一条的输出）
+        val items = titleRules.mapIndexed { index, rule ->
+            var matchCount = 0
+            val samples = mutableListOf<Pair<String, String>>()
+            for (ch in chapters) {
+                val before = ch.getDisplayTitle(
+                    titleRules.subList(0, index),
                     useReplace = true,
+                    chineseConvert = false,
                     replaceBook = replaceBook,
                 )
+                val after = ch.getDisplayTitle(
+                    titleRules.subList(0, index + 1),
+                    useReplace = true,
+                    chineseConvert = false,
+                    replaceBook = replaceBook,
+                )
+                if (after != before) {
+                    matchCount++
+                    if (samples.size < 200) {
+                        samples.add(before to after)
+                    }
+                }
             }
-        } else {
-            originals
+            NetworkRulePreviewItem(
+                rule = rule,
+                matchCount = matchCount,
+                totalChapter = chapters.size,
+                chapters = samples.toImmutableList(),
+            )
         }
 
         _uiState.update {
             it.copy(
                 loading = false,
                 useReplace = useReplace,
-                originalChapters = originals.toImmutableList(),
-                displayChapters = displays.toImmutableList(),
+                chapterTotal = chapters.size,
                 titleReplaceRules = titleRules.toImmutableList(),
+                networkRuleItems = items.toImmutableList(),
             )
         }
     }

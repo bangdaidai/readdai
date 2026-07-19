@@ -58,12 +58,15 @@ object NinePatchHelper {
         val stretchY = stretchMode != 1
 
         // 拉伸轴：角块随用户缩放 s 放大/缩小；非拉伸轴：整体等比 fit（不带 s，避免溢出）
+        // 角块固定尺寸（按用户缩放 s 放大/缩小），中段为中间列/行的源尺寸。
+        // 注意：右角宽 = 图宽 - 右线位置，下角高 = 图高 - 底线位置，
+        // 中段宽 = 右线 - 左线，中段高 = 底线 - 顶线，不能写成 bw-sxL-sxR。
         val wLsrc = if (stretchX) sxL * s else sxL
-        val wRsrc = if (stretchX) sxR * s else sxR
-        val wMsrc = (bw - sxL - sxR) * if (stretchX) s else 1f
+        val wRsrc = (bw - sxR) * if (stretchX) s else 1f
+        val wMsrc = (sxR - sxL) * if (stretchX) s else 1f
         val hTsrc = if (stretchY) sxT * s else sxT
-        val hBsrc = if (stretchY) sxB * s else sxB
-        val hMsrc = (bh - sxT - sxB) * if (stretchY) s else 1f
+        val hBsrc = (bh - sxB) * if (stretchY) s else 1f
+        val hMsrc = (sxB - sxT) * if (stretchY) s else 1f
 
         val (wL, wM, wR) = layoutAxis(wLsrc, wRsrc, wMsrc, rectW, stretchX)
         val (hT, hM, hB) = layoutAxis(hTsrc, hBsrc, hMsrc, rectH, stretchY)
@@ -136,8 +139,9 @@ object NinePatchHelper {
             } else if (fixedSum <= 0f) {
                 floatArrayOf(0f, target, 0f)
             } else {
-                val k = target / fixedSum
-                floatArrayOf(srcFixed0 * k, 0f, srcFixed1 * k)
+                // 目标放不下两侧角块：保持角块固定尺寸，中段收缩为负（重叠），
+                // 由外部 clipRect 裁切，避免角块被压缩变形（标准 9-patch 行为）。
+                floatArrayOf(srcFixed0, target - fixedSum, srcFixed1)
             }
         } else {
             val total = srcFixed0 + srcStretch + srcFixed1

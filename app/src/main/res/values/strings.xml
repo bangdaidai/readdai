@@ -439,6 +439,11 @@
     <string name="computing">计算中…</string>
     <string name="replace_rule_disabled">替换净化规则未开启</string>
     <string name="use_replace_purify_format">已应用 %d 条标题替换净化规则</string>
+    <string name="rule_matched_count">命中 %d 章</string>
+    <string name="rule_no_match">未匹配</string>
+    <string name="network_rule_preview_tip">以下为作用于标题的替换净化规则，点击或长按预览其在本书的命中效果</string>
+    <string name="no_title_replace_rule">暂无作用于标题的替换净化规则</string>
+    <string name="no_match">无匹配规则</string>
     <string name="select_toc_rule">选择目录规则</string>
     <string name="manage">管理</string>
     <string name="invalid_format">格式不正确</string>

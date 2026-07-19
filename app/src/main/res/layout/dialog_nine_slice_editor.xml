@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -9,7 +10,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="九宫格拉伸区域"
-        android:textColor="@color/primaryText"
+        android:textColor="?attr/primaryTextColor"
         android:textSize="16sp"
         android:textStyle="bold" />
 
@@ -18,7 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="拖动四条绿线，中间矩形为可拉伸区域，四角固定不变形"
-        android:textColor="@color/secondaryText"
+        android:textColor="?attr/secondaryTextColor"
         android:textSize="12sp" />
 
     <io.legado.app.ui.book.read.config.NineSliceEditorView
@@ -38,7 +39,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="拉伸方向"
-            android:textColor="@color/primaryText"
+            android:textColor="?attr/primaryTextColor"
             android:textSize="13sp" />
 
         <Spinner
@@ -46,7 +47,8 @@
             android:layout_width="wrap_content"
             android:layout_height="36dp"
             android:layout_marginStart="10dp"
-            android:background="@drawable/shape_edit_text" />
+            android:background="@drawable/shape_edit_text"
+            android:backgroundTint="?attr/colorAccent" />
     </LinearLayout>
 
     <LinearLayout
@@ -56,24 +58,27 @@
         android:gravity="end"
         android:orientation="horizontal">
 
-        <Button
+        <io.legado.app.ui.widget.text.AccentTextView
             android:id="@+id/btn_reset"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
             android:text="重置" />
 
-        <Button
+        <io.legado.app.ui.widget.text.AccentTextView
             android:id="@+id/btn_cancel"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:padding="8dp"
             android:text="取消" />
 
-        <Button
+        <io.legado.app.ui.widget.text.AccentTextView
             android:id="@+id/btn_ok"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
+            android:padding="8dp"
             android:text="确定" />
     </LinearLayout>
 

@@ -54,9 +54,6 @@ class NineSliceEditorView @JvmOverloads constructor(
         strokeWidth = 2f.dpToPx().toFloat()
         isAntiAlias = true
     }
-    private val cornerPaint = Paint().apply {
-        color = 0x66000000.toInt()
-    }
     private val handlePaint = Paint().apply {
         color = 0xFF00C853.toInt()
         style = Paint.Style.FILL
@@ -126,14 +123,7 @@ class NineSliceEditorView @JvmOverloads constructor(
         val ty = nyToPx(topY)
         val by = nyToPx(bottomY)
 
-        // 四角（固定区）加暗，提示不拉伸
-        cornerPaint.alpha = 0x55
-        canvas.drawRect(contentLeft, contentTop, lx, ty, cornerPaint)
-        canvas.drawRect(rx, contentTop, contentLeft + contentW, ty, cornerPaint)
-        canvas.drawRect(contentLeft, by, lx, contentTop + contentH, cornerPaint)
-        canvas.drawRect(rx, by, contentLeft + contentW, contentTop + contentH, cornerPaint)
-
-        // 可拉伸区（中间矩形）描绿边
+        // 可拉伸区（中间矩形）描绿边，提示拉伸范围
         canvas.drawRect(lx, ty, rx, by, borderPaint)
 
         // 4 条线

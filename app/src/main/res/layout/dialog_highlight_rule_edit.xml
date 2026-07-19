@@ -643,11 +643,12 @@
                             android:textColor="@color/primaryText"
                             android:textSize="13sp" />
 
-                        <Button
+                        <io.legado.app.ui.widget.text.AccentTextView
                             android:id="@+id/btn_nine_slice"
                             android:layout_width="wrap_content"
-                            android:layout_height="36dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginStart="10dp"
+                            android:padding="8dp"
                             android:text="编辑"
                             android:textSize="13sp" />
                     </LinearLayout>

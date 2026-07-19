@@ -18,11 +18,15 @@ data class TocRulePreviewUiState(
     val loading: Boolean = true,
     // 模式：网络书籍 or TXT 本地书
     val isTxt: Boolean = false,
-    // 网络书籍：原目录 vs 替换后目录对比
+    // 网络书籍：原目录 vs 替换后目录对比（保留字段，暂未直接展示）
     val originalChapters: ImmutableList<String> = persistentListOf(),
     val displayChapters: ImmutableList<String> = persistentListOf(),
     val useReplace: Boolean = true,
     val titleReplaceRules: ImmutableList<ReplaceRule> = persistentListOf(),
+    // 网络书籍：章节总数（用于页头展示）
+    val chapterTotal: Int = 0,
+    // 网络书籍：作用于标题的替换净化规则，及其在本的命中情况
+    val networkRuleItems: ImmutableList<NetworkRulePreviewItem> = persistentListOf(),
     // TXT：正则目录规则预览
     val txtRules: ImmutableList<TxtRulePreviewItem> = persistentListOf(),
     // TXT：当前选中（高亮）的规则正则，初始化为本书正在使用的目录规则
@@ -43,6 +47,14 @@ data class TocRulePreviewUiState(
                     it.rule.rule.contains(searchQuery, ignoreCase = true) ||
                     it.rule.example?.contains(searchQuery, ignoreCase = true) == true
         }.toImmutableList()
+
+    val filteredNetworkRules: ImmutableList<NetworkRulePreviewItem>
+        get() = if (searchQuery.isBlank()) networkRuleItems
+        else networkRuleItems.filter {
+            it.rule.name.contains(searchQuery, ignoreCase = true) ||
+                    it.rule.pattern.contains(searchQuery, ignoreCase = true) ||
+                    it.rule.example?.contains(searchQuery, ignoreCase = true) == true
+        }.toImmutableList()
 }
 
 @Stable
@@ -57,13 +69,27 @@ data class TxtRulePreviewItem(
     val matchCountResolved: Int get() = if (computedState < 0) 0 else computedState
 }
 
+@Stable
+data class NetworkRulePreviewItem(
+    val rule: ReplaceRule,
+    // 该规则命中（改变）的章节数
+    val matchCount: Int = 0,
+    // 本书章节总数
+    val totalChapter: Int = 0,
+    // 命中的章节样本（原标题 to 替换后标题），最多 200 条
+    val chapters: ImmutableList<Pair<String, String>> = persistentListOf(),
+)
+
 sealed interface TocRulePreviewSheet {
     data class ChapterList(val item: TxtRulePreviewItem) : TocRulePreviewSheet
+    data class NetworkRuleChapters(val item: NetworkRulePreviewItem) : TocRulePreviewSheet
 }
 
 sealed interface TocRulePreviewIntent {
     data object DismissSheet : TocRulePreviewIntent
     data class ShowChapterList(val item: TxtRulePreviewItem) : TocRulePreviewIntent
+    // 网络书籍：预览单条标题替换规则在本书的命中效果
+    data class ShowNetworkRuleChapters(val item: NetworkRulePreviewItem) : TocRulePreviewIntent
     // TXT：选中某条规则（用于高亮 + 应用）
     data class SelectRule(val rule: String) : TocRulePreviewIntent
     // TXT：打开规则编辑抽屉
