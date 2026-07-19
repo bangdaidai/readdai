@@ -270,6 +270,11 @@
             android:name=".ui.book.toc.rule.TxtTocRuleActivity"
             android:launchMode="singleTop"
             android:screenOrientation="behind" />
+        <!-- 目录规则预览（TXT 与网络书籍） -->
+        <activity
+            android:name=".ui.book.toc.rule.preview.TocRulePreviewActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="behind" />
         <!-- 替换规则界面 -->
         <activity
             android:name=".ui.replace.ReplaceRuleActivity"

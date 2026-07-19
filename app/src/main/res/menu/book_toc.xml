@@ -10,6 +10,11 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="always" />
 
+    <item
+        android:id="@+id/menu_toc_rule_preview"
+        android:title="@string/toc_rule_preview"
+        app:showAsAction="never" />
+
     <group
         android:id="@+id/menu_group_text"
         android:visible="false">

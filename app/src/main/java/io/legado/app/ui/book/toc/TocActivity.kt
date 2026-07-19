@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.Fragment
@@ -22,6 +23,7 @@ import io.legado.app.lib.theme.primaryTextColor
 import io.legado.app.model.ReadBook
 import io.legado.app.ui.about.AppLogDialog
 import io.legado.app.ui.book.toc.rule.TxtTocRuleDialog
+import io.legado.app.ui.book.toc.rule.preview.TocRulePreviewActivity
 import io.legado.app.ui.file.HandleFileContract
 import io.legado.app.ui.widget.dialog.WaitDialog
 import io.legado.app.utils.applyTint
@@ -29,6 +31,7 @@ import io.legado.app.utils.gone
 import io.legado.app.utils.showDialogFragment
 import io.legado.app.utils.viewbindingdelegate.viewBinding
 import io.legado.app.utils.visible
+import io.legado.app.utils.toastOnUi
 
 /**
  * 目录
@@ -48,6 +51,28 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
             when (it.requestCode) {
                 1 -> viewModel.saveBookmark(uri)
                 2 -> viewModel.saveBookmarkMd(uri)
+            }
+        }
+    }
+
+    private val previewResult = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        if (it.resultCode == RESULT_OK) {
+            val tocRegex = it.data?.getStringExtra("tocRegex")
+            if (tocRegex != null) {
+                viewModel.bookData.value?.let { book ->
+                    book.tocUrl = tocRegex
+                    viewModel.upBookTocRule(book) { error ->
+                        if (error != null) {
+                            toastOnUi(error.localizedMessage ?: getString(R.string.apply_fail))
+                        } else {
+                            toastOnUi(R.string.toc_rule_updated)
+                        }
+                    }
+                }
+            } else {
+                refreshToc()
             }
         }
     }
@@ -129,6 +154,13 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
 
     override fun onCompatOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.menu_toc_rule_preview -> viewModel.bookData.value?.bookUrl?.let {
+                previewResult.launch(
+                    Intent(this, TocRulePreviewActivity::class.java)
+                        .putExtra("bookUrl", it)
+                )
+            }
+
             R.id.menu_toc_regex -> showDialogFragment(
                 TxtTocRuleDialog(viewModel.bookData.value?.tocUrl)
             )
@@ -196,6 +228,11 @@ class TocActivity : VMBaseActivity<ActivityChapterListBinding, TocViewModel>(),
                 }
             }
         }
+    }
+
+    private fun refreshToc() {
+        viewModel.initBook(viewModel.bookUrl)
+        viewModel.chapterListCallBack?.upChapterList(searchView?.query?.toString())
     }
 
     @Suppress("DEPRECATION")
