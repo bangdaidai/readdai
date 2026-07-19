@@ -7,6 +7,7 @@ import io.legado.app.R
 import io.legado.app.lib.theme.Selector
 import io.legado.app.lib.theme.ThemeStore
 import io.legado.app.lib.theme.bottomBackground
+import io.legado.app.lib.theme.getPrimaryTextColor
 import io.legado.app.utils.ColorUtils
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.getCompatColor
@@ -42,16 +43,21 @@ class AccentStrokeTextView(context: Context, attrs: AttributeSet) :
         } else {
             ThemeStore.accentColor(context)
         }
+        val defaultColor = if (isBottomBackground) {
+            context.getPrimaryTextColor(isLight)
+        } else {
+            accentColor
+        }
         background = Selector.shapeBuild()
             .setCornerRadius(radius)
             .setStrokeWidth(1.dpToPx())
             .setDisabledStrokeColor(disableColor)
-            .setDefaultStrokeColor(accentColor)
+            .setDefaultStrokeColor(defaultColor)
             .setPressedBgColor(context.getCompatColor(R.color.transparent30))
             .create()
         setTextColor(
             Selector.colorBuild()
-                .setDefaultColor(accentColor)
+                .setDefaultColor(defaultColor)
                 .setDisabledColor(disableColor)
                 .create()
         )
