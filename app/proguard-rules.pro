@@ -14,11 +14,11 @@
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-keepattributes SourceFile,LineNumberTable
 
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-renamesourcefileattribute SourceFile
 # 混合时不使用大小写混合，混合后的类名为小写
 -dontusemixedcaseclassnames
 
@@ -59,6 +59,14 @@
 
 # 保持js引擎调用的java类
 -keep class * extends io.legado.app.help.JsExtensions{*;}
+
+# Rhino 脚本引擎：禁止 R8 优化/压缩/混淆，否则作用域属性的 const/DONT_DELETE 语义会被改坏，
+# 导致书源 JS 中出现 "变量 result 被重新声明" 等错误，进而首页模块加载失败/崩溃。
+-keep class org.mozilla.javascript.** { *; }
+-keep class com.script.** { *; }
+-keep class io.legado.app.model.SharedJsScope { *; }
+-dontwarn org.mozilla.javascript.**
+-dontnote org.mozilla.javascript.**
 # 数据类
 -keep class **.data.entities.**{*;}
 # Gson 保留字段信息，防止混淆后字段名改变导致反序列化失败
