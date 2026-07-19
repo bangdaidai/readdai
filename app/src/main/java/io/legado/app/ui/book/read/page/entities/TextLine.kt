@@ -9,6 +9,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Shader
 import android.os.Build
+import kotlin.math.min
 import android.text.TextPaint
 import androidx.annotation.Keep
 import androidx.core.graphics.toColorInt
@@ -728,36 +729,55 @@ data class TextLine(
         scale: Float,
         paint: android.graphics.Paint
     ) {
-        val bw = bitmap.width
-        val bh = bitmap.height
+        val rectW = right - left
+        val rectH = bottom - top
+        if (rectW <= 0f || rectH <= 0f) return
 
-        val padX = (bw / 3f * scale).toInt().coerceAtLeast(1)
-        val padY = (bh / 3f * scale).toInt().coerceAtLeast(1)
-        val srcPadX = (bw / 3f).toInt().coerceAtLeast(1)
-        val srcPadY = (bh / 3f).toInt().coerceAtLeast(1)
+        val bw = bitmap.width.toFloat()
+        val bh = bitmap.height.toFloat()
+
+        // 以文字带高度为准缩放图片，使背景贴合行高；scale 为用户额外缩放
+        val baseScale = (rectH / bh) * scale.coerceIn(0.1f, 5f)
+
+        // 源图“不拉伸”区域固定为图片的 1/3
+        val srcX = bw / 3f
+        val srcY = bh / 3f
+
+        // 目标“不拉伸”区域 = 源区 × baseScale，但不超过矩形对应边的 1/3，
+        // 避免窄/矮高亮时左右或上下边框重叠导致中间拉伸区为负（之前“很怪”的根因）
+        val maxX = rectW / 3f
+        val maxY = rectH / 3f
+        val k = min(1f, min(maxX / (srcX * baseScale), maxY / (srcY * baseScale)))
+        val sx = (srcX * baseScale * k).coerceAtLeast(1f)
+        val sy = (srcY * baseScale * k).coerceAtLeast(1f)
+
+        val sxi = srcX.toInt().coerceAtLeast(1)
+        val syi = srcY.toInt().coerceAtLeast(1)
+        val bx = bw.toInt()
+        val by = bh.toInt()
 
         val srcRects = arrayOf(
-            android.graphics.Rect(0, 0, srcPadX, srcPadY),
-            android.graphics.Rect(srcPadX, 0, bw - srcPadX, srcPadY),
-            android.graphics.Rect(bw - srcPadX, 0, bw, srcPadY),
-            android.graphics.Rect(0, srcPadY, srcPadX, bh - srcPadY),
-            android.graphics.Rect(srcPadX, srcPadY, bw - srcPadX, bh - srcPadY),
-            android.graphics.Rect(bw - srcPadX, srcPadY, bw, bh - srcPadY),
-            android.graphics.Rect(0, bh - srcPadY, srcPadX, bh),
-            android.graphics.Rect(srcPadX, bh - srcPadY, bw - srcPadX, bh),
-            android.graphics.Rect(bw - srcPadX, bh - srcPadY, bw, bh)
+            android.graphics.Rect(0, 0, sxi, syi),
+            android.graphics.Rect(sxi, 0, bx - sxi, syi),
+            android.graphics.Rect(bx - sxi, 0, bx, syi),
+            android.graphics.Rect(0, syi, sxi, by - syi),
+            android.graphics.Rect(sxi, syi, bx - sxi, by - syi),
+            android.graphics.Rect(bx - sxi, syi, bx, by - syi),
+            android.graphics.Rect(0, by - syi, sxi, by),
+            android.graphics.Rect(sxi, by - syi, bx - sxi, by),
+            android.graphics.Rect(bx - sxi, by - syi, bx, by)
         )
 
         val dstRects = arrayOf(
-            android.graphics.RectF(left, top, left + padX, top + padY),
-            android.graphics.RectF(left + padX, top, right - padX, top + padY),
-            android.graphics.RectF(right - padX, top, right, top + padY),
-            android.graphics.RectF(left, top + padY, left + padX, bottom - padY),
-            android.graphics.RectF(left + padX, top + padY, right - padX, bottom - padY),
-            android.graphics.RectF(right - padX, top + padY, right, bottom - padY),
-            android.graphics.RectF(left, bottom - padY, left + padX, bottom),
-            android.graphics.RectF(left + padX, bottom - padY, right - padX, bottom),
-            android.graphics.RectF(right - padX, bottom - padY, right, bottom)
+            android.graphics.RectF(left, top, left + sx, top + sy),
+            android.graphics.RectF(left + sx, top, right - sx, top + sy),
+            android.graphics.RectF(right - sx, top, right, top + sy),
+            android.graphics.RectF(left, top + sy, left + sx, bottom - sy),
+            android.graphics.RectF(left + sx, top + sy, right - sx, bottom - sy),
+            android.graphics.RectF(right - sx, top + sy, right, bottom - sy),
+            android.graphics.RectF(left, bottom - sy, left + sx, bottom),
+            android.graphics.RectF(left + sx, bottom - sy, right - sx, bottom),
+            android.graphics.RectF(right - sx, bottom - sy, right, bottom)
         )
 
         for (i in 0 until 9) {
