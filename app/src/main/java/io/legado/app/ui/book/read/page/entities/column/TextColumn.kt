@@ -58,7 +58,6 @@ data class TextColumn(
     override val nineRightX: Float get() = highlightStyle?.nineRightX ?: 0.5f
     override val nineTopY: Float get() = highlightStyle?.nineTopY ?: 0.5f
     override val nineBottomY: Float get() = highlightStyle?.nineBottomY ?: 0.5f
-    override val nineStretchMode: Int get() = highlightStyle?.nineStretchMode ?: 0
 
     override val isBold: Boolean get() = columnBold
 

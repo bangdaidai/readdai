@@ -23,7 +23,6 @@ class HighlightStyleSpan(
     val nineRightX: Float = 0.5f,
     val nineTopY: Float = 0.5f,
     val nineBottomY: Float = 0.5f,
-    val nineStretchMode: Int = 0,
 ) : CharacterStyle(), UpdateAppearance {
 
     override fun updateDrawState(tp: TextPaint) = Unit

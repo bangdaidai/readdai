@@ -27,7 +27,6 @@ class BgImageSpan(
     private val nineRightX: Float = 0.5f,
     private val nineTopY: Float = 0.5f,
     private val nineBottomY: Float = 0.5f,
-    private val nineStretchMode: Int = 0,
 ) : ReplacementSpan() {
 
     private val offsetPx = underlineOffset.toInt().dpToPx()
@@ -107,7 +106,7 @@ class BgImageSpan(
                     canvas.restore()
                 }
                 3 -> {
-                    NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, bgPaint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
+                    NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, bgPaint, nineLeftX, nineRightX, nineTopY, nineBottomY)
                 }
                 else -> {
                     // 旧数据「平铺(0)」等统一回退为「拉伸填充」，铺满文字框

@@ -396,7 +396,6 @@ data class TextLine(
         var currentNineRightX = 0.5f
         var currentNineTopY = 0.5f
         var currentNineBottomY = 0.5f
-        var currentNineStretchMode = 0
         var active = false
         columns.forEachIndexed { index, column ->
             val textColumn = column as? TextBaseColumn
@@ -410,7 +409,6 @@ data class TextLine(
             val nineRightX = textColumn?.nineRightX ?: 0.5f
             val nineTopY = textColumn?.nineTopY ?: 0.5f
             val nineBottomY = textColumn?.nineBottomY ?: 0.5f
-            val nineStretchMode = textColumn?.nineStretchMode ?: 0
             val sameRange = bgImage == currentBgImage
                     && bgImageFit == currentBgImageFit
                     && padStart == currentPadStart
@@ -421,10 +419,9 @@ data class TextLine(
                     && nineRightX == currentNineRightX
                     && nineTopY == currentNineTopY
                     && nineBottomY == currentNineBottomY
-                    && nineStretchMode == currentNineStretchMode
             when {
                 bgImage.isEmpty() && active -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY)
                     active = false
                 }
                 bgImage.isNotEmpty() && !active -> {
@@ -440,14 +437,13 @@ data class TextLine(
                     currentNineRightX = nineRightX
                     currentNineTopY = nineTopY
                     currentNineBottomY = nineBottomY
-                    currentNineStretchMode = nineStretchMode
                     active = true
                 }
                 bgImage.isNotEmpty() && sameRange -> {
                     rangeEnd = textColumn!!.end
                 }
                 bgImage.isNotEmpty() -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY)
                     rangeStart = textColumn!!.start
                     rangeEnd = textColumn.end
                     currentBgImage = bgImage
@@ -460,11 +456,10 @@ data class TextLine(
                     currentNineRightX = nineRightX
                     currentNineTopY = nineTopY
                     currentNineBottomY = nineBottomY
-                    currentNineStretchMode = nineStretchMode
                 }
             }
             if (active && index == columns.lastIndex) {
-                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
+                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY)
             }
         }
     }
@@ -709,7 +704,6 @@ data class TextLine(
         nineRightX: Float = 0.5f,
         nineTopY: Float = 0.5f,
         nineBottomY: Float = 0.5f,
-        nineStretchMode: Int = 0,
     ) {
         val bitmap = getBgBitmap(bgImage) ?: return
         val paint = PaintPool.obtain()
@@ -764,7 +758,7 @@ data class TextLine(
                 canvas.restore()
             }
             3 -> {
-                NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, paint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
+                NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, paint, nineLeftX, nineRightX, nineTopY, nineBottomY)
             }
             else -> {
                 // 旧数据「平铺(0)」等统一回退为「拉伸填充」，铺满文字框

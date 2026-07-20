@@ -44,7 +44,6 @@ data class TextHtmlColumn(
     override val nineRightX: Float get() = 0.5f
     override val nineTopY: Float get() = 0.5f
     override val nineBottomY: Float get() = 0.5f
-    override val nineStretchMode: Int get() = 0
     override val isBold: Boolean get() = false
 
     private val textPaint: TextPaint by lazy {

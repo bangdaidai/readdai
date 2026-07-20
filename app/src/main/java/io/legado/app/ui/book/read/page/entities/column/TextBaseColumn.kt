@@ -23,7 +23,6 @@ interface TextBaseColumn : BaseColumn {
     val nineRightX: Float
     val nineTopY: Float
     val nineBottomY: Float
-    val nineStretchMode: Int
     val bgColor: Int?
     val isBold: Boolean
     var selected: Boolean

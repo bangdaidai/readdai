@@ -28,9 +28,8 @@ class NineSliceEditorView @JvmOverloads constructor(
     private var rightX = 0.5f
     private var topY = 0.5f
     private var bottomY = 0.5f
-    var stretchMode: Int = 0
 
-    var onLineChanged: ((Float, Float, Float, Float, Int) -> Unit)? = null
+    var onLineChanged: ((Float, Float, Float, Float) -> Unit)? = null
 
     private var contentLeft = 0f
     private var contentTop = 0f
@@ -67,15 +66,13 @@ class NineSliceEditorView @JvmOverloads constructor(
         leftX: Float,
         rightX: Float,
         topY: Float,
-        bottomY: Float,
-        stretchMode: Int
+        bottomY: Float
     ) {
         this.bitmap = bitmap
         this.leftX = leftX.coerceIn(0.02f, 0.98f)
         this.rightX = rightX.coerceIn(0.02f, 0.98f)
         this.topY = topY.coerceIn(0.02f, 0.98f)
         this.bottomY = bottomY.coerceIn(0.02f, 0.98f)
-        this.stretchMode = stretchMode
         computeContentRect()
         invalidate()
     }
@@ -151,7 +148,7 @@ class NineSliceEditorView @JvmOverloads constructor(
                     2 -> topY = pxToNy(event.y)
                     3 -> bottomY = pxToNy(event.y)
                 }
-                onLineChanged?.invoke(leftX, rightX, topY, bottomY, stretchMode)
+                onLineChanged?.invoke(leftX, rightX, topY, bottomY)
                 invalidate()
                 return true
             }

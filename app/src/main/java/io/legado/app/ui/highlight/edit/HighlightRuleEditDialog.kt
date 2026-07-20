@@ -364,13 +364,11 @@ class HighlightRuleEditDialog(
                 initRightX = editingRule.nineRightX,
                 initTopY = editingRule.nineTopY,
                 initBottomY = editingRule.nineBottomY,
-                initStretchMode = editingRule.nineStretchMode,
-                onConfirm = { lx, rx, ty, by, mode ->
+                onConfirm = { lx, rx, ty, by ->
                     editingRule.nineLeftX = lx
                     editingRule.nineRightX = rx
                     editingRule.nineTopY = ty
                     editingRule.nineBottomY = by
-                    editingRule.nineStretchMode = mode
                     updatePreview()
                 }
             ).show(childFragmentManager, "nineSlice")
@@ -517,7 +515,6 @@ class HighlightRuleEditDialog(
             nineRightX = editingRule.nineRightX,
             nineTopY = editingRule.nineTopY,
             nineBottomY = editingRule.nineBottomY,
-            nineStretchMode = editingRule.nineStretchMode,
             scope = binding.etScope.text?.toString()?.takeIf { it.isNotBlank() },
             excludeScope = binding.etExcludeScope.text?.toString()?.takeIf { it.isNotBlank() }
         )
@@ -550,11 +547,11 @@ class HighlightRuleEditDialog(
         tv.text = "${valueDp.toInt()}dp"
     }
 
-    /** 仅当填充方式=九宫格(3) 且已选背景图时，显示「九宫格拉伸区域」入口 */
+    /** 仅当填充方式=九宫格(3) 且已选背景图时，显示「九宫格编辑」按钮 */
     private fun updateNineSliceVisible() {
         val visible = BG_FIT_VALUES.getOrNull(binding.spBgImageFit.selectedItemPosition) == 3
                 && !editingRule.bgImage.isNullOrBlank()
-        binding.llNineSlice.visibility = if (visible) View.VISIBLE else View.GONE
+        binding.btnNineSlice.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
     private fun updatePreview() {

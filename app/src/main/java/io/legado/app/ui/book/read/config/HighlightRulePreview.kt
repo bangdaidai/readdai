@@ -55,8 +55,7 @@ object HighlightRulePreview {
                         rule.nineLeftX,
                         rule.nineRightX,
                         rule.nineTopY,
-                        rule.nineBottomY,
-                        rule.nineStretchMode
+                        rule.nineBottomY
                     ),
                     start,
                     end,

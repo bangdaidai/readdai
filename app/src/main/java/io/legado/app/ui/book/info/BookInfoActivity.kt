@@ -50,6 +50,8 @@ import io.legado.app.help.book.isLocalTxt
 import io.legado.app.help.book.isVideo
 import io.legado.app.help.book.isWebFile
 import io.legado.app.help.book.removeType
+import io.legado.app.help.book.ContentProcessor
+import io.legado.app.help.book.toReplaceBook
 import io.legado.app.help.config.AppConfig
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.webView.WebJsExtensions
@@ -528,7 +530,11 @@ class BookInfoActivity :
         (tvName as android.widget.TextView).text = book.name
         (tvAuthor as android.widget.TextView).text = getString(R.string.author_show, book.getRealAuthor())
         (tvOrigin as android.widget.TextView).text = getString(R.string.origin_show, book.originName)
-        (tvLasted as android.widget.TextView).text = getString(R.string.lasted_show, book.latestChapterTitle)
+        val chapterList = viewModel.chapterListData.value
+        (tvLasted as android.widget.TextView).text = getString(
+            R.string.lasted_show,
+            displayChapterTitle(book, chapterList?.getOrNull(book.lastChapterIndex), book.latestChapterTitle)
+        )
         showBookIntro(book)
         if (book.isWebFile) {
             llToc.gone()
@@ -785,16 +791,39 @@ class BookInfoActivity :
                     R.string.toc_s,
                     getString(R.string.error_load_toc)
                 )
-                (binding.tvLasted as android.widget.TextView).text = getString(R.string.lasted_show, book?.latestChapterTitle)
+                (binding.tvLasted as android.widget.TextView).text = getString(
+                    R.string.lasted_show,
+                    book?.let { displayChapterTitle(it, null, it.latestChapterTitle) }
+                )
             }
 
             else -> {
                 book?.let {
-                    (binding.tvToc as android.widget.TextView).text = getString(R.string.toc_s, it.durChapterTitle)
-                    (binding.tvLasted as android.widget.TextView).text = getString(R.string.lasted_show, it.latestChapterTitle)
+                    val list = chapterList!!
+                    (binding.tvToc as android.widget.TextView).text = getString(
+                        R.string.toc_s,
+                        displayChapterTitle(it, list.getOrNull(it.durChapterIndex), it.durChapterTitle)
+                    )
+                    (binding.tvLasted as android.widget.TextView).text = getString(
+                        R.string.lasted_show,
+                        displayChapterTitle(it, list.getOrNull(it.lastChapterIndex), it.latestChapterTitle)
+                    )
                 }
             }
         }
+    }
+
+    /**
+     * 与目录页（ChapterListAdapter）保持完全一致：基于章节原始标题，
+     * 按 [AppConfig.tocUiUseReplace] && [Book.getUseReplaceRule] 决定是否套用替换净化规则。
+     * chapter 为原始 BookChapter（优先），fallback 为 Book 缓存字段（章节未加载时兜底）。
+     */
+    private fun displayChapterTitle(book: Book, chapter: BookChapter?, fallback: String?): String {
+        val rawTitle = chapter?.title?.takeIf { it.isNotBlank() } ?: fallback ?: return ""
+        val replaceRules = ContentProcessor.get(book.name, book.origin).getTitleReplaceRules()
+        val useReplace = AppConfig.tocUiUseReplace && book.getUseReplaceRule()
+        return BookChapter(bookUrl = book.bookUrl, title = rawTitle)
+            .getDisplayTitle(replaceRules, useReplace, replaceBook = book.toReplaceBook())
     }
 
     private fun upTvBookshelf() {

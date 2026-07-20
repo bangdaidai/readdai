@@ -1433,8 +1433,7 @@ class TextChapterLayout(
                         nineLeftX = rule.nineLeftX,
                         nineRightX = rule.nineRightX,
                         nineTopY = rule.nineTopY,
-                        nineBottomY = rule.nineBottomY,
-                        nineStretchMode = rule.nineStretchMode
+                        nineBottomY = rule.nineBottomY
                     ),
                     start,
                     end,
@@ -1466,7 +1465,6 @@ class TextChapterLayout(
         var nineRightX = 0.5f
         var nineTopY = 0.5f
         var nineBottomY = 0.5f
-        var nineStretchMode = 0
         var hasUnderline = false
         var hasBgImage = false
         spans.forEach { span ->
@@ -1489,7 +1487,6 @@ class TextChapterLayout(
                 nineRightX = span.nineRightX
                 nineTopY = span.nineTopY
                 nineBottomY = span.nineBottomY
-                nineStretchMode = span.nineStretchMode
                 hasBgImage = true
             }
         }
@@ -1510,7 +1507,6 @@ class TextChapterLayout(
             nineRightX = if (hasBgImage) nineRightX else 0.5f,
             nineTopY = if (hasBgImage) nineTopY else 0.5f,
             nineBottomY = if (hasBgImage) nineBottomY else 0.5f,
-            nineStretchMode = if (hasBgImage) nineStretchMode else 0,
         )
     }
 

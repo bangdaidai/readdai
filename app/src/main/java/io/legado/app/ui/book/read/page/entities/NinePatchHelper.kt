@@ -5,24 +5,21 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
+import kotlin.math.min
 
 /**
  * 真正的 9-slice 绘制：用 4 条线（leftX/rightX 两条竖线，topY/bottomY 两条横线，
  * 均为图片宽/高的归一化比例 0~1）把原图切成 3×3 共 9 块。
  *
- * - 四角：固定大小（统一缩放，绝不变形）；
- * - 可拉伸块（上/下中、左/右中、中心）：按 nineStretchMode 在「允许」的方向拉伸；
- *   某方向被 stretchMode 禁用时，该方向整图按「铺满目标」比例绘制，无空白。
+ * - 四角：随整体等比缩放（contain），绝不变形；
+ * - 可拉伸块（上/下中、左/右中、中心）：全方向拉伸（水平/垂直都拉伸填满目标矩形）；
+ *   多余尺寸由中心区域吸收，四角随整体等比缩放、固定不变形。
  *
  * 注意：两条线重合（reeden 的十字中心切片，如 479.5/480.5、126.5/127.5 仅差 1px）仍视为可拉伸，
  *   多余尺寸由中心十字区域吸收，四角固定不变形，不会回退为整图等比铺满。
  *
- * nineStretchMode（均为用户在编辑器里自定义选择）：
- *   0 = 全方向拉伸（中段在水平/垂直都拉伸填满目标矩形）
- *   1 = 仅水平拉伸（垂直方向整图铺满目标高，水平方向中段拉伸填满）
- *   2 = 仅垂直拉伸（水平方向整图铺满目标宽，垂直方向中段拉伸填满）
- *
- * scale：背景图整体缩放系数（当前固定为 1f，图片大小不可调，背景铺满文字框）。
+ * 整体缩放 s = min(rectW/bw, rectH/bh)（contain，等比缩放到刚好放入目标框）：
+ *   图片比框大则缩小（角块等比缩小、不溢出），图片比框小则放大，均不变形。
  */
 object NinePatchHelper {
 
@@ -37,8 +34,7 @@ object NinePatchHelper {
         leftX: Float,
         rightX: Float,
         topY: Float,
-        bottomY: Float,
-        stretchMode: Int
+        bottomY: Float
     ) {
         val rectW = right - left
         val rectH = bottom - top
@@ -58,13 +54,9 @@ object NinePatchHelper {
         val tyN = ty0.coerceAtMost(by0)
         val byN = ty0.coerceAtLeast(by0)
 
-        val s = 1f
-        val stretchX = stretchMode != 2
-        val stretchY = stretchMode != 1
-
-        // 整图铺满目标的比例（退化时用于无可拉伸区的方向）
-        val fitScaleX = rectW / bw
-        val fitScaleY = rectH / bh
+        // 整体等比缩放：先让整图等比缩放到目标框内（contain），再切九宫格。
+        // 这样图片比框大时角块随之等比缩小不溢出，图片比框小时等比放大，均不变形。
+        val s = min(rectW / bw, rectH / bh)
 
         // 源各列/行宽度（原图像素）
         val wLsrc = lxN * bw                      // 左角宽
@@ -72,29 +64,17 @@ object NinePatchHelper {
         val hTsrc = tyN * bh                      // 上角高
         val hBsrc = (1f - byN) * bh               // 下角高
 
-        // 某方向是否可拉伸：仅由 stretchMode 决定。
-        // reeden 中两条线重合（十字中心切片）仍拉伸中心区域，不回退整图等比铺满。
-        val horizStretch = stretchX
-        val vertStretch = stretchY
-
-        // 角块固定（s=1f，不变形）；可拉伸方向由中间区域吸收多余尺寸。
-        // 仅当 stretchMode 禁用该方向时，才退化为整图等比铺满（fitScale）。
-        val wScale = if (horizStretch) s else fitScaleX
-        val hScale = if (vertStretch) s else fitScaleY
+        // 全方向拉伸（已移除「仅水平/仅垂直」模式）：角块随整体等比缩放 s 不变形，
+        // 中段在水平/垂直方向均拉伸填满目标矩形，多余尺寸由中心区域吸收。
+        val wScale = s
+        val hScale = s
 
         val wL = wLsrc * wScale
         val wR = wRsrc * wScale
         val hT = hTsrc * hScale
         val hB = hBsrc * hScale
-        // 可拉伸方向：中段填满剩余（放下则裁切，保持角块不变形）；不可拉伸方向：中段为 0（已被 fitScale 铺满）
-        val wM = if (horizStretch) {
-            val v = rectW - wL - wR
-            if (v > 0f) v else 0f
-        } else 0f
-        val hM = if (vertStretch) {
-            val v = rectH - hT - hB
-            if (v > 0f) v else 0f
-        } else 0f
+        val wM = (rectW - wL - wR).let { if (it > 0f) it else 0f }
+        val hM = (rectH - hT - hB).let { if (it > 0f) it else 0f }
 
         val x0 = left
         val x1 = left + wL
