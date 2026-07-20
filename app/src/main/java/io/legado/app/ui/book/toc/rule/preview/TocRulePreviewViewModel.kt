@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.script.ScriptBindings
 import com.script.rhino.RhinoScriptEngine
 import io.legado.app.R
-import io.legado.app.constant.AppConfig
+import io.legado.app.help.config.AppConfig
 import io.legado.app.constant.AppPattern
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
@@ -23,6 +23,7 @@ import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.localBook.TextFile
 import io.legado.app.utils.ChineseUtils
 import io.legado.app.utils.Utf8BomUtils
+import io.legado.app.utils.quoteReplacementJs
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
