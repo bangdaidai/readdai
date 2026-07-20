@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.Region
 import android.os.Build
 import kotlin.math.min
 import android.text.TextPaint
@@ -735,12 +734,8 @@ data class TextLine(
         val drawTop = top - padTop
         val drawBottom = bottom + padBottom
 
-        // 允许高亮背景水平方向延伸到页边距之外：临时把画布可见区在水平方向
-        // 扩展到整屏宽，绘制完恢复。文字坐标不受影响，仅背景不被内容区 clip 裁切。
-        canvas.save()
-        val viewW = ChapterProvider.viewWidth.toFloat()
-        canvas.clipRect(0f, drawTop, viewW, drawBottom, android.graphics.Region.Op.UNION)
-
+        // 背景延伸到页边距外的裁剪放宽在 ContentTextView.onDraw 中处理，
+        // 此处直接按规则边距绘制即可（drawLeft~drawRight 由边距决定）。
         val rectWidth = drawRight - drawLeft
         val rectHeight = drawBottom - drawTop
         val scale = 1f
@@ -776,7 +771,6 @@ data class TextLine(
                 canvas.drawBitmap(bitmap, null, android.graphics.RectF(drawLeft, drawTop, drawRight, drawBottom), paint)
             }
         }
-        canvas.restore()
         PaintPool.recycle(paint)
     }
 
