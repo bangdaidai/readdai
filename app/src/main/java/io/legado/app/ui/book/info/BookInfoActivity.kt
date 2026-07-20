@@ -821,7 +821,7 @@ class BookInfoActivity :
     private fun displayChapterTitle(book: Book, chapter: BookChapter?, fallback: String?): String {
         val rawTitle = chapter?.title?.takeIf { it.isNotBlank() } ?: fallback ?: return ""
         val replaceRules = ContentProcessor.get(book.name, book.origin).getTitleReplaceRules()
-        val useReplace = AppConfig.tocUiUseReplace && book.getUseReplaceRule()
+        val useReplace = AppConfig.tocUiUseReplace
         return BookChapter(bookUrl = book.bookUrl, title = rawTitle)
             .getDisplayTitle(replaceRules, useReplace, replaceBook = book.toReplaceBook())
     }

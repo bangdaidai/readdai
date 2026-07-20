@@ -145,8 +145,8 @@ class TocRulePreviewViewModel(
 
     private fun loadNetworkPreview(book: Book) {
         _uiState.update { it.copy(loading = true, isTxt = false) }
-        // 与目录页（TocActivity）展示一致：阅读页目录是否启用替换 且 本书开启了替换净化
-        val useReplace = AppConfig.tocUiUseReplace && book.getUseReplaceRule()
+        // 与目录页（TocActivity）展示一致：目录是否启用替换仅由 AppConfig.tocUiUseReplace 决定
+        val useReplace = AppConfig.tocUiUseReplace
         val chapters = appDb.bookChapterDao.getChapterList(book.bookUrl)
         if (chapters.isEmpty()) {
             _uiState.update {

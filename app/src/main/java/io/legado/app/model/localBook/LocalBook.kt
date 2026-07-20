@@ -155,14 +155,14 @@ object LocalBook {
         book.durChapterTitle = list.getOrElse(book.durChapterIndex) { list.last() }
             .getDisplayTitle(
                 replaceRules,
-                book.getUseReplaceRule(),
+                AppConfig.tocUiUseReplace,
                 replaceBook = replaceBook
             )
         book.latestChapterTitle =
             list.getOrElse(book.simulatedTotalChapterNum() - 1) { list.last() }
                 .getDisplayTitle(
                     replaceRules,
-                    book.getUseReplaceRule(),
+                    AppConfig.tocUiUseReplace,
                     replaceBook = replaceBook
                 )
         book.totalChapterNum = list.size

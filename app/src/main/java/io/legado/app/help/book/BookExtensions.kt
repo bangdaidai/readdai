@@ -249,7 +249,7 @@ fun Book.sync(oldBook: Book) {
         appDb.bookChapterDao.getChapter(bookUrl, durChapterIndex)?.let {
             durChapterTitle = it.getDisplayTitle(
                 replaceRules,
-                getUseReplaceRule(),
+                AppConfig.tocUiUseReplace,
                 replaceBook = toReplaceBook()
             )
         }
@@ -475,25 +475,5 @@ fun Book.getDisplayDurChapterTitle(): String {
 }
 
 fun Book.getDisplayLatestChapterTitle(): String {
-    val replaceRules = ContentProcessor.get(this).getTitleReplaceRules()
-    if (replaceRules.isEmpty() || !getUseReplaceRule() || latestChapterTitle.isNullOrEmpty()) {
-        return latestChapterTitle ?: ""
-    }
-    var displayTitle = latestChapterTitle!!
-    replaceRules.forEach { rule ->
-        if (rule.pattern.isNotEmpty()) {
-            try {
-                val result = if (rule.isRegex) {
-                    displayTitle.replace(rule.regex, rule.replacement)
-                } else {
-                    displayTitle.replace(rule.pattern, rule.replacement)
-                }
-                if (result.isNotBlank()) {
-                    displayTitle = result
-                }
-            } catch (_: Exception) {
-            }
-        }
-    }
-    return displayTitle
+    return latestChapterTitle ?: ""
 }

@@ -538,7 +538,7 @@ data class Book(
         // 3. 迁移章节标题（基于已确定的书名计算 ContentProcessor）
         newBook.durChapterTitle = toc[newBook.durChapterIndex].getDisplayTitle(
             ContentProcessor.get(newBook.name, newBook.origin).getTitleReplaceRules(),
-            getUseReplaceRule()
+            AppConfig.tocUiUseReplace
         )
         newBook.durChapterPos = durChapterPos
         newBook.durChapterTime = durChapterTime

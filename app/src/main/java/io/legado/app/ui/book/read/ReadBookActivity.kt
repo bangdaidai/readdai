@@ -2275,6 +2275,8 @@ $content
     override fun changeReplaceRuleState() {
         ReadBook.book?.let {
             it.setUseReplaceRule(!it.getUseReplaceRule())
+            // 立即持久化，避免 saveRead() 的节流逻辑跳过写入导致开关丢失
+            appDb.bookDao.update(it)
             ReadBook.saveRead()
             menu?.findItem(R.id.menu_enable_replace)?.isChecked = it.getUseReplaceRule()
             viewModel.replaceRuleChanged()

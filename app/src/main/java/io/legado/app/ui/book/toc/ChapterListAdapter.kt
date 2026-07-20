@@ -77,7 +77,7 @@ class ChapterListAdapter(context: Context, val callback: Callback) :
             val book = callback.book ?: return@async
             val replaceRules = ContentProcessor.get(book.name, book.origin).getTitleReplaceRules()
             val replaceBook = book.toReplaceBook()
-            val useReplace = AppConfig.tocUiUseReplace && book.getUseReplaceRule()
+            val useReplace = AppConfig.tocUiUseReplace
             val items = getItems()
             launch {
                 for (i in startIndex until items.size) {

@@ -161,7 +161,7 @@ object BookChapterList {
         book.durChapterTitle = list.getOrElse(book.durChapterIndex) { list.last() }
             .getDisplayTitle(
                 replaceRules,
-                book.getUseReplaceRule(),
+                AppConfig.tocUiUseReplace,
                 replaceBook = replaceBook
             )
         if (book.totalChapterNum < list.size) {
@@ -174,7 +174,7 @@ object BookChapterList {
             list.getOrElse(book.simulatedTotalChapterNum() - 1) { list.last() }
                 .getDisplayTitle(
                     replaceRules,
-                    book.getUseReplaceRule(),
+                    AppConfig.tocUiUseReplace,
                     replaceBook = replaceBook
                 )
         currentCoroutineContext().ensureActive()
