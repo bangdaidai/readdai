@@ -443,6 +443,12 @@
     <string name="rule_no_match">未匹配</string>
     <string name="network_rule_preview_tip">以下为作用于标题的替换净化规则，点击或长按预览其在本书的命中效果</string>
     <string name="no_title_replace_rule">暂无作用于标题的替换净化规则</string>
+    <string name="chain_demo_title">替换规则链条</string>
+    <string name="chain_demo_tip">一条标题依次经过以下规则接力变换（上一步结果作为下一步输入）</string>
+    <string name="chain_demo_summary">共 %1$d 步，%2$d 步实际生效</string>
+    <string name="chain_demo_original">原标题</string>
+    <string name="chain_demo_final">最终标题</string>
+    <string name="chain_step_no_change">无变化</string>
     <string name="no_match">无匹配规则</string>
     <string name="select_toc_rule">选择目录规则</string>
     <string name="manage">管理</string>

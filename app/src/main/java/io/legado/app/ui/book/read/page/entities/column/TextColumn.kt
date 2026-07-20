@@ -46,8 +46,6 @@ data class TextColumn(
 
     override val bgImageFit: Int get() = highlightStyle?.bgImageFit ?: 0
 
-    override val bgImageScale: Float get() = highlightStyle?.bgImageScale ?: 1f
-
     override val bgPaddingStart: Float get() = highlightStyle?.bgPaddingStart ?: 0f
 
     override val bgPaddingEnd: Float get() = highlightStyle?.bgPaddingEnd ?: 0f

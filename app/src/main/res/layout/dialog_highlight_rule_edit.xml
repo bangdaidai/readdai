@@ -595,39 +595,6 @@
                     </LinearLayout>
 
                     <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="图片大小"
-                            android:textColor="@color/primaryText"
-                            android:textSize="13sp" />
-
-                        <SeekBar
-                            android:id="@+id/sb_bg_image_scale"
-                            android:layout_width="0dp"
-                            android:layout_height="36dp"
-                            android:layout_marginStart="10dp"
-                            android:layout_weight="1"
-                            android:max="50"
-                            android:progress="10" />
-
-                        <TextView
-                            android:id="@+id/tv_bg_image_scale"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:text="1.0x"
-                            android:textColor="@color/primaryText"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
                         android:id="@+id/ll_nine_slice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

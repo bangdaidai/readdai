@@ -1,9 +1,7 @@
 package io.legado.app.ui.book.read.config
 
 import android.graphics.Bitmap
-import android.graphics.BitmapShader
 import android.graphics.Canvas
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
@@ -16,7 +14,6 @@ class BgImageSpan(
     private val textColor: Int,
     private val bgImagePath: String,
     private val bgImageFit: Int = 0,
-    private val bgImageScale: Float = 1f,
     private val underlineMode: Int = 0,
     private val underlineColor: Int = 0,
     private val underlineWidth: Float = 1f,
@@ -76,7 +73,7 @@ class BgImageSpan(
         val drawBottom = bottom + padBottomPx
         val rectWidth = drawRight - drawLeft
         val rectHeight = (drawBottom - drawTop).toFloat()
-        val scale = bgImageScale.coerceIn(0.1f, 5f)
+        val scale = 1f
 
         val bitmap = TextLine.getBgBitmap(bgImagePath)
         if (bitmap != null) {
@@ -110,22 +107,11 @@ class BgImageSpan(
                     canvas.restore()
                 }
                 3 -> {
-                    NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, bgPaint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
+                    NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, bgPaint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
                 }
                 else -> {
-                    val tileBitmap = if (scale != 1f) {
-                        val sw = (bitmap.width * scale).toInt().coerceAtLeast(1)
-                        val sh = (bitmap.height * scale).toInt().coerceAtLeast(1)
-                        Bitmap.createScaledBitmap(bitmap, sw, sh, true)
-                    } else {
-                        bitmap
-                    }
-                    val shader = BitmapShader(tileBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
-                    val matrix = Matrix()
-                    matrix.setTranslate(drawLeft, drawTop)
-                    shader.setLocalMatrix(matrix)
-                    bgPaint.shader = shader
-                    canvas.drawRect(drawLeft, drawTop, drawRight, drawBottom, bgPaint)
+                    // 旧数据「平铺(0)」等统一回退为「拉伸填充」，铺满文字框
+                    canvas.drawBitmap(bitmap, null, RectF(drawLeft, drawTop, drawRight, drawBottom), bgPaint)
                 }
             }
         }

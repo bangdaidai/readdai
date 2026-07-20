@@ -43,7 +43,6 @@ object HighlightRulePreview {
                         textColor,
                         rule.bgImage!!,
                         rule.bgImageFit,
-                        rule.bgImageScale,
                         rule.underlineMode,
                         accentColor,
                         underlineWidth,

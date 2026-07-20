@@ -18,7 +18,6 @@ data class HighlightRule(
     var underlineSvgPath: String? = null,
     var bgImage: String? = null,
     var bgImageFit: Int = 0,
-    var bgImageScale: Float = 1f,
     // 高亮背景与文字的边距（单位 dp）：负=向内收缩，正=向外扩展
     var bgPaddingStart: Float = 0f,
     var bgPaddingEnd: Float = 0f,
@@ -68,7 +67,7 @@ data class HighlightRule(
                     1 -> "背景图(拉伸)"
                     2 -> "背景图(裁剪)"
                     3 -> "背景图(九宫格)"
-                    else -> "背景图(平铺)"
+                    else -> "背景图(拉伸)"
                 }
             )
         }

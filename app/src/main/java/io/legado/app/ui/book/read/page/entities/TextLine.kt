@@ -3,11 +3,10 @@ package io.legado.app.ui.book.read.page.entities
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.Shader
+import android.graphics.Region
 import android.os.Build
 import kotlin.math.min
 import android.text.TextPaint
@@ -390,7 +389,6 @@ data class TextLine(
         var rangeEnd = 0f
         var currentBgImage = ""
         var currentBgImageFit = 0
-        var currentBgImageScale = 1f
         var currentPadStart = 0f
         var currentPadEnd = 0f
         var currentPadTop = 0f
@@ -405,7 +403,6 @@ data class TextLine(
             val textColumn = column as? TextBaseColumn
             val bgImage = textColumn?.bgImage ?: ""
             val bgImageFit = textColumn?.bgImageFit ?: 0
-            val bgImageScale = textColumn?.bgImageScale ?: 1f
             val padStart = textColumn?.bgPaddingStart ?: 0f
             val padEnd = textColumn?.bgPaddingEnd ?: 0f
             val padTop = textColumn?.bgPaddingTop ?: 0f
@@ -417,7 +414,6 @@ data class TextLine(
             val nineStretchMode = textColumn?.nineStretchMode ?: 0
             val sameRange = bgImage == currentBgImage
                     && bgImageFit == currentBgImageFit
-                    && bgImageScale == currentBgImageScale
                     && padStart == currentPadStart
                     && padEnd == currentPadEnd
                     && padTop == currentPadTop
@@ -429,7 +425,7 @@ data class TextLine(
                     && nineStretchMode == currentNineStretchMode
             when {
                 bgImage.isEmpty() && active -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
                     active = false
                 }
                 bgImage.isNotEmpty() && !active -> {
@@ -437,7 +433,6 @@ data class TextLine(
                     rangeEnd = textColumn.end
                     currentBgImage = bgImage
                     currentBgImageFit = bgImageFit
-                    currentBgImageScale = bgImageScale
                     currentPadStart = padStart
                     currentPadEnd = padEnd
                     currentPadTop = padTop
@@ -453,12 +448,11 @@ data class TextLine(
                     rangeEnd = textColumn!!.end
                 }
                 bgImage.isNotEmpty() -> {
-                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
+                    drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
                     rangeStart = textColumn!!.start
                     rangeEnd = textColumn.end
                     currentBgImage = bgImage
                     currentBgImageFit = bgImageFit
-                    currentBgImageScale = bgImageScale
                     currentPadStart = padStart
                     currentPadEnd = padEnd
                     currentPadTop = padTop
@@ -471,7 +465,7 @@ data class TextLine(
                 }
             }
             if (active && index == columns.lastIndex) {
-                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentBgImageScale, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
+                drawBgImageSegment(canvas, rangeStart, rangeEnd, currentBgImage, currentBgImageFit, currentPadStart, currentPadEnd, currentPadTop, currentPadBottom, currentNineLeftX, currentNineRightX, currentNineTopY, currentNineBottomY, currentNineStretchMode)
             }
         }
     }
@@ -708,7 +702,6 @@ data class TextLine(
         endX: Float,
         bgImage: String,
         bgImageFit: Int,
-        bgImageScale: Float,
         padStartDp: Float = 0f,
         padEndDp: Float = 0f,
         padTopDp: Float = 0f,
@@ -735,14 +728,22 @@ data class TextLine(
         val padEnd = padEndDp.dpToPx()
         val padTop = padTopDp.dpToPx()
         val padBottom = padBottomDp.dpToPx()
+        // 实际绘制矩形由规则边距决定：drawLeft~drawRight = 文字框 ± 边距。
+        // 边距设多少就延伸多少，不会自动到全屏。
         val drawLeft = startX - padStart
         val drawRight = endX + padEnd
         val drawTop = top - padTop
         val drawBottom = bottom + padBottom
 
+        // 允许高亮背景水平方向延伸到页边距之外：临时把画布可见区在水平方向
+        // 扩展到整屏宽，绘制完恢复。文字坐标不受影响，仅背景不被内容区 clip 裁切。
+        canvas.save()
+        val viewW = ChapterProvider.viewWidth.toFloat()
+        canvas.clipRect(0f, drawTop, viewW, drawBottom, android.graphics.Region.Op.UNION)
+
         val rectWidth = drawRight - drawLeft
         val rectHeight = drawBottom - drawTop
-        val scale = bgImageScale.coerceIn(0.1f, 5f)
+        val scale = 1f
         when (bgImageFit) {
             1 -> {
                 val sw = rectWidth * scale
@@ -768,25 +769,14 @@ data class TextLine(
                 canvas.restore()
             }
             3 -> {
-                NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, scale, paint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
+                NinePatchHelper.draw(canvas, bitmap, drawLeft, drawTop, drawRight, drawBottom, paint, nineLeftX, nineRightX, nineTopY, nineBottomY, nineStretchMode)
             }
             else -> {
-                val tileBitmap = if (scale != 1f) {
-                    val sw = (bitmap.width * scale).toInt().coerceAtLeast(1)
-                    val sh = (bitmap.height * scale).toInt().coerceAtLeast(1)
-                    getScaledBitmap("${bgImage}_s${scale}", bitmap, sw, sh)
-                } else {
-                    bitmap
-                }
-                val shader = BitmapShader(tileBitmap, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
-                val matrix = android.graphics.Matrix()
-                matrix.setTranslate(drawLeft, drawTop)
-                shader.setLocalMatrix(matrix)
-                paint.shader = shader
-                canvas.drawRect(drawLeft, drawTop, drawRight, drawBottom, paint)
-                paint.shader = null
+                // 旧数据「平铺(0)」等统一回退为「拉伸填充」，铺满文字框
+                canvas.drawBitmap(bitmap, null, android.graphics.RectF(drawLeft, drawTop, drawRight, drawBottom), paint)
             }
         }
+        canvas.restore()
         PaintPool.recycle(paint)
     }
 

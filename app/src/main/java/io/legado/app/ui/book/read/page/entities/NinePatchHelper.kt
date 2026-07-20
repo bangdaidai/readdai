@@ -11,18 +11,18 @@ import android.graphics.RectF
  * 均为图片宽/高的归一化比例 0~1）把原图切成 3×3 共 9 块。
  *
  * - 四角：固定大小（统一缩放，绝不变形）；
- * - 可拉伸块（上/下中、左/右中、中心）：按 nineStretchMode 在「允许且确实画了可拉伸区」的方向拉伸；
- *   不允许该方向、或该方向两条线重合（无可拉伸区）时，整图按「铺满目标」比例绘制，无空白。
+ * - 可拉伸块（上/下中、左/右中、中心）：按 nineStretchMode 在「允许」的方向拉伸；
+ *   某方向被 stretchMode 禁用时，该方向整图按「铺满目标」比例绘制，无空白。
  *
- * 退化处理（某方向两条线重合 → 该方向无可拉伸区）：
- *   该方向整图按 fitScale（rect/bmp）铺满目标，角块按比例展开铺满整行/列，既无空白也不变形。
+ * 注意：两条线重合（reeden 的十字中心切片，如 479.5/480.5、126.5/127.5 仅差 1px）仍视为可拉伸，
+ *   多余尺寸由中心十字区域吸收，四角固定不变形，不会回退为整图等比铺满。
  *
  * nineStretchMode（均为用户在编辑器里自定义选择）：
  *   0 = 全方向拉伸（中段在水平/垂直都拉伸填满目标矩形）
  *   1 = 仅水平拉伸（垂直方向整图铺满目标高，水平方向中段拉伸填满）
  *   2 = 仅垂直拉伸（水平方向整图铺满目标宽，垂直方向中段拉伸填满）
  *
- * scale：用户在规则里设置的背景图整体缩放系数。
+ * scale：背景图整体缩放系数（当前固定为 1f，图片大小不可调，背景铺满文字框）。
  */
 object NinePatchHelper {
 
@@ -33,7 +33,6 @@ object NinePatchHelper {
         top: Float,
         right: Float,
         bottom: Float,
-        scale: Float,
         paint: Paint,
         leftX: Float,
         rightX: Float,
@@ -59,7 +58,7 @@ object NinePatchHelper {
         val tyN = ty0.coerceAtMost(by0)
         val byN = ty0.coerceAtLeast(by0)
 
-        val s = scale.coerceIn(0.1f, 5f)
+        val s = 1f
         val stretchX = stretchMode != 2
         val stretchY = stretchMode != 1
 
@@ -70,17 +69,16 @@ object NinePatchHelper {
         // 源各列/行宽度（原图像素）
         val wLsrc = lxN * bw                      // 左角宽
         val wRsrc = (1f - rxN) * bw               // 右角宽
-        val wMsrc = (rxN - lxN) * bw              // 中间列宽（可拉伸区）
         val hTsrc = tyN * bh                      // 上角高
         val hBsrc = (1f - byN) * bh               // 下角高
-        val hMsrc = (byN - tyN) * bh              // 中间行高（可拉伸区）
 
-        // 某方向是否真正可拉伸：模式允许 且 该方向确实画了可拉伸区（src 宽 > 1px）
-        val horizStretch = stretchX && wMsrc > 1f
-        val vertStretch = stretchY && hMsrc > 1f
+        // 某方向是否可拉伸：仅由 stretchMode 决定。
+        // reeden 中两条线重合（十字中心切片）仍拉伸中心区域，不回退整图等比铺满。
+        val horizStretch = stretchX
+        val vertStretch = stretchY
 
-        // 角块统一缩放：可拉伸方向用用户 scale s（固定角块不变形），
-        // 不可拉伸方向用 fitScale 铺满目标（整图等比适配该方向，无空白）。
+        // 角块固定（s=1f，不变形）；可拉伸方向由中间区域吸收多余尺寸。
+        // 仅当 stretchMode 禁用该方向时，才退化为整图等比铺满（fitScale）。
         val wScale = if (horizStretch) s else fitScaleX
         val hScale = if (vertStretch) s else fitScaleY
 
@@ -113,8 +111,11 @@ object NinePatchHelper {
         val sxB = byN * bh
         val bwI = bw.toInt()
         val bhI = bh.toInt()
-        val sxRi = sxR.toInt().coerceAtLeast(0)
-        val sxBii = sxB.toInt().coerceAtLeast(0)
+        // 两条线重合时中带 src 宽为 0，借 1px 作为可拉伸中心带，避免空白
+        val sxRi = if (rxN > lxN) sxR.toInt().coerceAtLeast(0)
+                   else (lxN * bw + 1f).toInt().coerceAtMost(bwI)
+        val sxBii = if (byN > tyN) sxB.toInt().coerceAtLeast(0)
+                    else (tyN * bh + 1f).toInt().coerceAtMost(bhI)
 
         val srcRects = arrayOf(
             Rect(0, 0, sxLi, sxTi),

@@ -27,6 +27,8 @@ data class TocRulePreviewUiState(
     val chapterTotal: Int = 0,
     // 网络书籍：作用于标题的替换净化规则，及其在本的命中情况
     val networkRuleItems: ImmutableList<NetworkRulePreviewItem> = persistentListOf(),
+    // 网络书籍：替换规则“链条”示范（一条标题依次经过各规则的接力变换）
+    val chainDemo: ChainDemo? = null,
     // TXT：正则目录规则预览
     val txtRules: ImmutableList<TxtRulePreviewItem> = persistentListOf(),
     // TXT：当前选中（高亮）的规则正则，初始化为本书正在使用的目录规则
@@ -72,6 +74,8 @@ data class TxtRulePreviewItem(
 @Stable
 data class NetworkRulePreviewItem(
     val rule: ReplaceRule,
+    // 该规则在“替换链条”中的执行顺序（从 1 开始），用于界面上呈现链式先后关系
+    val order: Int = 0,
     // 该规则命中（改变）的章节数
     val matchCount: Int = 0,
     // 本书章节总数
@@ -83,6 +87,32 @@ data class NetworkRulePreviewItem(
     // 是否已完成命中统计（未完成时卡片展示加载中）
     val computed: Boolean = true,
 )
+
+/**
+ * 替换规则“链条”中的单步：一条标题进入该规则前 / 经过该规则后。
+ * changed=true 表示这一步真正改变了标题（即上一条的输出作为本条的输入后发生了变化）。
+ */
+@Stable
+data class ChainStep(
+    val ruleId: Long,
+    val ruleName: String,
+    val before: String,
+    val after: String,
+    val changed: Boolean,
+)
+
+/**
+ * 用来在界面上直观展示“替换规则是链式接力”的示范链：
+ * 选一条被改变次数最多的章节，从原始标题开始，依次经过每条规则得到最终标题。
+ */
+@Stable
+data class ChainDemo(
+    val originalTitle: String,
+    val finalTitle: String,
+    val steps: ImmutableList<ChainStep> = persistentListOf(),
+) {
+    val changedStepCount: Int get() = steps.count { it.changed }
+}
 
 sealed interface TocRulePreviewSheet {
     data class ChapterList(val item: TxtRulePreviewItem) : TocRulePreviewSheet

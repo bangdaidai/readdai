@@ -36,7 +36,6 @@ data class TextHtmlColumn(
     override val underlineSvgPath: String get() = ""
     override val bgImage: String get() = ""
     override val bgImageFit: Int get() = 0
-    override val bgImageScale: Float get() = 1f
     override val bgPaddingStart: Float get() = 0f
     override val bgPaddingEnd: Float get() = 0f
     override val bgPaddingTop: Float get() = 0f

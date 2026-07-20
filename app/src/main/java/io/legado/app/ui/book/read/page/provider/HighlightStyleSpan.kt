@@ -15,7 +15,6 @@ class HighlightStyleSpan(
     val underlineSvgPath: String = "",
     val bgImage: String = "",
     val bgImageFit: Int = 0,
-    val bgImageScale: Float = 1f,
     val bgPaddingStart: Float = 0f,
     val bgPaddingEnd: Float = 0f,
     val bgPaddingTop: Float = 0f,

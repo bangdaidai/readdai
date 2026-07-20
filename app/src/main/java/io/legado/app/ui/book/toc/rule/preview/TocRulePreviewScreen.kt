@@ -212,6 +212,8 @@ private fun NetworkRulePreviewList(
             }
         }
 
+        ChainDemoCard(demo = state.chainDemo)
+
         AnimatedVisibility(
             visible = state.showSearch,
             enter = expandVertically() + fadeIn(),
@@ -281,7 +283,7 @@ private fun NetworkRuleCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    item.rule.name,
+                    if (item.order > 0) "${item.order}. ${item.rule.name}" else item.rule.name,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -330,6 +332,159 @@ private fun NetworkRuleCard(
                 Icon(
                     Icons.Default.Edit,
                     contentDescription = stringResource(R.string.edit),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChainDemoCard(demo: ChainDemo?) {
+    if (demo == null) return
+    var expanded by remember { mutableStateOf(false) }
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        stringResource(R.string.chain_demo_title),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.chain_demo_summary, demo.steps.size, demo.changedStepCount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Text(
+                stringResource(R.string.chain_demo_tip),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            ChainRow(stringResource(R.string.chain_demo_original), demo.originalTitle, false)
+            ChainRow(stringResource(R.string.chain_demo_final), demo.finalTitle, true)
+
+            AnimatedVisibility(visible = expanded) {
+                Column(Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.height(8.dp))
+                    demo.steps.forEachIndexed { index, step ->
+                        if (index > 0) {
+                            Box(
+                                Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "↓",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        ChainStepRow(step = step, index = index)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChainRow(label: String, value: String, highlight: Boolean) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(48.dp),
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            value,
+            style = if (highlight) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun ChainStepRow(step: ChainStep, index: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+    ) {
+        Column(Modifier.padding(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (step.changed)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant,
+                ) {
+                    Text(
+                        "${index + 1}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (step.changed) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    step.ruleName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!step.changed) {
+                    Text(
+                        stringResource(R.string.chain_step_no_change),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (step.changed) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    step.after,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    step.before,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

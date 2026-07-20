@@ -15,7 +15,6 @@ interface TextBaseColumn : BaseColumn {
     val underlineSvgPath: String
     val bgImage: String
     val bgImageFit: Int
-    val bgImageScale: Float
     val bgPaddingStart: Float
     val bgPaddingEnd: Float
     val bgPaddingTop: Float

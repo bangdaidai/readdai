@@ -3,18 +3,25 @@ package io.legado.app.ui.book.toc.rule.preview
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.script.ScriptBindings
+import com.script.rhino.RhinoScriptEngine
 import io.legado.app.R
-import io.legado.app.data.appDb
+import io.legado.app.constant.AppConfig
 import io.legado.app.constant.AppPattern
+import io.legado.app.data.appDb
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
+import io.legado.app.data.entities.ReplaceBook
 import io.legado.app.data.entities.ReplaceRule
 import io.legado.app.data.entities.TxtTocRule
 import io.legado.app.help.DefaultData
+import io.legado.app.help.RegexJsExtensions
 import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.book.isLocalTxt
+import io.legado.app.help.book.toReplaceBook
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.localBook.TextFile
+import io.legado.app.utils.ChineseUtils
 import io.legado.app.utils.Utf8BomUtils
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
@@ -137,7 +144,8 @@ class TocRulePreviewViewModel(
 
     private fun loadNetworkPreview(book: Book) {
         _uiState.update { it.copy(loading = true, isTxt = false) }
-        val useReplace = book.getUseReplaceRule()
+        // 与目录页（TocActivity）展示一致：阅读页目录是否启用替换 且 本书开启了替换净化
+        val useReplace = AppConfig.tocUiUseReplace && book.getUseReplaceRule()
         val chapters = appDb.bookChapterDao.getChapterList(book.bookUrl)
         if (chapters.isEmpty()) {
             _uiState.update {
@@ -155,9 +163,10 @@ class TocRulePreviewViewModel(
 
         // 先立即展示界面（卡片显示“统计中”），命中数在后台逐步计算，
         // 避免像之前那样把所有 getDisplayTitle 同步算完才肯打开页面。
-        val initialItems = titleRules.map { rule ->
+        val initialItems = titleRules.mapIndexed { index, rule ->
             NetworkRulePreviewItem(
                 rule = rule,
+                order = index + 1,
                 matchCount = 0,
                 totalChapter = chapters.size,
                 computed = false,
@@ -170,9 +179,10 @@ class TocRulePreviewViewModel(
                 chapterTotal = chapters.size,
                 titleReplaceRules = titleRules.toImmutableList(),
                 networkRuleItems = initialItems.toImmutableList(),
+                chainDemo = null,
             )
         }
-        computeNetworkCounts(chapters, titleRules)
+        computeNetworkCounts(book, chapters, titleRules, useReplace)
     }
 
     /**
@@ -186,35 +196,56 @@ class TocRulePreviewViewModel(
      * 同时逐条规则回写状态，界面上能看到卡片一张张从“统计中”变为命中数。
      */
     private fun computeNetworkCounts(
+        book: Book,
         chapters: List<BookChapter>,
         titleRules: List<ReplaceRule>,
+        useReplace: Boolean,
     ) {
         networkCountJob?.cancel()
         networkCountJob = viewModelScope.launch(Dispatchers.IO) {
-            if (titleRules.isEmpty()) return@launch
-            // 预编译每条规则的正则（仅正则模式）
+            // 未开启替换净化（或阅读页目录未启用替换）时，标题不会变化，直接标记统计完成
+            if (titleRules.isEmpty() || !useReplace) {
+                _uiState.update { state ->
+                    state.copy(
+                        networkRuleItems = state.networkRuleItems.map { it.copy(computed = true) }
+                            .toImmutableList()
+                    )
+                }
+                return@launch
+            }
+            val replaceBook = book.toReplaceBook()
+            // 预编译每条规则的正则（仅正则模式）；@js 规则在真正命中时再执行 Rhino
             val compiled = titleRules.map { rule ->
                 if (rule.isRegex && rule.pattern.isNotEmpty()) {
-                    runCatching { Pattern.compile(rule.pattern) }.getOrNull()
+                    runCatching { rule.regex.toPattern() }.getOrNull()
                 } else {
                     null
                 }
             }
-            // 每条章节的“当前标题”，随规则链推进而更新
+            // 每条章节的“当前标题”，随规则链推进而更新。
+            // 先与 getDisplayTitle 保持一致：去掉换行，并按当前简繁转换设置预处理。
             val current = Array(chapters.size) { i ->
-                chapters[i].title.replace(AppPattern.rnRegex, "")
+                var t = chapters[i].title.replace(AppPattern.rnRegex, "")
+                when (AppConfig.chineseConverterType) {
+                    1 -> t = ChineseUtils.t2s(t)
+                    2 -> t = ChineseUtils.s2t(t)
+                }
+                t
             }
             val matchCounts = IntArray(titleRules.size)
             val samples = Array(titleRules.size) { mutableListOf<Pair<String, String>>() }
+            // 每章累计被改变的次数，用于挑出“变化最多”的章节作为链条示范
+            val changeCount = IntArray(chapters.size)
 
             titleRules.forEachIndexed { index, rule ->
                 ensureActive()
                 val pattern = compiled[index]
                 for (i in chapters.indices) {
                     val before = current[i]
-                    val after = applyRuleToTitle(rule, pattern, before)
+                    val after = applySingleReplaceRule(rule, pattern, before, chapters[i], replaceBook)
                     if (after != before) {
                         matchCounts[index]++
+                        changeCount[i]++
                         if (samples[index].size < 200) {
                             samples[index].add(before to after)
                         }
@@ -227,6 +258,7 @@ class TocRulePreviewViewModel(
                     val newItems = state.networkRuleItems.mapIndexed { i, item ->
                         if (i == itemIndex) {
                             item.copy(
+                                order = i + 1,
                                 matchCount = matchCounts[itemIndex],
                                 chapters = samples[itemIndex].toImmutableList(),
                                 example = example,
@@ -239,31 +271,94 @@ class TocRulePreviewViewModel(
                     state.copy(networkRuleItems = newItems)
                 }
             }
+
+            // 统计完成后，用“被改变次数最多”的章节重建整条替换链，供界面展示链式接力。
+            // 若所有章节都未被任何规则改变，则退而用第 0 章展示链条顺序（全部无变化）。
+            val demoIndex = if (chapters.isEmpty()) -1 else run {
+                var best = 0
+                for (i in changeCount.indices) {
+                    if (changeCount[i] > changeCount[best]) best = i
+                }
+                best
+            }
+            if (demoIndex >= 0) {
+                var t = chapters[demoIndex].title.replace(AppPattern.rnRegex, "")
+                when (AppConfig.chineseConverterType) {
+                    1 -> t = ChineseUtils.t2s(t)
+                    2 -> t = ChineseUtils.s2t(t)
+                }
+                val original = t
+                val steps = mutableListOf<ChainStep>()
+                titleRules.forEachIndexed { index, rule ->
+                    val before = t
+                    val after = applySingleReplaceRule(rule, compiled[index], before, chapters[demoIndex], replaceBook)
+                    steps.add(
+                        ChainStep(
+                            ruleId = rule.id,
+                            ruleName = rule.name,
+                            before = before,
+                            after = after,
+                            changed = after != before,
+                        )
+                    )
+                    t = after
+                }
+                _uiState.update { state ->
+                    state.copy(
+                        chainDemo = ChainDemo(
+                            originalTitle = original,
+                            finalTitle = t,
+                            steps = steps.toImmutableList(),
+                        )
+                    )
+                }
+            }
         }
     }
 
     /**
-     * 把单条替换规则应用到标题上。等价于 getDisplayTitle 中“叠加该条规则”的效果，
-     * 但使用已编译的 java.util.regex.Pattern，避免 getDisplayTitle 内带超时的替换扩展
-     * （其内部 runBlocking 且超时可能重启 App），从而让预览统计既快又安全。
+     * 把单条替换规则应用到标题上，等价于 BookChapter.getDisplayTitle 中对“单条规则”的效果，
+     * 从而保证预览命中数与阅读/目录页实际替换结果一致：
+     *  - 正则模式使用已编译的 java.util.regex.Pattern；
+     *  - @js: 规则通过 Rhino 执行（这里不走会超时重启 App 的 replace 扩展，异常时按未变化处理）；
+     *  - 替换后为空则保留原标题（与 getDisplayTitle 一致）。
      */
-    private fun applyRuleToTitle(
+    private fun applySingleReplaceRule(
         rule: ReplaceRule,
         pattern: Pattern?,
         input: String,
+        chapter: BookChapter,
+        replaceBook: ReplaceBook?,
     ): String {
         if (rule.pattern.isEmpty()) return input
-        // @js: 形式的替换依赖 Rhino 引擎，预览统计里不执行，按“未变化”处理，避免产生错误计数
-        if (rule.replacement.startsWith("@js:")) return input
-        val result = if (rule.isRegex && pattern != null) {
+        val result = if (rule.isRegex) {
+            val p = pattern ?: runCatching { rule.regex.toPattern() }.getOrNull() ?: return input
             try {
-                val matcher = pattern.matcher(input)
+                val matcher = p.matcher(input)
                 val sb = StringBuffer()
-                while (matcher.find()) {
-                    matcher.appendReplacement(sb, rule.replacement)
+                if (rule.replacement.startsWith("@js:")) {
+                    val jsCode = rule.replacement.substring(4)
+                    val reJsExtensions = RegexJsExtensions(rule.name)
+                    while (matcher.find()) {
+                        val jsResult = RhinoScriptEngine.run {
+                            eval(jsCode) {
+                                this["result"] = matcher.group()
+                                this["chapter"] = chapter
+                                this["book"] = replaceBook
+                                this["java"] = reJsExtensions
+                            }
+                        }.toString()
+                        matcher.appendReplacement(sb, jsResult.quoteReplacementJs())
+                    }
+                    matcher.appendTail(sb)
+                    sb.toString()
+                } else {
+                    while (matcher.find()) {
+                        matcher.appendReplacement(sb, rule.replacement)
+                    }
+                    matcher.appendTail(sb)
+                    sb.toString()
                 }
-                matcher.appendTail(sb)
-                sb.toString()
             } catch (_: Exception) {
                 input
             }

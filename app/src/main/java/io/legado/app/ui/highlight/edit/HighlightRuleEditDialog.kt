@@ -67,6 +67,10 @@ class HighlightRuleEditDialog(
     private var isRegexMode = false
 
     companion object {
+        // 适配方式：去掉「平铺」，保留 拉伸填充 / 居中裁剪 / 九宫格
+        private val BG_FIT_OPTIONS = listOf("拉伸填充", "居中裁剪", "九宫格")
+        private val BG_FIT_VALUES = listOf(1, 2, 3)
+
         fun newInstance(
             sampleText: String? = null,
             pattern: String? = null,
@@ -184,7 +188,7 @@ class HighlightRuleEditDialog(
         binding.spBgImageFit.adapter = ArrayAdapter(
             requireContext(),
             R.layout.item_text_common,
-            listOf("平铺", "拉伸填充", "居中裁剪", "九宫格")
+            BG_FIT_OPTIONS
         ).apply {
             setDropDownViewResource(R.layout.item_spinner_dropdown)
         }
@@ -203,10 +207,10 @@ class HighlightRuleEditDialog(
         binding.etScope.setText(editingRule.scope.orEmpty())
         binding.etExcludeScope.setText(editingRule.excludeScope.orEmpty())
         binding.etSampleText.setText(editingRule.sampleText.ifBlank { editingRule.normalizedSampleText() })
-        binding.spBgImageFit.setSelection(editingRule.bgImageFit.coerceIn(0, 3))
+        binding.spBgImageFit.setSelection(
+            BG_FIT_VALUES.indexOf(editingRule.bgImageFit).coerceAtLeast(0)
+        )
         updateNineSliceVisible()
-        binding.sbBgImageScale.progress = (editingRule.bgImageScale.coerceIn(0.1f, 5f) * 10).toInt()
-        binding.tvBgImageScale.text = "${editingRule.bgImageScale.coerceIn(0.1f, 5f).formatScale()}x"
         initPaddingSeekBar(binding.sbBgPadStart, binding.tvBgPadStart, editingRule.bgPaddingStart)
         initPaddingSeekBar(binding.sbBgPadEnd, binding.tvBgPadEnd, editingRule.bgPaddingEnd)
         initPaddingSeekBar(binding.sbBgPadTop, binding.tvBgPadTop, editingRule.bgPaddingTop)
@@ -307,25 +311,13 @@ class HighlightRuleEditDialog(
                     position: Int,
                     id: Long
                 ) {
-                    editingRule.bgImageFit = position
+                    editingRule.bgImageFit = BG_FIT_VALUES[position]
                     updateNineSliceVisible()
                     updatePreview()
                 }
 
                 override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
             }
-        binding.sbBgImageScale.setOnSeekBarChangeListener(
-            object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    val scale = (progress.coerceAtLeast(1) / 10f).coerceIn(0.1f, 5f)
-                    editingRule.bgImageScale = scale
-                    binding.tvBgImageScale.text = "${scale.formatScale()}x"
-                    if (fromUser) updatePreview()
-                }
-                override fun onStartTrackingTouch(seekBar: SeekBar?) = Unit
-                override fun onStopTrackingTouch(seekBar: SeekBar?) = Unit
-            }
-        )
         setupPaddingSeekBar(binding.sbBgPadStart, binding.tvBgPadStart) { v ->
             editingRule.bgPaddingStart = v
         }
@@ -516,8 +508,7 @@ class HighlightRuleEditDialog(
             underlineSvgPath = binding.etSvgPath.text?.toString().orEmpty().takeIf { binding.spUnderlineMode.selectedItemPosition == 5 }.orEmpty(),
             bgColor = parseColorOrNull(binding.etBgImage.text?.toString().orEmpty()),
             bgImage = binding.etBgImage.text?.toString().orEmpty().takeIf { it.isNotBlank() && parseColorOrNull(it) == null },
-            bgImageFit = binding.spBgImageFit.selectedItemPosition,
-            bgImageScale = (binding.sbBgImageScale.progress.coerceAtLeast(1) / 10f).coerceIn(0.1f, 5f),
+            bgImageFit = BG_FIT_VALUES[binding.spBgImageFit.selectedItemPosition],
             bgPaddingStart = (binding.sbBgPadStart.progress - 20).toFloat(),
             bgPaddingEnd = (binding.sbBgPadEnd.progress - 20).toFloat(),
             bgPaddingTop = (binding.sbBgPadTop.progress - 20).toFloat(),
@@ -561,7 +552,7 @@ class HighlightRuleEditDialog(
 
     /** 仅当填充方式=九宫格(3) 且已选背景图时，显示「九宫格拉伸区域」入口 */
     private fun updateNineSliceVisible() {
-        val visible = binding.spBgImageFit.selectedItemPosition == 3
+        val visible = BG_FIT_VALUES.getOrNull(binding.spBgImageFit.selectedItemPosition) == 3
                 && !editingRule.bgImage.isNullOrBlank()
         binding.llNineSlice.visibility = if (visible) View.VISIBLE else View.GONE
     }
@@ -585,14 +576,6 @@ class HighlightRuleEditDialog(
     private fun validatePattern(pattern: String): String? {
         if (pattern.isBlank()) return null
         return kotlin.runCatching { Regex(pattern) }.exceptionOrNull()?.localizedMessage
-    }
-
-    private fun Float.formatScale(): String {
-        return if (this == this.toInt().toFloat()) {
-            this.toInt().toString()
-        } else {
-            String.format("%.1f", this)
-        }
     }
 
     private fun Float.formatDistance(): String {
