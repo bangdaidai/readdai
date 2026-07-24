@@ -1,6 +1,6 @@
 [versions]
 
-kotlin = "2.3.0"
+kotlin = "2.4.10"
 kotlinxCollectionsImmutable = "0.5.1"
 ksp = "2.3.4"
 agp = "8.13.1"
