@@ -466,6 +466,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
             shouldCancelLiquidGlassTasks = true
             bottomIndicatorAnimator.cancel()
             bottomNavigationIndicatorContainer.isVisible = false
+            binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_glass_view)?.removeCallbacks(null)
+            binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_indicator_glass_view)?.removeCallbacks(null)
 
             applyClassicModeStyle()
             applyBottomNavigationIcons() // Apply icons for classic mode
@@ -508,7 +510,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      */
     private fun scheduleLiquidGlassSetup(delayMillis: Long = 0L) {
         val action = {
-            if (!isFinishing && !isDestroyed) {
+            if (!isFinishing && !isDestroyed && !shouldCancelLiquidGlassTasks) {
                 setupLiquidGlass()
             }
         }
@@ -523,7 +525,7 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
      * Setup LiquidGlass - EXACT match with archive implementation
      */
     private fun setupLiquidGlass() {
-        if (isFinishing || isDestroyed) return
+        if (isFinishing || isDestroyed || shouldCancelLiquidGlassTasks) return
         // Only apply in floating mode
         if (AppConfig.bottomBarLayoutMode != "floating") return
 
@@ -890,6 +892,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         if (!liquidGlassView.isAttachedToWindow) return
 
         try {
+            if (shouldCancelLiquidGlassTasks) return
+            liquidGlassView.removeCallbacks(null)
             if (boundLiquidGlassViewIds.add(liquidGlassView.id)) {
                 liquidGlassView.bind(binding.contentContainer)
             }
@@ -1109,6 +1113,8 @@ class MainActivity : VMBaseActivity<ActivityMainBinding, MainViewModel>(),
         // Cancel all pending LiquidGlass tasks to prevent NPE
         shouldCancelLiquidGlassTasks = true
         binding.bottomNavigationGlass.removeCallbacks(null)
+        binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_glass_view)?.removeCallbacks(null)
+        binding.root.findViewById<LiquidGlassView>(R.id.bottom_navigation_indicator_glass_view)?.removeCallbacks(null)
         bottomIndicatorAnimator.cancel()
 
         // Clear bound LiquidGlassView IDs to allow re-binding on recreate
