@@ -251,6 +251,7 @@ class App : Application() {
         RhinoWrapFactory.register(ContentRule::class.java, ReadOnlyJavaObject.factory)
         RhinoWrapFactory.register(BookChapter::class.java, ReadOnlyJavaObject.factory)
         RhinoWrapFactory.register(Book.ReadConfig::class.java, ReadOnlyJavaObject.factory)
+        com.script.rhino.RhinoProbe.sink = { msg -> io.legado.app.constant.AppLog.put(msg) }
     }
 
     class EventLogger : DefaultLogger() {
