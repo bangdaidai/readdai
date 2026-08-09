@@ -252,6 +252,9 @@ class App : Application() {
         RhinoWrapFactory.register(BookChapter::class.java, ReadOnlyJavaObject.factory)
         RhinoWrapFactory.register(Book.ReadConfig::class.java, ReadOnlyJavaObject.factory)
         com.script.rhino.RhinoProbe.sink = { msg -> io.legado.app.constant.AppLog.put(msg) }
+        com.script.rhino.RhinoProbe.jsonFormatter = { obj ->
+            try { io.legado.app.utils.GSON.toJson(obj) } catch (_: Throwable) { null }
+        }
     }
 
     class EventLogger : DefaultLogger() {

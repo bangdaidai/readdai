@@ -95,14 +95,14 @@ class AppLogDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
         ) {
             binding.textTime.text = LogUtils.logTimeFormat.format(Date(item.first))
             binding.textMessage.text = item.second
+            binding.textMessage.setTextIsSelectable(true)
         }
 
         override fun registerListener(holder: ItemViewHolder, binding: ItemAppLogBinding) {
             binding.root.onClick {
                 getItem(holder.layoutPosition)?.let { item ->
-                    item.third?.let {
-                        showDialogFragment(TextDialog("Log", it.stackTraceToString()))
-                    }
+                    val body = item.third?.stackTraceToString() ?: item.second
+                    showDialogFragment(TextDialog("Log", body))
                 }
             }
         }

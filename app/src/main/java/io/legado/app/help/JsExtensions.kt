@@ -1086,8 +1086,6 @@ interface JsExtensions : JsEncodeUtils {
      * 弹窗提示
      */
     fun toast(msg: Any?) {
-        // dump full probe on any toast
-        com.script.rhino.RhinoProbe.dumpToSink("[QDFullProbe] toast=$msg")
         rhinoContextOrNull?.ensureActive()
         appCtx.toastOnUi("${getTag()}: ${msg.toString()}")
     }
