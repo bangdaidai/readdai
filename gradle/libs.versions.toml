@@ -1,8 +1,8 @@
 [versions]
 
-kotlin = "2.3.0"
+kotlin = "2.4.10"
 kotlinxCollectionsImmutable = "0.5.1"
-ksp = "2.3.4"
+ksp = "2.3.11"
 agp = "8.13.1"
 appcompat = "1.7.1"
 colorpicker = "1.1.0"
